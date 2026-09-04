@@ -1239,6 +1239,12 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
         # can mutate _coord_store at a time.
         self._scale_ep_lock = asyncio.Lock()
         self._scale_ep_in_progress = False
+        # TP/PP switching and Elastic-EP scaling both mutate the vLLM
+        # executor/topology.  They must not overlap, even though the two
+        # public control routes have different request schemas.
+        self._engine_reconfig_lock = asyncio.Lock()
+        self._parallel_strategy_switch_in_progress = False
+        self._parallel_strategy_switch_failed = False
         # Created on first Ray-backed get_ep_capacity call so workers that never
         # serve elastic EP do not carry an idle thread.
         self._ep_capacity_inflight = None
@@ -1515,6 +1521,8 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
 
         logger.info(f"[ElasticEP] Scaling to new_data_parallel_size={new_dp_size}")
 
+        await self._engine_reconfig_lock.acquire()
+
         # Early-reject if another scale is already in progress rather than
         # queuing behind it: a queued caller would garbage-collect the first
         # caller's TCPStore before its Ray actor connects, causing a 300 s
@@ -1526,6 +1534,7 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
                     f"rejecting concurrent request for new_data_parallel_size={new_dp_size}"
                 )
                 logger.warning("[ElasticEP] %s", msg)
+                self._engine_reconfig_lock.release()
                 return {"status": "error", "message": msg}
             self._scale_ep_in_progress = True
 
@@ -1580,6 +1589,197 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
         finally:
             async with self._scale_ep_lock:
                 self._scale_ep_in_progress = False
+            self._engine_reconfig_lock.release()
+
+    def _parallel_strategy_state(self) -> dict:
+        """Return the local, read-only TP/PP state exposed to Dynamo control-plane callers."""
+        parallel_config = self.engine_client.vllm_config.parallel_config
+        cache_config = self.engine_client.vllm_config.cache_config
+        return {
+            "tensor_parallel_size": getattr(
+                parallel_config, "tensor_parallel_size", None
+            ),
+            "pipeline_parallel_size": getattr(
+                parallel_config, "pipeline_parallel_size", None
+            ),
+            "data_parallel_size": getattr(parallel_config, "data_parallel_size", 1),
+            "world_size": getattr(parallel_config, "world_size", None),
+            "physical_world_size": getattr(
+                parallel_config, "physical_world_size", None
+            ),
+            "num_gpu_blocks": getattr(cache_config, "num_gpu_blocks", None),
+            "is_switching": self._parallel_strategy_switch_in_progress
+            or bool(
+                getattr(
+                    self.engine_client,
+                    "is_switching_parallel_strategy",
+                    lambda: False,
+                )()
+            ),
+            "failed": self._parallel_strategy_switch_failed,
+        }
+
+    async def get_parallel_strategy_state(self, body: dict | None = None) -> dict:
+        """Read the current ElasticVllm TP/PP strategy without mutating the engine."""
+        del body
+        if not hasattr(self.engine_client, "is_switching_parallel_strategy"):
+            return {
+                "status": "unsupported",
+                "message": "The installed vLLM does not expose Elastic TP/PP switching",
+            }
+        return {"status": "ok", **self._parallel_strategy_state()}
+
+    async def switch_parallel_strategy(self, body: dict) -> dict:
+        """Switch an aggregated ElasticVllm worker to a new TP/PP strategy.
+
+        This is deliberately a Dynamo control-plane adapter.  EngineCore owns
+        the safe-point wait and KV block remap; Dynamo only validates the
+        request, serializes it with other engine reconfiguration operations,
+        and reports the resulting strategy.
+        """
+        if body is None:
+            body = {}
+        if not isinstance(body, dict):
+            return {
+                "status": "error",
+                "message": "request body must be a JSON object",
+            }
+
+        if not hasattr(self.engine_client, "switch_parallel_strategy"):
+            return {
+                "status": "unsupported",
+                "message": "The installed vLLM does not expose Elastic TP/PP switching",
+            }
+        if self._parallel_strategy_switch_failed:
+            return {
+                "status": "unavailable",
+                "message": "The worker is unavailable after a failed TP/PP switch; restart it",
+            }
+
+        def required_int(name: str) -> int | None:
+            value = _as_exact_int(body.get(name))
+            if value is None or value < 1:
+                return None
+            return value
+
+        new_world_size = required_int("new_world_size")
+        target_tp = required_int("target_tensor_parallel_size")
+        target_pp = required_int("target_pipeline_parallel_size")
+        if new_world_size is None or target_tp is None or target_pp is None:
+            return {
+                "status": "error",
+                "message": (
+                    "new_world_size, target_tensor_parallel_size, and "
+                    "target_pipeline_parallel_size must be positive integers"
+                ),
+            }
+        if target_tp * target_pp != new_world_size:
+            return {
+                "status": "error",
+                "message": (
+                    "new_world_size must equal target_tensor_parallel_size * "
+                    f"target_pipeline_parallel_size, got {new_world_size} != "
+                    f"{target_tp} * {target_pp}"
+                ),
+            }
+
+        parallel_config = self.engine_client.vllm_config.parallel_config
+        for name in (
+            "data_parallel_size",
+            "decode_context_parallel_size",
+            "prefill_context_parallel_size",
+        ):
+            if getattr(parallel_config, name, 1) != 1:
+                return {
+                    "status": "error",
+                    "message": f"Elastic TP/PP switching requires {name}=1",
+                }
+
+        request_handling = body.get("request_handling", "wait")
+        if request_handling not in ("idle", "wait"):
+            return {
+                "status": "error",
+                "message": "request_handling must be either 'idle' or 'wait'",
+            }
+        admission_handling = body.get("admission_handling", "queue")
+        if admission_handling not in ("queue", "reject"):
+            return {
+                "status": "error",
+                "message": "admission_handling must be either 'queue' or 'reject'",
+            }
+        retry_after = _as_exact_int(body.get("retry_after", 1))
+        if retry_after is None or retry_after < 0:
+            return {
+                "status": "error",
+                "message": "retry_after must be a non-negative integer",
+            }
+
+        target_num_blocks = body.get("target_num_blocks")
+        if target_num_blocks is not None:
+            target_num_blocks = _as_exact_int(target_num_blocks)
+            if target_num_blocks is None or target_num_blocks < 1:
+                return {
+                    "status": "error",
+                    "message": "target_num_blocks must be a positive integer",
+                }
+
+        if self._engine_reconfig_lock.locked():
+            return {
+                "status": "conflict",
+                "message": "Another engine reconfiguration operation is already in progress",
+            }
+
+        async with self._engine_reconfig_lock:
+            if self._parallel_strategy_switch_in_progress:
+                return {
+                    "status": "conflict",
+                    "message": "A TP/PP switch is already in progress",
+                }
+            self._parallel_strategy_switch_in_progress = True
+            try:
+                # Lazy import keeps the native-vLLM Dynamo installation usable
+                # when this route is never requested.
+                from vllm.v1.engine import SwitchParallelStrategyRequest
+
+                request = SwitchParallelStrategyRequest(
+                    new_world_size=new_world_size,
+                    target_tensor_parallel_size=target_tp,
+                    target_pipeline_parallel_size=target_pp,
+                    target_num_blocks=target_num_blocks,
+                    block_id_remap=None,
+                    request_handling=request_handling,
+                )
+                await self.engine_client.switch_parallel_strategy(
+                    request,
+                    admission_handling=admission_handling,
+                    retry_after=retry_after,
+                )
+                return {
+                    "status": "ok",
+                    "message": "TP/PP switch completed",
+                    **self._parallel_strategy_state(),
+                }
+            except Exception as e:
+                message = str(e)
+                logger.error("[TP/PP] Switch failed: %s", message, exc_info=True)
+                if "no longer safe" in message.lower() or "restart" in message.lower():
+                    self._parallel_strategy_switch_failed = True
+                    # ElasticVllm explicitly requires a restart after a
+                    # collective/KV migration failure.  Do not retry in place.
+                    try:
+                        self._shutdown_on_engine_dead(e)
+                    except Exception:
+                        logger.exception("[TP/PP] Failed to shut down unsafe worker")
+                    return {
+                        "status": "unavailable",
+                        "message": (
+                            "TP/PP switch left the executor unsafe; restart the worker: "
+                            f"{message}"
+                        ),
+                    }
+                return {"status": "error", "message": message}
+            finally:
+                self._parallel_strategy_switch_in_progress = False
 
     async def get_ep_capacity(self, body: dict) -> dict:
         """Read-only elastic-EP capacity: current dp/tp and the idle GPUs to grow into.

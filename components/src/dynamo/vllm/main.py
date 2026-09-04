@@ -581,6 +581,73 @@ def setup_fpm_relay(
     return relays if relays else None
 
 
+def _tp_pp_switch_requested(engine_args: Any) -> bool:
+    defaults = {
+        "tp_pp_switch_prebuild_strategies": [],
+        "tp_pp_switch_kv_transfer_window_size": 1,
+        "tp_pp_switch_kv_transfer_max_scratch_size_mb": 256,
+        "tp_pp_switch_weight_load_mode": "disk",
+        "tp_pp_switch_weight_cache_dir": "/dev/shm",
+    }
+    for name, default in defaults.items():
+        value = getattr(engine_args, name, None)
+        if value is None:
+            continue
+        if name == "tp_pp_switch_prebuild_strategies" and value == []:
+            continue
+        if value != default:
+            return True
+    return False
+
+
+def _validate_aggregated_tp_pp_switch_engine(
+    config: Config,
+    engine_args: Any,
+    vllm_config: VllmConfig,
+    engine_client: AsyncLLM,
+) -> None:
+    """Fail before registration when the loaded vLLM cannot switch TP/PP."""
+    if not _tp_pp_switch_requested(engine_args):
+        return
+
+    mode = getattr(config.disaggregation_mode, "value", config.disaggregation_mode)
+    if mode not in (None, "none", "aggregated"):
+        return
+
+    switch_method = getattr(engine_client, "switch_parallel_strategy", None)
+    if not callable(switch_method):
+        raise RuntimeError(
+            "Elastic TP/PP switching was configured, but the installed vLLM "
+            "does not expose AsyncLLM.switch_parallel_strategy; install the "
+            "ElasticVllm fork instead of native vLLM"
+        )
+
+    parallel_config = vllm_config.parallel_config
+    for name in (
+        "data_parallel_size",
+        "decode_context_parallel_size",
+        "prefill_context_parallel_size",
+    ):
+        if getattr(parallel_config, name, 1) != 1:
+            raise RuntimeError(
+                f"Elastic TP/PP switching requires {name}=1, "
+                f"got {getattr(parallel_config, name)}"
+            )
+
+    backend = getattr(engine_args, "distributed_executor_backend", None)
+    if backend not in (None, "mp", "ray"):
+        raise RuntimeError(
+            "Elastic TP/PP switching requires MultiprocExecutor or RayExecutorV2"
+        )
+
+    runner_type = getattr(vllm_config.model_config, "runner_type", None)
+    if isinstance(runner_type, str) and "v2" in runner_type.lower():
+        raise RuntimeError(
+            "Elastic TP/PP switching supports the V1 legacy GPUModelRunner, "
+            "not the V2 ModelRunner"
+        )
+
+
 def setup_vllm_engine(
     config: Config,
     stat_logger: Optional[StatLoggerFactory] = None,
@@ -737,6 +804,9 @@ def setup_vllm_engine(
             enable_log_requests=engine_args.enable_log_requests,
             disable_log_stats=engine_args.disable_log_stats,
         )
+    _validate_aggregated_tp_pp_switch_engine(
+        config, engine_args, vllm_config, engine_client
+    )
     load_time = time.time() - start_time
 
     # Record model load time. ``component_gauges`` is None on the
