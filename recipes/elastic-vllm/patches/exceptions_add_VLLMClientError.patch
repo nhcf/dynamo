@@ -1,0 +1,25 @@
+diff --git a/vllm/exceptions.py b/vllm/exceptions.py
+index 931040b..860e332 100644
+--- a/vllm/exceptions.py
++++ b/vllm/exceptions.py
+@@ -36,7 +36,19 @@ class VLLMValidationError(ValueError):
+         return f"{base} ({', '.join(extras)})" if extras else base
+ 
+ 
+-class VLLMNotFoundError(Exception):
++class VLLMClientError(Exception):
++    """vLLM-specific client error (4xx class)."""
++
++    pass
++
++
++class VLLMUnprocessableEntityError(VLLMClientError):
++    """vLLM-specific unprocessable entity error (422)."""
++
++    pass
++
++
++class VLLMNotFoundError(VLLMClientError):
+     """vLLM-specific NotFoundError"""
+ 
+     pass
