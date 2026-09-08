@@ -225,8 +225,7 @@ def _validate_aggregated_tp_pp_switch(
         return
 
     mode = getattr(dynamo_config, "disaggregation_mode", None)
-    mode_value = getattr(mode, "value", mode)
-    if mode_value not in (None, "none", "aggregated"):
+    if mode not in (None, DisaggregationMode.AGGREGATED):
         raise ValueError(
             "Elastic TP/PP switching is currently supported only for an aggregated worker"
         )
