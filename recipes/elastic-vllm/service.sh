@@ -5,9 +5,11 @@ set -o pipefail
 # This script lives at <workspace>/dynamo/recipes/elastic-vllm/service.sh
 # but is always executed from <workspace>/ (the dynamo project root's parent).
 # SCRIPT_DIR  — where this script resides (for recipe‑local resources like patches)
-# WORKSPACE_DIR — the CWD / execution root (for repo clones, etc.)
+# WORKSPACE_DIR — the workspace root (parent of the dynamo project), computed from
+#                  script location so it works regardless of CWD.
+#                  Script path: <WORKSPACE_DIR>/dynamo/recipes/elastic-vllm/service.sh
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKSPACE_DIR="$(pwd)"
+WORKSPACE_DIR="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 # ===================== Configuration Constants =====================
 export VLLM_PLUGINS=metax
@@ -35,13 +37,10 @@ BRANCH_DYNAMO="ElasticVllm"
 URL_DYNAMO="https://github.com/nhcf/dynamo.git"
 REPO_ELASTIC_VLLM_DEMO="ElasticVllm_demo"
 BRANCH_ELASTIC_VLLM_DEMO="codex/add-v0.22.0"
-# GitHub token for private repos — must be set via env var before running sync
+# GitHub token for private repos — MUST be set before running sync
 if [[ -z "${ELASTIC_VLLM_GITHUB_TOKEN:-}" ]]; then
-    echo "WARNING: ELASTIC_VLLM_GITHUB_TOKEN is not set. 'sync' will fail for private repos."
+    echo "WARNING: ELASTIC_VLLM_GITHUB_TOKEN is not set. 'sync' will fail with an error."
     echo "         Export it before running: export ELASTIC_VLLM_GITHUB_TOKEN=<your-token>"
-    URL_ELASTIC_VLLM_DEMO="https://Limixxx@github.com/yhp49/ElasticVllm_demo.git"
-else
-    URL_ELASTIC_VLLM_DEMO="https://Limixxx:${ELASTIC_VLLM_GITHUB_TOKEN}@github.com/yhp49/ElasticVllm_demo.git"
 fi
 
 # conda site‑packages env for sync copy
@@ -174,6 +173,17 @@ EOF
 # ---------- Sync subcommand ----------
 cmd_sync() {
     set -euo pipefail
+
+    # Pre-flight: private repo requires token, fail fast instead of hanging on git clone
+    if [[ -z "${ELASTIC_VLLM_GITHUB_TOKEN:-}" ]]; then
+        echo "ERROR: ELASTIC_VLLM_GITHUB_TOKEN is not set."
+        echo "       ElasticVllm_demo is a private repo and requires a GitHub token for cloning."
+        echo "       Export it before running sync:"
+        echo "         export ELASTIC_VLLM_GITHUB_TOKEN=<your-token>"
+        echo "       Then re-run: ./service.sh sync"
+        exit 1
+    fi
+
     function git_clone_or_pull {
         local repo_dir="$1"
         local branch="$2"
@@ -190,6 +200,7 @@ cmd_sync() {
     }
 
     local ws="${WORKSPACE_DIR}"
+    local URL_ELASTIC_VLLM_DEMO="https://Limixxx:${ELASTIC_VLLM_GITHUB_TOKEN}@github.com/yhp49/ElasticVllm_demo.git"
     git_clone_or_pull "${ws}/${REPO_DYNAMO}" "${BRANCH_DYNAMO}" "${URL_DYNAMO}"
     git_clone_or_pull "${ws}/${REPO_ELASTIC_VLLM_DEMO}" "${BRANCH_ELASTIC_VLLM_DEMO}" "${URL_ELASTIC_VLLM_DEMO}"
 
@@ -705,3 +716,4 @@ else
         echo "    (foreground mode)"
         exec "${CMD[@]}"
     fi
+fi
