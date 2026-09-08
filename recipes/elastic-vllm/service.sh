@@ -1,6 +1,14 @@
 #!/bin/bash
 set -o pipefail
 
+# ===================== Path Resolution =====================
+# This script lives at <workspace>/dynamo/recipes/elastic-vllm/service.sh
+# but is always executed from <workspace>/ (the dynamo project root's parent).
+# SCRIPT_DIR  — where this script resides (for recipe‑local resources like patches)
+# WORKSPACE_DIR — the CWD / execution root (for repo clones, etc.)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_DIR="$(pwd)"
+
 # ===================== Configuration Constants =====================
 export VLLM_PLUGINS=metax
 export VLLM_DISTRIBUTED_EXECUTOR_BACKEND=mp
@@ -14,19 +22,27 @@ CONTROL_PORT=9091
 SERVICE_URL="http://localhost:${FRONTEND_PORT}"
 CONTROL_URL="http://localhost:${CONTROL_PORT}"
 
-LOG_DIR="./logs"
+# Logs & PID files — kept inside the recipe directory so the workspace root stays clean
+LOG_DIR="${SCRIPT_DIR}/logs"
 LOG_FILE="${LOG_DIR}/backend.log"
 FRONTEND_LOG="${LOG_DIR}/frontend.log"
 PID_FILE="${LOG_DIR}/backend.pid"
 FRONTEND_PID_FILE="${LOG_DIR}/frontend.pid"
 
-# sync subcommand repo configuration
+# sync subcommand repo configuration (paths relative to WORKSPACE_DIR)
 REPO_DYNAMO="dynamo"
 BRANCH_DYNAMO="ElasticVllm"
 URL_DYNAMO="https://github.com/nhcf/dynamo.git"
 REPO_ELASTIC_VLLM_DEMO="ElasticVllm_demo"
 BRANCH_ELASTIC_VLLM_DEMO="codex/add-v0.22.0"
-URL_ELASTIC_VLLM_DEMO="https://Limixxx:mytoken@github.com/yhp49/ElasticVllm_demo.git"
+# GitHub token for private repos — must be set via env var before running sync
+if [[ -z "${ELASTIC_VLLM_GITHUB_TOKEN:-}" ]]; then
+    echo "WARNING: ELASTIC_VLLM_GITHUB_TOKEN is not set. 'sync' will fail for private repos."
+    echo "         Export it before running: export ELASTIC_VLLM_GITHUB_TOKEN=<your-token>"
+    URL_ELASTIC_VLLM_DEMO="https://Limixxx@github.com/yhp49/ElasticVllm_demo.git"
+else
+    URL_ELASTIC_VLLM_DEMO="https://Limixxx:${ELASTIC_VLLM_GITHUB_TOKEN}@github.com/yhp49/ElasticVllm_demo.git"
+fi
 
 # conda site‑packages env for sync copy
 export CONDA_SITE="/opt/conda/lib/python3.10/site-packages"
@@ -34,8 +50,8 @@ export VLLM_SITE="${CONDA_SITE}/vllm"
 export DYNAMO_SITE="${CONDA_SITE}/dynamo"
 export DYNAMO_VLLM_SITE="${DYNAMO_SITE}/vllm"
 
-# Local patch files directory (applied after sync to fix upstream gaps)
-LOCAL_PATCH_DIR="./patches"
+# Local patch files directory (lives next to this script, not in workspace root)
+LOCAL_PATCH_DIR="${SCRIPT_DIR}/patches"
 DISCOVERY_STORE="/tmp/dynamo_store_kv"
 
 # Default common launch arguments for dynamo / vllm
@@ -146,8 +162,12 @@ Port layout (vllm mode):
 
 Environment:
   VLLM_PLUGINS=${VLLM_PLUGINS}  (fixed, avoids metax/infinicore plugin conflict)
-  Log dir:  ${LOG_DIR}/
-  PID files: ${PID_FILE}, ${FRONTEND_PID_FILE}
+  ELASTIC_VLLM_GITHUB_TOKEN  (required for 'sync' with private repos)
+  Execution dir (CWD): ${WORKSPACE_DIR}/
+  Script dir:          ${SCRIPT_DIR}/
+  Log dir:             ${LOG_DIR}/
+  PID files:           ${PID_FILE}, ${FRONTEND_PID_FILE}
+  Patch dir:           ${LOCAL_PATCH_DIR}/
 EOF
 }
 
@@ -169,14 +189,15 @@ cmd_sync() {
         fi
     }
 
-    git_clone_or_pull "${REPO_DYNAMO}" "${BRANCH_DYNAMO}" "${URL_DYNAMO}"
-    git_clone_or_pull "${REPO_ELASTIC_VLLM_DEMO}" "${BRANCH_ELASTIC_VLLM_DEMO}" "${URL_ELASTIC_VLLM_DEMO}"
+    local ws="${WORKSPACE_DIR}"
+    git_clone_or_pull "${ws}/${REPO_DYNAMO}" "${BRANCH_DYNAMO}" "${URL_DYNAMO}"
+    git_clone_or_pull "${ws}/${REPO_ELASTIC_VLLM_DEMO}" "${BRANCH_ELASTIC_VLLM_DEMO}" "${URL_ELASTIC_VLLM_DEMO}"
 
-    echo -e "\n>>> copy ElasticVllm_demo/vllm to ${VLLM_SITE}"
-    cp -rf "./${REPO_ELASTIC_VLLM_DEMO}/vllm/"* "${VLLM_SITE}/"
+    echo -e "\n>>> copy ${REPO_ELASTIC_VLLM_DEMO}/vllm to ${VLLM_SITE}"
+    cp -rf "${ws}/${REPO_ELASTIC_VLLM_DEMO}/vllm/"* "${VLLM_SITE}/"
 
-    echo -e "\n>>> copy dynamo/components/src/dynamo/vllm to ${DYNAMO_VLLM_SITE}"
-    cp -rf "./${REPO_DYNAMO}/components/src/dynamo/vllm/"* "${DYNAMO_VLLM_SITE}/"
+    echo -e "\n>>> copy ${REPO_DYNAMO}/components/src/dynamo/vllm to ${DYNAMO_VLLM_SITE}"
+    cp -rf "${ws}/${REPO_DYNAMO}/components/src/dynamo/vllm/"* "${DYNAMO_VLLM_SITE}/"
 
     echo -e "\n>>> sync completed!"
 
@@ -684,4 +705,3 @@ else
         echo "    (foreground mode)"
         exec "${CMD[@]}"
     fi
-fi
