@@ -122,7 +122,8 @@ ll/
 ├── test/                      # 测试脚本
 │   ├── test_offline_switch.py  # 离线切换演示
 │   └── test_online_switch.py   # 在线切换验证
-│
+
+workspace/                       # 工作目录，包含所有代码
 ├── ElasticVllm_demo/          # ⛔ 只读 — vLLM 弹性 Fork
 │   └── vllm/
 │       ├── v1/
@@ -198,7 +199,7 @@ ll/
 ### 5.1 代码同步
 
 ```bash
-./service.sh sync
+service.sh sync
 ```
 
 执行流程：
@@ -214,20 +215,20 @@ ll/
 
 ```bash
 # 前台启动 vLLM 原生模式
-./service.sh vllm
+service.sh vllm
 
 # 前台启动 Dynamo 模式（自动启动 backend + frontend）
-./service.sh dynamo
+service.sh dynamo
 
 # 后台启动 Dynamo 模式（日志写入 logs/，PID 写入 logs/）
-./service.sh dynamo --background --gpu-memory-utilization 0.4
+service.sh dynamo --background --gpu-memory-utilization 0.4
 
 # 后台启动 vLLM 模式
-./service.sh vllm --background --gpu-memory-utilization 0.4
+service.sh vllm --background --gpu-memory-utilization 0.4
 
 # 覆盖默认参数
-./service.sh vllm --tensor_parallel_size 2 --gpu-memory-utilization 0.7
-./service.sh dynamo --model /mnt/nanhuinfer/models/Qwen3-1.5B
+service.sh vllm --tensor_parallel_size 2 --gpu-memory-utilization 0.7
+service.sh dynamo --model /mnt/nanhuinfer/models/Qwen3-1.5B
 ```
 
 **Dynamo 模式端口规划：**
@@ -247,15 +248,15 @@ ll/
 
 ```bash
 # 健康检查（检查前端 + 控制面）
-./service.sh health
+service.sh health
 
 # 查询当前并行策略
-./service.sh status
+service.sh status
 # → POST http://localhost:9091/engine/control/parallel_strategy_state (dynamo)
 # → POST http://localhost:9090/is_switching_parallel_strategy (vllm)
 
 # 触发切换
-./service.sh switch \
+service.sh switch \
     --new_world_size 4 \
     --target_tensor_parallel_size 2 \
     --target_pipeline_parallel_size 2 \
@@ -268,7 +269,7 @@ ll/
 ### 5.4 停止服务
 
 ```bash
-./service.sh stop
+service.sh stop
 ```
 
 停止时会依次：
@@ -387,7 +388,7 @@ AsyncLLM.switch_parallel_strategy(request)
 
 - **`ElasticVllm_demo/`** — 只读，禁止任何修改
 - **`dynamo/`** — 只读，禁止任何修改
-- 如需修改这两个目录中的代码，应向对应的上游仓库提交 PR，再通过 `./service.sh sync` 同步
+- 如需修改这两个目录中的代码，应向对应的上游仓库提交 PR，再通过 `service.sh sync` 同步
 
 ### 8.2 可修改的文件
 
@@ -419,7 +420,7 @@ AsyncLLM.switch_parallel_strategy(request)
 
 ```bash
 # 同步上游代码到运行环��（自动应用 patches/ 目录补丁）
-./service.sh sync
+service.sh sync
 
 # 验证 vllm 版本
 pip show vllm
@@ -438,21 +439,21 @@ ls patches/*.patch
 
 ```bash
 # 后台启动 Dynamo（注意：Dynamo 模式切换需要 --enforce-eager）
-./service.sh dynamo --background --gpu-memory-utilization 0.4 --enforce-eager
+service.sh dynamo --background --gpu-memory-utilization 0.4 --enforce-eager
 tail -f logs/backend.log
 
 # 后台启动 vLLM
-./service.sh vllm --background --gpu-memory-utilization 0.4 --enforce-eager
+service.sh vllm --background --gpu-memory-utilization 0.4 --enforce-eager
 tail -f logs/backend.log
 
 # 健康检查
-./service.sh health
+service.sh health
 
 # 查询状态
-./service.sh status
+service.sh status
 
 # 停止
-./service.sh stop
+service.sh stop
 ```
 
 ### 9.3 在线切换验证
