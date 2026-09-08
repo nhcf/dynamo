@@ -25,7 +25,7 @@ SERVICE_URL="http://localhost:${FRONTEND_PORT}"
 CONTROL_URL="http://localhost:${CONTROL_PORT}"
 
 # Logs & PID files — kept inside the recipe directory so the workspace root stays clean
-LOG_DIR="${SCRIPT_DIR}/logs"
+LOG_DIR="${WORKSPACE_DIR}/logs"
 LOG_FILE="${LOG_DIR}/backend.log"
 FRONTEND_LOG="${LOG_DIR}/frontend.log"
 PID_FILE="${LOG_DIR}/backend.pid"
