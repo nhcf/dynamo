@@ -66,13 +66,6 @@ COMMON_ARGS=(
     --enforce-eager
 )
 
-# Default switch subcommand payload fields, keep json key naming consistent
-SWITCH_new_world_size=4
-SWITCH_target_tensor_parallel_size=1
-SWITCH_target_pipeline_parallel_size=4
-SWITCH_target_num_blocks=null
-SWITCH_request_handling="wait"
-SWITCH_admission_handling="queue"
 
 # ===================== Helper Functions =====================
 
@@ -84,8 +77,6 @@ Commands:
     sync                     Git clone/pull repos & sync source files to conda site‑packages
     dynamo                   Start Dynamo service (backend + frontend)
     vllm                     Start native vllm openai api server
-    status                   Query current parallel strategy state
-    switch                   Trigger parallel‑strategy switch request
     stop                     Stop all running services (frontend + backend + residual processes)
     health                   Check service health endpoints
 
@@ -117,14 +108,6 @@ Global Options (valid for dynamo / vllm):
       $0 vllm --tensor_parallel_size 2 --gpu-memory-utilization 0.7
       $0 dynamo --model /mnt/nanhuinfer/models/Qwen3-1.5B
 
-[ switch subcommand specific arguments (json field name 1:1 mapping) ]
-    --new_world_size                 default=4
-    --target_tensor_parallel_size    default=1
-    --target_pipeline_parallel_size  default=4
-    --target_num_blocks              default=null
-    --request_handling               default="wait"
-    --admission_handling             default="queue"
-
 Examples:
     # Sync source code
     $0 sync
@@ -134,17 +117,6 @@ Examples:
 
     # Background start dynamo, override model and gpu‑memory‑utilization
     $0 dynamo --background --model /mnt/nanhuinfer/models/Qwen3-1.5B --gpu-memory-utilization 0.4
-
-    # Query parallel strategy state
-    $0 status
-
-    # Trigger switch with custom parameters
-    $0 switch \\
-        --new_world_size 4 \\
-        --target_tensor_parallel_size 2 \\
-        --target_pipeline_parallel_size 2 \\
-        --request_handling wait \\
-        --admission_handling queue
 
     # Stop all services
     $0 stop
@@ -296,50 +268,6 @@ cmd_stop() {
     kill_all_services
 }
 
-# ---------- Status subcommand ----------
-cmd_status() {
-    if ! command -v curl &> /dev/null; then
-        echo "ERROR: curl command not found"
-        exit 1
-    fi
-
-    # Try control plane first (dynamo mode), then frontend (vllm mode)
-    local url="${CONTROL_URL}/engine/control/parallel_strategy_state"
-    local resp
-    local http_code
-    http_code=$(curl -s -o /tmp/dynamo_status_resp -w "%{http_code}" -X POST "${url}" \
-        -H "Content-Type: application/json" -d '{}' 2>/dev/null)
-    resp=$(cat /tmp/dynamo_status_resp 2>/dev/null)
-    rm -f /tmp/dynamo_status_resp
-
-    if [[ -n "${resp}" ]] && echo "${resp}" | jq -e '.status' &>/dev/null 2>&1; then
-        echo ">> [Dynamo Control Plane] ${url}"
-        echo "${resp}" | jq .
-        return 0
-    fi
-
-    # If control plane returns 503, backend is still initializing
-    if [[ "${http_code}" == "503" ]]; then
-        echo "⚠️  Control plane returned 503 — backend is still initializing. Please wait."
-        echo "   Check progress: tail -f ${LOG_FILE}"
-        return 1
-    fi
-
-    # Fallback: try vllm native endpoint
-    url="${SERVICE_URL}/is_switching_parallel_strategy"
-    resp=$(curl -s -X GET "${url}" 2>/dev/null)
-    if [[ -n "${resp}" ]]; then
-        echo ">> [vLLM Native] ${url}"
-        echo "${resp}" | jq . 2>/dev/null || echo "${resp}"
-        return 0
-    fi
-
-    echo "ERROR: No service endpoint reachable. Is the service running?"
-    echo "  Tried: ${CONTROL_URL}/engine/control/parallel_strategy_state"
-    echo "  Tried: ${SERVICE_URL}/is_switching_parallel_strategy"
-    exit 1
-}
-
 # ---------- Health subcommand ----------
 cmd_health() {
     if ! command -v curl &> /dev/null; then
@@ -380,86 +308,6 @@ cmd_health() {
     fi
 }
 
-# ---------- Switch subcommand ----------
-cmd_switch() {
-    if ! command -v curl &> /dev/null; then
-        echo "ERROR: curl command not found"
-        exit 1
-    fi
-
-    json_payload=$(cat <<JSON
-{
-  "new_world_size": ${SWITCH_new_world_size},
-  "target_tensor_parallel_size": ${SWITCH_target_tensor_parallel_size},
-  "target_pipeline_parallel_size": ${SWITCH_target_pipeline_parallel_size},
-  "target_num_blocks": ${SWITCH_target_num_blocks},
-  "request_handling": "${SWITCH_request_handling}",
-  "admission_handling": "${SWITCH_admission_handling}"
-}
-JSON
-)
-
-    # Try control plane first (dynamo mode), then vllm native
-    local url="${CONTROL_URL}/engine/control/switch_parallel_strategy"
-    local resp
-    resp=$(curl -s -X POST "${url}" \
-        -H "Content-Type: application/json" \
-        -d "${json_payload}" 2>/dev/null)
-
-    if [[ -n "${resp}" ]] && echo "${resp}" | jq -e '.status' &>/dev/null 2>&1; then
-        echo ">> [Dynamo Control Plane] ${url}"
-        echo ">> Payload:"
-        echo "${json_payload}" | jq .
-        echo ">> Response:"
-        echo "${resp}" | jq .
-        return 0
-    fi
-
-    # Fallback: vllm native
-    url="${SERVICE_URL}/switch_parallel_strategy"
-    resp=$(curl -s -X POST "${url}" \
-        -H "Content-Type: application/json" \
-        -d "${json_payload}" 2>/dev/null)
-
-    if [[ -n "${resp}" ]]; then
-        echo ">> [vLLM Native] ${url}"
-        echo ">> Payload:"
-        echo "${json_payload}" | jq .
-        echo ">> Response:"
-        echo "${resp}" | jq . 2>/dev/null || echo "${resp}"
-        return 0
-    fi
-
-    echo "ERROR: No service endpoint reachable for switch. Is the service running?"
-    exit 1
-}
-
-# Parse switch subcommand arguments, argument name exactly match api json key
-parse_switch_overrides() {
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --new_world_size)
-                SWITCH_new_world_size="$2"; shift 2;;
-            --target_tensor_parallel_size)
-                SWITCH_target_tensor_parallel_size="$2"; shift 2;;
-            --target_pipeline_parallel_size)
-                SWITCH_target_pipeline_parallel_size="$2"; shift 2;;
-            --target_num_blocks)
-                SWITCH_target_num_blocks="$2"; shift 2;;
-            --request_handling)
-                SWITCH_request_handling="$2"; shift 2;;
-            --admission_handling)
-                SWITCH_admission_handling="$2"; shift 2;;
-            *)
-                echo "ERROR: unknown switch argument: $1"
-                usage
-                exit 1;;
-        esac
-    done
-    cmd_switch
-    exit 0
-}
-
 # ===================== Main Argument Parsing =====================
 BACKGROUND=0
 MODE=""
@@ -484,17 +332,9 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
 
-        status)
-            cmd_status
-            exit 0
-            ;;
         health)
             cmd_health
             exit 0
-            ;;
-        switch)
-            shift
-            parse_switch_overrides "$@"
             ;;
         dynamo|vllm)
             MODE="$1"
@@ -520,7 +360,7 @@ done
 
 # Validate start mode
 if [[ "${MODE}" != "dynamo" && "${MODE}" != "vllm" ]]; then
-    echo "ERROR: Must specify command dynamo / vllm, or subcommand sync / status / switch / health / stop"
+    echo "ERROR: Must specify command dynamo / vllm, or subcommand sync / health / stop"
     usage
     exit 1
 fi
