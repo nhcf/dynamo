@@ -226,9 +226,15 @@ service.sh dynamo --background --gpu-memory-utilization 0.4
 # 后台启动 vLLM 模式
 service.sh vllm --background --gpu-memory-utilization 0.4
 
-# 覆盖默认参数
+# 覆盖默认参数（所有标准 vllm 参数均可覆盖，后值覆盖前值）
 service.sh vllm --tensor_parallel_size 2 --gpu-memory-utilization 0.7
 service.sh dynamo --model /mnt/nanhuinfer/models/Qwen3-1.5B
+
+# 覆盖 Dynamo 特有参数（discovery-backend / disaggregation-mode）
+service.sh dynamo --discovery-backend etcd --disaggregation-mode disagg
+
+# 覆盖 vLLM 模式监听地址
+service.sh vllm --host 0.0.0.0 --port 8080
 ```
 
 **Dynamo 模式端口规划：**
@@ -242,28 +248,46 @@ service.sh dynamo --model /mnt/nanhuinfer/models/Qwen3-1.5B
 
 > ⚠️ 关键环境变量：`VLLM_PLUGINS=metax`（已内置到 service.sh），避免 metax/infinicore 插件冲突。`VLLM_SERVER_DEV_MODE=1`（已内置），启用 `/switch_parallel_strategy` 和 `/is_switching_parallel_strategy` API 路由。Dynamo 模式启动时还会自动清理 `/tmp/dynamo_store_kv`（discovery store），防止重启时状态残留。
 >
-> ⚠️ 在线切换必须加 `--enforce-eager` 参数启动服务，否则切换时 Worker 会因 CUDA Graph 编译卡住导致 RPC 超时。
+> ⚠️ `--enforce-eager` 已纳入 COMMON_ARGS 默认参数，无需手动指定。在线切换必须启用该参数，否则切换时 Worker 会因 CUDA Graph 编译卡住导致 RPC 超时。
 
 ### 5.3 状态查询与切换
 
 ```bash
 # 健康检查（检查前端 + 控制面）
 service.sh health
+```
 
-# 查询当前并行策略
-service.sh status
-# → POST http://localhost:9091/engine/control/parallel_strategy_state (dynamo)
-# → POST http://localhost:9090/is_switching_parallel_strategy (vllm)
+查询并行策略状态和触发切换需通过 HTTP API 直接调用（service.sh 未内置 status/switch 子命令）：
 
-# 触发切换
-service.sh switch \
-    --new_world_size 4 \
-    --target_tensor_parallel_size 2 \
-    --target_pipeline_parallel_size 2 \
-    --request_handling wait \
-    --admission_handling queue
-# → POST http://localhost:9091/engine/control/switch_parallel_strategy (dynamo)
-# → POST http://localhost:9090/switch_parallel_strategy (vllm)
+```bash
+# 查询当前并行策略状态（Dynamo 模式）
+curl -s -X POST http://localhost:9091/engine/control/parallel_strategy_state \
+  -H "Content-Type: application/json" -d '{}' | jq .
+
+# 查询是否正在切换（vLLM 原生模式）
+curl -s http://localhost:9090/is_switching_parallel_strategy | jq .
+
+# 触发切换（Dynamo 模式）
+curl -s -X POST http://localhost:9091/engine/control/switch_parallel_strategy \
+  -H "Content-Type: application/json" \
+  -d '{
+    "new_world_size": 4,
+    "target_tensor_parallel_size": 2,
+    "target_pipeline_parallel_size": 2,
+    "request_handling": "wait",
+    "admission_handling": "queue"
+  }' | jq .
+
+# 触发切换（vLLM 原生模式）
+curl -s -X POST http://localhost:9090/switch_parallel_strategy \
+  -H "Content-Type: application/json" \
+  -d '{
+    "new_world_size": 4,
+    "target_tensor_parallel_size": 2,
+    "target_pipeline_parallel_size": 2,
+    "request_handling": "wait",
+    "admission_handling": "queue"
+  }' | jq .
 ```
 
 ### 5.4 停止服务
@@ -289,8 +313,10 @@ service.sh stop
 | PP | 1 |
 | 预构建策略 | `4x1,2x2,1x4` |
 | 分布式后端 | `mp`（多进程） |
+| enforce-eager | `True`（已纳入默认参数） |
 | Dynamo discovery | `file` |
-| Dynamo 模式 | `agg`（聚合） |
+| Dynamo disaggregation | `agg`（聚合） |
+| vLLM 监听地址 | `0.0.0.0:9090`（可通过 `--host`/`--port` 覆盖） |
 
 ---
 
@@ -403,7 +429,7 @@ AsyncLLM.switch_parallel_strategy(request)
 - `decode_context_parallel_size` 和 `prefill_context_parallel_size` 须为 1
 - Elastic EP 与 TP/PP 切换**互斥**：`enable_elastic_ep=True` 时不能做 TP/PP 切换
 - 切换失败后引擎进入不可恢复状态，必须**重启服务**
-- 在线模式切换需要 `VLLM_SERVER_DEV_MODE=1` 环境变量
+- 在线模式切换需要 `VLLM_SERVER_DEV_MODE=1` 环境变量（已内置到 service.sh）
 
 ### 8.4 环境特殊说明
 
@@ -438,19 +464,16 @@ ls patches/*.patch
 ### 9.2 服务启停
 
 ```bash
-# 后台启动 Dynamo（注意：Dynamo 模式切换需要 --enforce-eager）
-service.sh dynamo --background --gpu-memory-utilization 0.4 --enforce-eager
+# 后台启动 Dynamo（--enforce-eager 已为默认参数）
+service.sh dynamo --background --gpu-memory-utilization 0.4
 tail -f logs/backend.log
 
-# 后台启动 vLLM
-service.sh vllm --background --gpu-memory-utilization 0.4 --enforce-eager
+# 后台启动 vLLM（--enforce-eager 已为默认参数）
+service.sh vllm --background --gpu-memory-utilization 0.4
 tail -f logs/backend.log
 
 # 健康检查
 service.sh health
-
-# 查询状态
-service.sh status
 
 # 停止
 service.sh stop
@@ -470,12 +493,20 @@ python3 test/test_online_switch.py
 4. 切换 2×2 → 1×4 → 推理
 5. 切换 1×4 → 4×1 → 推理
 
-### 9.3 手动 API 调用
+### 9.4 手动 API 调用
 
 ```bash
+# 推理请求（vLLM 或 Dynamo 模式均可）
+curl -s http://localhost:9090/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"/mnt/nanhuinfer/models/Qwen3-0.6B/","messages":[{"role":"user","content":"Hi"}]}' | jq .
+
 # 查询并行策略状态（Dynamo 模式）
 curl -s -X POST http://localhost:9091/engine/control/parallel_strategy_state \
   -H "Content-Type: application/json" -d '{}' | jq .
+
+# 查询是否正在切换（vLLM 原生模式）
+curl -s http://localhost:9090/is_switching_parallel_strategy | jq .
 
 # 触发切换（Dynamo 模式）
 curl -s -X POST http://localhost:9091/engine/control/switch_parallel_strategy \
@@ -488,10 +519,16 @@ curl -s -X POST http://localhost:9091/engine/control/switch_parallel_strategy \
     "admission_handling": "queue"
   }' | jq .
 
-# 推理请求
-curl -s http://localhost:9090/v1/chat/completions \
+# 触发切换（vLLM 原生模式）
+curl -s -X POST http://localhost:9090/switch_parallel_strategy \
   -H "Content-Type: application/json" \
-  -d '{"model":"/mnt/nanhuinfer/models/Qwen3-0.6B/","messages":[{"role":"user","content":"Hi"}]}' | jq .
+  -d '{
+    "new_world_size": 4,
+    "target_tensor_parallel_size": 2,
+    "target_pipeline_parallel_size": 2,
+    "request_handling": "wait",
+    "admission_handling": "queue"
+  }' | jq .
 ```
 
 ---
