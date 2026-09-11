@@ -1,0 +1,25 @@
+--- /opt/conda/lib/python3.10/site-packages/vllm/model_executor/layers/fla/ops/chunk_delta_h.py
++++ /opt/conda/lib/python3.10/site-packages/vllm/model_executor/layers/fla/ops/chunk_delta_h.py
+@@ -7,6 +7,8 @@
+ # the following copyright notice:
+ # Copyright (c) 2023-2025, Songlin Yang, Yu Zhang
+ # ruff: noqa: E501
++
++import os
+
+ import torch
+
+@@ -33,7 +35,12 @@
+     configs=[
+         triton.Config({"BV": BV}, num_warps=num_warps, num_stages=num_stages)
+         for num_warps in [2, 4]
+-        for num_stages in [2, 3, 4]
++        # MetaX C550 needs one pipeline stage to fit its 64 KiB shared memory.
++        # Opt in from the InfiniCore launcher; preserve other deployments.
++        for num_stages in (
++            [1] if os.environ.get("VLLM_INFINICORE_GDN_SINGLE_STAGE") == "1"
++            else [2, 3, 4]
++        )
+         for BV in [32, 64]
+     ],
+     key=["H", "K", "V", "BT"],
