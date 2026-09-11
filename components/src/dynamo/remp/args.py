@@ -54,9 +54,6 @@ class Config(DynamoRuntimeConfig, DynamoVllmConfig):
     # frontend's configuration.
     router_advertisement: Optional[WorkerRouterConfig] = None
 
-    # GMS configuration
-    gms_shadow_mode: bool = False
-
     # mirror vLLM
     model: str
     served_model_name: Optional[str] = None
@@ -178,28 +175,6 @@ def cross_validate_config(
             engine_config.stream_interval,
         )
 
-    # Validate --gms-shadow-mode requires --load-format gms
-    if dynamo_config.gms_shadow_mode and engine_config.load_format != "gms":
-        raise ValueError(
-            "--gms-shadow-mode requires --load-format gms. "
-            "Shadow mode depends on GMS for VA-stable weight sharing."
-        )
-
-    if dynamo_config.embedding_worker_processes > 1:
-        if engine_config.data_parallel_size != 1:
-            raise ValueError(
-                "--embedding-worker-processes greater than 1 currently requires "
-                "--data-parallel-size=1. The embedding process pool shares one "
-                "local EngineCore."
-            )
-        if engine_config.enable_lora:
-            raise ValueError(
-                "--embedding-worker-processes greater than 1 cannot currently be "
-                "combined with --enable-lora. Runtime LoRA state is not "
-                "synchronized across embedding endpoint processes."
-            )
-
-
 def _validate_aggregated_tp_pp_switch(
     dynamo_config: Config, engine_config: AsyncEngineArgs
 ) -> None:
@@ -272,12 +247,8 @@ def update_dynamo_config_with_engine(
     # Capture user-provided --endpoint before defaults overwrite it
     user_endpoint = dynamo_config.endpoint
 
-    # Multi-modal related component/endpoint resolution
-    if dynamo_config.disaggregation_mode == DisaggregationMode.ENCODE:
-        dynamo_config.component = "encode"
-        dynamo_config.endpoint = "generate"
-    # Standard component/endpoint resolution
-    elif dynamo_config.disaggregation_mode == DisaggregationMode.PREFILL:
+    # Component/endpoint resolution
+    if dynamo_config.disaggregation_mode == DisaggregationMode.PREFILL:
         dynamo_config.component = "prefill"
         dynamo_config.endpoint = "generate"
     else:
@@ -328,14 +299,8 @@ def update_dynamo_config_with_engine(
 
 def _unsupported_fpm_trace_role(dynamo_config: Config) -> Optional[str]:
     """Return the worker role when trace-based FPM activation is unsupported."""
-    if dynamo_config.embedding_worker:
-        return "embedding"
-    if dynamo_config.classify_worker:
-        return "classify"
     if dynamo_config.headless:
         return "headless"
-    if dynamo_config.disaggregation_mode == DisaggregationMode.ENCODE:
-        return "multimodal encode"
     return None
 
 
@@ -364,23 +329,11 @@ def update_engine_config_with_dynamo(
 ) -> None:
     """Update engine config based on Dynamo config."""
     if engine_config.enable_prefix_caching is None:
-        if dynamo_config.embedding_worker or dynamo_config.classify_worker:
-            # Pooling engines never decode, so prefix caching buys nothing —
-            # and force-enabling it crashes models vLLM itself would leave it
-            # off for (e.g. ModernBERT's hybrid local/global attention dies
-            # with "HybridKVCacheCoordinator requires at least two attention
-            # groups"). Match bare `vllm serve`, which does not enable prefix
-            # caching for pooling runners.
-            logger.debug(
-                "Pooling-family worker: defaulting --enable-prefix-caching to False"
-            )
-            engine_config.enable_prefix_caching = False
-        else:
-            logger.debug(
-                "--enable-prefix-caching or --no-enable-prefix-caching not specified. "
-                "Defaulting to True (vLLM v1 default behavior)"
-            )
-            engine_config.enable_prefix_caching = True
+        logger.debug(
+            "--enable-prefix-caching or --no-enable-prefix-caching not specified. "
+            "Defaulting to True (vLLM v1 default behavior)"
+        )
+        engine_config.enable_prefix_caching = True
 
     if getattr(engine_config, "block_size", None) is None:
         logger.debug(
@@ -437,11 +390,6 @@ def update_engine_config_with_dynamo(
             )
 
     if dynamo_config.benchmark_mode is not None:
-        if dynamo_config.enable_multimodal:
-            logger.warning(
-                "--benchmark-mode is not supported for multimodal workers. "
-                "Benchmark data will be collected but not served via endpoint."
-            )
         existing_cls = getattr(engine_config, "scheduler_cls", None)
         if existing_cls is None and not fpm_enabled:
             defaults[
@@ -529,18 +477,6 @@ def update_engine_config_with_dynamo(
             logger.debug(
                 f" Skipping engine_args.{key} (not available in this vLLM version)"
             )
-
-    # DYN_GMS_USE_V1 is operator-injected (env-only, like DYN_SNAPSHOT_CONTROL_DIR).
-    if os.environ.get("DYN_GMS_USE_V1") == "true":
-        if getattr(engine_config, "load_format", None) == "gms":
-            raise ValueError(
-                "DYN_GMS_USE_V1=true cannot be combined with --load-format gms"
-            )
-        engine_config.worker_cls = (
-            "gpu_memory_service.v1.integrations.vllm.worker.GMSV1Worker"
-        )
-        engine_config.enable_sleep_mode = True
-
 
 def create_kv_events_config(
     engine_config: AsyncEngineArgs,

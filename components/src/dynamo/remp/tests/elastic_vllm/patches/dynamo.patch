@@ -1,3 +1,13 @@
+--- a/dynamo/common/utils/runtime.py
++++ b/dynamo/common/utils/runtime.py
+@@ -47,6 +47,7 @@
+     request_plane: str,
+     event_plane: Optional[str] = None,
+     use_kv_events: Optional[bool] = None,
++    response_plane: str = "tcp",
+ ) -> Tuple[DistributedRuntime, asyncio.AbstractEventLoop]:
+     """Create a DistributedRuntime.
+ 
 --- a/dynamo/vllm/main.py	2026-09-11 10:31:29.503740440 +0800
 +++ b/dynamo/vllm/main.py	2026-09-11 11:20:41.658114982 +0800
 @@ -226,7 +226,7 @@

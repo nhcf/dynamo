@@ -1,0 +1,66 @@
+--- a/vllm/exceptions.py	2026-09-08 17:19:51.000000000 +0800
++++ b/vllm/exceptions.py	2026-09-11 11:20:41.661114887 +0800
+@@ -36,7 +36,19 @@
+         return f"{base} ({', '.join(extras)})" if extras else base
+ 
+ 
+-class VLLMNotFoundError(Exception):
++class VLLMClientError(Exception):
++    """vLLM-specific client error (4xx class)."""
++
++    pass
++
++
++class VLLMUnprocessableEntityError(VLLMClientError):
++    """vLLM-specific unprocessable entity error (422)."""
++
++    pass
++
++
++class VLLMNotFoundError(VLLMClientError):
+     """vLLM-specific NotFoundError"""
+ 
+     pass
+--- a/vllm/model_executor/layers/fla/ops/chunk_delta_h.py	2026-09-08 17:19:51.000000000 +0800
++++ b/vllm/model_executor/layers/fla/ops/chunk_delta_h.py	2026-09-11 11:20:41.653115140 +0800
+@@ -7,6 +7,7 @@
+ # the following copyright notice:
+ # Copyright (c) 2023-2025, Songlin Yang, Yu Zhang
+ # ruff: noqa: E501
++import os
+ 
+ import torch
+ 
+@@ -33,7 +34,10 @@
+     configs=[
+         triton.Config({"BV": BV}, num_warps=num_warps, num_stages=num_stages)
+         for num_warps in [2, 4]
+-        for num_stages in [2, 3, 4]
++        for num_stages in (
++            [1] if os.environ.get("VLLM_INFINICORE_GDN_SINGLE_STAGE") == "1"
++            else [2, 3, 4]
++        )
+         for BV in [32, 64]
+     ],
+     key=["H", "K", "V", "BT"],
+--- a/vllm/v1/engine/async_llm.py	2026-09-08 17:19:51.000000000 +0800
++++ b/vllm/v1/engine/async_llm.py	2026-09-11 11:37:10.374749259 +0800
+@@ -856,6 +856,18 @@
+             self._parallel_strategy_switch_retry_after = retry_after
+             self._parallel_strategy_switch_admission_event.clear()
+             await self.engine_core.switch_parallel_strategy_async(request)
++            # Mirror the parallel config update that EngineCore performs so that
++            # callers (e.g. Dynamo handler _parallel_strategy_state) see the new
++            # TP/PP values without a separate round-trip.
++            self.vllm_config.parallel_config.tensor_parallel_size = (
++                request.target_tensor_parallel_size
++            )
++            self.vllm_config.parallel_config.pipeline_parallel_size = (
++                request.target_pipeline_parallel_size
++            )
++            self.vllm_config.parallel_config.world_size = request.new_world_size
++            if hasattr(self.vllm_config.parallel_config, "__post_init__"):
++                self.vllm_config.parallel_config.__post_init__()
+         finally:
+             self._parallel_strategy_switch_in_progress = False
+             self._parallel_strategy_switch_admission_handling = "queue"

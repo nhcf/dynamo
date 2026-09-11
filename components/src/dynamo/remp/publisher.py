@@ -147,19 +147,12 @@ class StatLoggerFactory:
         self,
         endpoint: Optional[Endpoint],
         component_gauges: Optional[LLMBackendMetrics] = None,
-        embedding_worker: bool = False,
     ) -> None:
         self.endpoint = endpoint
         self.component_gauges = component_gauges
-        self.embedding_worker = embedding_worker
         self.created_loggers: dict[int, DynamoStatLoggerPublisher] = {}
 
     def create_stat_logger(self, dp_rank: int) -> StatLoggerBase:
-        # Embedding workers have no KV cache and no scheduler stats worth
-        # publishing -- short-circuit before constructing the chat-shaped
-        # WorkerMetricsPublisher and skipping the component_gauges check.
-        if self.embedding_worker:
-            return NoopStatLogger()
         # component_gauges must be set by setup_vllm_engine() before vLLM
         # calls create_stat_logger() during engine initialization.
         assert (

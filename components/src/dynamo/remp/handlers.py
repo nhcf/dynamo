@@ -4,7 +4,6 @@
 import asyncio
 import base64
 import functools
-import importlib
 import inspect
 import logging
 import math
@@ -49,14 +48,7 @@ from vllm.v1.engine.exceptions import EngineDeadError
 from dynamo._core import Context
 from dynamo.common.backend import logprobs as _shared_logprobs
 from dynamo.common.lora.manager import LoRAInfo, get_lora_manager
-from dynamo.common.memory.multimodal_embedding_cache_manager import (
-    MultimodalEmbeddingCacheManager,
-)
-from dynamo.common.multimodal.embedding_transfer import (
-    LocalEmbeddingReceiver,
-    NixlReadEmbeddingReceiver,
-    NixlWriteEmbeddingReceiver,
-)
+
 from dynamo.common.rl import (
     RLAdminValidationError,
     RLRouteRegistry,
@@ -92,23 +84,11 @@ from dynamo.vllm.kv_hints import publish_kv_hint_capabilities
 from .args import Config
 from .cache_info import get_configured_kv_event_block_size
 from .capacity import publish_vllm_token_budget
-from .constants import DisaggregationMode, EmbeddingTransferMode
+from .constants import DisaggregationMode
 from .dp_topology import get_dp_range_for_worker
 from .engine_monitor import VllmEngineMonitor
 from .lora_state import LoRAState
-from .multimodal_utils.custom_encoder import (
-    AsyncVisionEncoder,
-    CustomEncoderAdapter,
-    VisionEncoderBackend,
-    create_custom_encoder_adapter,
-)
-from .multimodal_utils.prefill_worker_utils import MultiModalEmbeddingLoader
-from .multimodal_utils.request_processor import (
-    IMAGE_URL_KEY,
-    URL_VARIANT_KEY,
-    MissingMultimodalHandoffError,
-    VllmMultimodalRequestProcessor,
-)
+
 from .state_agent import state_agent_settings
 
 configure_dynamo_logging()
@@ -359,11 +339,8 @@ class VllmEnginePauseController:
     def __init__(
         self,
         engine_client: Any,
-        *,
-        prepare_for_process_checkpoint: bool = False,
     ):
         self._engine_client = engine_client
-        self._prepare_for_process_checkpoint = prepare_for_process_checkpoint
         self._is_paused = False
         self._generation_paused = False
 
@@ -396,11 +373,6 @@ class VllmEnginePauseController:
                     "Failed to resume generation after native vLLM sleep failure"
                 )
             raise
-        # Prepare before recording the pause: a failed prepare must not leave
-        # the controller claiming paused, or the next resume would issue a
-        # checkpoint_restore with no matching prepare.
-        if self._prepare_for_process_checkpoint:
-            await self._engine_client.checkpoint_prepare()
         self._is_paused = True
         return True
 
@@ -409,8 +381,6 @@ class VllmEnginePauseController:
             return False
 
         if self._is_paused:
-            if self._prepare_for_process_checkpoint:
-                await self._engine_client.checkpoint_restore()
             if tags is None:
                 await self._engine_client.wake_up()
             else:
@@ -1124,7 +1094,7 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
     - `_lora_enabled()` (method): Returns bool indicating if LoRA is enabled
 
     These are required by `_resolve_lora_request()` and other LoRA methods.
-    The concrete decode, prefill, and Omni handlers provide examples.
+    The concrete decode and prefill handlers provide examples.
     """
 
     _benchmark_results: Optional[dict] = None
@@ -1151,12 +1121,10 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
         default_sampling_params,
         model_max_len: int | None = None,
         model_config: ModelConfig | None = None,
-        enable_multimodal: bool = False,
         generate_endpoint=None,
         use_vllm_tokenizer: bool = False,
         shutdown_event: asyncio.Event | None = None,
         enable_frontend_decoding: bool = False,
-        encode_worker_client: Optional[Client] = None,
     ):
         self.runtime = runtime
         self.engine_client = engine
@@ -1187,14 +1155,6 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
         self._paused: bool = False
         self._weight_version: str = "initial"
 
-        embedding_loader = self.init_embedding_loader(config, encode_worker_client)
-
-        # Aggregated partial encoder. The attribute is set here so cleanup() is
-        # always safe; the encoder itself is loaded last in __init__ (it starts
-        # the actor thread) — see _load_custom_encoder below for why.
-        self._custom_encoder: Optional[AsyncVisionEncoder] = None
-        self._custom_encoder_adapter: Optional[CustomEncoderAdapter] = None
-
         self.use_vllm_tokenizer = use_vllm_tokenizer
 
         self.dp_range = get_dp_range_for_worker(self.engine_client.vllm_config)
@@ -1205,15 +1165,6 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
         # of calling engine_client.abort() during the unsafe pre-first-token
         # NIXL-KV-transfer window.
         self._deferred_aborts: dict[str, _DeferredAbort] = {}
-
-        self._multimodal_request_processor = VllmMultimodalRequestProcessor(
-            model=config.model,
-            engine_client=engine,
-            enable_multimodal=enable_multimodal,
-            enable_frontend_decoding=enable_frontend_decoding,
-            embedding_loader=embedding_loader,
-            trust_remote_code=config.engine_args.trust_remote_code,
-        )
 
         # Serialise concurrent scale_elastic_ep calls.  vLLM's elastic-EP
         # bootstrap creates a fresh TCPStore per scale operation and stores it
@@ -1249,14 +1200,6 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
         # dyn://<namespace>.<component>.rl when --enable-rl / DYN_ENABLE_RL is set.
         self.rl_route_registry = RLRouteRegistry(self.runtime, logger_=logger)
 
-        # Load the custom encoder last. If a later init step raised, executor
-        # GC would eventually reap the idle actor thread — but only once the
-        # exception's traceback stops pinning `self` (unbounded while the
-        # failure is handled upstream), and GC never runs backend.close() or
-        # frees the encoder's GPU memory in the meantime. Ordering the encoder
-        # after all other fallible setup removes that window by construction.
-        self._load_custom_encoder(config)
-
     @functools.cached_property
     def _lora_enabled(self) -> bool:
         """Conservative default for handlers that don't override LoRA policy.
@@ -1267,44 +1210,6 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
         enable_lora = bool(getattr(self.engine_args, "enable_lora", False))
         return enable_lora and (get_lora_manager() is not None)
 
-    def _load_custom_encoder(self, config: Config) -> None:
-        """Import, instantiate, and load the --custom-encoder-class encoder."""
-        custom_encoder_class = config.custom_encoder_class
-        if not custom_encoder_class:
-            return
-        module_path, _, class_name = custom_encoder_class.rpartition(".")
-        backend_cls = getattr(importlib.import_module(module_path), class_name)
-        if not (
-            isinstance(backend_cls, type)
-            and issubclass(backend_cls, VisionEncoderBackend)
-        ):
-            raise TypeError(
-                f"--custom-encoder-class {custom_encoder_class!r} must resolve to a "
-                f"VisionEncoderBackend subclass, got {backend_cls!r}."
-            )
-        # The author writes the VisionEncoderBackend; Dynamo wraps it in the
-        # AsyncVisionEncoder glue, which owns the preprocess pool and
-        # ThreadedMicroBatcher actor thread. load() runs backend.build() there
-        # (the backend picks its own device) and cleans that thread up on failure.
-        backend = backend_cls()
-        adapter = create_custom_encoder_adapter(
-            backend,
-            self.model_config,
-            config.engine_args,
-        )
-        encoder = AsyncVisionEncoder(backend)
-        encoder.load(config.model)
-        # Assign only after a successful load so a failed load (which already shut
-        # its own thread down) leaves _custom_encoder None.
-        self._custom_encoder = encoder
-        self._custom_encoder_adapter = adapter
-        logger.info(
-            "Loaded CustomEncoder %s from %s with %s",
-            custom_encoder_class,
-            config.model,
-            type(adapter).__name__,
-        )
-
     def _shutdown_worker(self) -> NoReturn:
         logger.warning("Initiating Dynamo Runtime shutdown.")
         self.runtime.shutdown()
@@ -1313,57 +1218,6 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
     def _shutdown_on_engine_dead(self, e: EngineDeadError) -> NoReturn:
         logger.error(f"vLLM EngineDeadError: {e}")
         self._shutdown_worker()
-
-    def init_embedding_loader(
-        self, config: Config, encode_worker_client: Optional[Client] = None
-    ) -> Optional[MultiModalEmbeddingLoader]:
-        """Initialize the embedding loader with the given encode worker client."""
-        # Without encode worker, the embedding will be generated internally by vLLM.
-        if encode_worker_client is None:
-            return None
-        logger.warning(
-            "Separate multimodal encode-worker routing only applies to image "
-            "inputs, including URL-backed and frontend-decoded images. Video "
-            "inputs are processed on the prefill/PD worker instead."
-        )
-        # Embedding loader consist of two main components:
-        # 1) An remote encode worker client and matching embedding receiver,
-        #    which can request remote encode and handle the transfer of embeddings
-        #    from the encode worker to this prefill worker.
-        # 2) A local embedding cache manager, which can store previously fetched embeddings
-        #    and used to determine whether remote encode is necessary for a given mm data.
-        self.encode_worker_client = encode_worker_client
-        if config.embedding_transfer_mode == EmbeddingTransferMode.LOCAL:
-            self.embedding_receiver = LocalEmbeddingReceiver()  # type: ignore
-        elif config.embedding_transfer_mode == EmbeddingTransferMode.NIXL_WRITE:
-            self.embedding_receiver = NixlWriteEmbeddingReceiver()  # type: ignore
-        elif config.embedding_transfer_mode == EmbeddingTransferMode.NIXL_READ:
-            # [gluo FIXME] can't use pre-registered tensor as NIXL requires descriptors
-            # to be at matching size, need to overwrite nixl connect library
-            self.embedding_receiver = NixlReadEmbeddingReceiver(max_items=0)  # type: ignore
-        else:
-            raise ValueError(
-                f"Invalid embedding transfer mode: {config.embedding_transfer_mode}"
-            )
-        # [gluo FIXME/NOTE] This embedding cache manager is purely used for caching embedding
-        # results from encode worker, but 'config.multimodal_embedding_cache_capacity_gb' is
-        # also used to configure the DynamoMultimodalEmbeddingCacheConnector within the vLLM.
-        # This results in duplication of memory and ideally we should have single cache manager
-        # which can be used by vLLM internal and here. Then we can explore asynchrous embedding
-        # transfer as we can process and block until the embedding is actually used within vLLM.
-        self.embedding_cache_manager: MultimodalEmbeddingCacheManager | None = None
-        if config.multimodal_embedding_cache_capacity_gb > 0:
-            capacity_bytes = int(
-                config.multimodal_embedding_cache_capacity_gb * 1024**3
-            )
-            self.embedding_cache_manager = MultimodalEmbeddingCacheManager(
-                capacity_bytes
-            )
-        return MultiModalEmbeddingLoader(
-            encode_worker_client=self.encode_worker_client,  # type: ignore
-            receiver=self.embedding_receiver,
-            embedding_cache_manager=self.embedding_cache_manager,
-        )
 
     async def sleep(self, body: dict) -> dict:
         """Sleep the engine to release GPU memory and unregister from discovery.
@@ -2569,7 +2423,7 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
         - `self._lora_enabled()` (method): Returns bool indicating if LoRA is enabled
 
         Subclasses that forget to define these will get AttributeError at runtime
-        when this method is called. The concrete decode, prefill, and Omni handlers
+        when this method is called. The concrete decode and prefill handlers
         provide examples.
         """
         return self._lora_state.resolve_request(
@@ -3171,12 +3025,6 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
             self._ep_capacity_executor.shutdown(wait=False, cancel_futures=True)
             self._ep_capacity_executor = None
             self._ep_capacity_inflight = None
-        if self._custom_encoder is not None:
-            # Run backend.close() on the actor thread, then stop it — executor
-            # GC would only end the thread, never call close().
-            self._custom_encoder.shutdown()
-            self._custom_encoder = None
-            self._custom_encoder_adapter = None
         for temp_dir in self.temp_dirs:
             try:
                 temp_dir.cleanup()
@@ -3256,9 +3104,7 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
         self,
         request: Dict[str, Any],
         request_id: str,
-        multi_modal_data: Dict[str, Any] | None,
         log_prefix: str = "",
-        mm_processor_kwargs: Dict[str, Any] | None = None,
     ) -> TokensPrompt | EmbedsPrompt:
         """
         Build a prompt from request, handling both prompt_embeds and token_ids.
@@ -3266,10 +3112,7 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
         Args:
             request: The request dict containing either prompt_embeds or token_ids
             request_id: Request ID for logging
-            multi_modal_data: Optional multimodal data to attach to TokensPrompt
             log_prefix: Prefix for log messages (e.g., "Prefill " for prefill requests)
-            mm_processor_kwargs: Optional multimodal processor kwargs (e.g.
-                use_audio_in_video) forwarded to the vLLM engine.
 
         Returns:
             The vLLM prompt built from prompt embeddings or token IDs.
@@ -3308,18 +3151,8 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
                     exc,
                 )
                 raise
-        # Text-only PD + encoder-worker path.
         # Normal path: use token IDs.
-        # Prefer frontend-forwarded mm_hashes for hash consistency with the
-        # routing layer. Fall back to computing from loaded image data when
-        # not in EPD mode — in EPD mode multi_modal_data carries pre-computed
-        # embeddings from the encode worker, not raw images, and raw-image
-        # identity lives upstream at the Router / URL-keyed encoder cache.
-        prompt = self._multimodal_request_processor.build_tokens_prompt(
-            request,
-            multi_modal_data,
-            mm_processor_kwargs,
-        )
+        prompt = TokensPrompt(prompt_token_ids=request.get("token_ids", []))
         return prompt
 
     @staticmethod
@@ -3584,12 +3417,10 @@ class DecodeWorkerHandler(BaseWorkerHandler):
         default_sampling_params,
         model_max_len: int | None = None,
         model_config: ModelConfig | None = None,
-        enable_multimodal: bool = False,
         generate_endpoint=None,
         use_vllm_tokenizer: bool = False,
         shutdown_event: asyncio.Event | None = None,
         enable_frontend_decoding: bool = False,
-        encode_worker_client: Client | None = None,
         first_token_source: Any | None = None,
     ):
         super().__init__(
@@ -3599,12 +3430,10 @@ class DecodeWorkerHandler(BaseWorkerHandler):
             default_sampling_params,
             model_max_len=model_max_len,
             model_config=model_config,
-            enable_multimodal=enable_multimodal,
             generate_endpoint=generate_endpoint,
             use_vllm_tokenizer=use_vllm_tokenizer,
             shutdown_event=shutdown_event,
             enable_frontend_decoding=enable_frontend_decoding,
-            encode_worker_client=encode_worker_client,
         )
         self._first_token_source = first_token_source
 
@@ -3615,7 +3444,6 @@ class DecodeWorkerHandler(BaseWorkerHandler):
         routing = request.get("routing") or {}
         if self._first_token_source is not None:
             self._first_token_source.bind(context, routing.get("dp_rank"))
-        self._multimodal_request_processor.validate_multimodal_request(request)
         first_token = True
         first_token_output_seen = False
         with time_and_log_code_section(
@@ -3638,107 +3466,6 @@ class DecodeWorkerHandler(BaseWorkerHandler):
                         first_token_output_seen = True
                         context.notify_first_token()
                 yield chunk
-
-    async def _assemble_custom_encoder_prompt(
-        self,
-        request: Dict[str, Any],
-        request_id: str,
-    ) -> EmbedsPrompt | TokensPrompt | None:
-        """Run the in-process CustomEncoder and prepare its engine prompt.
-
-        The CustomEncoder consumes image URLs directly and emits artifacts.
-        Returns the prepared prompt when images are present, or ``None`` for a
-        text-only request with nothing to assemble (non-image modalities are
-        rejected below).
-
-        Raises:
-            InvalidArgument: the request's multimodal payload is malformed in a
-                way checked for directly below. The frontend maps this to HTTP
-                400 and forwards the message verbatim, so both messages are
-                built here and never interpolate foreign text.
-            Exception: whatever the encoder or adapter raised, unchanged. The
-                bindings map the exception type to a ``BackendError``, so a
-                validation fault (``ValueError``/``TypeError``, which is what
-                the adapters raise) still reaches the caller as a 400, while a
-                timeout, CUDA fault, or cancellation keeps its own type and its
-                retry semantics.
-        """
-        # Internal invariant: callers guard on `self._custom_encoder is not None`
-        # before reaching here. Use an explicit raise (not assert, which is
-        # stripped under `python -O`) so a future mis-wire fails loudly.
-        if self._custom_encoder is None:
-            raise RuntimeError(
-                "_assemble_custom_encoder_prompt called without a CustomEncoder"
-            )
-        if self._custom_encoder_adapter is None:
-            raise RuntimeError(
-                "_assemble_custom_encoder_prompt called without an adapter"
-            )
-        mm_map = request.get("multi_modal_data") or {}
-        # CustomEncoder handles images only. Reject any non-image modality
-        # (video/audio/...) explicitly instead of silently dropping it.
-        unsupported = sorted(k for k in mm_map if k != IMAGE_URL_KEY and mm_map.get(k))
-        if unsupported:
-            msg = (
-                "CustomEncoder supports image inputs only; got "
-                f"unsupported multimodal data: {unsupported}"
-            )
-            logger.error("Request %s: %s", request_id, msg)
-            raise InvalidArgument(msg)
-
-        image_items = mm_map.get(IMAGE_URL_KEY) or []
-        image_urls = [
-            item[URL_VARIANT_KEY]
-            for item in image_items
-            if isinstance(item, dict) and URL_VARIANT_KEY in item
-        ]
-        if len(image_urls) != len(image_items):
-            # At least one image item was malformed — not a dict with a 'Url'
-            # key (e.g. a pre-'Decoded' variant the CustomEncoder can't take).
-            # Reject the whole request instead of silently dropping images.
-            msg = (
-                "CustomEncoder received image multimodal data but only "
-                f"{len(image_urls)} of {len(image_items)} item(s) had a usable "
-                "'Url'; each item must be a dict with a 'Url' key"
-            )
-            logger.error("Request %s: %s", request_id, msg)
-            raise InvalidArgument(msg)
-
-        if not image_urls:
-            # No image items at all — and non-image modalities were already
-            # rejected above — so there is nothing to assemble → text-only.
-            return None
-
-        token_ids: list[int] = request.get("token_ids") or []
-        try:
-            # AsyncVisionEncoder preprocesses off-thread; its ThreadedMicroBatcher
-            # coalesces concurrent calls onto one dedicated actor thread.
-            artifacts = await self._custom_encoder.encode(image_urls)
-            prepared = self._custom_encoder_adapter.prepare_prompt(
-                token_ids,
-                artifacts,
-            )
-        except Exception:
-            # Log with the traceback here — this is the last frame that knows
-            # which request and which encoder — then re-raise unchanged.
-            #
-            # Deliberately not converted to `InvalidArgument`. The adapters
-            # raise `ValueError`/`TypeError` for genuine input faults, which the
-            # bindings already map to `Backend(InvalidArgument)` → 400 carrying
-            # the message, so the actionable case needs no help. Coercing the
-            # rest would relabel timeouts, CUDA faults, batcher shutdown and
-            # cancellations as client errors, suppressing retries — and since
-            # `encode()` is co-batched, it could blame a caller for a failure
-            # that originated in someone else's request.
-            logger.exception("Request %s: CustomEncoder failed", request_id)
-            raise
-
-        logger.debug(
-            "Request %s: CustomEncoder prepared prompt for %d image(s)",
-            request_id,
-            len(artifacts),
-        )
-        return prepared
 
     async def _generate_token_mode(self, request, context, request_id):
         """Generate tokens using internal protocol format (token-in-token-out)."""
@@ -3765,73 +3492,12 @@ class DecodeWorkerHandler(BaseWorkerHandler):
             )
             is_decode_only = False
             mode = DisaggregationMode.AGGREGATED
-        has_mm_data = request.get("multi_modal_data") is not None
-        custom_prompt: EmbedsPrompt | TokensPrompt | None = None
 
-        if (
-            mode == DisaggregationMode.AGGREGATED
-            and self._custom_encoder is not None
-            and has_mm_data
-        ):
-            # A configured CustomEncoder owns the aggregated image path. Bypass
-            # raw-media loading and let its decoder-selected adapter prepare the
-            # final engine prompt.
-            # Failures propagate as exceptions; the bindings map the type to a
-            # typed backend error, so an input fault answers 400 with its
-            # message and an engine fault stays a retryable 5xx.
-            custom_prompt = await self._assemble_custom_encoder_prompt(
-                request,
-                request_id,
-            )
-            multi_modal_data = None
-            mm_processor_kwargs = None
-            pre_rendered = None
-        else:
-            try:
-                prepared_input = await self._multimodal_request_processor.prepare_input(
-                    request,
-                    request_id,
-                    context,
-                    mode,
-                )
-            except MissingMultimodalHandoffError as exc:
-                logger.error("Request %s: %s", request_id, exc)
-                yield {
-                    "finish_reason": f"error: {exc}",
-                    "index": 0,
-                    "token_ids": [],
-                }
-                return
-
-            request = prepared_input.request
-            multi_modal_data = prepared_input.multi_modal_data
-            mm_processor_kwargs = prepared_input.mm_processor_kwargs
-            pre_rendered = prepared_input.pre_rendered_prompt
-
-        # Build prompt from request. `prompt` is either a pre-rendered
-        # MultiModalInput dict (fast path) or a TokensPrompt/EmbedsPrompt from
-        # `_build_prompt_from_request`. Declare as Any so mypy accepts both
-        # branches without spelling out the full union.
-        prompt: Any
-        with _nvtx.annotate("mm_backend:build_prompt", color="yellow"):
-            if custom_prompt is not None:
-                prompt = custom_prompt
-            elif pre_rendered is not None:
-                # pre_rendered is a MultiModalInput dict with "type": "multimodal".
-                # The engine's InputProcessor.process_inputs() will see the "type"
-                # key and skip the HF processor entirely.
-                prompt = pre_rendered
-                logger.debug(
-                    "[mm-routing] Request %s: using pre-rendered MultiModalInput",
-                    request_id,
-                )
-            else:
-                prompt = self._build_prompt_from_request(
-                    request,
-                    request_id,
-                    multi_modal_data,
-                    mm_processor_kwargs=mm_processor_kwargs,
-                )
+        # Build prompt from request.
+        prompt = self._build_prompt_from_request(
+            request,
+            request_id,
+        )
 
         _apply_nvext_cache_salt(request, prompt)
 
@@ -4075,12 +3741,10 @@ class PrefillWorkerHandler(BaseWorkerHandler):
         default_sampling_params,
         model_max_len: int | None = None,
         model_config: ModelConfig | None = None,
-        enable_multimodal: bool = False,
         generate_endpoint=None,
         use_vllm_tokenizer: bool = False,
         shutdown_event: asyncio.Event | None = None,
         enable_frontend_decoding: bool = False,
-        encode_worker_client: Client | None = None,
     ):
         super().__init__(
             runtime,
@@ -4089,30 +3753,16 @@ class PrefillWorkerHandler(BaseWorkerHandler):
             default_sampling_params,
             model_max_len=model_max_len,
             model_config=model_config,
-            enable_multimodal=enable_multimodal,
             generate_endpoint=generate_endpoint,
             use_vllm_tokenizer=use_vllm_tokenizer,
             shutdown_event=shutdown_event,
             enable_frontend_decoding=enable_frontend_decoding,
-            encode_worker_client=encode_worker_client,
         )
-
-        self._multimodal_request_processor.initialize_prefill_handoff()
 
     async def generate(self, request, context):
         # Use context ID for request tracking and correlation with decode phase
         request_id = context.id()
         logger.debug("Prefill Request ID: %s", request_id)
-        try:
-            self._multimodal_request_processor.validate_multimodal_request(request)
-        except ValueError as exc:
-            logger.error("Request %s: %s", request_id, exc)
-            yield {
-                "status": "error",
-                "message": str(exc),
-                "disaggregated_params": None,
-            }
-            return
 
         # Token-in-token-out mode: internal protocol format
         with time_and_log_code_section(f"[PREFILL] request: {request_id} generate"):
@@ -4122,23 +3772,12 @@ class PrefillWorkerHandler(BaseWorkerHandler):
 
     async def _generate_token_mode(self, request, context, request_id):
         """Generate prefill using internal protocol format (token-in-token-out)."""
-        prepared_input = await self._multimodal_request_processor.prepare_input(
-            request,
-            request_id,
-            context,
-            DisaggregationMode.PREFILL,
-        )
-        request = prepared_input.request
-        multi_modal_data = prepared_input.multi_modal_data
-        mm_processor_kwargs = prepared_input.mm_processor_kwargs
 
         # Build prompt from request (handles both prompt_embeds and token_ids)
         prompt = self._build_prompt_from_request(
             request,
             request_id,
-            multi_modal_data,
             log_prefix="Prefill ",
-            mm_processor_kwargs=mm_processor_kwargs,
         )
 
         _apply_nvext_cache_salt(request, prompt)
@@ -4215,21 +3854,10 @@ class PrefillWorkerHandler(BaseWorkerHandler):
 
                 token_ids = res.outputs[0].token_ids if res.outputs else []
 
-                # For prefill worker, only one res will be generated,
-                # so we can always build embedding params here without conditionals
-                embedding_params = (
-                    self._multimodal_request_processor.build_prefill_handoff(
-                        multi_modal_data=multi_modal_data,
-                        prompt_token_ids=list(res.prompt_token_ids or []),
-                        mm_processor_kwargs=mm_processor_kwargs,
-                    )
-                )
-
                 output: Dict[str, Any] = {
                     "token_ids": list(token_ids),
                     "disaggregated_params": self._build_disaggregated_params(
                         kv_protocol.decode_request_kv_transfer_params(res),
-                        embedding_params,
                     ),
                     "completion_usage": BaseWorkerHandler._build_completion_usage(
                         request_output=res,

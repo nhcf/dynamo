@@ -119,14 +119,6 @@ def validate_state_agent_worker(config: Any) -> None:
     unsupported = None
     if config.headless:
         unsupported = "headless"
-    elif config.realtime:
-        unsupported = "realtime"
-    elif config.embedding_worker:
-        unsupported = "embedding"
-    elif config.classify_worker:
-        unsupported = "classify"
-    elif config.disaggregation_mode == DisaggregationMode.ENCODE:
-        unsupported = "multimodal encode"
     if unsupported is not None:
         raise ValueError(f"dynamo_state_agent is unsupported for {unsupported} workers")
     if not config.engine_args.enable_prefix_caching:

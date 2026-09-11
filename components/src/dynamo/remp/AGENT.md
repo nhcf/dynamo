@@ -2,16 +2,15 @@
 
 ## 1. 项目概述
 
-`dynamo.remp` 是 NVIDIA Dynamo 分布式推理框架的 **vLLM 推理引擎适配层**，与 `dynamo.vllm` 和 `dynamo.sglang` 同级。它将 vLLM 引擎适配到 Dynamo 的分布式运行时，提供完整的推理服务能力，包括：
+`dynamo.remp` 是 NVIDIA Dynamo 分布式推理框架的 **vLLM 推理引擎适配层**，与 `dynamo.vllm` 和 `dynamo.sglang` 同级。它将 vLLM 引擎适配到 Dynamo 的分布式运行时，**专注于 LLM 文本生成模型**，提供以下核心能力：
 
-- 多种 Worker 类型（Decode / Prefill / Embedding / Classify / Encode / Realtime / Omni）
+- 多种 Worker 类型（Decode / Prefill / Aggregated / Embedding）
 - Disaggregated Prefill/Decode 分离服务
-- KV Cache 传输与 KV-aware 路由
+- KV Cache 传输与 KV-aware 路由（NIXL / Mooncake / LMCacheMP）
 - 弹性 TP/PP 并行策略在线切换
 - 前向传播性能指标（Forward Pass Metrics）收集与自基准测试
 - LoRA 运行时适配器加载/卸载
-- CRIU 快照恢复模式
-- 多模态编码与实时 API 支持
+- 多节点 Headless 从节点模式
 
 ---
 
@@ -27,7 +26,6 @@ dynamo.remp (Python 适配层)
     ├── backend_args.py           — vLLM 特有 Dynamo 包装参数
     ├── worker_factory.py         — WorkerFactory：创建各类 worker + 注册控制面路由
     ├── handlers.py               — BaseWorkerHandler / DecodeWorkerHandler / PrefillWorkerHandler / EmbeddingWorkerHandler
-    ├── pooling_handlers.py       — ClassifyWorkerHandler（/classify + /pooling）
     │
     ├── KV 传输层
     │   ├── kv_connector_protocols.py  — KvConnectorProtocol 抽象（NIXL / Mooncake / LMCacheMP）
@@ -44,25 +42,21 @@ dynamo.remp (Python 适配层)
     │   └── engine_generate.py        — vLLM Generate API 能力发布
     │
     ├── 高级功能
-    │   ├── snapshot.py               — CRIU 快照恢复模式
     │   ├── lora_state.py             — LoRA 跟踪与 per-adapter asyncio.Lock
     │   ├── state_agent.py            — KV state attachment 所有者生命周期
     │   ├── headless.py               — 多节点 TP/PP 从节点模式
     │   ├── sidecar.py               — Dynamo 原生 vLLM sidecar 启动器
-    │   ├── dp_topology.py            — 数据并行拓扑辅助
-    │   └── embedding_worker_processes.py — 多进程共享 EngineCore 的 Embedding worker
+    │   └── dp_topology.py            — 数据并行拓扑辅助
     │
-    ├── 子包
-    │   ├── omni/                — 多阶段管线生成 worker（图像/音频/实时）
-    │   ├── realtime/            — OpenAI Realtime API 兼容的转录 handler
-    │   ├── multimodal_handlers/ — 多模态编码 worker handler
-    │   └── multimodal_utils/    — 自定义编码器、嵌入缓存、请求预处理
-    │
-    └── tests/                  — 测试与运维脚本
-        ├── service.sh           — 统一运维脚本
-        ├── patches/             — 本地补丁文件
-        ├── test/                — TP/PP 切换测试脚本
-        └── 0920/                — 基准测试脚本
+    └── tests/
+        └── elastic_vllm/
+            ├── service.sh           — 统一运维脚本
+            ├── patches/             — 合并补丁文件
+            │   ├── dynamo.patch     — 针对 Dynamo 的补丁
+            │   └── vllm.patch       — 针对 vLLM 的补丁
+            ├── test_offline_switch.py        — 离线 TP/PP 切换验证
+            ├── test_online_switch_dynamo.py  — Dynamo 模式在线 TP/PP 切换测试
+            └── report.md                     — 测试报告
 ```
 
 ---
@@ -75,10 +69,6 @@ dynamo.remp (Python 适配层)
 | Prefill | `PrefillWorkerHandler` | 分离预填充，仅生成 1 token |
 | Aggregated | `DecodeWorkerHandler` | 聚合模式（Prefill + Decode 合一） |
 | Embedding | `EmbeddingWorkerHandler` | OpenAI /v1/embeddings 适配 |
-| Classify | `ClassifyWorkerHandler` | /classify + /pooling API（继承 EmbeddingWorkerHandler） |
-| Encode | `EncodeWorkerHandler`（multimodal_handlers/） | 多模态编码，支持 NIXL/local 嵌入传输 |
-| Realtime | `RealtimeHandler`（realtime/） | OpenAI Realtime API 转录 |
-| Omni | `OmniHandler`（omni/） | 多阶段管线生成（图像/音频/实时） |
 
 ---
 
@@ -90,9 +80,8 @@ dynamo.remp (Python 适配层)
 | `control/parallel_strategy_state` | POST | 查询当前并行策略状态 |
 | `control/scale_elastic_ep` | POST | 弹性 EP 扩缩容 |
 | `control/ep_capacity` | POST | 查询弹性 EP 容量 |
-| `control/sleep` | POST | 暂停引擎（GMS shadow mode） |
+| `control/sleep` | POST | 暂停引擎 |
 | `control/wake_up` | POST | 唤醒引擎 |
-| `control/checkpoint` | POST | 触发 CRIU checkpoint |
 | `control/profile` | POST | 性能 profiling |
 | `control/load_lora` | POST | 加载 LoRA 适配器 |
 | `control/unload_lora` | POST | 卸载 LoRA 适配器 |
@@ -116,22 +105,23 @@ dynamo.remp (Python 适配层)
 
 ### 核心入口
 
-- `__main__.py` — 设置 PYTHONHASHSEED，检查快照恢复模式，调用 `dynamo.vllm.main.main()`
-- `main.py` — 核心 `worker()` 异步函数：初始化运行时 → 创建引擎 → 注册模型 → 设置 KV 事件/指标/FPM → 创建 worker handler
+- `__main__.py` — 设置 PYTHONHASHSEED，调用 `dynamo.vllm.main.main()`
+- `main.py` — 核心 `worker()` 异步函数：校验本地模型路径 → 初始化运行时 → 创建引擎 → 注册模型 → 设置 KV 事件/指标/FPM → 创建 worker handler
 - `args.py` — `Config` 类继承 `DynamoRuntimeConfig` + `DynamoVllmConfig`，解析与校验所有 CLI 参数
 - `backend_args.py` — `DynamoVllmArgGroup` / `DynamoVllmConfig`：vLLM 特有的 Dynamo 包装参数
 
 ### 请求处理
 
-- `handlers.py` — 核心处理逻辑（4700+ 行）：
+- `handlers.py` — 核心处理逻辑：
   - `BaseWorkerHandler` — 抽象基类，包含 LoRA 管理、KV 发布、FPM 中继、引擎暂停/恢复、延迟中止守卫等
   - `DecodeWorkerHandler` — 解码请求处理，支持 token/text 两种模式
   - `PrefillWorkerHandler` — 分离预填充处理，集成 KV connector protocol
   - `EmbeddingWorkerHandler` — Embedding 请求处理（不继承 BaseWorkerHandler）
   - `_DeferredAbort` — 解聚 decode 模式下的延迟中止守卫
-  - `VllmEnginePauseController` — 引擎暂停控制器（sleep/resume/checkpoint）
+  - `VllmEnginePauseController` — 引擎暂停控制器（sleep/resume）
+  - `_snapshot()` / `_snapshot_timed_out_result` — Elastic EP 容量快照（与 CRIU 无关）
 
-- `pooling_handlers.py` — `ClassifyWorkerHandler`：/classify + /pooling API，支持批量编码
+- `worker_factory.py` — `WorkerFactory`：根据 `--disaggregation-mode` 创建对应 worker handler，注册所有控制面路由
 
 ### KV 与路由
 
@@ -148,79 +138,52 @@ dynamo.remp (Python 适配层)
   - 跨 rank 同步（_BenchmarkSynchronizer）
 - `benchmark_points.py` — Pydantic schema：BenchmarkPoints（版本化基准测试点清单，支持 PartitionSpec）
 - `gc_policy.py` — `FpmGcWorkerExtension`：基准测试期间 gc.freeze() 定期冻结缓解 GC 暂停
-- `publisher.py` — DynamoStatLoggerPublisher / NoopStatLogger / StatLoggerFactory：指标发布到 Dynamo 运行时
+- `publisher.py` — DynamoStatLoggerPublisher / StatLoggerFactory：指标发布到 Dynamo 运行时
 - `engine_generate.py` — `publish_engine_generate_capability()`：发布 vLLM Generate API 能力元数据
 
 ### 高级功能
 
-- `snapshot.py` — `EngineSnapshotController`：CRIU 快照恢复模式准备
 - `lora_state.py` — `LoRAState`：LoRA 跟踪与 per-adapter asyncio.Lock（WeakValueDictionary 锁回收）
 - `state_agent.py` — `StateAgentLifecycle`：KV state attachment 所有者生命周期管理
 - `headless.py` — 多节点 TP/PP 从节点模式（无引擎核心/调度器/Dynamo 端点）
 - `sidecar.py` — Dynamo 原生 vLLM sidecar 启动器
 - `dp_topology.py` — 数据并行拓扑辅助函数
-- `embedding_worker_processes.py` — `EmbeddingWorkerProcessGroup`：多进程共享一个 EngineCore 的 Embedding worker 池
 - `engine_monitor.py` — `VllmEngineMonitor`：引擎健康监控，支持 TP/PP 切换期间的宽限期
-- `health_check.py` — 多种健康检查 payload（Vllm/Embedding/Prefill/Omni）
-
-### 子包
-
-- `omni/` — 多阶段管线生成 worker：
-  - `main.py` — Omni worker 入口
-  - `omni_handler.py` — OmniHandler（BaseOmniHandler 子类）
-  - `audio_handler.py` — AudioGenerationHandler
-  - `realtime_handler.py` — RealtimeOmniHandler
-  - `stage_router.py` — OmniStageRouter
-  - `stage_worker.py` — OmniStageWorker
-  - `connectors/nixl_connector.py` — DynamoOmniNixlConnector
-  - `args.py` — OmniArgGroup / OmniConfig
-
-- `realtime/` — OpenAI Realtime API 兼容层：
-  - `handler.py` — RealtimeHandler / RealtimeTranscriptionHandler
-  - `connection.py` — RealtimeConnection / RealtimeTurn
-  - `events.py` — 事件定义
-  - `serving.py` — 服务入口
-
-- `multimodal_handlers/` — 多模态编码处理：
-  - `encode_worker_handler.py` — EncodeWorkerHandler（支持 NIXL/local 嵌入传输）
-
-- `multimodal_utils/` — 多模态工具集：
-  - `custom_encoder/` — 自定义视觉编码器适配器（adapter/ + backend/）
-  - `models/` — Qwen 等模型特定工具
-  - `embedding_cache.py` — EmbeddingCache
-  - `request_processor.py` — VllmMultimodalRequestProcessor
-  - `prefill_worker_utils.py` — Prefill worker 辅助
-  - `multimodal_embedding_cache_connector.py` — 多模态嵌入缓存连接器
+- `health_check.py` — 健康检查 payload（Vllm / Embedding / Prefill）
 
 ### 基础设施
 
-- `constants.py` — 重导出 `DisaggregationMode` / `EmbeddingTransferMode`
+- `constants.py` — 重导出 `DisaggregationMode`
 - `errors.py` — vLLM 客户端错误 → Dynamo HttpError 转换
 - `envs.py` — 环境变量配置（DYN_FORWARDPASS_METRIC_PORT 等）
 
+### 补丁文件
+
+- `tests/elastic_vllm/patches/dynamo.patch` — 针对 Dynamo 的合并补丁（含 `dynamo/common/runtime.py` 和 `dynamo/vllm/main.py` 的修改）
+- `tests/elastic_vllm/patches/vllm.patch` — 针对 vLLM 的合并补丁（含 `vllm/exceptions.py`、`vllm/inputs/preprocess_templates/default/chunk_delta_h.py` 和 `vllm/engine/async_llm.py` 的修改）
+
 ---
 
-## 7. 配置参数（DynamoVllmConfig 主要参数）
+## 7. 模型路径要求
+
+remp **不从 HuggingFace 或其他远程源下载模型权重**。`--model` 参数必须指向本地已有的模型路径（目录或文件）。如果指定路径不存在，worker 启动时会立即抛出 `FileNotFoundError` 并退出。多节点部署时，需确保所有节点均可访问该路径（例如通过共享文件系统）。
+
+---
+
+## 8. 配置参数（DynamoVllmConfig 主要参数）
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| `--disaggregation-mode` | `agg\|prefill\|decode\|encode` | 分离服务模式 |
+| `--disaggregation-mode` | `agg\|prefill\|decode` | 分离服务模式 |
 | `--use-vllm-tokenizer` | bool | 启用 text-in-text-out 模式 |
-| `--route-to-encoder` | bool | 前端路由到编码器 |
-| `--enable-multimodal` | bool | 启用多模态支持 |
 | `--enable-rl` | bool | 启用 RL 请求面 |
 | `--embedding-worker` | bool | 启用 Embedding worker |
-| `--embedding-worker-processes` | int | Embedding worker 进程数 |
-| `--classify-worker` | bool | 启用 Classify worker |
-| `--realtime` | bool | 启用 Realtime 转录 |
 | `--headless` | bool | 无头从节点模式 |
-| `--gms-shadow-mode` | bool | GPU Memory Service 影子/待机模式 |
 | `--benchmark-mode` | `prefill\|decode\|agg` | 自基准测试模式 |
-| `--custom-encoder-class` | str | 自定义视觉编码器类路径 |
 
 ---
 
-## 8. 弹性 TP/PP 并行策略切换
+## 9. 弹性 TP/PP 并行策略切换
 
 ### 支持的并行策略（4 GPU 示例）
 
@@ -254,22 +217,19 @@ dynamo.remp (Python 适配层)
 
 ---
 
-## 9. 测试与运维
+## 10. 测试与运维
 
 ### tests/ 目录结构
 
 ```
-tests/
-├── service.sh           — 统一运维脚本（sync/dynamo/vllm/stop/health）
-├── patches/             — 本地补丁文件（sync 后自动应用）
-├── test/
-│   ├── test_offline_switch.py        — 离线 TP/PP 切换验证
-│   ├── test_online_switch.py         — 在线 TP/PP 切换验证（HTTP API）
-│   ├── test_online_switch_dynamo.py  — Dynamo 模式在线 TP/PP 切换测试
-│   └── report.md                     — 测试报告
-└── 0920/
-    ├── run_bench.sh                  — 基准测试脚本
-    └── service_qwen3.8-27b.sh        — Qwen3.8-27B 专用运维脚本
+tests/elastic_vllm/
+├── service.sh                    — 统一运维脚本（sync/dynamo/vllm/stop/health）
+├── patches/                      — 合并补丁文件
+│   ├── dynamo.patch              — 针对 Dynamo 的补丁
+│   └── vllm.patch                — 针对 vLLM 的补丁
+├── test_offline_switch.py        — 离线 TP/PP 切换验证
+├── test_online_switch_dynamo.py  — Dynamo 模式在线 TP/PP 切换测试
+└── report.md                     — 测试报告
 ```
 
 ### service.sh 主要命令
@@ -284,7 +244,7 @@ tests/
 
 ---
 
-## 10. 运行环境
+## 11. 运行环境
 
 | 项目 | 值 |
 |------|-----|
@@ -295,11 +255,12 @@ tests/
 
 ---
 
-## 11. 开发注意事项
+## 12. 开发注意事项
 
 - `handlers.py` 是最大的文件（4700+ 行），包含核心请求处理逻辑，修改时需注意 `_DeferredAbort` 在 NIXL KV 传输窗口期间的安全约束
-- `worker_factory.py`（1876 行）包含 worker 创建和所有控制面路由注册逻辑
+- `worker_factory.py` 包含 worker 创建和所有控制面路由注册逻辑
 - `instrumented_scheduler.py` 扩展了 vLLM 的 `AsyncScheduler`，同时支持 sync 和 async 引擎模式
 - KV 连接器协议通过 `KvConnectorProtocol` 抽象隔离，新增连接器需继承基类并在 `make_kv_connector_protocol()` 中注册
 - LoRA 状态管理通过 `LoRAState` 统一，per-adapter asyncio.Lock 使用 `WeakValueDictionary` 实现锁回收
-- Embedding worker 支持多进程共享 EngineCore（`EmbeddingWorkerProcessGroup`），突破单进程 Python 瓶颈
+- `_snapshot()` 方法是 Elastic EP 容量快照，与 CRIU 快照无关，不可删除
+- 模型权重不支持远程下载，`--model` 必须指向本地路径，否则启动时报 `FileNotFoundError`

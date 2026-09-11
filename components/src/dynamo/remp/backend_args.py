@@ -17,7 +17,6 @@ from dynamo.common.configuration.groups.frontend_decoding_args import (
 from dynamo.common.configuration.utils import (
     add_argument,
     add_negatable_bool_argument,
-    parse_bool,
 )
 
 from . import __version__
@@ -27,71 +26,15 @@ from .benchmark_points import (
     BenchmarkPoints,
     load_benchmark_points_file,
 )
-from .constants import DisaggregationMode, EmbeddingTransferMode
+from .constants import DisaggregationMode
 
 logger = logging.getLogger(__name__)
 PREFILL_DECODE_DISAGGREGATION_MODE = "pd"
-MAX_PORT = 65535
-DEFAULT_NIXL_PROMETHEUS_PORT = 19090
-
-
-def _configured_fixed_port(env_name: str, *, default: int | None = None) -> int | None:
-    """Return a configured fixed TCP port, ignoring disabled/invalid values."""
-    raw = os.environ.get(env_name)
-    if raw is None:
-        return default
-    try:
-        port = int(raw)
-    except ValueError:
-        return None
-    return port if 0 < port <= MAX_PORT else None
-
-
-def _nixl_prometheus_port() -> int | None:
-    """Return the NIXL Prometheus listener port when it is enabled."""
-    enabled = os.environ.get("NIXL_TELEMETRY_ENABLE", "").strip().lower()
-    exporter = os.environ.get("NIXL_TELEMETRY_EXPORTER", "prometheus")
-    if enabled != "y" or exporter.strip().lower() != "prometheus":
-        return None
-    return _configured_fixed_port(
-        "NIXL_TELEMETRY_PROMETHEUS_PORT",
-        default=DEFAULT_NIXL_PROMETHEUS_PORT,
-    )
-
-
-def _is_intra_pod_failover_engine() -> bool:
-    """Recognize the operator's cloned intra-pod engine containers."""
-    engine_id = os.environ.get("ENGINE_ID")
-    if engine_id is None or "FAILOVER_LOCK_PATH" not in os.environ:
-        return False
-    return os.environ.get("CONTAINER_NAME") == f"engine-{engine_id}"
 
 
 def _warn_deprecated(message: str) -> None:
     logger.warning(message)
     warnings.warn(message, DeprecationWarning, stacklevel=3)
-
-
-# Env vars of the removed multimodal role flags. The flags fail at argparse,
-# but a leftover env var would otherwise be silently ignored and start the
-# worker in the wrong role — reject it with the migration path instead.
-_REMOVED_MULTIMODAL_ENV_VARS = {
-    "DYN_VLLM_MULTIMODAL_ENCODE_WORKER": "--disaggregation-mode=encode",
-    "DYN_VLLM_MULTIMODAL_WORKER": (
-        "--disaggregation-mode=agg or --disaggregation-mode=prefill"
-    ),
-    "DYN_VLLM_MULTIMODAL_DECODE_WORKER": "--disaggregation-mode=decode",
-}
-
-
-def _reject_removed_multimodal_env_vars() -> None:
-    for env_var, replacement in _REMOVED_MULTIMODAL_ENV_VARS.items():
-        if os.environ.get(env_var, "").strip().lower() in ("true", "1", "yes", "on"):
-            raise ValueError(
-                f"{env_var} is no longer supported; use --enable-multimodal with "
-                f"{replacement} (env: DYN_VLLM_ENABLE_MULTIMODAL, "
-                "DYN_VLLM_DISAGGREGATION_MODE)."
-            )
 
 
 class _StoreExplicitBenchmarkOption(argparse.Action):
@@ -122,10 +65,9 @@ class DynamoVllmArgGroup(ArgGroup):
             default=None,
             help="Worker disaggregation mode: 'agg' (default, aggregated), "
             "'pd' (combined prefill+decode worker), 'prefill' "
-            "(prefill-only worker), 'decode' (decode-only worker), "
-            "or 'encode' (multimodal encode worker).",
+            "(prefill-only worker), or 'decode' (decode-only worker).",
             choices=[PREFILL_DECODE_DISAGGREGATION_MODE]
-            + [m.value for m in DisaggregationMode],
+            + [m.value for m in DisaggregationMode if m != DisaggregationMode.ENCODE],
         )
 
         add_negatable_bool_argument(
@@ -136,28 +78,10 @@ class DynamoVllmArgGroup(ArgGroup):
             help=(
                 "Use vLLM's tokenizer for pre- and post-processing. This "
                 "bypasses Dynamo's preprocessor and only /v1/chat/completions "
-                "will be available through the Dynamo frontend. Dedicated embedding "
-                "workers currently ignore this option and use vLLM tokenization "
-                "by default; set --embedding-frontend-tokenization to enable "
-                "Dynamo frontend tokenization for text embeddings."
+                "will be available through the Dynamo frontend."
             ),
         )
 
-        # Multimodal
-        add_negatable_bool_argument(
-            g,
-            flag_name="--route-to-encoder",
-            env_var="DYN_VLLM_ROUTE_TO_ENCODER",
-            default=False,
-            help="Enable routing to separate encoder workers for multimodal processing.",
-        )
-        add_negatable_bool_argument(
-            g,
-            flag_name="--enable-multimodal",
-            env_var="DYN_VLLM_ENABLE_MULTIMODAL",
-            default=False,
-            help="Enable multimodal processing. If not set, none of the multimodal components can be used.",
-        )
         # Select defaults used by RL-style token-in/token-out deployments.
         add_negatable_bool_argument(
             g,
@@ -170,115 +94,7 @@ class DynamoVllmArgGroup(ArgGroup):
                 "per-token logprob parity."
             ),
         )
-        add_argument(
-            g,
-            flag_name="--mm-prompt-template",
-            env_var="DYN_VLLM_MM_PROMPT_TEMPLATE",
-            default="USER: <image>\n<prompt> ASSISTANT:",
-            help=(
-                "Different multi-modal models expect the prompt to contain different special media prompts. "
-                "The processor will use this argument to construct the final prompt. "
-                "User prompt will replace '<prompt>' in the provided template. "
-                "For example, if the user prompt is 'please describe the image' and the prompt template is "
-                "'USER: <image> <prompt> ASSISTANT:', the resulting prompt is "
-                "'USER: <image> please describe the image ASSISTANT:'."
-            ),
-        )
-
         add_frontend_decoding_arg(g, env_prefix="VLLM")
-
-        add_argument(
-            g,
-            flag_name="--custom-encoder-class",
-            env_var="DYN_CUSTOM_ENCODER_CLASS",
-            default=None,
-            help=(
-                "Dotted module.ClassName path to a VisionEncoderBackend subclass. "
-                "When set, the aggregated worker wraps it in the in-process "
-                "AsyncVisionEncoder and runs encoder.encode(image_urls) for each "
-                "multimodal request, bypassing vLLM's built-in multimodal "
-                "processing. --model is passed verbatim to the backend's build(). "
-                "Example: 'my_package.encoders.MyEncoder'."
-            ),
-        )
-
-        add_argument(
-            g,
-            flag_name="--embedding-transfer-mode",
-            env_var="DYN_VLLM_EMBEDDING_TRANSFER_MODE",
-            default=EmbeddingTransferMode.NIXL_WRITE.value,
-            help="Worker embedding transfer mode: 'local' (default, local file system), "
-            "'nixl-write' (NIXL transfer with WRITE), or 'nixl-read' (NIXL transfer with READ).",
-            choices=[m.value for m in EmbeddingTransferMode],
-        )
-
-        add_negatable_bool_argument(
-            g,
-            flag_name="--embedding-worker",
-            env_var="DYN_VLLM_EMBEDDING_WORKER",
-            default=False,
-            help="Run as a text-embedding worker. Engine must be started with "
-            "vLLM's --runner pooling. Skips KV-events, KV router registration, "
-            "and InstrumentedScheduler injection (none apply to pooling models).",
-        )
-
-        add_negatable_bool_argument(
-            g,
-            flag_name="--embedding-frontend-tokenization",
-            env_var="DYN_VLLM_EMBEDDING_FRONTEND_TOKENIZATION",
-            default=False,
-            env_value_type=parse_bool,
-            help=(
-                "Use Dynamo frontend tokenization for raw-text inputs to a "
-                "dedicated embedding worker. The default preserves existing "
-                "behavior: vLLM tokenizes embedding text. Requires "
-                "--embedding-worker and cannot be combined with "
-                "--use-vllm-tokenizer. This temporary compatibility gate is "
-                "planned for removal in the next release, when pooling workers "
-                "use --use-vllm-tokenizer consistently."
-            ),
-        )
-
-        add_argument(
-            g,
-            flag_name="--embedding-worker-processes",
-            env_var="DYN_VLLM_EMBEDDING_WORKER_PROCESSES",
-            default=1,
-            arg_type=int,
-            help="Number of Dynamo embedding endpoint processes sharing one "
-            "vLLM EngineCore. Only valid with --embedding-worker. The parent "
-            "process counts as one worker (default: 1). Choose roughly the "
-            "minimum of CPU cores available to the worker and expected peak "
-            "request concurrency; values above the CPU count are unlikely to "
-            "help. More than one process is useful only when requests overlap, "
-            "because a single in-flight request occupies one process. The "
-            "processes share a single EngineCore, so adding processes adds "
-            "request-handling and tokenization capacity, not GPU throughput. "
-            "Each process binds DYN_SYSTEM_PORT + its index, so a pool of N "
-            "reserves DYN_SYSTEM_PORT through DYN_SYSTEM_PORT + N - 1. "
-            "A fixed DYN_TCP_RPC_PORT and intra-pod failover are not currently "
-            "supported with more than one process.",
-        )
-
-        add_negatable_bool_argument(
-            g,
-            flag_name="--realtime",
-            env_var="DYN_VLLM_REALTIME",
-            default=False,
-            help="Serve a ModelType.Realtime bidirectional endpoint through "
-            "the OpenAI /v1/realtime protocol. Standard vLLM currently "
-            "supports transcription sessions only. Aggregated workers only.",
-        )
-
-        add_negatable_bool_argument(
-            g,
-            flag_name="--classify-worker",
-            env_var="DYN_VLLM_CLASSIFY_WORKER",
-            default=False,
-            help="Run as a sequence-classification worker, exposing /v1/classify and "
-            "/v1/pooling endpoints. Engine must be started with vLLM's --runner pooling. "
-            "Skips KV events, KV router registration, and InstrumentedScheduler injection.",
-        )
 
         # Headless mode for multi-node TP/PP
         add_negatable_bool_argument(
@@ -299,20 +115,6 @@ class DynamoVllmArgGroup(ArgGroup):
             default=None,
             help="DEPRECATED: accepted for compatibility with older ModelExpress "
             "manifests. The vLLM ModelExpress plugin reads its own configuration.",
-        )
-
-        # GMS (GPU Memory Service) shadow mode
-        add_negatable_bool_argument(
-            g,
-            flag_name="--gms-shadow-mode",
-            env_var="DYN_VLLM_GMS_SHADOW_MODE",
-            default=False,
-            help=(
-                "Enable GMS shadow/standby mode. Shadow engines skip KV cache "
-                "allocation at startup, automatically pause after initialization, "
-                "and resume on demand when the active engine dies. "
-                "Requires --load-format=gms."
-            ),
         )
 
         # Benchmark / self-profiling
@@ -535,34 +337,15 @@ class DynamoVllmConfig(ConfigBase):
         None, str, DisaggregationMode
     ]  # None when not provided; resolved to enum in validate()
     use_vllm_tokenizer: bool
-
-    # Multimodal
-    route_to_encoder: bool
-    enable_multimodal: bool
     # Enables RL-style token-in/token-out defaults.
     enable_rl: bool = False
-    mm_prompt_template: str
     frontend_decoding: bool
-    embedding_transfer_mode: Union[
-        str, EmbeddingTransferMode
-    ]  # resolved to enum in validate()
-    embedding_worker: bool = False
-    embedding_frontend_tokenization: bool = False
-    embedding_worker_processes: int = 1
-    realtime: bool = False
-    classify_worker: bool = False
-
-    # CustomEncoder (image-only embeddings; worker assembles mixed prompt)
-    custom_encoder_class: Optional[str] = None
 
     # Headless mode for multi-node TP/PP
     headless: bool = False
 
     # ModelExpress P2P
     model_express_url: Optional[str] = None
-
-    # GMS shadow mode
-    gms_shadow_mode: bool = False
 
     # Extra served names beyond the primary, parsed from --served-model-name.
     # None (not []) since ConfigBase copies class defaults by reference.
@@ -602,15 +385,7 @@ class DynamoVllmConfig(ConfigBase):
 
     def validate(self) -> None:
         """Validate vLLM wrapper configuration."""
-        _reject_removed_multimodal_env_vars()
         self._resolve_disaggregation_mode()
-        self._resolve_embedding_transfer_mode()
-        self._validate_embedding_frontend_tokenization()
-        self._validate_embedding_worker_exclusivity()
-        self._validate_embedding_worker_processes()
-        self._validate_realtime_worker_exclusivity()
-        self._validate_classify_worker_exclusivity()
-        self._validate_custom_encoder()
         self._load_explicit_benchmark_points()
         self._resolve_legacy_benchmark_sampling()
         self._validate_benchmark_sampling()
@@ -715,13 +490,6 @@ class DynamoVllmConfig(ConfigBase):
         # of zero produces a manifest with no prefill rows, and the run that
         # reads it back looks like one that simply had nothing to measure.
 
-    def _resolve_embedding_transfer_mode(self) -> None:
-        """Resolve embedding_transfer_mode from string to enum."""
-        if isinstance(self.embedding_transfer_mode, str):
-            self.embedding_transfer_mode = EmbeddingTransferMode(
-                self.embedding_transfer_mode
-            )
-
     def _resolve_disaggregation_mode(self) -> None:
         """Resolve disaggregation_mode from its CLI value."""
         if isinstance(self.disaggregation_mode, str):
@@ -733,263 +501,4 @@ class DynamoVllmConfig(ConfigBase):
         if self.disaggregation_mode is None:
             self.disaggregation_mode = DisaggregationMode.AGGREGATED
 
-    def _validate_custom_encoder(self) -> None:
-        """Validate the aggregated CustomEncoder configuration.
 
-        The encoder runs in-process in a single aggregated worker on the
-        token-in/token-out path and produces decoder-adapted image artifacts, so
-        it is a multimodal, aggregated-only, token-mode component. Enforce those
-        here (fail fast) instead of silently bypassing
-        the multimodal gate at request time, no-op'ing in a decode worker that
-        never reaches the custom-encoder branch, or loading the encoder in
-        --use-vllm-tokenizer text mode where it is never invoked.
-        """
-        if not self.custom_encoder_class:
-            return
-        if not self.enable_multimodal:
-            raise ValueError(
-                "--custom-encoder-class requires --enable-multimodal "
-                "(the custom encoder is a multimodal component)."
-            )
-        if self.use_vllm_tokenizer:
-            raise ValueError(
-                "--custom-encoder-class is incompatible with --use-vllm-tokenizer: "
-                "the custom encoder is wired into the token-in/token-out path, "
-                "which --use-vllm-tokenizer bypasses (text mode), so the encoder "
-                "would load but never run."
-            )
-        if self.frontend_decoding:
-            raise ValueError(
-                "--custom-encoder-class is incompatible with --frontend-decoding: "
-                "the custom encoder consumes image URLs, but frontend decoding "
-                "pre-decodes images to tensors the encoder cannot accept."
-            )
-        if self.disaggregation_mode != DisaggregationMode.AGGREGATED:
-            mode = (
-                self.disaggregation_mode.value
-                if isinstance(self.disaggregation_mode, DisaggregationMode)
-                else self.disaggregation_mode
-            )
-            raise ValueError(
-                f"--custom-encoder-class is only supported with "
-                f"--disaggregation-mode=agg (got {mode}). The custom encoder "
-                "runs in-process in a single aggregated worker."
-            )
-
-    def _validate_embedding_worker_exclusivity(self) -> None:
-        """Embedding worker is aggregated-only and exclusive of multimodal roles."""
-        if not self.embedding_worker:
-            return
-        if self.disaggregation_mode != DisaggregationMode.AGGREGATED:
-            raise ValueError(
-                "--embedding-worker is only valid with --disaggregation-mode=agg "
-                f"(got {self.disaggregation_mode.value if isinstance(self.disaggregation_mode, DisaggregationMode) else self.disaggregation_mode}). "
-                "Pooling models do not have prefill/decode phases."
-            )
-        if self.enable_multimodal:
-            raise ValueError(
-                "--embedding-worker cannot be combined with multimodal flags."
-            )
-        if self.benchmark_mode is not None:
-            raise ValueError(
-                "--embedding-worker cannot be combined with --benchmark-mode. "
-                "Benchmark mode injects InstrumentedScheduler, which is a "
-                "generation scheduler and not compatible with pooling engines. "
-                "Embedding workers do not run generation, so prefill/decode "
-                "benchmark sweeps are not meaningful."
-            )
-
-    def _validate_embedding_frontend_tokenization(self) -> None:
-        """Validate the temporary embedding tokenization compatibility gate."""
-        if not self.embedding_frontend_tokenization:
-            return
-        if not self.embedding_worker:
-            raise ValueError(
-                "--embedding-frontend-tokenization requires --embedding-worker."
-            )
-        if self.use_vllm_tokenizer:
-            raise ValueError(
-                "--embedding-frontend-tokenization cannot be combined with "
-                "--use-vllm-tokenizer."
-            )
-
-    def _validate_embedding_worker_processes(self) -> None:
-        """Validate the embedding-only shared-EngineCore process count."""
-        if self.embedding_worker_processes < 1:
-            raise ValueError("--embedding-worker-processes must be at least 1.")
-        if self.embedding_worker_processes == 1:
-            return
-        if not self.embedding_worker:
-            raise ValueError(
-                "--embedding-worker-processes greater than 1 requires "
-                "--embedding-worker."
-            )
-        if self.headless:
-            raise ValueError(
-                "--embedding-worker-processes greater than 1 cannot be combined "
-                "with --headless. Shared-EngineCore processes serve Dynamo "
-                "embedding endpoints and therefore require the runtime."
-            )
-        if _is_intra_pod_failover_engine():
-            raise ValueError(
-                "--embedding-worker-processes greater than 1 cannot currently be "
-                "combined with intra-pod failover. The operator assigns adjacent "
-                "DYN_SYSTEM_PORT values to engine containers, so their embedding "
-                "process port ranges would overlap."
-            )
-
-        request_plane = getattr(self, "request_plane", "tcp")
-        tcp_rpc_port = _configured_fixed_port("DYN_TCP_RPC_PORT")
-        if request_plane == "tcp" and tcp_rpc_port is not None:
-            raise ValueError(
-                "DYN_TCP_RPC_PORT cannot be fixed when "
-                "--embedding-worker-processes is greater than 1 because every "
-                "endpoint process needs a unique TCP RPC listener. Unset "
-                "DYN_TCP_RPC_PORT to use OS-assigned ports."
-            )
-
-        # Children inherit the parent's argv, but their DYN_SYSTEM_PORT is
-        # already shifted to base+index. The parent alone owns the full range.
-        from .embedding_worker_processes import is_embedding_process_child
-
-        if is_embedding_process_child():
-            return
-
-        system_range = self._validate_system_port_range()
-        self._validate_port_reservation_collisions(system_range)
-
-    def _validate_system_port_range(self) -> tuple[int, int] | None:
-        """Reject a system-port range that would not fit."""
-        raw = os.environ.get("DYN_SYSTEM_PORT")
-        if raw is None or not raw.strip():
-            return None
-        try:
-            base = int(raw)
-        except ValueError:
-            return None
-        if base <= 0:
-            return None
-
-        highest = base + self.embedding_worker_processes - 1
-        if highest > MAX_PORT:
-            raise ValueError(
-                f"DYN_SYSTEM_PORT={base} with --embedding-worker-processes "
-                f"{self.embedding_worker_processes} needs ports {base}-{highest}, "
-                f"which exceeds the maximum port {MAX_PORT}. Lower DYN_SYSTEM_PORT or "
-                "reduce the process count."
-            )
-        return base, highest
-
-    def _validate_port_reservation_collisions(
-        self, system_range: tuple[int, int] | None
-    ) -> None:
-        """Reject overlaps between listeners active in this worker container."""
-        reservations: list[tuple[str, int, int]] = []
-        if system_range is not None:
-            reservations.append(("DYN_SYSTEM_PORT", *system_range))
-
-        if "DYN_FORWARDPASS_METRIC_PORT" in os.environ:
-            fpm_port = _configured_fixed_port("DYN_FORWARDPASS_METRIC_PORT")
-            if fpm_port is not None:
-                reservations.append(("DYN_FORWARDPASS_METRIC_PORT", fpm_port, fpm_port))
-
-        nixl_port = _nixl_prometheus_port()
-        if nixl_port is not None:
-            reservations.append(
-                ("NIXL_TELEMETRY_PROMETHEUS_PORT", nixl_port, nixl_port)
-            )
-
-        for index, (left_name, left_start, left_end) in enumerate(reservations):
-            for right_name, right_start, right_end in reservations[index + 1 :]:
-                if max(left_start, right_start) > min(left_end, right_end):
-                    continue
-                left_ports = (
-                    str(left_start)
-                    if left_start == left_end
-                    else f"{left_start}-{left_end}"
-                )
-                right_ports = (
-                    str(right_start)
-                    if right_start == right_end
-                    else f"{right_start}-{right_end}"
-                )
-                raise ValueError(
-                    "embedding worker port reservations overlap: "
-                    f"{left_name} reserves {left_ports}, while {right_name} "
-                    f"reserves {right_ports}. Configure non-overlapping ports."
-                )
-
-    def _validate_realtime_worker_exclusivity(self) -> None:
-        """Realtime serving uses a dedicated aggregated bidirectional worker."""
-        if not self.realtime:
-            return
-        if self.disaggregation_mode != DisaggregationMode.AGGREGATED:
-            mode = (
-                self.disaggregation_mode.value
-                if isinstance(self.disaggregation_mode, DisaggregationMode)
-                else self.disaggregation_mode
-            )
-            raise ValueError(
-                f"--realtime is only valid with --disaggregation-mode=agg (got {mode})."
-            )
-        if self.embedding_worker:
-            raise ValueError("--realtime cannot be combined with --embedding-worker.")
-        if self.classify_worker:
-            raise ValueError("--realtime cannot be combined with --classify-worker.")
-        for enabled, option in (
-            (bool(self.custom_encoder_class), "--custom-encoder-class"),
-            (self.gms_shadow_mode, "--gms-shadow-mode"),
-            (self.enable_rl, "--enable-rl"),
-            (self.headless, "--headless"),
-        ):
-            if enabled:
-                raise ValueError(f"--realtime cannot be combined with {option}.")
-        if self.enable_multimodal:
-            raise ValueError(
-                "--realtime cannot be combined with multimodal worker flags."
-            )
-        if self.benchmark_mode is not None:
-            raise ValueError("--realtime cannot be combined with --benchmark-mode.")
-        if getattr(getattr(self, "engine_args", None), "enable_lora", False):
-            raise ValueError("--realtime cannot be combined with --enable-lora.")
-
-    def _validate_classify_worker_exclusivity(self) -> None:
-        """Classify worker is aggregated-only and exclusive of multimodal /
-        embedding roles. Mirrors the embedding-worker constraints — both are
-        pooling roles with no prefill/decode phases."""
-        if not self.classify_worker:
-            return
-        if self.embedding_worker:
-            raise ValueError(
-                "--classify-worker and --embedding-worker are mutually exclusive; "
-                "a worker registers exactly one pooling model type."
-            )
-        if self.disaggregation_mode != DisaggregationMode.AGGREGATED:
-            raise ValueError(
-                "--classify-worker is only valid with --disaggregation-mode=agg "
-                f"(got {self.disaggregation_mode.value if isinstance(self.disaggregation_mode, DisaggregationMode) else self.disaggregation_mode}). "
-                "Pooling models do not have prefill/decode phases."
-            )
-        if self.enable_multimodal:
-            raise ValueError(
-                "--classify-worker cannot be combined with multimodal flags."
-            )
-        if self.benchmark_mode is not None:
-            raise ValueError(
-                "--classify-worker cannot be combined with --benchmark-mode. "
-                "Benchmark mode injects InstrumentedScheduler, which is a "
-                "generation scheduler and not compatible with pooling engines."
-            )
-        if self.headless:
-            raise ValueError(
-                "--classify-worker cannot be combined with --headless. "
-                "Headless mode returns before WorkerFactory.create(), so the "
-                "classify/pooling endpoint would never be registered."
-            )
-        if getattr(getattr(self, "engine_args", None), "enable_lora", False):
-            raise ValueError(
-                "--classify-worker cannot be combined with --enable-lora. "
-                "The pooling-family handler does not forward lora_request to "
-                "engine_client.encode(), so an adapter-targeted request would "
-                "silently run against the base model."
-            )

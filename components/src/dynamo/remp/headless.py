@@ -19,7 +19,6 @@ so secondary nodes run neither this headless mode nor the backend at all.
 from __future__ import annotations
 
 import argparse
-import os
 
 from .args import Config
 
@@ -44,23 +43,6 @@ def run_dynamo_headless(config: Config) -> None:
     Secondary nodes spawn vLLM workers only — no engine core, no scheduler,
     no Dynamo endpoints. Bypasses DistributedRuntime entirely (no NATS/etcd).
     """
-    # Propagate worker_cls for custom load formats so headless workers use
-    # the same model loader settings as the leader node.
-    if config.engine_args.load_format == "gms":
-        config.engine_args.worker_cls = (
-            "gpu_memory_service.integrations.vllm.worker.GMSWorker"
-        )
-
-        if config.gms_shadow_mode:
-            from gpu_memory_service.integrations.vllm.utils import (
-                configure_gms_lock_mode,
-                configure_mx_ports,
-            )
-
-            os.environ["DYN_GMS_SCRATCH_KV_ENABLED"] = "1"
-            configure_gms_lock_mode(config.engine_args)
-            configure_mx_ports(config.engine_args)
-
     # ModelExpress uses vLLM's plugin path with --load-format=modelexpress.
     # Dynamo does not set a custom worker class here.
 
