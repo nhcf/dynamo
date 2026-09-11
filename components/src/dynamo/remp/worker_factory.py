@@ -1346,6 +1346,12 @@ class WorkerFactory:
             generate_endpoint,
             handler,
             lora_enabled=lora_enabled,
+            enable_tp_pp_switch=(
+                config.disaggregation_mode != DisaggregationMode.DECODE
+                and callable(
+                    getattr(engine_client, "switch_parallel_strategy", None)
+                )
+            ),
         )
 
         # Parse endpoint types from --endpoint-types flag
@@ -1797,6 +1803,7 @@ class WorkerFactory:
         generate_endpoint: Endpoint,
         handler: BaseWorkerHandler,
         lora_enabled: bool = False,
+        enable_tp_pp_switch: bool = False,
     ) -> None:
         """Register all engine routes for this handler.
 
@@ -1813,6 +1820,13 @@ class WorkerFactory:
             "control/scale_elastic_ep", handler.scale_elastic_ep
         )
         runtime.register_engine_route("control/ep_capacity", handler.get_ep_capacity)
+        if enable_tp_pp_switch:
+            runtime.register_engine_route(
+                "control/switch_parallel_strategy", handler.switch_parallel_strategy
+            )
+            runtime.register_engine_route(
+                "control/parallel_strategy_state", handler.get_parallel_strategy_state
+            )
 
         rl_routes: dict = {
             "liveness_probe": handler.liveness_probe,
@@ -1850,7 +1864,13 @@ class WorkerFactory:
             "Registered engine routes: control/sleep, control/wake_up, "
             "control/scale_elastic_ep, control/ep_capacity, "
             "control/start_profile, control/stop_profile, "
+            "%s"
             "and RL admin routes: %s%s",
+            (
+                "control/switch_parallel_strategy, control/parallel_strategy_state, "
+                if enable_tp_pp_switch
+                else ""
+            ),
             ", ".join(sorted(rl_routes)),
             " (LoRA routes: load_lora, unload_lora)" if lora_enabled else "",
         )

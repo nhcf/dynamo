@@ -85,6 +85,7 @@ class VllmEngineMonitor:
         2. Shutdown event is triggered - stop monitoring gracefully
         3. Task is cancelled - cleanup
         """
+        switch_started_at: float | None = None
         while True:
             try:
                 # Check if shutdown event was triggered - stop monitoring
@@ -93,6 +94,27 @@ class VllmEngineMonitor:
                         f"{self.__class__.__name__}: Shutdown event detected, stopping engine health monitoring."
                     )
                     break
+
+                if self._is_parallel_strategy_switching():
+                    if switch_started_at is None:
+                        switch_started_at = asyncio.get_running_loop().time()
+                    # KV migration and model reload can legitimately outlive
+                    # one health interval.  Do not race the switch with a
+                    # liveness RPC, but retain a bounded grace period so a
+                    # hung collective is still detected.
+                    switch_grace = max(
+                        self.health_config.check_timeout,
+                        2 * self.health_config.interval,
+                        30.0,
+                    )
+                    if (
+                        asyncio.get_running_loop().time() - switch_started_at
+                        < switch_grace
+                    ):
+                        await asyncio.sleep(min(self.health_config.interval, 1.0))
+                        continue
+                else:
+                    switch_started_at = None
 
                 await self._run_health_check()
 
@@ -141,6 +163,13 @@ class VllmEngineMonitor:
                 health_check, timeout=self.health_config.check_timeout
             )
         return await health_check
+
+    def _is_parallel_strategy_switching(self) -> bool:
+        """Avoid probing an ElasticVllm executor during TP/PP reconfiguration."""
+        is_switching = getattr(
+            self.engine_client, "is_switching_parallel_strategy", None
+        )
+        return bool(is_switching()) if callable(is_switching) else False
 
     async def _periodic_log_stats(self):
         """Periodically flush vLLM engine stats (throughput, cache usage, etc.)."""
