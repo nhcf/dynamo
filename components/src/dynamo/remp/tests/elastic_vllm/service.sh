@@ -12,9 +12,32 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 # ===================== Configuration Constants =====================
-export VLLM_PLUGINS=metax
+export VLLM_PLUGINS=infinicore
 export VLLM_DISTRIBUTED_EXECUTOR_BACKEND=mp
 export VLLM_SERVER_DEV_MODE=1  # Enable switch_parallel_strategy API routes
+export VLLM_INFINICORE_GDN_SINGLE_STAGE=1  # C550-compatible GDN kernel configuration
+export MACA_PATH="${MACA_PATH:-/opt/maca-3.8.0}"
+export MACA_HOME="$MACA_PATH"
+export MACA_ROOT="$MACA_PATH"
+
+# Resolve FLASH_ATTN_2_CUDA_SO dynamically to avoid the plugin's
+# nonexistent Python 3.12 default.
+PYTHON_BIN="${PYTHON_BIN:-/opt/conda/bin/python}"
+if [[ -z "${FLASH_ATTN_2_CUDA_SO:-}" ]]; then
+    FLASH_ATTN_2_CUDA_SO="$("$PYTHON_BIN" - <<'PY'
+import importlib.util
+from pathlib import Path
+spec = importlib.util.find_spec("flash_attn_2_cuda")
+if spec is None or spec.origin is None:
+    raise SystemExit("flash_attn_2_cuda is not installed for the selected Python")
+library = Path(spec.origin).resolve()
+if not library.is_file() or library.suffix != ".so":
+    raise SystemExit(f"FlashAttention shared library not found: {library}")
+print(library)
+PY
+)"
+    export FLASH_ATTN_2_CUDA_SO
+fi
 
 # Dynamo 端口规划：
 #   FRONTEND_PORT  — 前端 OpenAI 兼容 API（/v1/chat/completions 等）
@@ -23,9 +46,6 @@ FRONTEND_PORT=9090
 CONTROL_PORT=9091
 SERVICE_URL="http://localhost:${FRONTEND_PORT}"
 CONTROL_URL="http://localhost:${CONTROL_PORT}"
-export MACA_PATH=/opt/maca-3.8.0
-export MACA_HOME=/opt/maca-3.8.0
-export MACA_ROOT=/opt/maca-3.8.0
 
 # Logs & PID files — kept inside the recipe directory so the workspace root stays clean
 LOG_DIR="${WORKSPACE_DIR}/logs"
@@ -559,4 +579,3 @@ else
         echo "    (foreground mode)"
         exec "${CMD[@]}"
     fi
-fi

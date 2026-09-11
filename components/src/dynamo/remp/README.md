@@ -1,333 +1,197 @@
-# Elastic-vLLM: 弹性 TP/PP 并行策略切换
+# dynamo.remp — Dynamo vLLM 推理引擎适配层
 
-在 4 GPU 场景下，运行时动态切换 Tensor Parallelism (TP) 与 Pipeline Parallelism (PP) 并行策略，无需重启服务即可适配不同负载。
+`dynamo.remp` 是 NVIDIA Dynamo 分布式推理框架的 vLLM 适配层，与 `dynamo.vllm` 和 `dynamo.sglang` 同级。它将 vLLM 引擎适配到 Dynamo 的分布式运行时，支持多种推理模式、KV 传输协议和高级特性。
 
-## 支持的并行策略
-
-| 策略 | TP | PP | 适用场景 |
-|------|----|----|----------|
-| `4x1` | 4 | 1 | 高吞吐 Prefill |
-| `2x2` | 2 | 2 | 均衡 Prefill/Decode |
-| `1x4` | 1 | 4 | 低延迟 Decode |
-
-## 环境要求
-
-| 项目 | 值 |
-|------|-----|
-| GPU 数量 | 4 |
-| Python | 3.10+ |
-| PyTorch | 2.10.0+metax |
-| vLLM | 0.22.0 |
-| 模型路径 | `/mnt/nanhuinfer/models/Qwen3-0.6B/` |
-
-## 快速开始
-
-### 1. 设置环境变量
-
-```bash
-# 必需：用于同步 ElasticVllm_demo 私有仓库
-export ELASTIC_VLLM_GITHUB_TOKEN=<your-github-token>
-```
-
-### 2. 同步代码
-
-```bash
-cd /workspace
-./dynamo/recipes/elastic-vllm/service.sh sync
-```
-
-该命令会：
-1. 从 GitHub 克隆/拉取 `ElasticVllm_demo` 和 `dynamo` 仓库
-2. 将源码复制到 conda site-packages
-3. 自动应用 `patches/` 目录下的本地补丁
-
-> **注意**：`service.sh` 的执行目录应为 `/workspace`，脚本会自动检测工作目录。
-
-### 3. 启动服务
-
-```bash
-cd /workspace
-
-# vLLM 原生模式（后台）
-./dynamo/recipes/elastic-vllm/service.sh vllm --background --gpu-memory-utilization 0.4
-
-# Dynamo 模式（后台，含 backend + frontend）
-./dynamo/recipes/elastic-vllm/service.sh dynamo --background --gpu-memory-utilization 0.4
-```
-
-> **注意**：`--enforce-eager` 已纳入默认参数（COMMON_ARGS），无需手动指定。在线切换必须启用该参数，否则切换时 Worker 会因 CUDA Graph 编译卡住导致 RPC 超时。
-
-### 4. 健康检查
-
-```bash
-./dynamo/recipes/elastic-vllm/service.sh health
-```
-
-查询并行策略状态和触发切换需通过 HTTP API 直接调用（service.sh 未内置 status/switch 子命令）：
-
-```bash
-# 查询当前并行策略状态（Dynamo 模式）
-curl -s -X POST http://localhost:9091/engine/control/parallel_strategy_state \
-  -H "Content-Type: application/json" -d '{}' | jq .
-
-# 查询是否正在切换（vLLM 原生模式）
-curl -s http://localhost:9090/is_switching_parallel_strategy | jq .
-```
-
-### 5. 手动触发切换
-
-```bash
-# Dynamo 模式
-curl -s -X POST http://localhost:9091/engine/control/switch_parallel_strategy \
-  -H "Content-Type: application/json" \
-  -d '{"new_world_size":4,"target_tensor_parallel_size":2,"target_pipeline_parallel_size":2,"request_handling":"wait","admission_handling":"queue"}' | jq .
-
-# vLLM 原生模式
-curl -s -X POST http://localhost:9090/switch_parallel_strategy \
-  -H "Content-Type: application/json" \
-  -d '{"new_world_size":4,"target_tensor_parallel_size":2,"target_pipeline_parallel_size":2,"request_handling":"wait","admission_handling":"queue"}' | jq .
-```
-
-### 6. 停止服务
-
-```bash
-./dynamo/recipes/elastic-vllm/service.sh stop
-```
-
-## 测试
-
-### 离线测试 (`test/test_offline_switch.py`)
-
-使用 `LLM` 类直接在进程内进行离线推理和切换，无需启动 HTTP 服务。
-
-**流程**：
-1. 初始化 LLM（4×1 配置）
-2. Warmup 推理
-3. 切换 4×1 → 2×2 → 推理验证
-4. 切换 2×2 → 1×4 → 推理验证
-5. 切换 1×4 → 4×1 → 推理验证
-
-**运行命令**：
-
-```bash
-cd /workspace
-
-export VLLM_PLUGINS=metax
-export VLLM_SERVER_DEV_MODE=1
-
-python3 dynamo/recipes/elastic-vllm/test/test_offline_switch.py \
-    --gpu-memory-utilization 0.4
-```
-
-**预期输出**：
+## 目录结构
 
 ```
-================================================================================
-  Step 1: Initialize LLM (4×1)
-================================================================================
-...（引擎初始化日志）...
-
-================================================================================
-  Step 2: Warmup inference
-================================================================================
-  Prompt: 'warmup'  →  '...'
-
-================================================================================
-  Step 3: Switch 4×1 → 2×2
-================================================================================
-  ✅ Switch to 2×2 completed
-
-================================================================================
-  Step 4: Inference at 2×2
-================================================================================
-  Prompt: 'hello'
-  Text:   '...'
-
-================================================================================
-  Step 5: Switch 2×2 → 1×4
-================================================================================
-  ✅ Switch to 1×4 completed
-
-================================================================================
-  Step 6: Inference at 1×4
-================================================================================
-  Prompt: 'what is the capital of France?'
-  Text:   '...'
-
-================================================================================
-  Step 7: Switch 1×4 → 4×1 (back to original)
-================================================================================
-  ✅ Switch to 4×1 completed
-
-================================================================================
-  Step 8: Final inference at 4×1
-================================================================================
-  Prompt: 'goodbye!'
-  Text:   '...'
-
-================================================================================
-  Summary
-================================================================================
-  ✅ All offline switch tests passed!
-  Transitions verified:
-    4×1 ──→ 2×2 ──→ 1×4 ──→ 4×1
-  Inference succeeded at each configuration.
+remp/
+├── __init__.py                       # 包版本管理
+├── __main__.py                       # 入口：PYTHONHASHSEED + 快照恢复检查 → 调用 main()
+├── main.py                           # 核心 worker() 异步函数 + 引擎初始化/模型注册/KV 事件/FPM
+├── args.py                           # Config 类（DynamoRuntimeConfig + DynamoVllmConfig）+ CLI 解析
+├── backend_args.py                   # DynamoVllmArgGroup / DynamoVllmConfig（vLLM 特有参数）
+├── worker_factory.py                 # WorkerFactory：创建各类 worker + 注册控制面路由
+├── handlers.py                       # 请求处理核心（BaseWorkerHandler / Decode / Prefill / Embedding）
+├── pooling_handlers.py               # ClassifyWorkerHandler（/classify + /pooling API）
+│
+├── kv_connector_protocols.py         # KvConnectorProtocol 抽象（NIXL / Mooncake / LMCacheMP）
+├── kv_hints.py                       # KV 传输能力发布（P2P 路由提示）
+├── cache_info.py                     # KV event block size 配置
+├── capacity.py                       # Token budget 发布到 Dynamo frontend
+│
+├── instrumented_scheduler.py         # InstrumentedScheduler（FPM ZMQ PUB + 自基准测试编排）
+├── benchmark_points.py               # 自基准测试点 Pydantic schema
+├── gc_policy.py                      # FPM 基准测试 GC 暂停缓解
+├── engine_monitor.py                 # VllmEngineMonitor 引擎健康监控
+├── publisher.py                      # DynamoStatLoggerPublisher 指标发布
+├── engine_generate.py                # vLLM Generate API 能力发布
+│
+├── snapshot.py                       # CRIU 快照恢复模式（EngineSnapshotController）
+├── lora_state.py                     # LoRA 跟踪与 per-adapter asyncio.Lock
+├── state_agent.py                    # KV state attachment 所有者生命周期管理
+├── headless.py                       # 多节点 TP/PP 从节点模式
+├── sidecar.py                        # Dynamo 原生 vLLM sidecar 启动器
+├── dp_topology.py                    # 数据并行拓扑辅助
+├── embedding_worker_processes.py     # 多进程共享 EngineCore 的 Embedding worker 池
+├── health_check.py                   # 多种健康检查 payload
+│
+├── constants.py                      # 重导出 DisaggregationMode / EmbeddingTransferMode
+├── errors.py                         # vLLM 客户端错误 → Dynamo HttpError 转换
+├── envs.py                           # 环境变量配置（DYN_FORWARDPASS_METRIC_PORT 等）
+│
+├── omni/                             # 多阶段管线生成 worker
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── main.py                       # Omni worker 入口
+│   ├── args.py                       # OmniArgGroup / OmniConfig
+│   ├── base_handler.py               # BaseOmniHandler
+│   ├── omni_handler.py               # OmniHandler
+│   ├── audio_handler.py              # AudioGenerationHandler
+│   ├── realtime_handler.py           # RealtimeOmniHandler
+│   ├── stage_router.py               # OmniStageRouter
+│   ├── stage_worker.py               # OmniStageWorker
+│   ├── output_formatter.py           # Audio/Text 输出格式化
+│   ├── realtime_utils.py             # Realtime 工具函数
+│   ├── types.py                      # StageEngine / StageOutput / StageRequest 类型
+│   ├── utils.py                      # 通用工具
+│   └── connectors/
+│       ├── __init__.py
+│       └── nixl_connector.py         # DynamoOmniNixlConnector
+│
+├── realtime/                         # OpenAI Realtime API 兼容层
+│   ├── __init__.py
+│   ├── handler.py                    # RealtimeHandler / RealtimeTranscriptionHandler
+│   ├── connection.py                 # RealtimeConnection / RealtimeTurn
+│   ├── events.py                     # 事件定义
+│   └── serving.py                    # 服务入口
+│
+├── multimodal_handlers/              # 多模态编码处理
+│   ├── __init__.py
+│   └── encode_worker_handler.py      # EncodeWorkerHandler
+│
+├── multimodal_utils/                 # 多模态工具集
+│   ├── __init__.py
+│   ├── embedding_cache.py            # EmbeddingCache
+│   ├── encode_utils.py               # 编码工具函数
+│   ├── hash_utils.py                 # 哈希工具
+│   ├── cache_config.py               # 缓存配置
+│   ├── chat_message_utils.py         # Chat 消息工具
+│   ├── media_config.py               # 媒体配置
+│   ├── model.py                      # 多模态模型抽象
+│   ├── model_config.py               # 模型配置
+│   ├── protocol.py                   # 协议定义
+│   ├── request_processor.py          # VllmMultimodalRequestProcessor
+│   ├── prefill_worker_utils.py       # Prefill worker 辅助
+│   ├── multimodal_embedding_cache_connector.py  # 多模态嵌入缓存连接器
+│   ├── custom_encoder/               # 自定义视觉编码器
+│   │   ├── __init__.py
+│   │   ├── async_encoder.py          # AsyncVisionEncoder
+│   │   ├── batcher.py                # 编码批处理器
+│   │   ├── adapter/                  # 编码器适配器
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py              # CustomEncoderAdapter 基类
+│   │   │   ├── factory.py           # 适配器工厂
+│   │   │   ├── linear.py            # LinearEncoderAdapter
+│   │   │   └── qwen3_vl.py         # Qwen3VLAdapter
+│   │   └── backend/                  # 编码器后端
+│   │       ├── __init__.py
+│   │       └── base.py              # 编码器后端基类
+│   └── models/                       # 模型特定工具
+│       ├── __init__.py
+│       ├── qwen.py                   # Qwen 模型工具
+│       └── qwen_video_routing.py     # Qwen 视频路由
+│
+└── tests/                            # 测试与运维
+    ├── service.sh                    # 统一运维脚本（sync/dynamo/vllm/stop/health）
+    ├── patches/                      # 本地补丁文件（sync 后自动应用）
+    ├── test/
+    │   ├── test_offline_switch.py    # 离线 TP/PP 切换验证
+    │   ├── test_online_switch.py     # 在线 TP/PP 切换验证
+    │   ├── test_online_switch_dynamo.py  # Dynamo 模式在线切换测试
+    │   └── report.md                 # 测试报告
+    └── 0920/
+        ├── run_bench.sh              # 基准测试脚本
+        └── service_qwen3.8-27b.sh    # Qwen3.8-27B 专用脚本
 ```
 
-### 在线测试 (`test/test_online_switch.py`)
+## 核心模块说明
 
-通过 HTTP API 与 vLLM / Dynamo 服务交互，验证在线切换功能。**需先启动服务**。
+### 入口与配置
 
-**流程**：
-1. 验证服务可达性和初始状态（4×1）
-2. Warmup 推理
-3. 发送切换请求 4×1 → 2×2 → 等待切换完成 → 推理验证
-4. 发送切换请求 2×2 → 1×4 → 等待切换完成 → 推理验证
-5. 发送切换请求 1×4 → 4×1 → 等待切换完成 → 推理验证
-
-**运行步骤**：
-
-```bash
-cd /workspace
-
-# 1. 启动 vLLM 服务（后台）
-./dynamo/recipes/elastic-vllm/service.sh vllm --background \
-    --gpu-memory-utilization 0.4
-
-# 2. 等待服务就绪
-./dynamo/recipes/elastic-vllm/service.sh health
-
-# 3. 运行在线测试
-export VLLM_PLUGINS=metax
-export VLLM_SERVER_DEV_MODE=1
-python3 dynamo/recipes/elastic-vllm/test/test_online_switch.py
-
-# 4. 测试完成后停止服务
-./dynamo/recipes/elastic-vllm/service.sh stop
-```
-
-**预期输出**：
-
-```
-================================================================================
-  Step 0: Verify initial state (4×1)
-================================================================================
-{
-  "is_switching_parallel_strategy": false,
-  "admission_handling": "queue",
-  "retry_after": 1
-}
-✅ Service is reachable
-
-================================================================================
-  Step 1: Warmup inference
-================================================================================
-─── [Infer] warmup ───
-  Prompt:   'warmup'
-  Response: '...'
-  Tokens:   4
-
-================================================================================
-  Step 2: Switch 4×1 → 2×2
-================================================================================
-  Sending switch request...
-{
-  "status": "switched",
-  ...
-}
-  ✅ Switch complete (is_switching_parallel_strategy=false)
-
-================================================================================
-  Step 3: Inference at 2×2
-================================================================================
-─── [Infer] 2x2 ───
-  Prompt:   'hello, who are you?'
-  Response: '...'
-  Tokens:   30
-
-...（后续切换步骤类似）...
-
-================================================================================
-  Summary
-================================================================================
-  ✅ All online switch tests passed!
-  Transitions verified:
-    4×1 ──→ 2×2 ──→ 1×4 ──→ 4×1
-  Inference succeeded at each configuration.
-```
-
-### 手动 API 调用验证
-
-```bash
-# 推理请求（vLLM 或 Dynamo 模式均可）
-curl -s http://localhost:9090/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"model":"/mnt/nanhuinfer/models/Qwen3-0.6B/","messages":[{"role":"user","content":"Hi"}]}' | jq .
-
-# 查询并行策略状态（Dynamo 模式）
-curl -s -X POST http://localhost:9091/engine/control/parallel_strategy_state \
-  -H "Content-Type: application/json" -d '{}' | jq .
-
-# 触发切换（Dynamo 模式）
-curl -s -X POST http://localhost:9091/engine/control/switch_parallel_strategy \
-  -H "Content-Type: application/json" \
-  -d '{"new_world_size":4,"target_tensor_parallel_size":2,"target_pipeline_parallel_size":2,"request_handling":"wait","admission_handling":"queue"}' | jq .
-
-# 查询并行策略状态（vLLM 原生模式）
-curl -s http://localhost:9090/is_switching_parallel_strategy | jq .
-
-# 触发切换（vLLM 原生模式）
-curl -s -X POST http://localhost:9090/switch_parallel_strategy \
-  -H "Content-Type: application/json" \
-  -d '{"new_world_size":4,"target_tensor_parallel_size":2,"target_pipeline_parallel_size":2,"request_handling":"wait","admission_handling":"queue"}' | jq .
-```
-
-## 切换参数说明
-
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `new_world_size` | int | 4 | 切换后总 GPU 数（须 = TP × PP） |
-| `target_tensor_parallel_size` | int | — | 目标 TP 度 |
-| `target_pipeline_parallel_size` | int | — | 目标 PP 度 |
-| `target_num_blocks` | int\|null | null | 目标 KV Cache 块数（null=自动计算） |
-| `request_handling` | `"idle"`\|`"wait"` | `"wait"` | `idle`：仅空闲时切换；`wait`：等待在途请求完成后切换 |
-| `admission_handling` | `"queue"`\|`"reject"` | `"queue"` | 切换期间新请求的处理策略：排队等待或拒绝(503) |
-| `retry_after` | int | 1 | 拒绝时建议的重试等待秒数 |
-
-## 端口规划
-
-### Dynamo 模式
-
-| 端口 | 用途 | 路由示例 |
-|------|------|----------|
-| 9090 | 前端 OpenAI API | `/v1/chat/completions`, `/v1/models` |
-| 9091 | 后端控制面 | `/engine/control/switch_parallel_strategy`, `/engine/control/parallel_strategy_state` |
-
-### vLLM 原生模式
-
-| 端口 | 用途 |
+| 文件 | 说明 |
 |------|------|
-| 9090 | 所有路由（包括控制面和推理 API） |
+| `__main__.py` | 入口点，设置 `PYTHONHASHSEED`，检查 CRIU 快照恢复模式，委托 `dynamo.vllm.main.main()` |
+| `main.py` | 核心 `worker()` 异步函数：初始化 DistributedRuntime → 创建 AsyncLLM → 注册模型 → 设置 KV 事件/FPM/指标 → 通过 WorkerFactory 创建 handler |
+| `args.py` | `Config(DynamoRuntimeConfig, DynamoVllmConfig)`：合并运行时与 vLLM 配置，含 NIXL side-channel 自动检测、TP/PP 切换校验 |
+| `backend_args.py` | `DynamoVllmArgGroup` / `DynamoVllmConfig`：vLLM 特有 Dynamo 包装参数定义与校验 |
 
-## 文件结构
+### 请求处理
 
-```
-elastic-vllm/
-├── README.md                 # 本文档
-├── AGENT.md                  # 项目导航与协作指南
-├── service.sh                # 统一运维脚本（sync/start/stop/switch/status/health）
-├── patches/                  # 本地补丁文件（sync 后自动应用）
-│   └── exceptions_add_VLLMClientError.patch
-└── test/
-    ├── test_offline_switch.py # 离线切换测试
-    └── test_online_switch.py  # 在线切换测试
-```
+| 文件 | 说明 |
+|------|------|
+| `handlers.py` | 核心处理逻辑（4700+ 行）：`BaseWorkerHandler` 抽象基类、`DecodeWorkerHandler`、`PrefillWorkerHandler`、`EmbeddingWorkerHandler`、`_DeferredAbort` 延迟中止守卫、`VllmEnginePauseController` 引擎暂停控制器 |
+| `pooling_handlers.py` | `ClassifyWorkerHandler`（继承 `EmbeddingWorkerHandler`）：`/classify` + `/pooling` API，支持批量并发编码 |
+| `worker_factory.py` | `WorkerFactory`（1876 行）：根据 `--disaggregation-mode` 创建对应 worker handler，注册所有控制面路由 |
 
-## 约束与注意事项
+### KV 传输与路由
 
-- 当前仅支持 **DP=1**（不支持 Data Parallelism > 1 时的 TP/PP 切换）
-- Elastic EP 与 TP/PP 切换**互斥**：`enable_elastic_ep=True` 时不能做 TP/PP 切换
-- 切换失败后引擎进入不可恢复状态，必须**重启服务**
-- 在线模式切换需要 `VLLM_SERVER_DEV_MODE=1` 环境变量（已内置到 service.sh）
-- 在线切换必须启用 `--enforce-eager`（已纳入 COMMON_ARGS 默认参数，无需手动指定）
-- GPU 平台为 **Metax MACA**，通过 cu-bridge 提供 CUDA 兼容层
+| 文件 | 说明 |
+|------|------|
+| `kv_connector_protocols.py` | `KvConnectorProtocol` 抽象基类 + `NixlConnectorProtocol`（pull）、`MooncakeConnectorProtocol`（push）、`LMCacheMPConnectorProtocol`（cache-mediated）实现 |
+| `kv_hints.py` | `KvTransferHintSource`：per-rank KV 传输能力元数据发布，支持 P2P 控制端点 |
+| `capacity.py` | 发布 vLLM token budget 到 Dynamo frontend，含 per-rank KV block 估算 |
+| `cache_info.py` | KV event block size 配置查询 |
+
+### 性能与基准测试
+
+| 文件 | 说明 |
+|------|------|
+| `instrumented_scheduler.py` | `InstrumentedScheduler`（AsyncScheduler 子类）：每次前向传播完成后通过 ZMQ PUB 发布 FPM，内置自基准测试编排与跨 rank 同步 |
+| `benchmark_points.py` | Pydantic schema：`BenchmarkPoints`（版本化基准测试点清单）、`PartitionSpec`（请求间工作分布规格） |
+| `gc_policy.py` | `FpmGcWorkerExtension`：基准测试期间 `gc.freeze()` 定期冻结，缓解 GC 暂停 |
+| `publisher.py` | `DynamoStatLoggerPublisher` / `NoopStatLogger` / `StatLoggerFactory`：指标发布到 Dynamo 运行时 |
+| `engine_generate.py` | `publish_engine_generate_capability()`：发布 vLLM Generate API 能力元数据 |
+| `engine_monitor.py` | `VllmEngineMonitor`：引擎健康监控，支持 TP/PP 切换期间的宽限期 |
+
+### 高级功能
+
+| 文件 | 说明 |
+|------|------|
+| `snapshot.py` | `EngineSnapshotController`：CRIU 快照恢复模式准备 |
+| `lora_state.py` | `LoRAState`：LoRA 适配器跟踪与 per-adapter asyncio.Lock（WeakValueDictionary 锁回收） |
+| `state_agent.py` | `StateAgentLifecycle`：KV state attachment 所有者生命周期管理 |
+| `headless.py` | 多节点 TP/PP 从节点模式（无 EngineCore/Scheduler/Dynamo 端点） |
+| `sidecar.py` | Dynamo 原生 vLLM sidecar 启动器 |
+| `dp_topology.py` | 数据并行拓扑辅助函数 |
+| `embedding_worker_processes.py` | `EmbeddingWorkerProcessGroup`：多进程共享一个 EngineCore 的 Embedding worker 池，突破单进程 Python 瓶颈 |
+| `health_check.py` | 多种健康检查 payload（Vllm / Embedding / Prefill / Omni） |
+
+## Worker 类型
+
+| 类型 | Handler | 模式 | 说明 |
+|------|---------|------|------|
+| Decode | `DecodeWorkerHandler` | `--disaggregation-mode decode` | Token-in-token-out 解码，支持 text-in-text-out 模式 |
+| Prefill | `PrefillWorkerHandler` | `--disaggregation-mode prefill` | 分离预填充，仅生成 1 token，集成 KV connector protocol |
+| Aggregated | `DecodeWorkerHandler` | `--disaggregation-mode agg` | 聚合模式（Prefill + Decode 合一） |
+| Embedding | `EmbeddingWorkerHandler` | `--embedding-worker` | OpenAI /v1/embeddings 适配 |
+| Classify | `ClassifyWorkerHandler` | `--classify-worker` | /classify + /pooling API |
+| Encode | `EncodeWorkerHandler` | `--disaggregation-mode encode` | 多模态编码，支持 NIXL/local 嵌入传输 |
+| Realtime | `RealtimeHandler` | `--realtime` | OpenAI Realtime API 转录 |
+| Omni | `OmniHandler` | omni 入口 | 多阶段管线生成（图像/音频/实时） |
+
+## KV 连接器协议
+
+| 协议 | 传输模式 | 说明 |
+|------|---------|------|
+| `NixlConnectorProtocol` | Pull-based | Decode worker 从 prefill 响应读取 block 位置 |
+| `MooncakeConnectorProtocol` | Push-based | Prefill worker 推送 blocks 到预分配 transfer_id |
+| `LMCacheMPConnectorProtocol` | Cache-mediated | KV 通过共享缓存池按 token hash 移动 |
+
+工厂函数 `make_kv_connector_protocol()` 根据 `KVTransferConfig` 自动创建协议实例。
+
+## 弹性 TP/PP 切换
+
+remp 支持运行时动态切换 Tensor Parallelism 与 Pipeline Parallelism 并行策略，无需重启服务。通过控制面路由 `control/switch_parallel_strategy` 触发。
+
+详见 [AGENT.md](AGENT.md) 第 8 节。
