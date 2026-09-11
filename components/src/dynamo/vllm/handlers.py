@@ -1232,6 +1232,14 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
         self._engine_reconfig_lock = asyncio.Lock()
         self._parallel_strategy_switch_in_progress = False
         self._parallel_strategy_switch_failed = False
+        # EngineCore mutates its own process's parallel_config during a TP/PP
+        # switch and never propagates the new values back to AsyncLLM (only
+        # data_parallel_size is written back, on the elastic-EP path), so reading
+        # vllm_config.parallel_config yields *startup* values forever.  Record
+        # what we actually applied so the state route tells the truth.
+        # Per-process and lost on restart -- acceptable, because a restart also
+        # restores the startup topology, so record and reality re-converge.
+        self._applied_parallel_strategy: dict | None = None
         # Created on first Ray-backed get_ep_capacity call so workers that never
         # serve elastic EP do not carry an idle thread.
         self._ep_capacity_inflight = None
@@ -1624,11 +1632,41 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
                 self._scale_ep_in_progress = False
             self._engine_reconfig_lock.release()
 
-    def _parallel_strategy_state(self) -> dict:
-        """Return the local, read-only TP/PP state exposed to Dynamo control-plane callers."""
+    def _parallel_strategy_state(self, *, is_switching: bool | None = None) -> dict:
+        """Return the local, read-only TP/PP state exposed to Dynamo control-plane callers.
+
+        ``tensor_parallel_size`` / ``pipeline_parallel_size`` / ``world_size`` are
+        overlaid with the strategy this process actually applied, because
+        EngineCore's post-switch config never reaches AsyncLLM (see
+        ``_applied_parallel_strategy``).  Without the overlay these fields report
+        the startup topology forever, even after a successful switch.
+
+        ``num_gpu_blocks`` is *not* trustworthy unless the switch supplied an
+        explicit ``target_num_blocks``; EngineCore recomputes it internally and
+        does not report it back.  Do not make scheduling decisions on it.
+
+        ``physical_world_size`` is fixed at startup by the executor and is never
+        mutated by a switch, so it is reliable -- and it is the bound a caller
+        needs, since a target world size may not exceed it.
+
+        Args:
+            is_switching: override the computed flag.  Only the switch success
+                path passes this (as ``False``), so its response does not report
+                a switch that has already completed as still in flight.  Left as
+                ``None`` everywhere else so a concurrent read reflects live state
+                rather than mutating it.
+        """
         parallel_config = self.engine_client.vllm_config.parallel_config
         cache_config = self.engine_client.vllm_config.cache_config
-        return {
+        if is_switching is None:
+            is_switching = self._parallel_strategy_switch_in_progress or bool(
+                getattr(
+                    self.engine_client,
+                    "is_switching_parallel_strategy",
+                    lambda: False,
+                )()
+            )
+        state = {
             "tensor_parallel_size": getattr(
                 parallel_config, "tensor_parallel_size", None
             ),
@@ -1641,16 +1679,13 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
                 parallel_config, "physical_world_size", None
             ),
             "num_gpu_blocks": getattr(cache_config, "num_gpu_blocks", None),
-            "is_switching": self._parallel_strategy_switch_in_progress
-            or bool(
-                getattr(
-                    self.engine_client,
-                    "is_switching_parallel_strategy",
-                    lambda: False,
-                )()
-            ),
+            "is_switching": is_switching,
             "failed": self._parallel_strategy_switch_failed,
         }
+        applied = getattr(self, "_applied_parallel_strategy", None)
+        if applied:
+            state.update({k: v for k, v in applied.items() if v is not None})
+        return state
 
     async def get_parallel_strategy_state(self, body: dict | None = None) -> dict:
         """Read the current ElasticVllm TP/PP strategy without mutating the engine."""
@@ -1747,6 +1782,17 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
                 "message": "retry_after must be a non-negative integer",
             }
 
+        # When true the worker leaves the discovery routing pool for the duration
+        # of the switch, so the router sends new requests to its peers instead of
+        # parking them in this engine.  Only useful with more than one worker: at
+        # N=1 it converts a latency spike into hard 503s.  Off by default.
+        pause_routing = body.get("pause_routing", False)
+        if not isinstance(pause_routing, bool):
+            return {
+                "status": "error",
+                "message": "pause_routing must be a boolean",
+            }
+
         target_num_blocks = body.get("target_num_blocks")
         if target_num_blocks is not None:
             target_num_blocks = _as_exact_int(target_num_blocks)
@@ -1769,7 +1815,21 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
                     "message": "A TP/PP switch is already in progress",
                 }
             self._parallel_strategy_switch_in_progress = True
+            unregistered = False
             try:
+                # Step 1 (optional): leave the routing pool before draining, the
+                # same ordering sleep() uses.  Re-registration happens in the
+                # finally below, on success *and* failure -- a worker left
+                # unregistered after a failed switch is both invisible and
+                # broken, which is worse than either alone.
+                if pause_routing and self.generate_endpoint is not None:
+                    await self.generate_endpoint.unregister_endpoint_instance()
+                    unregistered = True
+                    logger.info(
+                        "[TP/PP] Unregistered endpoint from discovery - worker "
+                        "removed from routing pool for the duration of the switch"
+                    )
+
                 # Lazy import keeps the native-vLLM Dynamo installation usable
                 # when this route is never requested.
                 from vllm.v1.engine import SwitchParallelStrategyRequest
@@ -1782,15 +1842,30 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
                     block_id_remap=None,
                     request_handling=request_handling,
                 )
+                # Returns only once the switch has completed: EngineCore drains
+                # in-flight requests, switches at the idle safe point, then
+                # releases the parked backlog onto the new topology, and the
+                # utility response is deferred until that future resolves.
                 await self.engine_client.switch_parallel_strategy(
                     request,
                     admission_handling=admission_handling,
                     retry_after=retry_after,
                 )
+                # Record what we applied *before* building the response, so both
+                # this payload and every later state read report the new
+                # topology instead of the startup one.
+                applied: dict = {
+                    "tensor_parallel_size": target_tp,
+                    "pipeline_parallel_size": target_pp,
+                    "world_size": new_world_size,
+                }
+                if target_num_blocks is not None:
+                    applied["num_gpu_blocks"] = target_num_blocks
+                self._applied_parallel_strategy = applied
                 return {
                     "status": "ok",
                     "message": "TP/PP switch completed",
-                    **self._parallel_strategy_state(),
+                    **self._parallel_strategy_state(is_switching=False),
                 }
             except Exception as e:
                 message = str(e)
@@ -1813,6 +1888,18 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
                 return {"status": "error", "message": message}
             finally:
                 self._parallel_strategy_switch_in_progress = False
+                if unregistered:
+                    try:
+                        await self.generate_endpoint.register_endpoint_instance()
+                        logger.info(
+                            "[TP/PP] Re-registered endpoint - worker is back in "
+                            "the routing pool"
+                        )
+                    except Exception:
+                        logger.exception(
+                            "[TP/PP] Re-registration failed; worker is serving "
+                            "but absent from discovery and needs a restart"
+                        )
 
     async def get_ep_capacity(self, body: dict) -> dict:
         """Read-only elastic-EP capacity: current dp/tp and the idle GPUs to grow into.
