@@ -1,0 +1,11 @@
+--- a/dynamo/vllm/main.py	2026-09-11 10:31:29.503740440 +0800
++++ b/dynamo/vllm/main.py	2026-09-11 11:20:41.658114982 +0800
+@@ -226,7 +226,7 @@
+         discovery_backend=config.discovery_backend,
+         request_plane=config.request_plane,
+         event_plane=config.event_plane,
+-        response_plane=config.response_plane,
++        response_plane=getattr(config, "response_plane", "tcp"),
+     )
+ 
+     if snapshot_controller is not None:
