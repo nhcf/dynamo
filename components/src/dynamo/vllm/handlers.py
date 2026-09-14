@@ -1532,8 +1532,6 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
 
         logger.info(f"[ElasticEP] Scaling to new_data_parallel_size={new_dp_size}")
 
-        await self._engine_reconfig_lock.acquire()
-
         # Early-reject if another scale is already in progress rather than
         # queuing behind it: a queued caller would garbage-collect the first
         # caller's TCPStore before its Ray actor connects, causing a 300 s
@@ -1545,7 +1543,6 @@ class BaseWorkerHandler(ABC, Generic[RequestT, ResponseT]):
                     f"rejecting concurrent request for new_data_parallel_size={new_dp_size}"
                 )
                 logger.warning("[ElasticEP] %s", msg)
-                self._engine_reconfig_lock.release()
                 return {"status": "error", "message": msg}
             self._scale_ep_in_progress = True
 

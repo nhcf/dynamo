@@ -120,9 +120,6 @@ def parse_args(argv: list[str] | None = None) -> Config:
     # Consume the router flags before the engine parser sees the remainder.
     dynamo_config.router_advertisement, unknown = parse_worker_router_config(unknown)
 
-    # Validate arguments
-    dynamo_config.validate()
-
     vllm_args = vllm_parser.parse_args(unknown)
     # Set the model name from the command line arguments
     # model is defined in AsyncEngineArgs, but when AsyncEngineArgs.from_cli_args is called,
@@ -132,11 +129,19 @@ def parse_args(argv: list[str] | None = None) -> Config:
 
     engine_config = AsyncEngineArgs.from_cli_args(vllm_args)
 
+    # Attach engine_args before validate(): the --enable-lora exclusivity rules
+    # in DynamoVllmConfig.validate() read it, and are dead code without it.
+    dynamo_config.engine_args = engine_config
+
+    # Validate arguments
+    dynamo_config.validate()
+
+    # These run after validate() because they consume what it resolves --
+    # notably the DisaggregationMode enum and the benchmark sampling fields.
     cross_validate_config(dynamo_config, engine_config)
     update_dynamo_config_with_engine(dynamo_config, engine_config)
     update_engine_config_with_dynamo(dynamo_config, engine_config)
 
-    dynamo_config.engine_args = engine_config
     from .state_agent import validate_state_agent_worker
 
     validate_state_agent_worker(dynamo_config)
@@ -163,8 +168,6 @@ def cross_validate_config(
     dynamo_config: Config, engine_config: AsyncEngineArgs
 ) -> None:
     """Validate dynamo and engine config together. This should not modify the configs."""
-
-    _validate_aggregated_tp_pp_switch(dynamo_config, engine_config)
 
     if hasattr(engine_config, "stream_interval") and engine_config.stream_interval != 1:
         logger.info(
@@ -193,63 +196,6 @@ def cross_validate_config(
                 "combined with --enable-lora. Runtime LoRA state is not "
                 "synchronized across embedding endpoint processes."
             )
-
-
-def _validate_aggregated_tp_pp_switch(
-    dynamo_config: Config, engine_config: AsyncEngineArgs
-) -> None:
-    """Validate static prerequisites for the ElasticVllm TP/PP switch path.
-
-    The Dynamo adapter currently exposes this operation only for aggregated
-    workers. Prefill/decode workers require a coordinator for their remote KV
-    transfer layout and strategy epoch, which is not part of this change.
-    """
-    defaults = {
-        "tp_pp_switch_prebuild_strategies": [],
-        "tp_pp_switch_kv_transfer_window_size": 1,
-        "tp_pp_switch_kv_transfer_max_scratch_size_mb": 256,
-        "tp_pp_switch_weight_load_mode": "disk",
-        "tp_pp_switch_weight_cache_dir": "/dev/shm",
-    }
-    switch_requested = False
-    for name, default in defaults.items():
-        value = getattr(engine_config, name, None)
-        if value is None:
-            continue
-        if name == "tp_pp_switch_prebuild_strategies" and value == []:
-            continue
-        if value != default:
-            switch_requested = True
-            break
-    if not switch_requested:
-        return
-
-    mode = getattr(dynamo_config, "disaggregation_mode", None)
-    if mode not in (None, DisaggregationMode.AGGREGATED):
-        raise ValueError(
-            "Elastic TP/PP switching is currently supported only for an aggregated worker"
-        )
-
-    if getattr(engine_config, "data_parallel_size", 1) != 1:
-        raise ValueError("Elastic TP/PP switching requires data_parallel_size=1")
-    if getattr(engine_config, "decode_context_parallel_size", 1) != 1:
-        raise ValueError(
-            "Elastic TP/PP switching requires decode_context_parallel_size=1"
-        )
-    if getattr(engine_config, "prefill_context_parallel_size", 1) != 1:
-        raise ValueError(
-            "Elastic TP/PP switching requires prefill_context_parallel_size=1"
-        )
-
-    backend = getattr(engine_config, "distributed_executor_backend", None)
-    if backend not in (None, "mp", "ray"):
-        raise ValueError(
-            "Elastic TP/PP switching requires the mp executor or RayExecutorV2"
-        )
-    if getattr(engine_config, "enable_elastic_ep", False):
-        raise ValueError(
-            "Elastic TP/PP switching cannot be combined with dynamic Elastic EP scaling"
-        )
 
 
 def update_dynamo_config_with_engine(

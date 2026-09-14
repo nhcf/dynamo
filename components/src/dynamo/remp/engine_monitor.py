@@ -1,0 +1,209 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+import asyncio
+import logging
+import math
+import os
+import signal
+import traceback
+
+from vllm.v1.engine.async_llm import AsyncLLM
+from vllm.v1.engine.exceptions import EngineDeadError
+
+from dynamo.common.engine_monitor import EngineHealthMonitorConfig
+from dynamo.runtime import DistributedRuntime
+from dynamo.runtime.logging import configure_dynamo_logging
+
+configure_dynamo_logging
+logger = logging.getLogger(__name__)
+
+
+class VllmEngineMonitor:
+    """
+    Monitors the health of the vLLM engine and initiates a shutdown if the engine is dead.
+    """
+
+    def __init__(
+        self,
+        runtime: DistributedRuntime,
+        engine_client: AsyncLLM,
+        shutdown_event: asyncio.Event | None = None,
+    ):
+        if not isinstance(runtime, DistributedRuntime):
+            raise ValueError(
+                f"{self.__class__.__name__} requires an instance of DistributedRuntime."
+            )
+        if not isinstance(engine_client, AsyncLLM):
+            raise ValueError(
+                f"{self.__class__.__name__} requires an instance of AsyncLLM."
+            )
+
+        self.runtime = runtime
+        self.engine_client = engine_client
+        self.shutdown_event = shutdown_event
+        self.health_config = EngineHealthMonitorConfig.from_env()
+        self._monitor_task = asyncio.create_task(self._check_engine_health())
+        self._stats_task = asyncio.create_task(self._periodic_log_stats())
+
+        logger.info(
+            f"{self.__class__.__name__} initialized and health check task started."
+        )
+
+    def __del__(self):
+        self._monitor_task.cancel()
+        self._stats_task.cancel()
+
+    def _shutdown_engine(self):
+        """
+        Shutdown the vLLM engine on crash scenarios to free resources.
+        """
+
+        # Has timeout protection via SIGALRM
+        def timeout_handler(signum, frame):
+            raise TimeoutError("Engine shutdown timed out")
+
+        previous_handler = None
+        if self.health_config.shutdown_timeout > 0:
+            previous_handler = signal.getsignal(signal.SIGALRM)
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(math.ceil(self.health_config.shutdown_timeout))
+
+        try:
+            self.engine_client.shutdown()
+        except Exception as e:
+            logger.warning(f"vLLM engine shutdown failed: {e}")
+        finally:
+            if self.health_config.shutdown_timeout > 0:
+                signal.alarm(0)
+                signal.signal(signal.SIGALRM, previous_handler)
+
+    async def _check_engine_health(self):
+        """
+        Continuously check engine health until:
+        1. Engine dies (EngineDeadError) - initiate shutdown
+        2. Shutdown event is triggered - stop monitoring gracefully
+        3. Task is cancelled - cleanup
+        """
+        switch_started_at: float | None = None
+        while True:
+            try:
+                # Check if shutdown event was triggered - stop monitoring
+                if self.shutdown_event and self.shutdown_event.is_set():
+                    logger.info(
+                        f"{self.__class__.__name__}: Shutdown event detected, stopping engine health monitoring."
+                    )
+                    break
+
+                if self._is_parallel_strategy_switching():
+                    if switch_started_at is None:
+                        switch_started_at = asyncio.get_running_loop().time()
+                    # KV migration and model reload can legitimately outlive
+                    # one health interval.  Do not race the switch with a
+                    # liveness RPC, but retain a bounded grace period so a
+                    # hung collective is still detected.
+                    switch_grace = max(
+                        self.health_config.check_timeout,
+                        2 * self.health_config.interval,
+                        30.0,
+                    )
+                    if (
+                        asyncio.get_running_loop().time() - switch_started_at
+                        < switch_grace
+                    ):
+                        await asyncio.sleep(min(self.health_config.interval, 1.0))
+                        continue
+                else:
+                    switch_started_at = None
+
+                await self._run_health_check()
+
+                # Sleep with shutdown event awareness for faster response
+                if self.shutdown_event:
+                    try:
+                        await asyncio.wait_for(
+                            self.shutdown_event.wait(),
+                            timeout=self.health_config.interval,
+                        )
+                        # Shutdown event was set during sleep
+                        logger.info(
+                            f"{self.__class__.__name__}: Shutdown event detected, stopping engine health monitoring."
+                        )
+                        break
+                    except asyncio.TimeoutError:
+                        # Normal timeout, continue monitoring
+                        pass
+                else:
+                    # No shutdown event, just sleep normally
+                    await asyncio.sleep(self.health_config.interval)
+
+            except (EngineDeadError, asyncio.TimeoutError) as e:
+                if self.shutdown_event and self.shutdown_event.is_set():
+                    logger.warning(
+                        "%s: %s while worker shutdown is in progress; "
+                        "stopping health monitoring.",
+                        self.__class__.__name__,
+                        type(e).__name__,
+                    )
+                    break
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                logger.error(f"vLLM AsyncLLM health check failed: {e}")
+                logger.warning("Initiating Dynamo Runtime shutdown.")
+                self._shutdown_engine()
+                self.runtime.shutdown()
+                os._exit(1)
+            except asyncio.CancelledError:
+                logger.debug(f"{self.__class__.__name__}: Health check task cancelled.")
+                break
+
+    async def _run_health_check(self):
+        health_check = self.engine_client.check_health()
+        if self.health_config.check_timeout > 0:
+            return await asyncio.wait_for(
+                health_check, timeout=self.health_config.check_timeout
+            )
+        return await health_check
+
+    def _is_parallel_strategy_switching(self) -> bool:
+        """Avoid probing an ElasticVllm executor during TP/PP reconfiguration."""
+        is_switching = getattr(
+            self.engine_client, "is_switching_parallel_strategy", None
+        )
+        return bool(is_switching()) if callable(is_switching) else False
+
+    async def _periodic_log_stats(self):
+        """Periodically flush vLLM engine stats (throughput, cache usage, etc.)."""
+        try:
+            interval = float(os.environ.get("VLLM_LOG_STATS_INTERVAL", "10.0"))
+        except ValueError:
+            logger.warning(
+                "Invalid VLLM_LOG_STATS_INTERVAL value: %r, using default 10.0",
+                os.environ.get("VLLM_LOG_STATS_INTERVAL"),
+            )
+            interval = 10.0
+        if interval <= 0:
+            return
+        if not getattr(self.engine_client, "log_stats", True):
+            return
+
+        while True:
+            try:
+                if self.shutdown_event and self.shutdown_event.is_set():
+                    break
+
+                if self.shutdown_event:
+                    try:
+                        await asyncio.wait_for(
+                            self.shutdown_event.wait(), timeout=interval
+                        )
+                        break
+                    except asyncio.TimeoutError:
+                        pass
+                else:
+                    await asyncio.sleep(interval)
+
+                await self.engine_client.do_log_stats()
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                logger.debug("Error in periodic stats logging", exc_info=True)
