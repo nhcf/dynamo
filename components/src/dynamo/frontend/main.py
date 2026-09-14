@@ -472,6 +472,8 @@ async def async_main():
         config.frontend_route_extensions
     )
 
+    elastic_controller_task = _maybe_start_elastic_switch_controller()
+
     try:
         if config.interactive:
             await run_input(runtime, "text", engine)
@@ -481,6 +483,13 @@ async def async_main():
             await run_input(runtime, "http", engine, frontend_route_extensions)
     except asyncio.exceptions.CancelledError:
         pass
+    finally:
+        if elastic_controller_task is not None:
+            elastic_controller_task.cancel()
+            try:
+                await elastic_controller_task
+            except asyncio.CancelledError:
+                pass
 
 
 async def graceful_shutdown(runtime: DistributedRuntime) -> None:
@@ -490,6 +499,69 @@ async def graceful_shutdown(runtime: DistributedRuntime) -> None:
         runtime: The DistributedRuntime instance to shut down.
     """
     runtime.shutdown()
+
+
+def _maybe_start_elastic_switch_controller() -> Optional[asyncio.Task]:
+    """Start the traffic-triggered TP/PP switch controller, if enabled.
+
+    Opt-in via ``DYN_ELASTIC_SWITCH_ENABLE``; disabled by default, so a frontend
+    that does not use ElasticVllm pays nothing and cannot be broken by this.
+
+    Returns the task, or ``None`` when the feature is off or failed to
+    initialise.  Every failure path returns ``None`` rather than raising: this is
+    an optional control-plane feature and must never take down the request path.
+    """
+    try:
+        # Lazy so a frontend without the feature never imports the module, and a
+        # broken import cannot prevent the frontend from serving.
+        from .elastic_controller import ControllerConfig, ElasticSwitchController
+
+        config = ControllerConfig.from_env()
+    except Exception:
+        logger.exception(
+            "Elastic TP/PP switch controller failed to initialise; "
+            "continuing without it"
+        )
+        return None
+
+    if not config.enabled:
+        return None
+
+    try:
+        task = asyncio.create_task(
+            ElasticSwitchController(config).run(),
+            name="elastic-switch-controller",
+        )
+    except Exception:
+        logger.exception("Could not spawn the elastic TP/PP switch controller task")
+        return None
+    task.add_done_callback(_log_elastic_switch_controller_exit)
+    logger.info(
+        "Elastic TP/PP switch controller started (workers=%d, target=%s)",
+        len(config.worker_urls),
+        config.strategy_up,
+    )
+    return task
+
+
+def _log_elastic_switch_controller_exit(task: "asyncio.Task") -> None:
+    """Surface a controller task that stopped on its own.
+
+    Without this a raised exception sits on the task until it is garbage
+    collected, and a dead controller is indistinguishable from "traffic never
+    crossed the threshold".
+    """
+    if task.cancelled():
+        logger.info("Elastic TP/PP switch controller cancelled")
+        return
+    exc = task.exception()
+    if exc is not None:
+        logger.error(
+            "Elastic TP/PP switch controller exited with %r; "
+            "no further automatic switching will happen",
+            exc,
+            exc_info=exc,
+        )
 
 
 def main() -> None:
