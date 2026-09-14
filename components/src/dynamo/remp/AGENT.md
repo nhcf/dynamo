@@ -16,10 +16,110 @@
 
 ## 2. 架构概览
 
+### 2.1 整体架构
+
+REMP 后端采用**适配层架构**，在 Dynamo 分布式运行时与 vLLM 推理引擎之间建立桥接：
+
 ```
-Dynamo DistributedRuntime (Rust)
+客户端请求
     │
     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  dynamo.frontend（Dynamo 前端）                                   │
+│  OpenAI 兼容 API /v1/chat/completions, /v1/models 等              │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │ Dynamo 内部通信（NATS/TCP）
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  dynamo.remp（Dynamo 适配层 ← 本模块）                            │
+│                                                                 │
+│  ┌──────────── Dynamo 适配组件 ────────────┐                     │
+│  │ main.py          运行时初始化 + worker 协调  │                     │
+│  │ args.py          配置解析与校验             │                     │
+│  │ backend_args.py  vLLM 特有 Dynamo 参数     │                     │
+│  │ worker_factory   Worker 创建 + 控制面路由    │                     │
+│  │ handlers.py      请求处理 + 策略切换适配     │                     │
+│  │ kv_hints.py      KV 传输能力发布           │                     │
+│  │ capacity.py      Token budget 发布         │                     │
+│  │ publisher.py     指标转发到 Dynamo          │                     │
+│  │ instrumented_    FPM 采集 + 自基准测试      │                     │
+│  │   scheduler.py                               │                     │
+│  │ engine_monitor   健康监控 + 切换宽限期       │                     │
+│  │ lora_state.py    LoRA 管理                  │                     │
+│  │ state_agent.py   KV state 生命周期          │                     │
+│  │ health_check.py  健康检查 payload           │                     │
+│  │ errors.py        错误转换                   │                     │
+│  └────────────────────────────────────────┘                     │
+│                       │                                         │
+│                       │ engine_client.generate() / .encode()    │
+│                       ▼                                         │
+│  ┌──────── ElasticVllm 引擎组件（vLLM fork） ────────┐                     │
+│  │ AsyncLLM          异步推理入口                   │                     │
+│  │ EngineCore        调度 + KV Cache 管理           │                     │
+│  │ MultiprocExecutor 多进程执行器                   │                     │
+│  │ GPUModelRunner    模型前向执行                    │                     │
+│  │ GPUWorker         Worker 进程管理                 │                     │
+│  │ KVCacheReshard    KV Cache 重分片（切换时迁移）    │                     │
+│  │ SwitchParallel    TP/PP 切换编排                  │                     │
+│  │   StrategyRequest                            │                     │
+│  └────────────────────────────────────────────┘                     │
+│                       │                                         │
+│                       ▼                                         │
+│  ┌──────── vLLM 原生引擎组件 ────────┐                     │
+│  │ VllmConfig        全局配置                      │                     │
+│  │ AsyncScheduler    请求调度                       │                     │
+│  │ KVCacheManager    KV Cache 分配/回收             │                     │
+│  │ Model Executor    模型权重加载 + GPU 执行         │                     │
+│  │ SamplingParams    采样参数                       │                     │
+│  │ LoRA Request      LoRA 适配器加载                │                     │
+│  │ ZmqEventPublisher KV 事件发布                    │                     │
+│  │ Metrics/Stats     Prometheus 指标               │                     │
+│  └─────────────────────────────────┘                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 2.2 组件归属
+
+| 归属 | 组件 | 说明 |
+|------|------|------|
+| **Dynamo 适配层** (`dynamo.remp`) | `main.py` | 初始化 `DistributedRuntime`，创建 `AsyncLLM`，注册模型端点，设置 KV 事件/FPM/指标 |
+| | `args.py` / `backend_args.py` | 解析 Dynamo 运行时参数 + vLLM 参数，含 TP/PP 切换校验 |
+| | `worker_factory.py` | 根据 `--disaggregation-mode` 创建 Handler，注册控制面路由 |
+| | `handlers.py` | 请求收发核心：将 Dynamo 端点请求转换为 `engine_client.generate()` 调用；TP/PP 切换控制面适配；LoRA 加载/卸载编排 |
+| | `kv_hints.py` | 发布 KV 传输能力到 Dynamo 服务发现，用于 P2P 路由 |
+| | `capacity.py` | 将 vLLM token budget 发布到 Dynamo frontend，用于流量调度 |
+| | `publisher.py` | 将 vLLM 内部指标（`StatLoggerBase`）桥接到 Dynamo 运行时 |
+| | `instrumented_scheduler.py` | 扩展 `AsyncScheduler`，采集前向传播性能指标（FPM），内置自基准测试编排 |
+| | `engine_monitor.py` | 引擎健康监控，TP/PP 切换期间提供宽限期 |
+| | `lora_state.py` | LoRA 适配器跟踪与 per-adapter 锁管理 |
+| | `state_agent.py` | KV state attachment 所有者生命周期管理 |
+| | `kv_connector_protocols.py` | KV 传输协议抽象（NIXL/Mooncake/LMCacheMP），定义 prefill→decode 数据面接口 |
+| | `headless.py` / `sidecar.py` | 多节点从节点模式 / sidecar 启动器 |
+| | `health_check.py` / `errors.py` / `envs.py` / `constants.py` | 基础设施 |
+| **ElasticVllm 引擎**（vLLM fork） | `AsyncLLM` | 异步推理入口，封装 EngineCore 通信，提供 `generate()` / `encode()` API |
+| | `EngineCore` | 核心调度循环：请求调度 → 模型执行 → 输出处理；含 `switch_parallel_strategy()` 切换编排 |
+| | `MultiprocExecutor` | 多进程执行器，管理 TP/PP Worker 进程生命周期 |
+| | `GPUModelRunner` | GPU 模型前向执行、权重加载/重载 |
+| | `GPUWorker` | 单 GPU Worker 进程，执行模型推理 |
+| | `KVCacheReshard` | KV Cache 重分片模块，TP/PP 切换时执行 KV 迁移 |
+| | `SwitchParallelStrategyRequest` | 切换请求数据结构 |
+| **vLLM 原生组件** | `VllmConfig` / `ParallelConfig` | 全局配置与并行策略配置 |
+| | `AsyncScheduler` | 请求调度器（被 `InstrumentedScheduler` 扩展） |
+| | `KVCacheManager` | KV Cache 块分配/回收/前缀缓存 |
+| | `SamplingParams` | 采样参数（temperature, top_p 等） |
+| | `LoRARequest` | LoRA 适配器请求 |
+| | `ZmqEventPublisher` | KV 事件 ZMQ 发布 |
+| | `StatLoggerBase` / `IterationStats` | Prometheus 指标采集 |
+
+### 2.3 数据流
+
+1. **推理请求**：客户端 → `dynamo.frontend`（OpenAI API）→ Dynamo 内部通信 → `handlers.py`（Dynamo 适配）→ `engine_client.generate()`（ElasticVllm）→ `EngineCore` → `GPUModelRunner`（vLLM 原生）
+2. **TP/PP 切换**：控制面 API → `handlers.py`（适配层拦截）→ `engine_client.switch_parallel_strategy()`（ElasticVllm）→ `EngineCore` 编排 → `KVCacheReshard`（KV 迁移）+ `GPUModelRunner`（权重重载）
+3. **KV 传输**：`PrefillWorkerHandler`（Dynamo 适配）→ `kv_connector_protocols.py`（协议抽象）→ NIXL/Mooncake/LMCacheMP 传输层 → `DecodeWorkerHandler`
+
+### 2.4 模块树
+
+```
 dynamo.remp (Python 适配层)
     ├── main.py / __main__.py     — 入口，初始化运行时 + 启动 worker
     ├── args.py                   — CLI 配置解析与校验
