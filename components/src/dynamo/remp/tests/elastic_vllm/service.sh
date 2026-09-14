@@ -2,14 +2,14 @@
 set -o pipefail
 
 # ===================== Path Resolution =====================
-# This script lives at <workspace>/dynamo/recipes/elastic-vllm/service.sh
-# but is always executed from <workspace>/ (the dynamo project root's parent).
+# This script lives at <workspace>/dynamo/components/src/dynamo/remp/tests/elastic_vllm/service.sh
+# but is always executed from <workspace>/ (the workspace root).
 # SCRIPT_DIR  — where this script resides (for recipe‑local resources like patches)
 # WORKSPACE_DIR — the workspace root (parent of the dynamo project), computed from
 #                  script location so it works regardless of CWD.
-#                  Script path: <WORKSPACE_DIR>/dynamo/recipes/elastic-vllm/service.sh
+#                  Script path: <WORKSPACE_DIR>/dynamo/components/src/dynamo/remp/tests/elastic_vllm/service.sh
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKSPACE_DIR="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+WORKSPACE_DIR="$(cd "${SCRIPT_DIR}/../../../../../../.." && pwd)"
 
 # ===================== Configuration Constants =====================
 export VLLM_PLUGINS=infinicore
