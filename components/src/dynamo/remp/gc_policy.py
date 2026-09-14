@@ -29,7 +29,7 @@ The policy is env-gated and off by default:
 
 Coverage:
   * worker processes  - pass ``--worker-extension-cls
-    dynamo.vllm.gc_policy.FpmGcWorkerExtension``; resolving the class
+    dynamo.remp.gc_policy.FpmGcWorkerExtension``; resolving the class
     imports this module inside every worker, which auto-starts the
     policy (no collective_rpc required). The RPC methods remain
     available for explicit control.

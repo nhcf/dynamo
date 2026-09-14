@@ -54,7 +54,7 @@ remp/
 
 | 文件 | 说明 |
 |------|------|
-| `__main__.py` | 入口点，设置 `PYTHONHASHSEED`，委托 `dynamo.vllm.main.main()` |
+| `__main__.py` | 入口点，设置 `PYTHONHASHSEED`，委托 `dynamo.remp.main.main()` |
 | `main.py` | 核心 `worker()` 异步函数：校验本地模型路径 → 初始化 DistributedRuntime → 创建 AsyncLLM → 注册模型 → 设置 KV 事件/FPM/指标 → 通过 WorkerFactory 创建 handler |
 | `args.py` | `Config(DynamoRuntimeConfig, DynamoVllmConfig)`：合并运行时与 vLLM 配置，含 NIXL side-channel 自动检测、TP/PP 切换校验 |
 | `backend_args.py` | `DynamoVllmArgGroup` / `DynamoVllmConfig`：vLLM 特有 Dynamo 包装参数定义与校验 |

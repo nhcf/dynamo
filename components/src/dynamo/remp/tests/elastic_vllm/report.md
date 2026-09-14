@@ -138,7 +138,7 @@ done
 
 ```bash
 export VLLM_PLUGINS=infinicore
-python3 -c "from dynamo.vllm.main import main; print('✅ OK')"
+python3 -c "from dynamo.remp.main import main; print('✅ OK')"
 python3 -c "from dynamo.frontend.main import main; print('✅ OK')"
 python3 -c "from vllm.v1.engine import SwitchParallelStrategyRequest; print('✅ OK')"
 ```

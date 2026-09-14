@@ -11,7 +11,7 @@ from dynamo.runtime.logging import configure_dynamo_logging
 
 def main(argv: list[str] | None = None) -> None:
     """Run the Dynamo sidecar against a vLLM gRPC endpoint."""
-    configure_dynamo_logging(service_name="dynamo.vllm.sidecar")
+    configure_dynamo_logging(service_name="dynamo.remp.sidecar")
     _backend._run_vllm_sidecar(sys.argv[1:] if argv is None else argv)
 
 

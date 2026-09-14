@@ -37,8 +37,8 @@ from dynamo.llm import (
 )
 from dynamo.runtime import Endpoint
 from dynamo.runtime.logging import configure_dynamo_logging
-from dynamo.vllm.kv_hints import publish_kv_hint_capabilities
-from dynamo.vllm.worker_factory import WorkerFactory
+from .kv_hints import publish_kv_hint_capabilities
+from .worker_factory import WorkerFactory
 
 from . import envs
 from .args import Config, _uses_dynamo_connector, configure_rl_logprobs_mode, parse_args

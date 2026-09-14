@@ -75,11 +75,11 @@ from dynamo.llm import (
 from dynamo.llm.exceptions import EngineShutdown, InvalidArgument
 from dynamo.runtime import Client
 from dynamo.runtime.logging import configure_dynamo_logging
-from dynamo.vllm.kv_connector_protocols import (
+from .kv_connector_protocols import (
     KvConnectorProtocol,
     make_kv_connector_protocol,
 )
-from dynamo.vllm.kv_hints import publish_kv_hint_capabilities
+from .kv_hints import publish_kv_hint_capabilities
 
 from .args import Config
 from .cache_info import get_configured_kv_event_block_size

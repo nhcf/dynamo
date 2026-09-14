@@ -7,6 +7,6 @@ if "PYTHONHASHSEED" not in os.environ:
     os.environ["PYTHONHASHSEED"] = "0"
 
 if __name__ == "__main__":
-    from dynamo.vllm.main import main
+    from .main import main
 
     main()

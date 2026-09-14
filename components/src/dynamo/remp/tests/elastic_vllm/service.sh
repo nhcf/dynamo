@@ -114,7 +114,7 @@ Global Options (valid for dynamo / vllm):
 
 [ dynamo mode ]
     Starts two processes:
-      1. dynamo.vllm   (backend worker, control plane on port ${CONTROL_PORT})
+      1. dynamo.remp   (backend worker, control plane on port ${CONTROL_PORT})
       2. dynamo.frontend (OpenAI API on port ${FRONTEND_PORT})
     Extra arguments:
       --discovery-backend      discovery backend, default=file
@@ -424,13 +424,13 @@ if [[ "${MODE}" == "dynamo" ]]; then
         rm -rf "${DISCOVERY_STORE}"
     fi
 
-    # --- Start backend (dynamo.vllm) ---
-    echo ">>> Starting backend (dynamo.vllm) — control plane on port ${CONTROL_PORT}"
+    # --- Start backend (dynamo.remp) ---
+    echo ">>> Starting backend (dynamo.remp) — control plane on port ${CONTROL_PORT}"
     echo "    Final merged arguments: ${FINAL_ARGS[*]}"
     export DYN_SYSTEM_PORT="${CONTROL_PORT}"
 
     CMD_BACKEND=(
-        python -m dynamo.vllm
+        python -m dynamo.remp
         --discovery-backend file
         --disaggregation-mode agg
         "${FINAL_ARGS[@]}"

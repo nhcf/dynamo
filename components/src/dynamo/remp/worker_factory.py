@@ -540,7 +540,7 @@ async def _stop_worker_gc_policy(engine_client: AsyncLLM) -> None:
     """Restore worker-process GC once the self-benchmark has finished.
 
     Model workers auto-start the FPM freeze policy when
-    ``worker_extension_cls`` resolves (importing ``dynamo.vllm.gc_policy``
+    ``worker_extension_cls`` resolves (importing ``dynamo.remp.gc_policy``
     starts it), while ``InstrumentedScheduler`` only restores the
     engine-core process. Without this symmetric stop the workers would keep
     serving real traffic with automatic gen2 collection disabled and the

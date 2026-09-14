@@ -29,8 +29,8 @@ from dynamo.common.configuration.groups.runtime_args import (
 )
 from dynamo.common.configuration.utils import split_served_model_names
 from dynamo.common.utils.runtime import parse_endpoint
-from dynamo.vllm.backend_args import DynamoVllmArgGroup, DynamoVllmConfig
-from dynamo.vllm.constants import DisaggregationMode
+from .backend_args import DynamoVllmArgGroup, DynamoVllmConfig
+from .constants import DisaggregationMode
 
 from . import envs
 
@@ -371,7 +371,7 @@ def update_engine_config_with_dynamo(
         if existing_cls is None:
             defaults[
                 "scheduler_cls"
-            ] = "dynamo.vllm.instrumented_scheduler.InstrumentedScheduler"
+            ] = "dynamo.remp.instrumented_scheduler.InstrumentedScheduler"
             logger.info(
                 "Forward pass metrics enabled: scheduler_cls set to InstrumentedScheduler "
                 f"(port={envs.DYN_FORWARDPASS_METRIC_PORT})"
@@ -394,7 +394,7 @@ def update_engine_config_with_dynamo(
         if existing_cls is None and not fpm_enabled:
             defaults[
                 "scheduler_cls"
-            ] = "dynamo.vllm.instrumented_scheduler.InstrumentedScheduler"
+            ] = "dynamo.remp.instrumented_scheduler.InstrumentedScheduler"
             logger.info("Benchmark mode: auto-enabling InstrumentedScheduler")
         elif existing_cls is not None and "InstrumentedScheduler" not in str(
             existing_cls
@@ -406,9 +406,9 @@ def update_engine_config_with_dynamo(
             )
         if os.environ.get("DYN_FPM_GC_POLICY", "").strip().lower() == "freeze":
             # Class path as a literal, not an import: importing
-            # dynamo.vllm.gc_policy auto-starts the policy in the importing
+            # dynamo.remp.gc_policy auto-starts the policy in the importing
             # process, and this launcher process must stay untouched.
-            worker_extension_cls = "dynamo.vllm.gc_policy.FpmGcWorkerExtension"
+            worker_extension_cls = "dynamo.remp.gc_policy.FpmGcWorkerExtension"
             existing_ext = getattr(engine_config, "worker_extension_cls", None)
             if not existing_ext:
                 defaults["worker_extension_cls"] = worker_extension_cls

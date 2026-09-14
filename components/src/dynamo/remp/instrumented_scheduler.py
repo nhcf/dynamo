@@ -72,7 +72,7 @@ Serialization and ZMQ send are handled by a background thread
 hot path only pays for accumulation + queue.put().
 
 Inject via:
-    --scheduler-cls "dynamo.vllm.instrumented_scheduler.InstrumentedScheduler"
+    --scheduler-cls "dynamo.remp.instrumented_scheduler.InstrumentedScheduler"
 """
 
 from __future__ import annotations
@@ -113,7 +113,7 @@ from dynamo.common.forward_pass_metrics import (
     encode,
 )
 from dynamo.runtime.logging import configure_dynamo_logging
-from dynamo.vllm.benchmark_points import (
+from .benchmark_points import (
     BENCHMARK_MODES,
     BenchmarkMode,
     BenchmarkPoints,
@@ -2267,7 +2267,7 @@ class InstrumentedScheduler(AsyncScheduler):
 
         # Started last so a config validation error above never leaves the
         # engine-core process with automatic gen2 collection disabled.
-        from dynamo.vllm import gc_policy as _fpm_gc_policy
+        from . import gc_policy as _fpm_gc_policy
 
         _fpm_gc_policy.start_gc_policy()
 
@@ -3689,7 +3689,7 @@ class InstrumentedScheduler(AsyncScheduler):
             self._publisher.resume()
         # Benchmark over: re-enable automatic gen2 collections and reclaim
         # the frozen heap before regular serving resumes.
-        from dynamo.vllm import gc_policy as _fpm_gc_policy
+        from . import gc_policy as _fpm_gc_policy
 
         _fpm_gc_policy.stop_gc_policy()
 

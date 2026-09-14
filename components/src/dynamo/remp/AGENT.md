@@ -105,7 +105,7 @@ dynamo.remp (Python 适配层)
 
 ### 核心入口
 
-- `__main__.py` — 设置 PYTHONHASHSEED，调用 `dynamo.vllm.main.main()`
+- `__main__.py` — 设置 PYTHONHASHSEED，调用 `dynamo.remp.main.main()`
 - `main.py` — 核心 `worker()` 异步函数：校验本地模型路径 → 初始化运行时 → 创建引擎 → 注册模型 → 设置 KV 事件/指标/FPM → 创建 worker handler
 - `args.py` — `Config` 类继承 `DynamoRuntimeConfig` + `DynamoVllmConfig`，解析与校验所有 CLI 参数
 - `backend_args.py` — `DynamoVllmArgGroup` / `DynamoVllmConfig`：vLLM 特有的 Dynamo 包装参数
