@@ -528,8 +528,17 @@ if [[ "${MODE}" == "dynamo" ]]; then
         echo "  Backend PID:  ${BACKEND_PID}"
         echo "  Frontend PID: ${FRONTEND_PID_VAL}"
         echo ""
+        # Extract model path from FINAL_ARGS for the quick test curl
+        QMODEL=""
+        for ((i=0; i<${#FINAL_ARGS[@]}; i++)); do
+            if [[ "${FINAL_ARGS[$i]}" == "--model" ]] && ((i+1 < ${#FINAL_ARGS[@]})); then
+                QMODEL="${FINAL_ARGS[$((i+1))]}"
+                QMODEL="${QMODEL%/}/"  # ensure exactly one trailing slash
+                break
+            fi
+        done
         echo "Quick test:"
-        echo "  curl http://localhost:${FRONTEND_PORT}/v1/chat/completions -H 'Content-Type: application/json' -d '{\"model\":\"/mnt/nanhuinfer/models/Qwen3-0.6B/\",\"messages\":[{\"role\":\"user\",\"content\":\"Hi\"}]}'"
+        echo "  curl http://localhost:${FRONTEND_PORT}/v1/chat/completions -H 'Content-Type: application/json' -d '{\"model\":\"${QMODEL}\",\"messages\":[{\"role\":\"user\",\"content\":\"Hi\"}]}'"
         echo "  curl -X POST http://localhost:${CONTROL_PORT}/engine/control/parallel_strategy_state -H 'Content-Type: application/json' -d '{}'"
     else
         exec "${CMD_FRONTEND[@]}"
