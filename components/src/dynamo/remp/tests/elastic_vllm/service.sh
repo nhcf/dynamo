@@ -79,7 +79,7 @@ export DYNAMO_FRONTEND_SITE="${DYNAMO_SITE}/frontend"
 LOCAL_PATCH_DIR="${SCRIPT_DIR}/patches"
 DISCOVERY_STORE="/tmp/dynamo_store_kv"
 
-# Default common launch arguments for dynamo / vllm
+# Default common launch arguments for remp
 COMMON_ARGS=(
     --model /mnt/nanhuinfer/models/Qwen/Qwen3.8-27B/
     --distributed-executor-backend mp
@@ -101,12 +101,11 @@ Usage: $0 <COMMAND> [COMMAND_ARGS] [GLOBAL_OPTIONS]
 
 Commands:
     sync                     Git clone/pull repos & sync source files to conda site‑packages
-    dynamo                   Start Dynamo service (backend + frontend)
-    vllm                     Start native vllm openai api server
+    remp                     Start REMP service (backend + frontend)
     stop                     Stop all running services (frontend + backend + residual processes)
     health                   Check service health endpoints
 
-Global Options (valid for dynamo / vllm):
+Global Options (valid for remp):
     -b, --background         Run in background mode, log output to files, store pids
     -h, --help               Show this help message
 
@@ -115,7 +114,7 @@ Global Options (valid for dynamo / vllm):
     No extra arguments. Perform git clone/pull, copy source code to conda
     site‑packages.
 
-[ dynamo mode ]
+[ remp mode ]
     Starts two processes:
       1. dynamo.remp   (backend worker, control plane on port ${CONTROL_PORT})
       2. dynamo.frontend (OpenAI API on port ${FRONTEND_PORT})
@@ -123,26 +122,16 @@ Global Options (valid for dynamo / vllm):
       --discovery-backend      discovery backend, default=file
       --disaggregation-mode    disaggregation mode, default=agg
 
-[ vllm mode ]
-    Starts single vllm openai api server process.
-    Extra arguments:
-      --host                   listen host, default=0.0.0.0
-      --port                   listen port, default=${FRONTEND_PORT}
-
-[ dynamo / vllm common override arguments ]
+[ remp override arguments ]
     Any standard vllm argument can be overridden, example:
-      $0 vllm --tensor_parallel_size 2 --gpu-memory-utilization 0.7
-      $0 dynamo --model /mnt/nanhuinfer/models/Qwen3-1.5B
+      $0 remp --model /mnt/nanhuinfer/models/Qwen3-1.5B --gpu-memory-utilization 0.4
 
 Examples:
     # Sync source code
     $0 sync
 
-    # Foreground start vllm
-    $0 vllm
-
-    # Background start dynamo, override model and gpu‑memory‑utilization
-    $0 dynamo --background --model /mnt/nanhuinfer/models/Qwen3-1.5B --gpu-memory-utilization 0.4
+    # Background start remp, override model and gpu‑memory‑utilization
+    $0 remp --background --model /mnt/nanhuinfer/models/Qwen3-1.5B --gpu-memory-utilization 0.4
 
     # Stop all services
     $0 stop
@@ -150,12 +139,9 @@ Examples:
     # Health check
     $0 health
 
-Port layout (dynamo mode):
+Port layout (remp mode):
   ${FRONTEND_PORT}  — Frontend OpenAI API  (v1/chat/completions, v1/models, ...)
   ${CONTROL_PORT}   — Backend control plane (/engine/control/switch_parallel_strategy, ...)
-
-Port layout (vllm mode):
-  ${FRONTEND_PORT}  — vLLM OpenAI API (all endpoints including control)
 
 Environment:
   VLLM_PLUGINS=${VLLM_PLUGINS}  (fixed, avoids metax/infinicore plugin conflict)
@@ -328,7 +314,7 @@ cmd_health() {
         echo "❌ Frontend (port ${FRONTEND_PORT}): not responding (HTTP ${fe_resp})"
     fi
 
-    # Check control plane (dynamo mode only)
+    # Check control plane (remp mode only)
     # /health returns HTTP 503 when notready, 200 when ready
     local ctrl_http_code
     ctrl_http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${CONTROL_PORT}/health" 2>/dev/null)
@@ -339,12 +325,12 @@ cmd_health() {
         echo "⏳ Control plane (port ${CONTROL_PORT}): initializing (503 notready)"
         ok=1
     else
-        echo "⏭️  Control plane (port ${CONTROL_PORT}): not available (normal for vllm mode)"
+        echo "⏭️  Control plane (port ${CONTROL_PORT}): not available"
     fi
 
     if [[ ${ok} -eq 0 ]]; then
         echo ""
-        echo "No healthy endpoints. Run '$0 dynamo --background' or '$0 vllm --background' to start."
+        echo "No healthy endpoints. Run '$0 remp --background' to start."
         exit 1
     fi
 }
@@ -377,8 +363,8 @@ while [[ $# -gt 0 ]]; do
             cmd_health
             exit 0
             ;;
-        dynamo|vllm)
-            MODE="$1"
+        remp)
+            MODE="remp"
             shift
             ;;
         --*)
@@ -400,8 +386,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate start mode
-if [[ "${MODE}" != "dynamo" && "${MODE}" != "vllm" ]]; then
-    echo "ERROR: Must specify command dynamo / vllm, or subcommand sync / health / stop"
+if [[ "${MODE}" != "remp" ]]; then
+    echo "ERROR: Must specify command remp, or subcommand sync / health / stop"
     usage
     exit 1
 fi
@@ -424,7 +410,7 @@ if [[ ${BACKGROUND} -eq 1 ]]; then
     done
 fi
 
-# Merge arguments: base args first, user override args append later (vllm takes latter value)
+# Merge arguments: base args first, user override args append later (remp takes latter value)
 FINAL_ARGS=(
     "${COMMON_ARGS[@]}"
     "${USER_OVERRIDE_ARGS[@]}"
@@ -432,9 +418,9 @@ FINAL_ARGS=(
 
 # ===================== Start Services =====================
 
-if [[ "${MODE}" == "dynamo" ]]; then
-    # ---- Dynamo mode: backend + frontend ----
-    echo "===== Starting Dynamo service ====="
+if [[ "${MODE}" == "remp" ]]; then
+    # ---- REMP mode: backend + frontend ----
+    echo "===== Starting REMP service ====="
 
     # Clean discovery store to avoid stale state
     if [[ -d "${DISCOVERY_STORE}" ]]; then
@@ -533,7 +519,7 @@ if [[ "${MODE}" == "dynamo" ]]; then
         fi
 
         echo ""
-        echo "===== Dynamo service started ====="
+        echo "===== REMP service started ====="
         echo "  Frontend (OpenAI API): http://localhost:${FRONTEND_PORT}"
         echo "  Control plane:         http://localhost:${CONTROL_PORT}"
         echo "  Log dir:      ${LOG_DIR}/"
@@ -554,56 +540,5 @@ if [[ "${MODE}" == "dynamo" ]]; then
         echo "  curl -X POST http://localhost:${CONTROL_PORT}/engine/control/parallel_strategy_state -H 'Content-Type: application/json' -d '{}'"
     else
         exec "${CMD_FRONTEND[@]}"
-    fi
-
-else
-    # ---- vLLM native mode ----
-    echo "===== Starting vLLM OpenAI API server on port ${FRONTEND_PORT} ====="
-    echo "    Final merged arguments: ${FINAL_ARGS[*]}"
-
-    CMD=(
-        python -m vllm.entrypoints.openai.api_server
-        --host 0.0.0.0
-        --port "${FRONTEND_PORT}"
-        "${FINAL_ARGS[@]}"
-    )
-
-    if [[ ${BACKGROUND} -eq 1 ]]; then
-        > "${LOG_FILE}"
-        nohup "${CMD[@]}" >> "${LOG_FILE}" 2>&1 &
-        PID=$!
-        echo "${PID}" > "${PID_FILE}"
-        echo "    Service PID: ${PID}, log: ${LOG_DIR}/backend.log"
-
-        # Wait for service to become ready
-        echo ">>> Waiting for vLLM to initialize..."
-        local_wait=0
-        while [[ ${local_wait} -lt 180 ]]; do
-            if curl -s -o /dev/null "http://localhost:${FRONTEND_PORT}/health" 2>/dev/null; then
-                echo "    ✅ vLLM is ready (port ${FRONTEND_PORT})"
-                break
-            fi
-            sleep 5
-            local_wait=$((local_wait + 5))
-            if ! kill -0 "${PID}" 2>/dev/null; then
-                echo "    ❌ vLLM process exited unexpectedly. Check ${LOG_FILE}"
-                tail -20 "${LOG_FILE}"
-                exit 1
-            fi
-            echo "    ... waiting (${local_wait}s)"
-        done
-
-        if [[ ${local_wait} -ge 180 ]]; then
-            echo "    ⚠️  vLLM did not become ready within 180s. Check ${LOG_FILE}"
-        fi
-
-        echo ""
-        echo "===== vLLM service started ====="
-        echo "  OpenAI API: http://localhost:${FRONTEND_PORT}"
-        echo "  Log dir:  ${LOG_DIR}/"
-        echo "  PID:  ${PID}"
-    else
-        echo "    (foreground mode)"
-        exec "${CMD[@]}"
     fi
 fi

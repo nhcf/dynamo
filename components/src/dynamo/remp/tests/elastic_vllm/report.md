@@ -2,7 +2,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 测试日期 | 2026-09-14 |
+| 测试日期 | 2026-09-15 |
 | 测试模式 | Dynamo 模式（InfiniCore 平台插件） |
 | 测试类型 | 离线测试 + 在线测试 |
 | 测试模型 | Qwen3.8-27B |
@@ -77,7 +77,7 @@ fi
 
 | 仓库 | 分支 | Commit | 日期 | 提交信息 |
 |------|------|--------|------|----------|
-| [nhcf/dynamo](https://github.com/nhcf/dynamo.git) | `ElasticVllm` | `31cbdaa` | 2026-09-14 | 【REMP】精简REMP代码 |
+| [nhcf/dynamo](https://github.com/nhcf/dynamo.git) | `ElasticVllm` | `ebde0f8` | 2026-09-15 | 配合router，记录实际应用的并行策略，用于状态路由 |
 | [yhp49/ElasticVllm_demo](https://github.com/yhp49/ElasticVllm_demo.git) | `codex/add-v0.22.0` | `11a60cf` | 2026-09-08 | fix(worker): release hybrid models before TP/PP KV allocation |
 
 <details>
@@ -86,11 +86,11 @@ fi
 **dynamo** (`ElasticVllm` 分支)
 
 ```
-commit 31cbdaa247a8326bf4c45d72355ff35b7308645f
+commit ebde0f85acb3aa9fa4f65c388d113f987e64ae6e
 Author: 林露 <limiximil@zhejianglab.org>
-Date:   2026-09-14 09:05:47 +0800
+Date:   2026-09-15 10:44:19 +0800
 
-    【REMP】精简REMP代码
+    配合router，记录实际应用的并行策略，用于状态路由
 ```
 
 **ElasticVllm_demo** (`codex/add-v0.22.0` 分支)
@@ -356,12 +356,12 @@ python3 /workspace/dynamo/components/src/dynamo/remp/tests/elastic_vllm/test_off
 
 | 步骤 | 操作 | 结果 | 详情 |
 |------|------|------|------|
-| Step 1 | 初始化 LLM（4×1） | ✅ | 4 Worker 就绪，权重加载 21.06s |
+| Step 1 | 初始化 LLM（4×1） | ✅ | 4 Worker 就绪，权重加载 21.60s |
 | Step 2 | Warmup 推理 | ✅ | Prompt: `'warmup'` → `'\n=== étym'` |
 | Step 3 | 切换 4×1 → 2×2 | ✅ | Switch to 2×2 completed |
 | Step 4 | 2×2 配置下推理 | ✅ | Prompt: `'hello'` → `' stansferm\n\nHello! How can I help you today?'` |
 | Step 5 | 切换 2×2 → 1×4 | ✅ | Switch to 1×4 completed |
-| Step 6 | 1×4 配置下推理 | ✅ | Prompt: `'what is the capital of France?'` → `'\n\nThe capital of France is **Paris**.'` |
+| Step 6 | 1×4 配置下推理 | ✅ | Prompt: `'what is the capital of France?'` → `'\n\nThe capital of France is **Paris**. It is also the largest city...'` |
 | Step 7 | 切换 1×4 → 4×1 | ✅ | Switch to 4×1 completed |
 | Step 8 | 4×1 配置下推理 | ✅ | Prompt: `'goodbye!'` → 正常输出 |
 
@@ -370,14 +370,14 @@ python3 /workspace/dynamo/components/src/dynamo/remp/tests/elastic_vllm/test_off
 | 指标 | 值 |
 |------|-----|
 | 模型架构 | `Qwen3_5ForConditionalGeneration`（hybrid linear+full attention） |
-| 首次权重加载 | 21.06s（18-shard safetensors） |
+| 首次权重加载 | 21.60s（18-shard safetensors） |
 | GPU KV Cache | 2,463,998 tokens |
 | 显存占用（4×1） | 13.01 GiB/GPU |
 | 显存占用（2×2） | 13.0 GiB/GPU |
 | 显存占用（1×4） | 14.58 GiB/GPU（PP4 首 stage 加载更多权重） |
-| 权重重载（4×1→2×2） | 20.91s |
-| 权重重载（2×2→1×4） | 21.31s |
-| 权重重载（1×4→4×1） | 20.69s |
+| 权重重载（4×1→2×2） | 20.98s |
+| 权重重载（2×2→1×4） | 27.25s |
+| 权重重载（1×4→4×1） | 24.39s |
 
 **KV 迁移预检示例（4×1 → 2×2）：**
 
@@ -467,13 +467,13 @@ curl -X POST http://localhost:9091/engine/control/switch_parallel_strategy \
 | 步骤 | 操作 | 结果 | 详情 |
 |------|------|------|------|
 | Step 0 | 验证初始状态（4×1） | ✅ | TP=4, PP=1, is_switching=false, blocks=3181 |
-| Step 1 | Warmup 推理（4×1） | ✅ | Prompt: `'warmup'` → 正常输出 (10 tokens) |
-| Step 2 | 切换 4×1 → 2×2 | ✅ | API 返回 23.1s，状态立即更新 TP=2 PP=2 |
-| Step 3 | 2×2 配置下推理 | ✅ | Prompt: `'hello, who are you?'` → 正常输出 (30 tokens) |
-| Step 4 | 切换 2×2 → 1×4 | ✅ | API 返回 33.3s，状态立即更新 TP=1 PP=4 |
-| Step 5 | 1×4 配置下推理 | ✅ | Prompt: `'what is the capital of France?'` → 正常输出 (27 tokens) |
-| Step 6 | 切换 1×4 → 4×1 | ✅ | API 返回 25.4s，状态立即更新 TP=4 PP=1 |
-| Step 7 | 4×1 配置下推理 | ✅ | Prompt: `'goodbye!'` → 正常输出 (30 tokens) |
+| Step 1 | Warmup 推理（4×1） | ✅ | Prompt: `'warmup'` → `'We need to respond to user "warmup".'` (10 tokens) |
+| Step 2 | 切换 4×1 → 2×2 | ✅ | API 返回 26.7s，状态立即更新 TP=2 PP=2 |
+| Step 3 | 2×2 配置下推理 | ✅ | Prompt: `'hello, who are you?'` → `'The user is asking a simple greeting...'` (30 tokens) |
+| Step 4 | 切换 2×2 → 1×4 | ✅ | API 返回 32.6s，状态立即更新 TP=1 PP=4 |
+| Step 5 | 1×4 配置下推理 | ✅ | Prompt: `'what is the capital of France?'` → `'We need answer simple question...'` (27 tokens) |
+| Step 6 | 切换 1×4 → 4×1 | ✅ | API 返回 27.0s，状态立即更新 TP=4 PP=1 |
+| Step 7 | 4×1 配置下推理 | ✅ | Prompt: `'goodbye!'` → `'We need to respond to user "goodbye!"...'` (30 tokens) |
 
 **切换请求响应示例（4×1 → 2×2）：**
 
@@ -498,12 +498,12 @@ curl -X POST http://localhost:9091/engine/control/switch_parallel_strategy \
 |------|-----|
 | GPU KV Cache blocks | 3,181 |
 | GPU KV Cache tokens | 2,445,396 |
-| 切换 API 耗时（4×1→2×2） | 23.1s |
-| 切换 API 耗时（2×2→1×4） | 33.3s |
-| 切换 API 耗时（1×4→4×1） | 25.4s |
-| 权重重载（4×1→2×2） | 18.49s |
-| 权重重载（2×2→1×4） | 26.99s |
-| 权重重载（1×4→4×1） | 23.09s |
+| 切换 API 耗时（4×1→2×2） | 26.7s |
+| 切换 API 耗时（2×2→1×4） | 32.6s |
+| 切换 API 耗时（1×4→4×1） | 27.0s |
+| 权重重载（4×1→2×2） | 21.64s |
+| 权重重载（2×2→1×4） | 27.88s |
+| 权重重载（1×4→4×1） | 23.75s |
 
 **结果：✅ Dynamo 模式在线测试全部通过**
 
