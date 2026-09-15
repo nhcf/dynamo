@@ -70,7 +70,10 @@ fi
 export CONDA_SITE="/opt/conda/lib/python3.10/site-packages"
 export VLLM_SITE="${CONDA_SITE}/vllm"
 export DYNAMO_SITE="${CONDA_SITE}/dynamo"
+export DYNAMO_REMP_SITE="${DYNAMO_SITE}/remp"
 export DYNAMO_VLLM_SITE="${DYNAMO_SITE}/vllm"
+export DYNAMO_COMMON_SITE="${DYNAMO_SITE}/common"
+export DYNAMO_FRONTEND_SITE="${DYNAMO_SITE}/frontend"
 
 # Local patch files directory (lives next to this script, not in workspace root)
 LOCAL_PATCH_DIR="${SCRIPT_DIR}/patches"
@@ -201,6 +204,15 @@ cmd_sync() {
 
     echo -e "\n>>> copy ${REPO_ELASTIC_VLLM_DEMO}/vllm to ${VLLM_SITE}"
     cp -rf "${ws}/${REPO_ELASTIC_VLLM_DEMO}/vllm/"* "${VLLM_SITE}/"
+
+    echo -e "\n>>> copy ${REPO_DYNAMO}/components/src/dynamo/remp to ${DYNAMO_REMP_SITE}"
+    cp -rf "${ws}/${REPO_DYNAMO}/components/src/dynamo/remp/"* "${DYNAMO_REMP_SITE}/"
+
+    echo -e "\n>>> copy ${REPO_DYNAMO}/components/src/dynamo/common to ${DYNAMO_COMMON_SITE}"
+    cp -rf "${ws}/${REPO_DYNAMO}/components/src/dynamo/common/"* "${DYNAMO_COMMON_SITE}/"
+
+    echo -e "\n>>> copy ${REPO_DYNAMO}/components/src/dynamo/frontend to ${DYNAMO_FRONTEND_SITE}"
+    cp -rf "${ws}/${REPO_DYNAMO}/components/src/dynamo/frontend/"* "${DYNAMO_FRONTEND_SITE}/"
 
     echo -e "\n>>> copy ${REPO_DYNAMO}/components/src/dynamo/vllm to ${DYNAMO_VLLM_SITE}"
     cp -rf "${ws}/${REPO_DYNAMO}/components/src/dynamo/vllm/"* "${DYNAMO_VLLM_SITE}/"
