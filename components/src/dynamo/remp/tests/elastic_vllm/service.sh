@@ -208,7 +208,8 @@ cmd_sync() {
     echo -e "\n>>> sync completed!"
 
     # Apply local patches (fixes not yet merged into upstream repos)
-    apply_local_patches
+    # Patch failures are non-fatal: each patch is applied independently
+    apply_local_patches || true
 }
 
 # ---------- Apply local .patch files to conda site‑packages ----------
@@ -218,6 +219,7 @@ apply_local_patches() {
         return 0
     fi
 
+    local patch_fail=0
     echo ">>> Applying local patches from ${LOCAL_PATCH_DIR}/"
     for pf in "${LOCAL_PATCH_DIR}"/*.patch; do
         echo "    Applying $(basename "${pf}")"
@@ -228,9 +230,13 @@ apply_local_patches() {
             echo "        ✅ Applied successfully"
         else
             echo "        ❌ FAILED — manual intervention required"
-            return 1
+            patch_fail=1
         fi
     done
+
+    if [[ ${patch_fail} -eq 1 ]]; then
+        echo "WARNING: Some patches failed to apply. See above for details."
+    fi
 
     # Verify critical imports
     python -c "from vllm.exceptions import VLLMClientError, VLLMNotFoundError, VLLMUnprocessableEntityError" 2>/dev/null
