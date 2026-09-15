@@ -585,3 +585,4 @@ else
         echo "    (foreground mode)"
         exec "${CMD[@]}"
     fi
+fi
