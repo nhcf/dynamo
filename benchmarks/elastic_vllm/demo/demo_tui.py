@@ -402,9 +402,9 @@ def render_area_chart(
     tick: int = 0,
     history: int = 120,
 ) -> Text:
-    """Render an area-style line chart using Unicode block characters.
+    """Render an area-style line chart using Unicode line-drawing characters.
 
-    - Bold █ at the curve edge
+    - Thin ─╱╲ line at the curve edge with slope connectors
     - Dim ░ fill below the curve
     - Dashed ┄ threshold lines
     - Dashed ┆ switch-event markers
@@ -435,9 +435,11 @@ def render_area_chart(
     if not samples or len(samples) < 2:
         return Text("  (waiting for data...)", style="dim")
 
-    # Y range
-    data_max = max(abs(v) for v in samples)
-    ym = max(y_max, data_max, 1)
+    # Y range — use P95 to avoid outlier spikes compressing the chart
+    sorted_samples = sorted(abs(v) for v in samples)
+    p95_idx = max(0, int(len(sorted_samples) * 0.95) - 1)
+    data_p95 = sorted_samples[p95_idx]
+    ym = max(y_max, data_p95, 1)
 
     # Compute curve rows (0 = top, height-1 = bottom)
     curve_rows = []
@@ -445,6 +447,21 @@ def render_area_chart(
         frac = min(v / ym, 1.0) if ym > 0 else 0
         row = int((1 - frac) * (height - 1))
         curve_rows.append(max(0, min(height - 1, row)))
+
+    # Precompute curve line characters based on slope
+    line_chars = []
+    for c in range(len(curve_rows)):
+        if c > 0:
+            prev_cr = curve_rows[c - 1]
+            cr = curve_rows[c]
+            if cr < prev_cr:      # curve goes UP visually
+                line_chars.append("\u2571")   # ╱
+            elif cr > prev_cr:    # curve goes DOWN visually
+                line_chars.append("\u2572")   # ╲
+            else:
+                line_chars.append("\u2500")   # ─
+        else:
+            line_chars.append("\u2500")       # ─
 
     # Precompute threshold rows
     thr_rows = {}
@@ -485,15 +502,15 @@ def render_area_chart(
             if is_marker:
                 result.append("\u2506", style="bold yellow")
             elif r == cr:
-                # Curve line
-                result.append("\u2588", style=f"bold {color}")
+                # Curve line (thin with slope connectors)
+                result.append(line_chars[c], style=f"bold {color}")
             elif r in thr_rows:
                 # Threshold line (overrides fill)
                 _, ts = thr_rows[r]
                 result.append("\u2504", style=ts)
             elif r > cr:
-                # Fill below curve
-                result.append("\u2591", style=f"dim {color}")
+                # Below curve (empty)
+                result.append(" ")
             else:
                 # Empty above curve
                 result.append(" ")
