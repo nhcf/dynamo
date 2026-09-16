@@ -338,10 +338,15 @@ def add_event(state: State, msg: str):
 
 
 def update_history(state: State, history: int):
-    state.hist_active.append(state.active_requests)
-    state.hist_thr.append(state.thr_out)
-    state.hist_ttft.append(state.ttft_p99)
-    state.hist_tpot.append(state.tpot_mean)
+    # Only append when the value actually changed (change-driven, not time-driven)
+    if state.active_requests != state.prev_active or len(state.hist_active) == 0:
+        state.hist_active.append(state.active_requests)
+    if state.thr_out != state.prev_thr_out or len(state.hist_thr) == 0:
+        state.hist_thr.append(state.thr_out)
+    if state.ttft_p99 != state.prev_ttft_p99 or len(state.hist_ttft) == 0:
+        state.hist_ttft.append(state.ttft_p99)
+    if state.tpot_mean != state.prev_tpot_mean or len(state.hist_tpot) == 0:
+        state.hist_tpot.append(state.tpot_mean)
     for dq in (state.hist_active, state.hist_thr, state.hist_ttft, state.hist_tpot):
         while len(dq) > history:
             dq.popleft()
