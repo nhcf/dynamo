@@ -174,6 +174,7 @@ def fetch_topology(state: State, ctrl_url: str):
         else:
             direction = "DOWN"
         state.switch_events.append((state.tick, direction))
+        add_event(state, f"[SWITCH] {direction} -> {new_tp}x{new_pp}")
 
     state.tp = new_tp
     state.pp = new_pp
@@ -599,22 +600,6 @@ class MetricsPanel(Static):
         t.append(f"{state.ttft_p99:<14.0f} ")
         t.append(f"{state.tpot_mean:<12.0f} ")
         t.append(f"{state.ok_pct}%")
-        t.append("\n")
-
-        # Deltas
-        d_active = format_delta(state.active_requests, state.prev_active)
-        d_thr = format_delta(state.thr_out, state.prev_thr_out, " t/s")
-        d_ttft = format_delta(state.ttft_p99, state.prev_ttft_p99, " ms", inverse=True)
-        d_tpot = format_delta(state.tpot_mean, state.prev_tpot_mean, " ms", inverse=True)
-
-        t.append(f"  {d_active:<10} ", style="yellow")
-        t.append(f"{d_thr:<12} ", style="green")
-
-        ttft_style = "green" if state.ttft_p99 <= state.prev_ttft_p99 else "red"
-        t.append(f"{d_ttft:<14} ", style=ttft_style)
-
-        tpot_style = "green" if state.tpot_mean <= state.prev_tpot_mean else "red"
-        t.append(f"{d_tpot:<12} ", style=tpot_style)
 
         return t
 
@@ -699,7 +684,9 @@ class EventLogPanel(Static):
         events = state.event_log[-max_lines:]
 
         for ev in events:
-            if "[RUN]" in ev:
+            if "[SWITCH]" in ev:
+                t.append(f"  {ev}\n", style="bold yellow")
+            elif "[RUN]" in ev:
                 t.append(f"  {ev}\n", style="bold white")
             elif "[LOAD]" in ev:
                 t.append(f"  {ev}\n", style="cyan")
