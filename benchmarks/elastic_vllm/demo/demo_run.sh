@@ -3,7 +3,7 @@ set -euo pipefail
 
 # demo_run.sh — 演示编排器
 # 读取 demo_scenario.yaml，驱动通用工具执行演示
-# TUI 是主要显示界面，shell 输出通过 events 文件传递到 TUI
+# TUI 是唯一显示界面，从最开始就启动，所有输出通过 events 文件传递到 TUI
 #
 # 用法:
 #   demo/demo_run.sh [options]
@@ -59,12 +59,21 @@ SERVICE_DIR="$(dirname "${SERVICE_SCRIPT}")"
 WORKSPACE_DIR="$(cd "${SERVICE_DIR}/../../../../../../.." && pwd)"
 LOG_DIR="${WORKSPACE_DIR}/logs"
 
-# ===================== Event helpers =====================
-# These write to both EVENTS_FILE (for TUI) and runner log
+# ===================== Prepare Output Files =====================
+# Must be done BEFORE TUI starts so TUI can read them from the beginning
 
 EVENTS_FILE="${OUTPUT_DIR}/events.log"
 LOAD_INFO_FILE="${OUTPUT_DIR}/current_load.json"
 RUNNER_LOG="${OUTPUT_DIR}/runner.log"
+STATS_FILE="${OUTPUT_DIR}/load_stats.jsonl"
+REPORT_FILE="${OUTPUT_DIR}/report.json"
+
+> "$STATS_FILE"
+> "$EVENTS_FILE"
+> "$RUNNER_LOG"
+
+# ===================== Event helpers =====================
+# These write to EVENTS_FILE (for TUI) and/or RUNNER_LOG
 
 emit_event() {
     # Write a timestamped event to the events file (TUI reads this)
@@ -79,7 +88,6 @@ log_debug() {
 
 write_load_info() {
     # Atomically write current_load.json for TUI to read
-    # Usage: write_load_info <phase_name> <idx> <total> <status> [input_len] [output_len] [conc] [tag] [duration]
     local tmp_file="${LOAD_INFO_FILE}.tmp"
     local phase_name="$1" idx="$2" total="$3" status="$4"
     local input_len="${5:-0}" output_len="${6:-0}" conc="${7:-0}" tag="${8:-}" duration="${9:-0}"
@@ -91,15 +99,42 @@ write_load_info() {
 }
 
 clear_load_info() {
-    # Signal that no phase is active
     rm -f "$LOAD_INFO_FILE"
 }
 
-# ===================== Step 0: Elastic Controller Defaults =====================
+# ===================== Start TUI FIRST =====================
+# TUI starts before any other work, so users see ALL events from the beginning.
 
-emit_event "[RUN] Demo runner started"
-emit_event "[RUN] Scenario: ${SCENARIO}"
+emit_event "[RUN] ═══ Elastic vLLM Demo ═══"
+emit_event "[RUN] Scenario: $(basename "${SCENARIO}")"
 emit_event "[RUN] Output: ${OUTPUT_DIR}"
+
+# Write initial load info: init phase (before service starts)
+write_load_info "Initializing" -1 0 "waiting"
+
+# Start TUI in background
+python3 "${SCRIPT_DIR}/demo_tui.py" \
+    --fe-url http://localhost:9090 \
+    --ctrl-url http://localhost:9091 \
+    --log-file "${LOG_DIR}/frontend.log" \
+    --stats-file "$STATS_FILE" \
+    --events-file "$EVENTS_FILE" \
+    --load-info "$LOAD_INFO_FILE" \
+    --interval 2 \
+    --up-threshold 0 \
+    --down-threshold 0 \
+    &
+TUI_PID=$!
+
+# Give TUI a moment to start and take over the terminal
+sleep 2
+
+# ── Redirect ALL shell output to runner log ───────────────────────
+# After this, no echo/printf/curl output reaches the terminal.
+# The TUI is the sole owner of the terminal display.
+# All user-visible messages go via emit_event() → events.log → TUI.
+exec 3>&1
+exec > "${RUNNER_LOG}" 2>&1
 
 # ===================== Step 1: Parse Scenario YAML =====================
 emit_event "[RUN] Parsing scenario file..."
@@ -117,12 +152,12 @@ case "$INITIAL_TOPO" in
     2x2)  INIT_TP=2; INIT_PP=2;;
     4x1)  INIT_TP=4; INIT_PP=1;;
     1x4)  INIT_TP=1; INIT_PP=4;;
-    *)    echo "ERROR: unknown topology: $INITIAL_TOPO" >&2; exit 1;;
+    *)    emit_event "[RUN] ERROR: unknown topology: $INITIAL_TOPO"; exit 1;;
 esac
 
 log_debug "Initial topology: ${INITIAL_TOPO} (tp=${INIT_TP}, pp=${INIT_PP})"
 
-# ===================== Step 2: Apply Scenario Controller Overrides =====================
+# ===================== Step 2: Apply Controller Overrides =====================
 CONTROLLER_OVERRIDES=$(echo "$SCENARIO_DATA" | jq -r '.service.controller_overrides // empty')
 if [[ -n "$CONTROLLER_OVERRIDES" && "$CONTROLLER_OVERRIDES" != "null" ]]; then
     log_debug "Applying controller overrides from scenario..."
@@ -168,12 +203,18 @@ UP_THRESHOLD_ACTUAL=$(awk -v fu="$DYN_ELASTIC_SWITCH_FACTOR_UP" -v ew="$DYN_ELAS
 DOWN_THRESHOLD_ACTUAL=$(awk -v fd="$DYN_ELASTIC_SWITCH_FACTOR_DOWN" -v ew="$DYN_ELASTIC_SWITCH_EXPECTED_WORKERS" 'BEGIN { printf "%.0f", fd * ew }')
 
 emit_event "[RUN] Controller: UP≥${UP_THRESHOLD_ACTUAL} DOWN≤${DOWN_THRESHOLD_ACTUAL} cool=${DYN_ELASTIC_SWITCH_COOLDOWN_S}s"
+emit_event "[RUN] Initial topology: ${INITIAL_TOPO} (TP=${INIT_TP}, PP=${INIT_PP})"
+
+# Update TUI threshold chart lines via a control file
+echo "{\"up_threshold\":${UP_THRESHOLD_ACTUAL},\"down_threshold\":${DOWN_THRESHOLD_ACTUAL}}" \
+    > "${OUTPUT_DIR}/thresholds.json"
 
 # ===================== Step 3: Start Service =====================
 if [[ $SKIP_START -eq 1 ]]; then
     emit_event "[RUN] Skipping service start (--skip-start)"
 else
     emit_event "[RUN] Starting service (topology=${INITIAL_TOPO})..."
+    write_load_info "Starting service" -1 0 "waiting"
     log_debug "DYN_ELASTIC_SWITCH_ENABLE=$DYN_ELASTIC_SWITCH_ENABLE"
     log_debug "DYN_ELASTIC_SWITCH_FACTOR_UP=$DYN_ELASTIC_SWITCH_FACTOR_UP"
     log_debug "DYN_ELASTIC_SWITCH_FACTOR_DOWN=$DYN_ELASTIC_SWITCH_FACTOR_DOWN"
@@ -184,11 +225,14 @@ else
     cd "${WORKSPACE_DIR}"
     bash "${SERVICE_SCRIPT}" remp --background \
         --tensor_parallel_size "${INIT_TP}" \
-        --pipeline_parallel_size "${INIT_PP}"
+        --pipeline_parallel_size "${INIT_PP}" \
+        >> "${RUNNER_LOG}" 2>&1
     cd "${PROJECT_DIR}"
 
+    emit_event "[RUN] Service script launched, waiting for readiness..."
+
     # ===================== Step 4: Verify Service =====================
-    emit_event "[RUN] Verifying service readiness..."
+    write_load_info "Verifying service" -1 0 "waiting"
     local_wait=0
     SERVICES_READY=0
     while [[ $local_wait -lt 300 ]]; do
@@ -199,17 +243,26 @@ else
         echo "$health_output" | grep -q "Control plane.*healthy" && cp_ok=1
 
         if [[ $fe_ok -eq 1 && $cp_ok -eq 1 ]]; then
-            emit_event "[RUN] Service ready (FE+CP healthy)"
+            emit_event "[RUN] ✓ Service ready (FE+CP healthy, ${local_wait}s)"
             SERVICES_READY=1
             break
         fi
 
-        log_debug "Waiting for service... (${local_wait}s)"
+        # Emit periodic progress events so TUI shows something is happening
+        if (( local_wait % 15 == 0 )); then
+            emit_event "[RUN] Waiting for service... (${local_wait}s)"
+        fi
+
         sleep 5
         local_wait=$((local_wait + 5))
     done
     if [[ $SERVICES_READY -eq 0 ]]; then
-        emit_event "[RUN] ERROR: Services not ready after 300s"
+        emit_event "[RUN] ✗ ERROR: Services not ready after 300s"
+        # Stop TUI before exiting
+        kill "$TUI_PID" 2>/dev/null || true
+        wait "$TUI_PID" 2>/dev/null || true
+        exec 1>&3 3>&-
+        echo "ERROR: Services not ready after 300s" >&2
         exit 1
     fi
 
@@ -220,14 +273,14 @@ else
         while [[ $local_wait -lt 30 ]]; do
             if [[ -f "${LOG_DIR}/frontend.log" ]] && \
                grep -q "\[TP/PP\] controller started" "${LOG_DIR}/frontend.log" 2>/dev/null; then
-                emit_event "[RUN] Elastic controller started"
+                emit_event "[RUN] ✓ Elastic controller started"
                 break
             fi
             sleep 2
             local_wait=$((local_wait + 2))
         done
         if [[ $local_wait -ge 30 ]]; then
-            emit_event "[RUN] WARNING: Could not confirm elastic controller startup"
+            emit_event "[RUN] ⚠ WARNING: Could not confirm elastic controller startup"
         fi
     fi
 
@@ -237,43 +290,21 @@ else
     cur_tp=$(echo "$topo_resp" | jq -r '.tensor_parallel_size // "?"' 2>/dev/null)
     cur_pp=$(echo "$topo_resp" | jq -r '.pipeline_parallel_size // "?"' 2>/dev/null)
     if [[ "$cur_tp" == "?" || "$cur_tp" == "null" || "$cur_pp" == "?" || "$cur_pp" == "null" ]]; then
-        emit_event "[RUN] ERROR: Cannot read initial topology"
+        emit_event "[RUN] ✗ ERROR: Cannot read initial topology"
+        kill "$TUI_PID" 2>/dev/null || true
+        wait "$TUI_PID" 2>/dev/null || true
+        exec 1>&3 3>&-
+        echo "ERROR: Cannot read initial topology" >&2
         exit 1
     fi
-    emit_event "[RUN] Current topology: TP=$cur_tp PP=$cur_pp"
+    emit_event "[RUN] ✓ Current topology: TP=$cur_tp PP=$cur_pp"
 fi
 
-# ===================== Prepare Output Files =====================
-STATS_FILE="${OUTPUT_DIR}/load_stats.jsonl"
-REPORT_FILE="${OUTPUT_DIR}/report.json"
-
-> "$STATS_FILE"
-> "$EVENTS_FILE"
-> "$RUNNER_LOG"
-
-# ===================== Step 5: Start TUI =====================
-emit_event "[RUN] Starting TUI monitor..."
-python3 "${SCRIPT_DIR}/demo_tui.py" \
-    --fe-url http://localhost:9090 \
-    --ctrl-url http://localhost:9091 \
-    --log-file "${LOG_DIR}/frontend.log" \
-    --stats-file "$STATS_FILE" \
-    --events-file "$EVENTS_FILE" \
-    --load-info "$LOAD_INFO_FILE" \
-    --interval 2 \
-    --up-threshold "$UP_THRESHOLD_ACTUAL" \
-    --down-threshold "$DOWN_THRESHOLD_ACTUAL" &
-TUI_PID=$!
-
-# Give TUI a moment to start and take over the terminal
-sleep 2
-
-# ── Redirect stdout/stderr to runner log ──────────────────────────
-# Save original stdout to fd 3 for later restoration.
-# After this, ALL echo/printf goes to runner.log, not the terminal.
-# The TUI is the sole owner of the terminal display.
-exec 3>&1
-exec > "${RUNNER_LOG}" 2>&1
+# ===================== Step 5: Ready — update TUI chart thresholds =====================
+# Now that service is up, re-launch TUI with correct thresholds by writing a signal file
+# The TUI will pick up the actual thresholds from thresholds.json on next poll
+emit_event "[RUN] ✓ Demo ready, starting phases..."
+clear_load_info
 
 # ===================== Step 6: Execute Scenario Phases =====================
 NUM_PHASES=$(echo "$SCENARIO_DATA" | jq '.phases | length')
@@ -372,12 +403,22 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
         LOAD_PID=$!
 
         wait $LOAD_PID 2>/dev/null || true
-        emit_event "[LOAD] Load completed: ${l_tag}"
+        emit_event "[LOAD] ✓ Load completed: ${l_tag}"
     fi
 
     if [[ "$phase_wait" -gt 0 ]]; then
         log_debug "Waiting ${phase_wait}s..."
-        sleep "$phase_wait"
+        # Emit periodic progress events during wait
+        wait_elapsed=0
+        while [[ $wait_elapsed -lt $phase_wait ]]; do
+            chunk=$(( phase_wait - wait_elapsed < 15 ? phase_wait - wait_elapsed : 15 ))
+            sleep "$chunk"
+            wait_elapsed=$((wait_elapsed + chunk))
+            if [[ $wait_elapsed -lt $phase_wait ]]; then
+                emit_event "[LOAD] Waiting... ${wait_elapsed}s/${phase_wait}s"
+            fi
+        done
+        emit_event "[LOAD] ✓ Wait completed (${phase_wait}s)"
     fi
 
     # ── Stop background monitor ─────────────────────────────────────
@@ -533,34 +574,35 @@ PASS_COUNT=$(echo "$expect_json" | jq '[.[] | select(.result=="PASS")] | length'
 FAIL_COUNT=$(echo "$expect_json" | jq '[.[] | select(.result=="FAIL")] | length' 2>/dev/null || echo 0)
 emit_event "[RUN] ═══ Demo Complete: ${PASS_COUNT} PASS, ${FAIL_COUNT} FAIL (${DEMO_DURATION}s) ═══"
 
+# ── Keep TUI alive briefly to show final results ──────────────────
+sleep 5
+
 # ── Stop TUI and restore terminal ─────────────────────────────────
 if [[ -n "${TUI_PID:-}" ]] && kill -0 "$TUI_PID" 2>/dev/null; then
-    sleep 2  # Give TUI a moment to show the final events
     kill "$TUI_PID" 2>/dev/null || true
     wait "$TUI_PID" 2>/dev/null || true
 fi
 
-# Restore stdout so we can print final summary to the terminal
+# Restore stdout for final summary
 exec 1>&3 3>&-
 
-# Print final summary to terminal
+# Print minimal final summary to terminal
 echo ""
 echo "=== Elastic vLLM Demo Complete ==="
 echo "  Duration: ${DEMO_DURATION}s"
-echo "  Initial topology: ${INITIAL_TOPO}"
-echo "  Final topology: ${final_tp}x${final_pp}"
+echo "  Initial: ${INITIAL_TOPO}  Final: ${final_tp}x${final_pp}"
 echo "  Expectations: ${PASS_COUNT} PASS, ${FAIL_COUNT} FAIL"
 echo "  Report: ${REPORT_FILE}"
-echo "  Stats:  ${STATS_FILE}"
-echo "  Runner log: ${RUNNER_LOG}"
+echo "  Full log: ${RUNNER_LOG}"
 echo ""
 
 # Optionally stop service
 if [[ $SKIP_STOP -eq 0 ]]; then
-    echo ">>> Stopping service..."
+    echo "Stopping service..."
     cd "${WORKSPACE_DIR}"
-    bash "${SERVICE_SCRIPT}" stop 2>/dev/null || true
+    bash "${SERVICE_SCRIPT}" stop >> "${RUNNER_LOG}" 2>&1 || true
     cd "${PROJECT_DIR}"
+    echo "Service stopped."
 fi
 
 echo "Done."

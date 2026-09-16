@@ -68,10 +68,12 @@ def parse_args():
                         help="Polling interval in seconds (default: 2)")
     parser.add_argument("--history", type=int, default=120,
                         help="Chart history length in data points (default: 120)")
-    parser.add_argument("--up-threshold", type=int, default=10,
-                        help="UP threshold line (default: 10)")
-    parser.add_argument("--down-threshold", type=int, default=2,
-                        help="DOWN threshold line (default: 2)")
+    parser.add_argument("--up-threshold", type=int, default=0,
+                        help="UP threshold line (0 = auto from thresholds.json)")
+    parser.add_argument("--down-threshold", type=int, default=0,
+                        help="DOWN threshold line (0 = auto from thresholds.json)")
+    parser.add_argument("--thresholds-file", default="demo_output/thresholds.json",
+                        help="Thresholds JSON file for auto-detection")
     return parser.parse_args()
 
 
@@ -122,6 +124,11 @@ class State:
     stats_pos: int = 0
     events_pos: int = 0
     log_pos: int = 0
+
+    # Dynamic thresholds (loaded from thresholds.json at runtime)
+    up_threshold: int = 0
+    down_threshold: int = 0
+    thresholds_loaded: bool = False
 
 
 # ===================== Data Collection =====================
@@ -301,6 +308,36 @@ def read_load_info(state: State, load_info_file: str):
         pass
 
 
+def read_thresholds_file(state: State, thresholds_file: str, args):
+    """Load threshold values from thresholds.json written by demo_run.sh.
+    Only loads once; CLI --up/down-threshold takes precedence if non-zero."""
+    if state.thresholds_loaded:
+        return
+    # CLI overrides take precedence
+    if args.up_threshold > 0 and args.down_threshold > 0:
+        state.up_threshold = args.up_threshold
+        state.down_threshold = args.down_threshold
+        state.thresholds_loaded = True
+        return
+    # Try loading from file
+    if not os.path.isfile(thresholds_file):
+        return
+    try:
+        with open(thresholds_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        up = data.get("up_threshold", 0)
+        down = data.get("down_threshold", 0)
+        if up > 0:
+            state.up_threshold = up
+        if down > 0:
+            state.down_threshold = down
+        if state.up_threshold > 0 or state.down_threshold > 0:
+            state.thresholds_loaded = True
+            add_event(state, f"[RUN] Thresholds loaded: UP≥{state.up_threshold} DOWN≤{state.down_threshold}")
+    except (json.JSONDecodeError, OSError):
+        pass
+
+
 def add_event(state: State, msg: str):
     elapsed = format_elapsed(state)
     state.event_log.append(f"{elapsed} {msg}")
@@ -319,6 +356,7 @@ def update_history(state: State, history: int):
 
 
 def poll_all(state: State, args):
+    read_thresholds_file(state, args.thresholds_file, args)
     fetch_topology(state, args.ctrl_url)
     fetch_metrics(state, args.fe_url)
     read_stats_file(state, args.stats_file)
@@ -602,6 +640,19 @@ class ChartWidget(Static):
         data = getattr(state, self.data_key)
         current = data[-1] if data else 0
 
+        # Resolve thresholds dynamically for Concurrency chart
+        thresholds = self.chart_thresholds
+        y_max = self.y_max_override
+        if self.data_key == "hist_active" and state.thresholds_loaded:
+            thresholds = []
+            if state.up_threshold > 0:
+                thresholds.append((state.up_threshold, "UP", "bold red"))
+                y_max = state.up_threshold * 4
+            if state.down_threshold > 0:
+                thresholds.append((state.down_threshold, "DOWN", "bold blue"))
+                if y_max == 0:
+                    y_max = state.down_threshold * 8
+
         # Title with current value
         t = Text()
         t.append(f"{self.chart_title}", style=f"bold {self.color}")
@@ -612,9 +663,9 @@ class ChartWidget(Static):
         chart_h = max(self.size.height - 3, 3)
         chart = render_area_chart(
             data, self.size.width, chart_h,
-            y_max=self.y_max_override,
+            y_max=y_max,
             color=self.color,
-            thresholds=self.chart_thresholds,
+            thresholds=thresholds if thresholds else None,
             switch_events=state.switch_events,
             tick=state.tick,
             history=args.history,
@@ -652,6 +703,8 @@ class EventLogPanel(Static):
         for ev in events:
             if "[CONTROLLER]" in ev:
                 t.append(f"  {ev}\n", style="yellow")
+            elif "[RUN]" in ev:
+                t.append(f"  {ev}\n", style="bold white")
             elif "[LOAD]" in ev:
                 t.append(f"  {ev}\n", style="cyan")
             elif "[EXPECT]" in ev:
@@ -779,12 +832,10 @@ class ElasticMonitorApp(App):
                 "Concurrency (active)",
                 "hist_active",
                 color="cyan",
-                thresholds=[
-                    (self.monitor_args.up_threshold, "UP", "bold red"),
-                    (self.monitor_args.down_threshold, "DOWN", "bold blue"),
-                ],
-                y_max=self.monitor_args.up_threshold * 4,
+                thresholds=[],  # Set dynamically in render
+                y_max=0,        # Set dynamically in render
                 classes="chart-box",
+                id="chart-conc",
             )
             yield ChartWidget(
                 "Throughput (out tok/s)",
