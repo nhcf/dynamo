@@ -1,0 +1,41 @@
+# Elastic TP/PP 自动切换演示场景
+# 2x2 → 4x1: prefill heavy 逐步加压触发 SWITCH UP
+
+# 服务启动配置
+service:
+  initial_topology: "4x1"
+  controller_overrides:
+    DYN_ELASTIC_SWITCH_FACTOR_UP: 20
+    DYN_ELASTIC_SWITCH_FACTOR_DOWN: 5
+    DYN_ELASTIC_SWITCH_STRATEGY_UP: "2x2"
+    DYN_ELASTIC_SWITCH_STRATEGY_DOWN: "4x1"
+
+# 演示阶段
+phases:
+  # Phase 1: 中等并发 decode 重负载，C=17 < UP 阈值 20，不触发切换
+  - name: "Phase 1: decode 重 (C=17 < 阈值 20, 不触发 UP)"
+    load:
+      input_len: 32
+      output_len: 8192
+      conc: 17
+      duration: 60
+      tag: "decode_heavy"
+    expect:
+      - event: "no_switch"
+        during_s: 60
+
+  # Phase 2: 高并发 decode 重负载，C=23 > UP 阈值 20，触发 SWITCH UP 到 2x2
+  - name: "Phase 2: decode 重 (C=23 > 阈值 20, 触发 UP)"
+    load:
+      input_len: 32
+      output_len: 8192
+      conc: 23
+      duration: 100
+      tag: "decode_heavy"
+    expect:
+      - event: "switch_up"
+        within_s: 20
+        log_pattern: "SWITCH UP -> 2x2"
+      - event: "switch_complete"
+        within_s: 45
+        state: { tp: 4, pp: 1, is_switching: false }
