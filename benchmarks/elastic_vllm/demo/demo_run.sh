@@ -102,6 +102,101 @@ clear_load_info() {
     rm -f "$LOAD_INFO_FILE"
 }
 
+# ===================== TUI lifecycle =====================
+
+TUI_PID=""
+TUI_PGID=""
+SHUTDOWN_FILE=""
+STDOUT_SAVED=""
+
+start_tui() {
+    # Start TUI in a new process group so we can kill the entire tree
+    SHUTDOWN_FILE="${OUTPUT_DIR}/.tui_shutdown"
+    rm -f "$SHUTDOWN_FILE"
+
+    setsid python3 "${SCRIPT_DIR}/demo_tui.py" \
+        --fe-url http://localhost:9090 \
+        --ctrl-url http://localhost:9091 \
+        --log-file "${LOG_DIR}/frontend.log" \
+        --stats-file "$STATS_FILE" \
+        --events-file "$EVENTS_FILE" \
+        --load-info "$LOAD_INFO_FILE" \
+        --interval 2 \
+        --up-threshold 0 \
+        --down-threshold 0 \
+        &
+    TUI_PID=$!
+    # The PGID is the same as PID when using setsid
+    TUI_PGID=$TUI_PID
+
+    # Give TUI a moment to start and take over the terminal
+    sleep 2
+
+    # Save stdout fd and redirect all shell output to runner log
+    exec 3>&1
+    STDOUT_SAVED=1
+    exec > "${RUNNER_LOG}" 2>&1
+}
+
+stop_tui() {
+    # 1. Signal TUI to exit gracefully via shutdown file
+    if [[ -n "$SHUTDOWN_FILE" ]]; then
+        touch "$SHUTDOWN_FILE"
+    fi
+
+    # 2. Wait for TUI to exit on its own (up to 5s)
+    if [[ -n "${TUI_PID:-}" ]] && kill -0 "$TUI_PID" 2>/dev/null; then
+        local wait_s=0
+        while [[ $wait_s -lt 5 ]] && kill -0 "$TUI_PID" 2>/dev/null; do
+            sleep 1
+            wait_s=$((wait_s + 1))
+        done
+    fi
+
+    # 3. If still alive, kill the entire process group
+    if [[ -n "${TUI_PGID:-}" ]] && kill -0 "$TUI_PID" 2>/dev/null; then
+        kill -- -"$TUI_PGID" 2>/dev/null || true
+        sleep 1
+    fi
+
+    # 4. Force kill if still alive
+    if [[ -n "${TUI_PID:-}" ]] && kill -0 "$TUI_PID" 2>/dev/null; then
+        kill -9 -- -"$TUI_PGID" 2>/dev/null || true
+        kill -9 "$TUI_PID" 2>/dev/null || true
+        sleep 0.5
+    fi
+
+    # 5. Wait to reap zombie
+    if [[ -n "${TUI_PID:-}" ]]; then
+        wait "$TUI_PID" 2>/dev/null || true
+    fi
+
+    # 6. Clean up
+    rm -f "$SHUTDOWN_FILE"
+    TUI_PID=""
+    TUI_PGID=""
+
+    # 7. Restore terminal settings
+    if [[ "$STDOUT_SAVED" == "1" ]]; then
+        exec 1>&3 3>&-
+        STDOUT_SAVED=""
+    fi
+    # Reset terminal to sane state (in case TUI left it in raw mode)
+    stty sane 2>/dev/null || true
+    # Clear any residual TUI output from terminal
+    tput reset 2>/dev/null || true
+}
+
+cleanup_on_exit() {
+    # Called by trap on EXIT/INT/TERM — ensure TUI is fully cleaned up
+    stop_tui
+}
+
+# Set up traps BEFORE starting TUI
+trap cleanup_on_exit EXIT
+trap 'trap - EXIT; cleanup_on_exit; exit 130' INT
+trap 'trap - EXIT; cleanup_on_exit; exit 143' TERM
+
 # ===================== Start TUI FIRST =====================
 # TUI starts before any other work, so users see ALL events from the beginning.
 
@@ -112,29 +207,8 @@ emit_event "[RUN] Output: ${OUTPUT_DIR}"
 # Write initial load info: init phase (before service starts)
 write_load_info "Initializing" -1 0 "waiting"
 
-# Start TUI in background
-python3 "${SCRIPT_DIR}/demo_tui.py" \
-    --fe-url http://localhost:9090 \
-    --ctrl-url http://localhost:9091 \
-    --log-file "${LOG_DIR}/frontend.log" \
-    --stats-file "$STATS_FILE" \
-    --events-file "$EVENTS_FILE" \
-    --load-info "$LOAD_INFO_FILE" \
-    --interval 2 \
-    --up-threshold 0 \
-    --down-threshold 0 \
-    &
-TUI_PID=$!
-
-# Give TUI a moment to start and take over the terminal
-sleep 2
-
-# ── Redirect ALL shell output to runner log ───────────────────────
-# After this, no echo/printf/curl output reaches the terminal.
-# The TUI is the sole owner of the terminal display.
-# All user-visible messages go via emit_event() → events.log → TUI.
-exec 3>&1
-exec > "${RUNNER_LOG}" 2>&1
+# Start TUI (sets up process group, redirect, traps)
+start_tui
 
 # ===================== Step 1: Parse Scenario YAML =====================
 emit_event "[RUN] Parsing scenario file..."
@@ -258,10 +332,7 @@ else
     done
     if [[ $SERVICES_READY -eq 0 ]]; then
         emit_event "[RUN] ✗ ERROR: Services not ready after 300s"
-        # Stop TUI before exiting
-        kill "$TUI_PID" 2>/dev/null || true
-        wait "$TUI_PID" 2>/dev/null || true
-        exec 1>&3 3>&-
+        stop_tui
         echo "ERROR: Services not ready after 300s" >&2
         exit 1
     fi
@@ -291,9 +362,7 @@ else
     cur_pp=$(echo "$topo_resp" | jq -r '.pipeline_parallel_size // "?"' 2>/dev/null)
     if [[ "$cur_tp" == "?" || "$cur_tp" == "null" || "$cur_pp" == "?" || "$cur_pp" == "null" ]]; then
         emit_event "[RUN] ✗ ERROR: Cannot read initial topology"
-        kill "$TUI_PID" 2>/dev/null || true
-        wait "$TUI_PID" 2>/dev/null || true
-        exec 1>&3 3>&-
+        stop_tui
         echo "ERROR: Cannot read initial topology" >&2
         exit 1
     fi
@@ -578,13 +647,7 @@ emit_event "[RUN] ═══ Demo Complete: ${PASS_COUNT} PASS, ${FAIL_COUNT} FAI
 sleep 5
 
 # ── Stop TUI and restore terminal ─────────────────────────────────
-if [[ -n "${TUI_PID:-}" ]] && kill -0 "$TUI_PID" 2>/dev/null; then
-    kill "$TUI_PID" 2>/dev/null || true
-    wait "$TUI_PID" 2>/dev/null || true
-fi
-
-# Restore stdout for final summary
-exec 1>&3 3>&-
+stop_tui
 
 # Print minimal final summary to terminal
 echo ""

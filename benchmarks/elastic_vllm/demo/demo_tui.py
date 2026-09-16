@@ -355,7 +355,16 @@ def update_history(state: State, history: int):
             dq.popleft()
 
 
+def check_shutdown(args) -> bool:
+    """Check if demo_run.sh has written a shutdown signal file."""
+    shutdown_file = os.path.join(os.path.dirname(args.events_file), ".tui_shutdown")
+    return os.path.isfile(shutdown_file)
+
+
 def poll_all(state: State, args):
+    # Check for external shutdown signal
+    if check_shutdown(args):
+        return "shutdown"
     read_thresholds_file(state, args.thresholds_file, args)
     fetch_topology(state, args.ctrl_url)
     fetch_metrics(state, args.fe_url)
@@ -365,6 +374,7 @@ def poll_all(state: State, args):
     read_load_info(state, args.load_info)
     update_history(state, args.history)
     state.tick += 1
+    return None
 
 
 # ===================== Formatting Helpers =====================
@@ -531,7 +541,6 @@ class TopologyPanel(Static):
 
         t = Text()
         t.append("Topology & Load\n", style="bold cyan")
-        t.append("\u2500" * 28 + "\n", style="dim")
 
         # Topology
         t.append("  ")
@@ -589,7 +598,6 @@ class MetricsPanel(Static):
 
         t = Text()
         t.append("Metrics Snapshot\n", style="bold cyan")
-        t.append("\u2500" * 52 + "\n", style="dim")
 
         # Header
         t.append(f"  {'Active':<10} {'Thr(t/s)':<12} {'TTFT(p99)':<14} {'TPOT(mean)':<12} {'OK%':<5}\n", style="bold white")
@@ -694,7 +702,6 @@ class EventLogPanel(Static):
 
         t = Text()
         t.append("Event Log\n", style="bold cyan")
-        t.append("\u2500" * 52 + "\n", style="dim")
 
         # Show last N events based on widget height
         max_lines = max(self.size.height - 3, 4)
@@ -714,8 +721,6 @@ class EventLogPanel(Static):
                     t.append(f"  {ev}\n", style="bold red")
                 else:
                     t.append(f"  {ev}\n", style="white")
-            elif re.search(r"error|fail", ev, re.IGNORECASE):
-                t.append(f"  {ev}\n", style="bold red")
             else:
                 t.append(f"  {ev}\n", style="dim white")
 
@@ -758,7 +763,6 @@ Screen {
 #topo-panel {
     width: 1fr;
     height: 100%;
-    border: round darkcyan;
     padding: 0 1;
     margin-right: 1;
 }
@@ -766,7 +770,6 @@ Screen {
 #metrics-panel {
     width: 2fr;
     height: 100%;
-    border: round darkcyan;
     padding: 0 1;
 }
 
@@ -781,13 +784,11 @@ Screen {
 .chart-box {
     height: 1fr;
     min-height: 5;
-    border: round darkcyan;
     padding: 0 1;
 }
 
 #event-log {
     height: 8;
-    border: round darkcyan;
     padding: 0 1;
     margin: 0 1;
 }
@@ -868,7 +869,10 @@ class ElasticMonitorApp(App):
         self.set_interval(self.monitor_args.interval, self._poll_and_refresh)
 
     def _poll_and_refresh(self) -> None:
-        poll_all(self.monitor_state, self.monitor_args)
+        result = poll_all(self.monitor_state, self.monitor_args)
+        if result == "shutdown":
+            self.exit()
+            return
         for widget in self.query(Static):
             widget.refresh()
 
