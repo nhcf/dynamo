@@ -1,0 +1,52 @@
+# Elastic TP/PP 自动切换演示场景
+# 定义阶段序列，每个阶段包含负载特征参数和预期控制器事件
+
+# 服务启动配置
+service:
+  initial_topology: "2x2"           # 初始拓扑（让控制器有"向上"空间）
+  # 可覆盖默认控制器参数（demo_run.sh 将 export 为环境变量）:
+  # controller_overrides:
+  #   DYN_ELASTIC_SWITCH_FACTOR_UP: 10
+  #   DYN_ELASTIC_SWITCH_FACTOR_DOWN: 2
+  #   DYN_ELASTIC_SWITCH_COOLDOWN_S: 30
+
+# 演示阶段
+phases:
+  # Phase 1: 高并发 prefill 重负载 → 控制器自动 SWITCH UP
+  - name: "Phase 1: prefill 重 (C=32 > 阈值 10)"
+    load:
+      input_len: 8192             # 输入 token 长度（prefill 重）
+      output_len: 32              # 输出 token 长度（max_tokens）
+      conc: 32                    # 并发线程数
+      duration: 100               # 总运行秒数
+      tag: "prefill_heavy"
+    expect:
+      - event: "switch_up"
+        within_s: 15               # 负载启动后 15s 内应出现 SWITCH UP
+        log_pattern: "SWITCH UP -> 4x1"
+      - event: "switch_complete"
+        within_s: 45               # 切换在 ~26s 完成
+        state: { tp: 4, pp: 1, is_switching: false }
+
+  # Gap: 停止负载，等待控制器 SWITCH DOWN
+  - name: "Gap: 等待 SWITCH DOWN"
+    wait: 90                       # 等待冷却 30s + 决策 6s + 切换 26s ≈ 62s，留余量
+    expect:
+      - event: "switch_down"
+        within_s: 70
+        log_pattern: "SWITCH DOWN -> 2x2"
+      - event: "switch_complete"
+        within_s: 100
+        state: { tp: 2, pp: 2, is_switching: false }
+
+  # Phase 2: 低并发 decode 重负载 → 不触发 SWITCH UP，展示 2x2 优势
+  - name: "Phase 2: decode 重 (C=8 < 阈值 10, 不触发 UP)"
+    load:
+      input_len: 128              # 短输入
+      output_len: 4096            # 长输出（decode 重）
+      conc: 8                     # 并发 < 阈值 10，不触发 UP
+      duration: 60
+      tag: "decode_heavy"
+    expect:
+      - event: "no_switch"         # 不应该触发任何切换
+        during_s: 60
