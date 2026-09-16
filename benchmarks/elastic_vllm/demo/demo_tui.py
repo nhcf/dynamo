@@ -174,7 +174,6 @@ def fetch_topology(state: State, ctrl_url: str):
         else:
             direction = "DOWN"
         state.switch_events.append((state.tick, direction))
-        add_event(state, f"[CONTROLLER] SWITCH {direction} -> {new_tp}x{new_pp}")
 
     state.tp = new_tp
     state.pp = new_pp
@@ -284,17 +283,9 @@ def read_log_events(state: State, log_file: str):
         return
 
     for line in new_data.splitlines():
-        if re.search(r"SWITCH (UP|DOWN)", line):
-            msg = re.search(r"SWITCH (UP|DOWN).*", line)
-            if msg:
-                add_event(state, f"[CONTROLLER] {msg.group(0)}")
-        elif re.search(r"campaign.*finished", line, re.IGNORECASE):
-            msg = re.search(r"\[TP/PP\] campaign.*", line, re.IGNORECASE)
-            if msg:
-                state.campaigns += 1
-                add_event(state, f"[CONTROLLER] {msg.group(0)}")
-        elif "[TP/PP] controller started" in line:
-            add_event(state, "[CONTROLLER] Elastic controller started")
+        # Track campaign count but do NOT add to event log
+        if re.search(r"campaign.*finished", line, re.IGNORECASE):
+            state.campaigns += 1
 
 
 def read_load_info(state: State, load_info_file: str):
@@ -708,9 +699,7 @@ class EventLogPanel(Static):
         events = state.event_log[-max_lines:]
 
         for ev in events:
-            if "[CONTROLLER]" in ev:
-                t.append(f"  {ev}\n", style="yellow")
-            elif "[RUN]" in ev:
+            if "[RUN]" in ev:
                 t.append(f"  {ev}\n", style="bold white")
             elif "[LOAD]" in ev:
                 t.append(f"  {ev}\n", style="cyan")
@@ -763,6 +752,7 @@ Screen {
 #topo-panel {
     width: 1fr;
     height: 100%;
+    border: round darkcyan;
     padding: 0 1;
     margin-right: 1;
 }
@@ -770,6 +760,7 @@ Screen {
 #metrics-panel {
     width: 2fr;
     height: 100%;
+    border: round darkcyan;
     padding: 0 1;
 }
 
@@ -784,11 +775,13 @@ Screen {
 .chart-box {
     height: 1fr;
     min-height: 5;
+    border: round darkcyan;
     padding: 0 1;
 }
 
 #event-log {
     height: 8;
+    border: round darkcyan;
     padding: 0 1;
     margin: 0 1;
 }
