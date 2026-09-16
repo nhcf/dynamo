@@ -237,12 +237,8 @@ if [[ -n "$CONTROLLER_OVERRIDES" && "$CONTROLLER_OVERRIDES" != "null" ]]; then
     log_debug "Applying controller overrides from scenario..."
     while IFS='=' read -r key value; do
         [[ -z "$key" ]] && continue
-        if [[ -z "${!key:-}" ]]; then
-            export "$key=$value"
-            log_debug "  $key=$value"
-        else
-            log_debug "  $key=${!key} (kept from env)"
-        fi
+        export "$key=$value"
+        log_debug "  $key=$value"
     done < <(echo "$CONTROLLER_OVERRIDES" | jq -r 'to_entries[] | "\(.key)=\(.value)"')
 fi
 
