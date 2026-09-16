@@ -3,6 +3,7 @@ set -euo pipefail
 
 # demo_run.sh — 演示编排器
 # 读取 demo_scenario.yaml，驱动通用工具执行演示
+# TUI 是主要显示界面，shell 输出通过 events 文件传递到 TUI
 #
 # 用法:
 #   demo/demo_run.sh [options]
@@ -44,8 +45,6 @@ PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 : "${SCENARIO:=${SCRIPT_DIR}/demo_scenario.yaml}"
 
 # Default service.sh path (relative to this script's location)
-# This script: benchmarks/elastic_vllm/demo/demo_run.sh
-# service.sh:  components/src/dynamo/remp/tests/elastic_vllm/service.sh
 : "${SERVICE_SCRIPT:=${PROJECT_DIR}/../../components/src/dynamo/remp/tests/elastic_vllm/service.sh}"
 
 # Resolve to absolute path
@@ -56,40 +55,63 @@ mkdir -p "${OUTPUT_DIR}"
 OUTPUT_DIR="$(cd "${OUTPUT_DIR}" && pwd)"
 
 # Log directory (where service.sh writes logs)
-# service.sh sets LOG_DIR=${WORKSPACE_DIR}/logs, so we need to know WORKSPACE_DIR
-# WORKSPACE_DIR is derived from service.sh's location
 SERVICE_DIR="$(dirname "${SERVICE_SCRIPT}")"
 WORKSPACE_DIR="$(cd "${SERVICE_DIR}/../../../../../../.." && pwd)"
 LOG_DIR="${WORKSPACE_DIR}/logs"
 
-# ===================== Step 0 (deferred): Elastic Controller Defaults =====================
-# NOTE: Defaults are applied AFTER scenario overrides (Step 2) so that the
-# priority order is: command-line env vars > scenario controller_overrides > defaults.
-# The `:-` assignment only takes effect if the variable is still unset/empty.
+# ===================== Event helpers =====================
+# These write to both EVENTS_FILE (for TUI) and runner log
 
-echo "=== Elastic vLLM Demo Runner ==="
-echo "Scenario:  ${SCENARIO}"
-echo "Output:    ${OUTPUT_DIR}"
-echo "Service:   ${SERVICE_SCRIPT}"
-echo "Logs:      ${LOG_DIR}"
-echo ""
+EVENTS_FILE="${OUTPUT_DIR}/events.log"
+LOAD_INFO_FILE="${OUTPUT_DIR}/current_load.json"
+RUNNER_LOG="${OUTPUT_DIR}/runner.log"
+
+emit_event() {
+    # Write a timestamped event to the events file (TUI reads this)
+    local msg="[$(date +%H:%M:%S)] $1"
+    echo "$msg" >> "$EVENTS_FILE"
+}
+
+log_debug() {
+    # Write debug info to runner log only (NOT shown in TUI)
+    echo "[$(date +%H:%M:%S)] [DEBUG] $1" >> "$RUNNER_LOG"
+}
+
+write_load_info() {
+    # Atomically write current_load.json for TUI to read
+    # Usage: write_load_info <phase_name> <idx> <total> <status> [input_len] [output_len] [conc] [tag] [duration]
+    local tmp_file="${LOAD_INFO_FILE}.tmp"
+    local phase_name="$1" idx="$2" total="$3" status="$4"
+    local input_len="${5:-0}" output_len="${6:-0}" conc="${7:-0}" tag="${8:-}" duration="${9:-0}"
+    printf '{"phase_name":%s,"phase_idx":%d,"total_phases":%d,"status":%s,"input_len":%d,"output_len":%d,"conc":%d,"tag":%s,"duration":%d}\n' \
+        "$(printf '%s' "$phase_name" | jq -R .)" "$idx" "$total" "$(printf '%s' "$status" | jq -R .)" \
+        "$input_len" "$output_len" "$conc" "$(printf '%s' "$tag" | jq -R .)" "$duration" \
+        > "$tmp_file"
+    mv "$tmp_file" "$LOAD_INFO_FILE"
+}
+
+clear_load_info() {
+    # Signal that no phase is active
+    rm -f "$LOAD_INFO_FILE"
+}
+
+# ===================== Step 0: Elastic Controller Defaults =====================
+
+emit_event "[RUN] Demo runner started"
+emit_event "[RUN] Scenario: ${SCENARIO}"
+emit_event "[RUN] Output: ${OUTPUT_DIR}"
 
 # ===================== Step 1: Parse Scenario YAML =====================
-echo ">>> Parsing scenario file..."
+emit_event "[RUN] Parsing scenario file..."
 
-# Use Python to extract scenario fields (stdlib + pyyaml)
 SCENARIO_DATA=$(python3 - "$SCENARIO" <<'PYEOF'
 import sys, yaml, json
-
 with open(sys.argv[1]) as f:
     data = yaml.safe_load(f)
-
-# Output as JSON for bash to consume
 print(json.dumps(data))
 PYEOF
 )
 
-# Extract initial topology
 INITIAL_TOPO=$(echo "$SCENARIO_DATA" | jq -r '.service.initial_topology // "2x2"')
 case "$INITIAL_TOPO" in
     2x2)  INIT_TP=2; INIT_PP=2;;
@@ -98,27 +120,24 @@ case "$INITIAL_TOPO" in
     *)    echo "ERROR: unknown topology: $INITIAL_TOPO" >&2; exit 1;;
 esac
 
-echo "    Initial topology: ${INITIAL_TOPO} (tp=${INIT_TP}, pp=${INIT_PP})"
+log_debug "Initial topology: ${INITIAL_TOPO} (tp=${INIT_TP}, pp=${INIT_PP})"
 
 # ===================== Step 2: Apply Scenario Controller Overrides =====================
 CONTROLLER_OVERRIDES=$(echo "$SCENARIO_DATA" | jq -r '.service.controller_overrides // empty')
 if [[ -n "$CONTROLLER_OVERRIDES" && "$CONTROLLER_OVERRIDES" != "null" ]]; then
-    echo "    Applying controller overrides from scenario..."
-    # Iterate over keys and export each
+    log_debug "Applying controller overrides from scenario..."
     while IFS='=' read -r key value; do
         [[ -z "$key" ]] && continue
-        # Only set if not already set in environment (command-line takes priority)
         if [[ -z "${!key:-}" ]]; then
             export "$key=$value"
-            echo "      $key=$value"
+            log_debug "  $key=$value"
         else
-            echo "      $key=${!key} (kept from env, scenario override ignored)"
+            log_debug "  $key=${!key} (kept from env)"
         fi
     done < <(echo "$CONTROLLER_OVERRIDES" | jq -r 'to_entries[] | "\(.key)=\(.value)"')
 fi
 
 # ===================== Step 2b: Apply Defaults =====================
-# Now apply defaults for anything still unset. `:-` only sets if empty/unset.
 : "${DYN_ELASTIC_SWITCH_ENABLE:=1}"
 : "${DYN_ELASTIC_SWITCH_WORKER_URLS:=http://localhost:9091}"
 : "${DYN_ELASTIC_SWITCH_EXPECTED_WORKERS:=1}"
@@ -143,29 +162,25 @@ export DYN_ELASTIC_SWITCH_STRATEGY_UP
 export DYN_ELASTIC_SWITCH_STRATEGY_DOWN
 export DYN_ELASTIC_SWITCH_COOLDOWN_S
 
-# Control plane URL (shared across steps)
 CTRL_URL="http://localhost:9091"
 
-# Compute actual concurrency thresholds for TUI display
-# TUI needs the real concurrent-request count at which switching triggers,
-# not the raw FACTOR multiplier. Threshold = FACTOR × EXPECTED_WORKERS.
 UP_THRESHOLD_ACTUAL=$(awk -v fu="$DYN_ELASTIC_SWITCH_FACTOR_UP" -v ew="$DYN_ELASTIC_SWITCH_EXPECTED_WORKERS" 'BEGIN { printf "%.0f", fu * ew }')
 DOWN_THRESHOLD_ACTUAL=$(awk -v fd="$DYN_ELASTIC_SWITCH_FACTOR_DOWN" -v ew="$DYN_ELASTIC_SWITCH_EXPECTED_WORKERS" 'BEGIN { printf "%.0f", fd * ew }')
 
+emit_event "[RUN] Controller: UP≥${UP_THRESHOLD_ACTUAL} DOWN≤${DOWN_THRESHOLD_ACTUAL} cool=${DYN_ELASTIC_SWITCH_COOLDOWN_S}s"
+
 # ===================== Step 3: Start Service =====================
 if [[ $SKIP_START -eq 1 ]]; then
-    echo ">>> Skipping service start (--skip-start)"
+    emit_event "[RUN] Skipping service start (--skip-start)"
 else
-    echo ">>> Starting service..."
-    echo "    DYN_ELASTIC_SWITCH_ENABLE=$DYN_ELASTIC_SWITCH_ENABLE"
-    echo "    DYN_ELASTIC_SWITCH_FACTOR_UP=$DYN_ELASTIC_SWITCH_FACTOR_UP"
-    echo "    DYN_ELASTIC_SWITCH_FACTOR_DOWN=$DYN_ELASTIC_SWITCH_FACTOR_DOWN"
-    echo "    DYN_ELASTIC_SWITCH_STRATEGY_UP=$DYN_ELASTIC_SWITCH_STRATEGY_UP"
-    echo "    DYN_ELASTIC_SWITCH_STRATEGY_DOWN=$DYN_ELASTIC_SWITCH_STRATEGY_DOWN"
-    echo "    DYN_ELASTIC_SWITCH_COOLDOWN_S=$DYN_ELASTIC_SWITCH_COOLDOWN_S"
-    echo ""
+    emit_event "[RUN] Starting service (topology=${INITIAL_TOPO})..."
+    log_debug "DYN_ELASTIC_SWITCH_ENABLE=$DYN_ELASTIC_SWITCH_ENABLE"
+    log_debug "DYN_ELASTIC_SWITCH_FACTOR_UP=$DYN_ELASTIC_SWITCH_FACTOR_UP"
+    log_debug "DYN_ELASTIC_SWITCH_FACTOR_DOWN=$DYN_ELASTIC_SWITCH_FACTOR_DOWN"
+    log_debug "DYN_ELASTIC_SWITCH_STRATEGY_UP=$DYN_ELASTIC_SWITCH_STRATEGY_UP"
+    log_debug "DYN_ELASTIC_SWITCH_STRATEGY_DOWN=$DYN_ELASTIC_SWITCH_STRATEGY_DOWN"
+    log_debug "DYN_ELASTIC_SWITCH_COOLDOWN_S=$DYN_ELASTIC_SWITCH_COOLDOWN_S"
 
-    # service.sh must be run from WORKSPACE_DIR
     cd "${WORKSPACE_DIR}"
     bash "${SERVICE_SCRIPT}" remp --background \
         --tensor_parallel_size "${INIT_TP}" \
@@ -173,65 +188,46 @@ else
     cd "${PROJECT_DIR}"
 
     # ===================== Step 4: Verify Service =====================
-    # Use `service.sh health` as the primary readiness signal.
-    #   - Backend /health → 503 (initializing) / 200 (ready to serve)
-    #   - Frontend /health → 200 (ready)
-    # We require BOTH to report fully healthy before proceeding.
-    # `service.sh health` considers 503 as "ok" (still booting), so we
-    # parse its output to confirm the backend is truly healthy (not initializing).
-
-    echo ">>> Verifying service readiness via health check..."
+    emit_event "[RUN] Verifying service readiness..."
     local_wait=0
     SERVICES_READY=0
     while [[ $local_wait -lt 300 ]]; do
         health_output=$(cd "${WORKSPACE_DIR}" && bash "${SERVICE_SCRIPT}" health 2>&1) || true
 
-        # Both frontend and control plane must report healthy (200),
-        # not just "initializing" (503) or "not available".
         fe_ok=0; cp_ok=0
         echo "$health_output" | grep -q "Frontend.*healthy" && fe_ok=1
         echo "$health_output" | grep -q "Control plane.*healthy" && cp_ok=1
 
         if [[ $fe_ok -eq 1 && $cp_ok -eq 1 ]]; then
-            echo "    ✅ Frontend healthy"
-            echo "    ✅ Control plane healthy"
+            emit_event "[RUN] Service ready (FE+CP healthy)"
             SERVICES_READY=1
             break
         fi
 
-        # Show status for user visibility
-        if [[ $cp_ok -eq 0 ]]; then
-            cp_line=$(echo "$health_output" | grep "Control plane" | head -1)
-            echo "    ... ${cp_line:-waiting for control plane} (${local_wait}s)"
-        fi
-        if [[ $fe_ok -eq 0 ]]; then
-            fe_line=$(echo "$health_output" | grep "Frontend" | head -1)
-            echo "    ... ${fe_line:-waiting for frontend} (${local_wait}s)"
-        fi
+        log_debug "Waiting for service... (${local_wait}s)"
         sleep 5
         local_wait=$((local_wait + 5))
     done
     if [[ $SERVICES_READY -eq 0 ]]; then
-        echo "    ERROR: Services not fully ready after 300s" >&2
-        echo "    Check ${LOG_DIR}/backend.log and ${LOG_DIR}/frontend.log" >&2
+        emit_event "[RUN] ERROR: Services not ready after 300s"
         exit 1
     fi
 
     # Verify elastic controller started
     if [[ "$DYN_ELASTIC_SWITCH_ENABLE" != "0" ]]; then
-        echo ">>> Verifying elastic controller..."
+        emit_event "[RUN] Verifying elastic controller..."
         local_wait=0
         while [[ $local_wait -lt 30 ]]; do
             if [[ -f "${LOG_DIR}/frontend.log" ]] && \
                grep -q "\[TP/PP\] controller started" "${LOG_DIR}/frontend.log" 2>/dev/null; then
-                echo "    ✅ Elastic controller started"
+                emit_event "[RUN] Elastic controller started"
                 break
             fi
             sleep 2
             local_wait=$((local_wait + 2))
         done
         if [[ $local_wait -ge 30 ]]; then
-            echo "    WARNING: Could not confirm elastic controller startup" >&2
+            emit_event "[RUN] WARNING: Could not confirm elastic controller startup"
         fi
     fi
 
@@ -241,41 +237,49 @@ else
     cur_tp=$(echo "$topo_resp" | jq -r '.tensor_parallel_size // "?"' 2>/dev/null)
     cur_pp=$(echo "$topo_resp" | jq -r '.pipeline_parallel_size // "?"' 2>/dev/null)
     if [[ "$cur_tp" == "?" || "$cur_tp" == "null" || "$cur_pp" == "?" || "$cur_pp" == "null" ]]; then
-        echo "    ERROR: Cannot read initial topology (TP=$cur_tp PP=$cur_pp)" >&2
+        emit_event "[RUN] ERROR: Cannot read initial topology"
         exit 1
     fi
-    echo "    ✅ Current topology: TP=$cur_tp PP=$cur_pp"
+    emit_event "[RUN] Current topology: TP=$cur_tp PP=$cur_pp"
 fi
 
 # ===================== Prepare Output Files =====================
 STATS_FILE="${OUTPUT_DIR}/load_stats.jsonl"
-EVENTS_FILE="${OUTPUT_DIR}/events.log"
 REPORT_FILE="${OUTPUT_DIR}/report.json"
 
 > "$STATS_FILE"
 > "$EVENTS_FILE"
+> "$RUNNER_LOG"
 
 # ===================== Step 5: Start TUI =====================
-echo ">>> Starting TUI monitor..."
+emit_event "[RUN] Starting TUI monitor..."
 python3 "${SCRIPT_DIR}/demo_tui.py" \
     --fe-url http://localhost:9090 \
     --ctrl-url http://localhost:9091 \
     --log-file "${LOG_DIR}/frontend.log" \
     --stats-file "$STATS_FILE" \
     --events-file "$EVENTS_FILE" \
+    --load-info "$LOAD_INFO_FILE" \
     --interval 2 \
     --up-threshold "$UP_THRESHOLD_ACTUAL" \
     --down-threshold "$DOWN_THRESHOLD_ACTUAL" &
 TUI_PID=$!
 
-# Give TUI a moment to start
-sleep 1
+# Give TUI a moment to start and take over the terminal
+sleep 2
+
+# ── Redirect stdout/stderr to runner log ──────────────────────────
+# Save original stdout to fd 3 for later restoration.
+# After this, ALL echo/printf goes to runner.log, not the terminal.
+# The TUI is the sole owner of the terminal display.
+exec 3>&1
+exec > "${RUNNER_LOG}" 2>&1
 
 # ===================== Step 6: Execute Scenario Phases =====================
 NUM_PHASES=$(echo "$SCENARIO_DATA" | jq '.phases | length')
 DEMO_START=$(date +%s)
 
-echo ">>> Running ${NUM_PHASES} phases..."
+log_debug "Running ${NUM_PHASES} phases..."
 
 # Track expectations for final report
 declare -a EXPECT_RESULTS=()
@@ -286,46 +290,54 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
     phase_wait=$(echo "$SCENARIO_DATA" | jq -r ".phases[$phase_idx].wait // 0")
     phase_expects=$(echo "$SCENARIO_DATA" | jq -r ".phases[$phase_idx].expect // []")
 
-    echo ""
-    echo "=== Phase $((phase_idx + 1))/${NUM_PHASES}: ${phase_name} ==="
+    # Emit phase start event
+    emit_event "[LOAD] ═══ Phase $((phase_idx + 1))/${NUM_PHASES}: ${phase_name} ═══"
 
-    # Record event
-    echo "[$(date +%H:%M:%S)] [LOAD] Phase started: ${phase_name}" >> "$EVENTS_FILE"
+    # Write current_load.json for TUI
+    if [[ -n "$phase_load" && "$phase_load" != "null" ]]; then
+        l_model=$(echo "$phase_load" | jq -r '.model // ""')
+        l_input_len=$(echo "$phase_load" | jq -r '.input_len // 128')
+        l_output_len=$(echo "$phase_load" | jq -r '.output_len // 32')
+        l_conc=$(echo "$phase_load" | jq -r '.conc // 20')
+        l_duration=$(echo "$phase_load" | jq -r '.duration // 60')
+        l_tag=$(echo "$phase_load" | jq -r '.tag // ""')
+        : "${l_model:=/mnt/nanhuinfer/models/Qwen/Qwen3.8-27B/}"
+
+        write_load_info "$phase_name" "$phase_idx" "$NUM_PHASES" "loading" \
+            "$l_input_len" "$l_output_len" "$l_conc" "$l_tag" "$l_duration"
+        emit_event "[LOAD] Load: input=${l_input_len} output=${l_output_len} C=${l_conc} dur=${l_duration}s tag=${l_tag}"
+    else
+        write_load_info "$phase_name" "$phase_idx" "$NUM_PHASES" "waiting"
+    fi
 
     # Snapshot current topology via control plane API
     phase_start_tp=$(curl -s -m 5 -X POST "${CTRL_URL}/engine/control/parallel_strategy_state" \
         -H 'Content-Type: application/json' -d '{}' 2>/dev/null | jq -r '.tensor_parallel_size // "?"')
     phase_start_pp=$(curl -s -m 5 -X POST "${CTRL_URL}/engine/control/parallel_strategy_state" \
         -H 'Content-Type: application/json' -d '{}' 2>/dev/null | jq -r '.pipeline_parallel_size // "?"')
-    echo "    Topology at phase start: ${phase_start_tp}x${phase_start_pp}"
+    log_debug "Topology at phase start: ${phase_start_tp}x${phase_start_pp}"
 
     # ── Launch background topology monitor ──────────────────────────
-    # Polls parallel_strategy_state every 2s and records topology
-    # change events with elapsed time since phase start.
     MONITOR_FILE="${OUTPUT_DIR}/topo_monitor_${phase_idx}.jsonl"
     MONITOR_MAX_S=0
     if [[ -n "$phase_expects" && "$phase_expects" != "null" && "$phase_expects" != "[]" ]]; then
-        # Compute the maximum polling horizon from within_s / during_s
         num_exp=$(echo "$phase_expects" | jq 'length')
         for ((ei=0; ei<num_exp; ei++)); do
             w=$(echo "$phase_expects" | jq -r ".[$ei].within_s // .[$ei].during_s // 0")
             [[ $w -gt $MONITOR_MAX_S ]] && MONITOR_MAX_S=$w
         done
-        # Also cover load duration so we capture switches during load
         if [[ -n "$phase_load" && "$phase_load" != "null" ]]; then
             ld=$(echo "$phase_load" | jq -r '.duration // 0')
             [[ $ld -gt $MONITOR_MAX_S ]] && MONITOR_MAX_S=$ld
         fi
-        # Cover wait period
         [[ $phase_wait -gt $MONITOR_MAX_S ]] && MONITOR_MAX_S=$phase_wait
-        MONITOR_MAX_S=$((MONITOR_MAX_S + 10))  # extra margin
+        MONITOR_MAX_S=$((MONITOR_MAX_S + 10))
     fi
 
     if [[ $MONITOR_MAX_S -gt 0 ]]; then
         rm -f "$MONITOR_FILE"
         (
             elapsed=0
-            prev_topo=""
             while [[ $elapsed -lt $MONITOR_MAX_S ]]; do
                 cur_state=$(curl -s -m 5 -X POST "${CTRL_URL}/engine/control/parallel_strategy_state" \
                     -H 'Content-Type: application/json' -d '{}' 2>/dev/null || echo '{}')
@@ -333,9 +345,7 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
                 cur_pp=$(echo "$cur_state" | jq -r '.pipeline_parallel_size // "?"')
                 cur_sw=$(echo "$cur_state" | jq -r 'if .is_switching == false then "false" elif .is_switching == true then "true" else "?" end')
                 cur_topo="${cur_tp}x${cur_pp}"
-                # Always write a record (every 2s) for precise timing
                 echo "{\"elapsed\":${elapsed},\"tp\":${cur_tp},\"pp\":${cur_pp},\"is_switching\":\"${cur_sw}\",\"topo\":\"${cur_topo}\"}" >> "$MONITOR_FILE"
-                prev_topo="$cur_topo"
                 sleep 2
                 elapsed=$((elapsed + 2))
             done
@@ -347,21 +357,8 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
 
     # ── Run phase load ──────────────────────────────────────────────
     if [[ -n "$phase_load" && "$phase_load" != "null" ]]; then
-        # Extract load parameters
-        l_model=$(echo "$phase_load" | jq -r '.model // ""')
-        l_input_len=$(echo "$phase_load" | jq -r '.input_len // 128')
-        l_output_len=$(echo "$phase_load" | jq -r '.output_len // 32')
-        l_conc=$(echo "$phase_load" | jq -r '.conc // 20')
-        l_duration=$(echo "$phase_load" | jq -r '.duration // 60')
-        l_tag=$(echo "$phase_load" | jq -r '.tag // ""')
+        log_debug "Starting load: input=${l_input_len}, output=${l_output_len}, conc=${l_conc}, duration=${l_duration}s, tag=${l_tag}"
 
-        # Use scenario model if specified, otherwise default
-        : "${l_model:=/mnt/nanhuinfer/models/Qwen/Qwen3.8-27B/}"
-
-        echo "    Load: input=${l_input_len}, output=${l_output_len}, conc=${l_conc}, duration=${l_duration}s, tag=${l_tag}"
-        echo "[$(date +%H:%M:%S)] [LOAD] Load started: conc=${l_conc}, input=${l_input_len}, output=${l_output_len}, tag=${l_tag}" >> "$EVENTS_FILE"
-
-        # Start load generator in background, redirect output to stats file
         python3 "${SCRIPT_DIR}/demo_load.py" \
             --model "$l_model" \
             --fe-url http://localhost:9090 \
@@ -374,14 +371,12 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
             >> "$STATS_FILE" 2>"${OUTPUT_DIR}/load_errors_${phase_idx}.log" &
         LOAD_PID=$!
 
-        # Wait for load to complete
         wait $LOAD_PID 2>/dev/null || true
-        echo "    Load completed"
-        echo "[$(date +%H:%M:%S)] [LOAD] Load completed: ${l_tag}" >> "$EVENTS_FILE"
+        emit_event "[LOAD] Load completed: ${l_tag}"
     fi
 
     if [[ "$phase_wait" -gt 0 ]]; then
-        echo "    Waiting ${phase_wait}s..."
+        log_debug "Waiting ${phase_wait}s..."
         sleep "$phase_wait"
     fi
 
@@ -400,8 +395,6 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
             exp_during=$(echo "$phase_expects" | jq -r ".[$ei].during_s // 0")
             exp_tp=$(echo "$phase_expects" | jq -r ".[$ei].state.tp // 0")
             exp_pp=$(echo "$phase_expects" | jq -r ".[$ei].state.pp // 0")
-            # NOTE: jq `false // null` returns null (jq treats false as empty),
-            # so we must use if/then/else to preserve the boolean value.
             exp_not_switching=$(echo "$phase_expects" | jq -r "if .[$ei].state.is_switching == false then \"false\" elif .[$ei].state.is_switching == true then \"true\" else \"unset\" end")
 
             result="SKIP"
@@ -409,28 +402,20 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
 
             case "$exp_event" in
                 switch_up|switch_down)
-                    # Look through monitor data for switch initiation within within_s.
-                    # A switch is considered "initiated" when either:
-                    #   a) is_switching transitions from false to true, OR
-                    #   b) topology actually changes (switch completes quickly)
-                    # We prefer (a) because it captures the decision moment,
-                    # while topology change only appears after completion.
                     if [[ -f "$MONITOR_FILE" ]]; then
-                        # Strategy 1: Find first sample where is_switching becomes true
                         switch_start=$(jq -r "select(.elapsed <= ${exp_within} and .is_switching == \"true\") | .elapsed" "$MONITOR_FILE" 2>/dev/null | head -1)
                         if [[ -n "$switch_start" ]]; then
                             result="PASS"
-                            detail="Switch initiated (is_switching=true) at ${switch_start}s (within ${exp_within}s)"
+                            detail="Switch initiated at ${switch_start}s (within ${exp_within}s)"
                         else
-                            # Strategy 2: Fall back to topology change detection
                             change_line=$(jq -r "select(.elapsed <= ${exp_within} and .topo != \"${phase_start_tp}x${phase_start_pp}\") | .elapsed" "$MONITOR_FILE" 2>/dev/null | head -1)
                             if [[ -n "$change_line" ]]; then
                                 change_topo=$(jq -r "select(.elapsed == ${change_line}) | .topo" "$MONITOR_FILE" 2>/dev/null | head -1)
                                 result="PASS"
-                                detail="Topology changed from ${phase_start_tp}x${phase_start_pp} to ${change_topo} at ${change_line}s (within ${exp_within}s)"
+                                detail="Topology changed to ${change_topo} at ${change_line}s (within ${exp_within}s)"
                             else
                                 result="FAIL"
-                                detail="No switch initiated within ${exp_within}s (topology still ${phase_start_tp}x${phase_start_pp}, is_switching never true)"
+                                detail="No switch within ${exp_within}s (still ${phase_start_tp}x${phase_start_pp})"
                             fi
                         fi
                     else
@@ -440,9 +425,7 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
                     ;;
 
                 switch_complete)
-                    # Find first sample where topology AND is_switching both match expected
                     if [[ -f "$MONITOR_FILE" ]]; then
-                        # Build jq match condition
                         match_conds=".elapsed <= ${exp_within}"
                         [[ "$exp_tp" != "0" ]] && match_conds="${match_conds} and .tp == ${exp_tp}"
                         [[ "$exp_pp" != "0" ]] && match_conds="${match_conds} and .pp == ${exp_pp}"
@@ -450,15 +433,12 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
                         match_line=$(jq -r "select(${match_conds}) | .elapsed" "$MONITOR_FILE" 2>/dev/null | head -1)
                         if [[ -n "$match_line" ]]; then
                             match_topo=$(jq -r "select(.elapsed == ${match_line}) | .topo" "$MONITOR_FILE" 2>/dev/null | head -1)
-                            match_sw=$(jq -r "select(.elapsed == ${match_line}) | .is_switching" "$MONITOR_FILE" 2>/dev/null | head -1)
                             result="PASS"
-                            detail="State: ${match_topo} is_switching=${match_sw} at ${match_line}s (within ${exp_within}s)"
+                            detail="State ${match_topo} at ${match_line}s (within ${exp_within}s)"
                         else
-                            result="FAIL"
-                            # Show last sample for debugging
                             last_topo=$(jq -r 'select(.elapsed <= '${exp_within}') | .topo' "$MONITOR_FILE" 2>/dev/null | tail -1)
-                            last_sw=$(jq -r 'select(.elapsed <= '${exp_within}') | .is_switching' "$MONITOR_FILE" 2>/dev/null | tail -1)
-                            detail="Target tp=${exp_tp} pp=${exp_pp} is_switching=${exp_not_switching} not reached within ${exp_within}s (last: ${last_topo} sw=${last_sw})"
+                            result="FAIL"
+                            detail="Target tp=${exp_tp} pp=${exp_pp} not reached (last: ${last_topo})"
                         fi
                     else
                         result="FAIL"
@@ -467,18 +447,15 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
                     ;;
 
                 no_switch)
-                    # Verify topology stayed stable during entire during_s period
                     if [[ -f "$MONITOR_FILE" ]]; then
-                        # Count samples where topology differs from phase start within during_s
                         change_count=$(jq "select(.elapsed <= ${exp_during} and .topo != \"${phase_start_tp}x${phase_start_pp}\")" "$MONITOR_FILE" 2>/dev/null | jq -s 'length')
                         if [[ "$change_count" == "0" || -z "$change_count" ]]; then
                             result="PASS"
                             detail="Topology stable at ${phase_start_tp}x${phase_start_pp} for ${exp_during}s"
                         else
                             first_change=$(jq -r "select(.elapsed <= ${exp_during} and .topo != \"${phase_start_tp}x${phase_start_pp}\") | .elapsed" "$MONITOR_FILE" 2>/dev/null | head -1)
-                            change_topo=$(jq -r "select(.elapsed == ${first_change}) | .topo" "$MONITOR_FILE" 2>/dev/null | head -1)
                             result="FAIL"
-                            detail="Unexpected change from ${phase_start_tp}x${phase_start_pp} to ${change_topo} at ${first_change}s"
+                            detail="Unexpected change at ${first_change}s"
                         fi
                     else
                         result="FAIL"
@@ -488,21 +465,24 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
             esac
 
             EXPECT_RESULTS+=("${phase_name}|${exp_event}|${result}|${detail}")
-            echo "    Expect [${exp_event}]: ${result} ${detail}"
+            emit_event "[EXPECT] ${result} ${exp_event}: ${detail}"
         done
     fi
+
+    # Update load info to indicate phase done
+    write_load_info "$phase_name" "$phase_idx" "$NUM_PHASES" "done"
 done
 
+# Clear load info after all phases
+clear_load_info
+
 # ===================== Step 7: Generate Report =====================
-echo ""
-echo ">>> Generating report..."
+emit_event "[RUN] Generating report..."
 
 DEMO_END=$(date +%s)
 DEMO_DURATION=$((DEMO_END - DEMO_START))
 
 # Build expectation results JSON
-# NOTE: Cannot use `printf | python3 - <<'HEREDOC'` because the heredoc
-# steals python's stdin, so the piped data is lost. Use `-c` instead.
 expect_json=$(printf '%s\n' "${EXPECT_RESULTS[@]}" | python3 -c '
 import sys, json
 results = []
@@ -548,24 +528,32 @@ cat > "$REPORT_FILE" <<EOF
 }
 EOF
 
-echo "    Report: ${REPORT_FILE}"
-echo ""
-
-# Print summary
+# Summary event
 PASS_COUNT=$(echo "$expect_json" | jq '[.[] | select(.result=="PASS")] | length' 2>/dev/null || echo 0)
 FAIL_COUNT=$(echo "$expect_json" | jq '[.[] | select(.result=="FAIL")] | length' 2>/dev/null || echo 0)
-echo "=== Demo Complete ==="
-echo "  Duration: ${DEMO_DURATION}s"
-echo "  Final topology: ${final_tp}x${final_pp}"
-echo "  Expectations: ${PASS_COUNT} PASS, ${FAIL_COUNT} FAIL"
-echo "  Report: ${REPORT_FILE}"
+emit_event "[RUN] ═══ Demo Complete: ${PASS_COUNT} PASS, ${FAIL_COUNT} FAIL (${DEMO_DURATION}s) ═══"
 
-# ===================== Step 8: Stop TUI =====================
+# ── Stop TUI and restore terminal ─────────────────────────────────
 if [[ -n "${TUI_PID:-}" ]] && kill -0 "$TUI_PID" 2>/dev/null; then
-    echo ">>> Stopping TUI..."
+    sleep 2  # Give TUI a moment to show the final events
     kill "$TUI_PID" 2>/dev/null || true
     wait "$TUI_PID" 2>/dev/null || true
 fi
+
+# Restore stdout so we can print final summary to the terminal
+exec 1>&3 3>&-
+
+# Print final summary to terminal
+echo ""
+echo "=== Elastic vLLM Demo Complete ==="
+echo "  Duration: ${DEMO_DURATION}s"
+echo "  Initial topology: ${INITIAL_TOPO}"
+echo "  Final topology: ${final_tp}x${final_pp}"
+echo "  Expectations: ${PASS_COUNT} PASS, ${FAIL_COUNT} FAIL"
+echo "  Report: ${REPORT_FILE}"
+echo "  Stats:  ${STATS_FILE}"
+echo "  Runner log: ${RUNNER_LOG}"
+echo ""
 
 # Optionally stop service
 if [[ $SKIP_STOP -eq 0 ]]; then

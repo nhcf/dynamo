@@ -128,7 +128,7 @@ def worker(host, port, model, prompt, output_len, start_time, duration,
             all_results.append((ttft, tpot, comp_tokens, ok))
 
 
-def compute_stats(batch, window, tag, conc, start_time):
+def compute_stats(batch, window, tag, conc, start_time, input_len=0, output_len=0):
     """Compute window statistics from a list of result tuples."""
     if not batch:
         return None
@@ -147,6 +147,8 @@ def compute_stats(batch, window, tag, conc, start_time):
         "t": round(elapsed, 1),
         "tag": tag,
         "conc": conc,
+        "input_len": input_len,
+        "output_len": output_len,
         "thr_out": round(thr_out, 1),
         "ttft_mean": round(statistics.mean(ttfts), 0) if ttfts else 0,
         "ttft_p99": round(sorted(ttfts)[int(len(ttfts) * 0.99)] if len(ttfts) >= 2 else (ttfts[0] if ttfts else 0), 0),
@@ -157,12 +159,14 @@ def compute_stats(batch, window, tag, conc, start_time):
     return obj
 
 
-def output_window(results_lock, window_results, all_results, window, tag, conc, start_time):
+def output_window(results_lock, window_results, all_results, window, tag, conc, start_time, load_args=None):
     """Pop current window results and output JSON."""
     with results_lock:
         batch = window_results[:]
         window_results.clear()
-    obj = compute_stats(batch, window, tag, conc, start_time)
+    obj = compute_stats(batch, window, tag, conc, start_time,
+                        input_len=load_args.input_len if load_args else 0,
+                        output_len=load_args.output_len if load_args else 0)
     if obj:
         print(json.dumps(obj), flush=True)
 
@@ -205,7 +209,7 @@ def main():
         while time.time() - start_time < args.duration:
             time.sleep(args.window)
             output_window(results_lock, window_results, all_results,
-                          args.window, args.tag, args.conc, start_time)
+                          args.window, args.tag, args.conc, start_time, load_args=args)
     except KeyboardInterrupt:
         pass
 
@@ -214,7 +218,7 @@ def main():
     # Wait briefly for in-flight requests
     time.sleep(1)
     output_window(results_lock, window_results, all_results,
-                  args.window, args.tag, args.conc, start_time)
+                  args.window, args.tag, args.conc, start_time, load_args=args)
 
     # Final summary
     if all_results:
@@ -230,6 +234,8 @@ def main():
             "t": round(total_time, 1),
             "tag": args.tag,
             "conc": args.conc,
+            "input_len": args.input_len,
+            "output_len": args.output_len,
             "thr_out": round(total_tokens / total_time, 1) if all_oks > 0 else 0,
             "ttft_mean": round(statistics.mean(all_ttfts), 0) if all_ttfts else 0,
             "ttft_p99": round(sorted(all_ttfts)[int(len(all_ttfts) * 0.99)] if len(all_ttfts) >= 2 else (all_ttfts[0] if all_ttfts else 0), 0),

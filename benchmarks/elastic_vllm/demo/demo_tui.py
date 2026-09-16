@@ -5,6 +5,13 @@
 # demo_tui.py — Elastic TP/PP Switch Monitor TUI (Textual + Rich)
 # Pure observer — never triggers a switch call
 #
+# Features:
+#   - Area-style line charts for Concurrency, Throughput, TTFT, TPOT
+#   - Load Info panel showing current phase parameters
+#   - Topology status + Metrics snapshot
+#   - Event log with phase/expectation color-coding
+#   - All shell events displayed via TUI (no stdout interference)
+#
 # Usage:
 #   python3 demo/demo_tui.py [options]
 #
@@ -14,6 +21,7 @@
 #   --log-file        frontend.log path (default logs/frontend.log)
 #   --stats-file      load-stats JSONL path (default demo_output/load_stats.jsonl)
 #   --events-file     events-log path (default demo_output/events.log)
+#   --load-info       current-load JSON path (default demo_output/current_load.json)
 #   --interval        polling interval in seconds (default 2)
 #   --history         chart history length in data points (default 120)
 #   --up-threshold    UP threshold line (default 10)
@@ -32,7 +40,7 @@ from typing import Optional
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal, Vertical, Grid
 from textual.reactive import reactive
 from textual.widgets import Footer, Header, Static
 from textual.worker import Worker, get_current_worker
@@ -54,6 +62,8 @@ def parse_args():
                         help="Load stats JSONL file path")
     parser.add_argument("--events-file", default="demo_output/events.log",
                         help="Events log file path")
+    parser.add_argument("--load-info", default="demo_output/current_load.json",
+                        help="Current load info JSON file path")
     parser.add_argument("--interval", type=int, default=2,
                         help="Polling interval in seconds (default: 2)")
     parser.add_argument("--history", type=int, default=120,
@@ -89,16 +99,20 @@ class State:
     ok_pct: int = 100
     prev_ok_pct: int = 100
 
-    # History
+    # History (4 metric curves)
     hist_active: deque = field(default_factory=deque)
     hist_thr: deque = field(default_factory=deque)
+    hist_ttft: deque = field(default_factory=deque)
     hist_tpot: deque = field(default_factory=deque)
 
     # Switch events: list of (tick, direction)
     switch_events: list = field(default_factory=list)
 
-    # Event log (max 100 entries)
+    # Event log (max 200 entries)
     event_log: list = field(default_factory=list)
+
+    # Load info from current_load.json
+    load_info: dict = field(default_factory=dict)
 
     # Tick
     tick: int = 0
@@ -276,21 +290,32 @@ def read_log_events(state: State, log_file: str):
             add_event(state, "[CONTROLLER] Elastic controller started")
 
 
+def read_load_info(state: State, load_info_file: str):
+    if not os.path.isfile(load_info_file):
+        return
+    try:
+        with open(load_info_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        state.load_info = data
+    except (json.JSONDecodeError, OSError):
+        pass
+
+
 def add_event(state: State, msg: str):
     elapsed = format_elapsed(state)
     state.event_log.append(f"{elapsed} {msg}")
-    if len(state.event_log) > 100:
-        state.event_log = state.event_log[-100:]
+    if len(state.event_log) > 200:
+        state.event_log = state.event_log[-200:]
 
 
 def update_history(state: State, history: int):
     state.hist_active.append(state.active_requests)
     state.hist_thr.append(state.thr_out)
+    state.hist_ttft.append(state.ttft_p99)
     state.hist_tpot.append(state.tpot_mean)
-    while len(state.hist_active) > history:
-        state.hist_active.popleft()
-        state.hist_thr.popleft()
-        state.hist_tpot.popleft()
+    for dq in (state.hist_active, state.hist_thr, state.hist_ttft, state.hist_tpot):
+        while len(dq) > history:
+            dq.popleft()
 
 
 def poll_all(state: State, args):
@@ -299,6 +324,7 @@ def poll_all(state: State, args):
     read_stats_file(state, args.stats_file)
     read_events_file(state, args.events_file)
     read_log_events(state, args.log_file)
+    read_load_info(state, args.load_info)
     update_history(state, args.history)
     state.tick += 1
 
@@ -312,6 +338,8 @@ def format_elapsed(state: State) -> str:
 
 def format_delta(curr: float, prev: float, unit: str = "", inverse: bool = False) -> str:
     delta = int(round(curr)) - int(round(prev))
+    if inverse:
+        delta = -delta
     if delta > 0:
         return f"\u25b2 +{delta}{unit}"
     elif delta < 0:
@@ -320,188 +348,202 @@ def format_delta(curr: float, prev: float, unit: str = "", inverse: bool = False
         return f"  0{unit}"
 
 
-# ===================== Sparkline Rendering (Rich Text) =====================
+# ===================== Area Chart Rendering =====================
 
-SPARK_CHARS = " \u2581\u2582\u2583\u2584\u2585\u2586\u2587\u2588"
+def render_area_chart(
+    data: deque,
+    width: int,
+    height: int,
+    *,
+    y_max: float = 0,
+    color: str = "green",
+    thresholds: list = None,
+    switch_events: list = None,
+    tick: int = 0,
+    history: int = 120,
+) -> Text:
+    """Render an area-style line chart using Unicode block characters.
 
-
-def render_sparkline(data: deque, switch_events: list,
-                     up_thr: int, down_thr: int,
-                     max_override: int, tick: int, history: int,
-                     width: int = 80) -> Text:
-    """Render a sparkline chart as Rich Text with threshold lines and switch markers."""
+    - Bold █ at the curve edge
+    - Dim ░ fill below the curve
+    - Dashed ┄ threshold lines
+    - Dashed ┆ switch-event markers
+    """
     n = len(data)
-    if n < 2 or width < 10:
+    if n < 2 or width < 14 or height < 3:
         return Text("  (waiting for data...)", style="dim")
 
-    # Reserve space for y-axis labels
-    y_width = 5
-    chart_width = max(width - y_width - 2, 8)
+    y_w = 6  # width for y-axis labels (e.g. "  40┤")
+    cw = max(width - y_w - 1, 8)
 
-    # Downsample to chart_width points
+    # Downsample to chart width
     data_list = list(data)
-    samples = []
-    if n <= chart_width:
+    if n <= cw:
         samples = [float(v) for v in data_list]
     else:
-        bucket = (n + chart_width - 1) // chart_width
-        for i in range(chart_width):
-            start = i * bucket
-            end = min(start + bucket, n)
-            if start >= n:
-                samples.append(0.0)
-            else:
-                chunk = data_list[start:end]
+        bucket = n / cw
+        samples = []
+        for i in range(cw):
+            s = int(i * bucket)
+            e = min(int((i + 1) * bucket), n)
+            chunk = data_list[s:e]
+            if chunk:
                 samples.append(sum(float(v) for v in chunk) / len(chunk))
+            else:
+                samples.append(0.0)
 
-    sample_n = len(samples)
-    if sample_n < 2:
+    if not samples or len(samples) < 2:
         return Text("  (waiting for data...)", style="dim")
 
     # Y range
-    y_max = max(int(round(v)) for v in samples)
-    if max_override > y_max:
-        y_max = max_override
-    if y_max < 1:
-        y_max = 1
+    data_max = max(abs(v) for v in samples)
+    ym = max(y_max, data_max, 1)
 
-    # Chart height in rows (8 = full block height)
-    chart_height = 8
+    # Compute curve rows (0 = top, height-1 = bottom)
+    curve_rows = []
+    for v in samples:
+        frac = min(v / ym, 1.0) if ym > 0 else 0
+        row = int((1 - frac) * (height - 1))
+        curve_rows.append(max(0, min(height - 1, row)))
 
-    # Build row-based rendering
-    rows = []
-    for row in range(chart_height):
-        row_val = y_max * (chart_height - row) / chart_height
-        next_val = y_max * (chart_height - row - 1) / chart_height
+    # Precompute threshold rows
+    thr_rows = {}
+    if thresholds:
+        for tv, tl, ts in thresholds:
+            tr = int((1 - min(tv / ym, 1.0)) * (height - 1)) if ym > 0 else height - 1
+            tr = max(0, min(height - 1, tr))
+            thr_rows[tr] = (tl, ts)
 
-        parts = Text()
-
-        # Y-axis label for top, middle, bottom rows
-        if row == 0:
-            parts.append(f"{y_max:4d}\u2507", style="dim")
-        elif row == chart_height // 2:
-            parts.append(f"{y_max // 2:4d}\u2507", style="dim")
-        elif row == chart_height - 1:
-            parts.append(f"   0\u2507", style="dim")
-        else:
-            parts.append("    \u2507", style="dim")
-
-        # Build chart line using Unicode block characters
-        for c in range(min(chart_width, sample_n)):
-            val = samples[c]
-
-            # Check switch event at this column
-            col_has_switch = False
-            switch_dir = ""
-            for stick, sdir in switch_events:
-                offset = tick - history
-                rel = stick - offset
-                col_pos = rel * chart_width // history
-                if col_pos == c and 0 <= col_pos < chart_width:
-                    col_has_switch = True
-                    switch_dir = sdir
-                    break
-
-            if col_has_switch:
-                parts.append("\u2508", style="bold yellow")
-                continue
-
-            # Check threshold lines
-            up_row = chart_height - 1 - (up_thr * (chart_height - 1) // y_max) if up_thr > 0 else -1
-            down_row = chart_height - 1 - (down_thr * (chart_height - 1) // y_max) if down_thr > 0 else -1
-
-            if row == up_row or row == down_row:
-                # Check if data point is also here
-                frac = val / y_max if y_max > 0 else 0
-                filled = frac * chart_height
-                block_start = chart_height - filled
-                if block_start <= row < block_start + 1:
-                    parts.append(SPARK_CHARS[8], style="bold green")
-                else:
-                    parts.append("\u2504", style="white")
-                continue
-
-            # Data sparkline — use block characters proportional to value
-            frac = val / y_max if y_max > 0 else 0
-            filled = frac * chart_height
-            block_start = chart_height - filled
-
-            if row > block_start:
-                # Fully filled row
-                parts.append(SPARK_CHARS[8], style="green")
-            elif row + 1 > block_start and row < block_start + 1:
-                # Partially filled row
-                parts.append(SPARK_CHARS[8], style="green")
-            # else: empty, skip (Text already empty)
-
-        rows.append(parts)
-
-    # Build final text by reversing (top to bottom)
+    # Build output row by row
     result = Text()
-    for i, row_text in enumerate(rows):
-        result.append(row_text)
-        if i < len(rows) - 1:
+    for r in range(height):
+        # Y-axis label
+        if r == 0:
+            result.append(f"{_fmt_axis(ym):>5}\u2507", style="dim")
+        elif r == height - 1:
+            result.append("    0\u2507", style="dim")
+        elif height > 4 and r == height // 2:
+            result.append(f"{_fmt_axis(ym / 2):>5}\u2507", style="dim")
+        else:
+            result.append("     \u2507", style="dim")
+
+        # Chart content
+        for c in range(len(curve_rows)):
+            cr = curve_rows[c]
+
+            # Check switch marker
+            is_marker = False
+            if switch_events:
+                for stick, sdir in switch_events:
+                    offset = tick - history
+                    if history > 0:
+                        col_pos = int((stick - offset) * len(curve_rows) / history)
+                        if col_pos == c and 0 <= col_pos < len(curve_rows):
+                            is_marker = True
+                            break
+
+            if is_marker:
+                result.append("\u2506", style="bold yellow")
+            elif r == cr:
+                # Curve line
+                result.append("\u2588", style=f"bold {color}")
+            elif r in thr_rows:
+                # Threshold line (overrides fill)
+                _, ts = thr_rows[r]
+                result.append("\u2504", style=ts)
+            elif r > cr:
+                # Fill below curve
+                result.append("\u2591", style=f"dim {color}")
+            else:
+                # Empty above curve
+                result.append(" ")
+
+        if r < height - 1:
             result.append("\n")
 
-    # Add threshold labels
-    result.append("\n")
-    if up_thr > 0:
-        result.append(f"  \u25bd UP={up_thr}  ", style="bold red")
-    if down_thr > 0:
-        result.append(f"  \u25b3 DOWN={down_thr}", style="bold blue")
+    # Legend line
+    result.append("\n ")
+    if thresholds:
+        for tv, tl, ts in thresholds:
+            result.append(f" \u2504 {tl}={int(tv)}", style=ts)
+    if switch_events:
+        result.append(" \u2506 Switch", style="bold yellow")
 
     return result
+
+
+def _fmt_axis(v: float) -> str:
+    """Format axis value compactly."""
+    if v >= 10000:
+        return f"{v / 1000:.0f}k"
+    if v >= 1000:
+        return f"{v / 1000:.1f}k"
+    return f"{v:.0f}"
 
 
 # ===================== Textual Widgets =====================
 
 class TopologyPanel(Static):
-    """Topology status panel."""
+    """Compact topology + load info panel."""
 
     def render(self) -> Text:
         app = self.app
         state = app.monitor_state
+        info = state.load_info
 
         t = Text()
-        t.append("Topology\n", style="bold cyan")
-        t.append("──────────────────────────\n", style="dim")
+        t.append("Topology & Load\n", style="bold cyan")
+        t.append("\u2500" * 28 + "\n", style="dim")
 
-        # TP/PP
-        t.append(f"  TP={state.tp}  PP={state.pp}   ")
-
+        # Topology
+        t.append("  ")
         if state.is_switching:
-            t.append(state.strategy_label, style="bold yellow blink")
+            t.append(f"TP={state.tp} PP={state.pp}", style="bold yellow blink")
+            t.append(" \u21bb", style="bold yellow")
         elif state.failed:
-            t.append("[FAILED]", style="bold red")
+            t.append(f"TP={state.tp} PP={state.pp}", style="bold red")
+            t.append(" FAIL", style="bold red")
         else:
-            t.append(state.strategy_label, style="bold green")
-
+            t.append(f"TP={state.tp} PP={state.pp}", style="bold green")
+            t.append(f" {state.strategy_label}", style="green")
         t.append("\n")
 
-        # Switching
-        t.append("  Switching: ")
-        if state.is_switching:
-            t.append("YES", style="bold yellow")
-        else:
-            t.append("NO ", style="bold green")
-        t.append("\n")
+        # Load info from JSON
+        if info:
+            phase = info.get("phase_name", "")
+            status = info.get("status", "")
+            t.append(f"  {phase}\n", style="white")
+            t.append("  Status: ", style="dim")
+            if status == "loading":
+                t.append("LOADING", style="bold green")
+            elif status == "waiting":
+                t.append("WAITING", style="bold yellow")
+            elif status == "done":
+                t.append("DONE", style="dim")
+            else:
+                t.append(status, style="white")
+            t.append("\n")
 
-        # Failed
-        t.append("  Failed:    ")
-        if state.failed:
-            t.append("YES", style="bold red")
+            inp = info.get("input_len", 0)
+            out = info.get("output_len", 0)
+            conc = info.get("conc", 0)
+            tag = info.get("tag", "")
+            dur = info.get("duration", 0)
+            if inp or out or conc:
+                t.append(f"  in={inp} out={out} C={conc}", style="cyan")
+                if dur:
+                    t.append(f" dur={dur}s", style="dim")
+                t.append("\n")
+            if tag:
+                t.append(f"  tag={tag}\n", style="dim")
         else:
-            t.append("NO ", style="bold green")
-        t.append("\n")
-
-        # Campaigns
-        t.append(f"  Campaigns: {state.campaigns}\n")
+            t.append("  (no active phase)\n", style="dim")
 
         return t
 
 
 class MetricsPanel(Static):
-    """Metrics snapshot panel."""
+    """Metrics snapshot panel with delta indicators."""
 
     def render(self) -> Text:
         app = self.app
@@ -509,16 +551,16 @@ class MetricsPanel(Static):
 
         t = Text()
         t.append("Metrics Snapshot\n", style="bold cyan")
-        t.append("─────────────────────────────────────────────────────\n", style="dim")
+        t.append("\u2500" * 52 + "\n", style="dim")
 
         # Header
-        t.append(f"  {'Active':<10} {'Throughput':<14} {'TTFT(p99)':<14} {'TPOT(mean)':<14} {'OK%':<6}\n", style="bold white")
+        t.append(f"  {'Active':<10} {'Thr(t/s)':<12} {'TTFT(p99)':<14} {'TPOT(mean)':<12} {'OK%':<5}\n", style="bold white")
 
         # Values
         t.append(f"  {int(state.active_requests):<10} ")
-        t.append(f"{state.thr_out:.1f} t/s{'':<6} ")
-        t.append(f"{state.ttft_p99:.0f} ms{'':<6} ")
-        t.append(f"{state.tpot_mean:.0f} ms{'':<6} ")
+        t.append(f"{state.thr_out:<12.1f} ")
+        t.append(f"{state.ttft_p99:<14.0f} ")
+        t.append(f"{state.tpot_mean:<12.0f} ")
         t.append(f"{state.ok_pct}%")
         t.append("\n")
 
@@ -529,29 +571,28 @@ class MetricsPanel(Static):
         d_tpot = format_delta(state.tpot_mean, state.prev_tpot_mean, " ms", inverse=True)
 
         t.append(f"  {d_active:<10} ", style="yellow")
-        t.append(f"{d_thr:<14} ", style="green")
+        t.append(f"{d_thr:<12} ", style="green")
 
-        ttft_style = "green" if state.ttft_p99 < state.prev_ttft_p99 else "red"
+        ttft_style = "green" if state.ttft_p99 <= state.prev_ttft_p99 else "red"
         t.append(f"{d_ttft:<14} ", style=ttft_style)
 
-        tpot_style = "green" if state.tpot_mean < state.prev_tpot_mean else "red"
-        t.append(f"{d_tpot:<14} ", style=tpot_style)
+        tpot_style = "green" if state.tpot_mean <= state.prev_tpot_mean else "red"
+        t.append(f"{d_tpot:<12} ", style=tpot_style)
 
         return t
 
 
 class ChartWidget(Static):
-    """A sparkline chart widget with threshold lines and switch markers."""
+    """Area-style line chart widget."""
 
-    def __init__(self, title: str, data_key: str,
-                 up_thr: int = 0, down_thr: int = 0,
-                 max_override: int = 0, **kwargs):
+    def __init__(self, title: str, data_key: str, color: str = "green",
+                 thresholds: list = None, y_max: float = 0, **kwargs):
         super().__init__(**kwargs)
         self.chart_title = title
         self.data_key = data_key
-        self.up_thr = up_thr
-        self.down_thr = down_thr
-        self.max_override = max_override
+        self.color = color
+        self.chart_thresholds = thresholds or []
+        self.y_max_override = y_max
 
     def render(self) -> Text:
         app = self.app
@@ -559,24 +600,42 @@ class ChartWidget(Static):
         args = app.monitor_args
 
         data = getattr(state, self.data_key)
-        w = self.size.width
+        current = data[-1] if data else 0
 
+        # Title with current value
         t = Text()
-        t.append(self.chart_title, style="bold cyan")
+        t.append(f"{self.chart_title}", style=f"bold {self.color}")
+        t.append(f"  {self._fmt_val(current)}", style="white")
         t.append("\n")
 
-        chart = render_sparkline(
-            data, state.switch_events,
-            self.up_thr, self.down_thr,
-            self.max_override, state.tick, args.history,
-            width=max(w, 40)
+        # Chart area (subtract title + legend lines)
+        chart_h = max(self.size.height - 3, 3)
+        chart = render_area_chart(
+            data, self.size.width, chart_h,
+            y_max=self.y_max_override,
+            color=self.color,
+            thresholds=self.chart_thresholds,
+            switch_events=state.switch_events,
+            tick=state.tick,
+            history=args.history,
         )
         t.append(chart)
         return t
 
+    def _fmt_val(self, v: float) -> str:
+        if self.data_key == "hist_active":
+            return f"{int(v)}"
+        elif self.data_key == "hist_thr":
+            return f"{v:.1f} t/s"
+        elif self.data_key == "hist_ttft":
+            return f"{v:.0f} ms"
+        elif self.data_key == "hist_tpot":
+            return f"{v:.0f} ms"
+        return f"{v:.1f}"
+
 
 class EventLogPanel(Static):
-    """Scrollable event log panel."""
+    """Event log with color-coded entries."""
 
     def render(self) -> Text:
         app = self.app
@@ -584,19 +643,28 @@ class EventLogPanel(Static):
 
         t = Text()
         t.append("Event Log\n", style="bold cyan")
-        t.append("─────────────────────────────────────────────────────\n", style="dim")
+        t.append("\u2500" * 52 + "\n", style="dim")
 
-        # Show last 8 events
-        events = state.event_log[-8:]
+        # Show last N events based on widget height
+        max_lines = max(self.size.height - 3, 4)
+        events = state.event_log[-max_lines:]
+
         for ev in events:
             if "[CONTROLLER]" in ev:
                 t.append(f"  {ev}\n", style="yellow")
             elif "[LOAD]" in ev:
                 t.append(f"  {ev}\n", style="cyan")
+            elif "[EXPECT]" in ev:
+                if "PASS" in ev:
+                    t.append(f"  {ev}\n", style="bold green")
+                elif "FAIL" in ev:
+                    t.append(f"  {ev}\n", style="bold red")
+                else:
+                    t.append(f"  {ev}\n", style="white")
             elif re.search(r"error|fail", ev, re.IGNORECASE):
                 t.append(f"  {ev}\n", style="bold red")
             else:
-                t.append(f"  {ev}\n", style="white")
+                t.append(f"  {ev}\n", style="dim white")
 
         return t
 
@@ -610,13 +678,17 @@ class StatusBar(Static):
         elapsed = format_elapsed(state)
 
         t = Text()
-        t.append(f"  Tick: {state.tick:<4d}  |  Elapsed: {elapsed}  |  ", style="bold cyan")
+        t.append(f"  Tick:{state.tick:<4d}  Elapsed:{elapsed}  ", style="bold cyan")
+        t.append(f"Topo:{state.tp}x{state.pp}", style="green")
+        if state.is_switching:
+            t.append(" \u21bbSWITCHING", style="bold yellow")
+        t.append("  ", style="cyan")
         t.append("q", style="bold white")
-        t.append("=quit  ", style="cyan")
+        t.append("=quit", style="cyan")
         return t
 
 
-# ===================== Main App =====================
+# ===================== CSS =====================
 
 CSS = """
 Screen {
@@ -630,7 +702,7 @@ Screen {
     margin: 0 1;
 }
 
-#topology-panel {
+#topo-panel {
     width: 1fr;
     height: 100%;
     border: round darkcyan;
@@ -646,7 +718,9 @@ Screen {
 }
 
 #charts {
-    layout: vertical;
+    layout: grid;
+    grid-size: 2 2;
+    grid-gutter: 0 1;
     height: 1fr;
     margin: 0 1;
 }
@@ -656,11 +730,10 @@ Screen {
     min-height: 5;
     border: round darkcyan;
     padding: 0 1;
-    margin-bottom: 1;
 }
 
 #event-log {
-    height: 10;
+    height: 8;
     border: round darkcyan;
     padding: 0 1;
     margin: 0 1;
@@ -675,6 +748,8 @@ Screen {
 }
 """
 
+
+# ===================== Main App =====================
 
 class ElasticMonitorApp(App):
     """Elastic TP/PP Switch Monitor — Textual TUI."""
@@ -696,28 +771,40 @@ class ElasticMonitorApp(App):
         yield Header(show_clock=True)
 
         with Horizontal(id="top-row"):
-            yield TopologyPanel(id="topology-panel")
+            yield TopologyPanel(id="topo-panel")
             yield MetricsPanel(id="metrics-panel")
 
-        with Vertical(id="charts"):
+        with Grid(id="charts"):
             yield ChartWidget(
-                "Concurrency (active_requests)",
+                "Concurrency (active)",
                 "hist_active",
-                up_thr=self.monitor_args.up_threshold,
-                down_thr=self.monitor_args.down_threshold,
-                max_override=40,
+                color="cyan",
+                thresholds=[
+                    (self.monitor_args.up_threshold, "UP", "bold red"),
+                    (self.monitor_args.down_threshold, "DOWN", "bold blue"),
+                ],
+                y_max=self.monitor_args.up_threshold * 4,
                 classes="chart-box",
             )
             yield ChartWidget(
-                "Throughput (tok/s)",
+                "Throughput (out tok/s)",
                 "hist_thr",
-                max_override=200,
+                color="green",
+                y_max=0,
+                classes="chart-box",
+            )
+            yield ChartWidget(
+                "TTFT p99 (ms)",
+                "hist_ttft",
+                color="magenta",
+                y_max=0,
                 classes="chart-box",
             )
             yield ChartWidget(
                 "TPOT mean (ms)",
                 "hist_tpot",
-                max_override=500,
+                color="yellow",
+                y_max=0,
                 classes="chart-box",
             )
 
@@ -726,15 +813,11 @@ class ElasticMonitorApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
-        # Initial poll
         poll_all(self.monitor_state, self.monitor_args)
-        # Set up periodic polling
         self.set_interval(self.monitor_args.interval, self._poll_and_refresh)
 
     def _poll_and_refresh(self) -> None:
-        """Poll all data sources and refresh all widgets."""
         poll_all(self.monitor_state, self.monitor_args)
-        # Refresh all Static widgets by calling their render
         for widget in self.query(Static):
             widget.refresh()
 

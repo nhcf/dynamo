@@ -29,13 +29,19 @@ elastic_vllm/
 └── demo/
     ├── demo_load.py       # 通用闭环负载生成器（Python）
     ├── demo_tui.py        # TUI 监控面板（Textual + Rich，纯观察者）
-    ├── demo_run.sh        # 演示编排器（Bash，读取场景文件驱动全流程）
+    ├── demo_run.sh        # 演示编排器（Bash，TUI 为主显示，shell 输出走 events 文件）
     ├── demo_scenario.yaml # 默认演示场景定义
+    ├── analyze_demo.py    # 演示后数据分析（按拓扑区间对比性能）
     ├── requirement.txt    # Python 依赖（textual, rich）
     └── demo_output/       # 演示输出（运行时生成）
-        ├── load_stats.jsonl   # 每 5s 窗口统计 JSON 行
-        ├── events.log         # 事件日志
-        └── load_errors_0.log  # 负载错误日志
+        ├── load_stats.jsonl   # 每 5s 窗口统计 JSON 行（含 input_len/output_len）
+        ├── events.log         # 事件日志（TUI 主显示源）
+        ├── current_load.json  # 当前负载参数（TUI Load Info 面板源）
+        ├── runner.log         # shell 编排器完整日志
+        ├── topo_monitor_*.jsonl  # 后台拓扑轮询数据
+        ├── analysis_results.json  # 演示后分析结果
+        ├── report.json       # 演示报告
+        └── load_errors_0.log # 负载错误日志
 ```
 
 **关键外部文件**：
@@ -123,16 +129,23 @@ elastic_vllm/
 ### 4.3 数据流
 
 ```
-TUI (demo_tui.py)
+TUI (demo_tui.py) — 终端唯一显示者
   ├── 每 2s 轮询 :9090/metrics → 并发数
-  ├── 每 2s 读取 stats_file → 吞吐/TTFT/TPOT
+  ├── 每 2s 读取 stats_file → 吞吐/TTFT/TPOT（4 条历史曲线）
   ├── 每 2s POST :9091/.../state → TP/PP/is_switching
-  └── 每 2s 读 frontend.log + events.log → 事件
+  ├── 每 2s 读 frontend.log + events.log → 事件日志
+  └── 每 2s 读 current_load.json → Load Info 面板（阶段名/参数/状态）
 
 demo_load.py → stdout(JSONL) → demo_run.sh 重定向到 stats_file → TUI 读取
-demo_run.sh → events.log → TUI 读取
+demo_run.sh → emit_event() → events.log → TUI 读取
+              write_load_info() → current_load.json → TUI 读取
+demo_run.sh → stdout → runner.log（不在终端显示）
 elastic_controller → frontend.log → TUI 读取
 ```
+
+**关键约束**：`demo_run.sh` 在 TUI 启动后执行 `exec > runner.log 2>&1`，
+所有 shell 输出走 runner.log，TUI 是终端唯一显示者。
+Shell 与 TUI 的通信通过文件（events.log + current_load.json）完成。
 
 ---
 
@@ -178,12 +191,37 @@ phases:
 
 ⚠️ **expect 验证不再使用日志 grep**，而是通过后台拓扑监控进程每 2s 轮询 `parallel_strategy_state` API，记录 JSONL 数据到 `topo_monitor_{phase_idx}.jsonl`，阶段结束后从监控数据评估预期。
 
-### 5.4 代码风格
+### 5.4 Shell→TUI 事件传递规范
+
+`demo_run.sh` 通过 `emit_event()` 向 `events.log` 写入时间戳事件：
+
+```bash
+emit_event "[LOAD] Phase 1 started"
+emit_event "[EXPECT] PASS switch_up: Switch initiated at 10s"
+emit_event "[EXPECT] FAIL no_switch: Unexpected change at 45s"
+```
+
+TUI 根据前缀着色：
+- `[CONTROLLER]` → 黄色（控制器事件）
+- `[LOAD]` → 青色（负载事件）
+- `[EXPECT] PASS` → 绿色
+- `[EXPECT] FAIL` → 红色
+- 其他 → 白色
+
+`current_load.json` 在阶段转换时原子写入（write .tmp → mv）：
+```json
+{"phase_name":"Phase 1","phase_idx":0,"total_phases":3,"status":"loading",
+ "input_len":8192,"output_len":32,"conc":32,"tag":"prefill_heavy","duration":120}
+```
+阶段结束后 `status` 变为 `"done"`，全部阶段结束后删除该文件。
+
+### 5.5 代码风格
 
 - Bash 脚本使用 `set -euo pipefail`
 - Python 使用 `argparse` 做 CLI，`type: int` 显式标注类型
 - 日志前缀 `[TP/PP]` 用于控制器，`[LOAD]` 用于负载事件
 - JSON 输出一行一条（JSONL），`flush=True` 确保实时
+- TUI 图表使用 Unicode 块字符：█ 曲线，░ 填充，┄ 阈值线，┆ 切换标记
 
 ---
 
@@ -232,11 +270,17 @@ DYN_ELASTIC_SWITCH_FACTOR_UP=5 DYN_ELASTIC_SWITCH_COOLDOWN_S=15 demo/demo_run.sh
 ```bash
 cd dynamo/benchmarks/elastic_vllm
 
-# 一键启动
+# 一键启动（TUI 自动接管终端）
 demo/demo_run.sh --scenario demo/demo_scenario.yaml
 
 # 查看报告
 cat demo_output/report.json | jq .
+
+# 演示后分析（按拓扑区间对比性能）
+python3 demo/analyze_demo.py --output-dir demo_output
+
+# 查看 shell 编排器完整日志
+cat demo_output/runner.log
 ```
 
 前置条件：4 GPU 空闲，模型可用，`curl`/`jq`/`pyyaml` 已安装。
@@ -304,6 +348,33 @@ API `engine/control/parallel_strategy_state` 返回的 `is_switching` 字段：
 ### 8.9 python3 heredoc 与 stdin 管道冲突
 
 在 bash 中，`printf ... | python3 - <<'PYEOF'` 会导致 heredoc 抢占 stdin，使 printf 的管道数据丢失。应改用 `python3 -c '...'` 内联方式避免此问题。
+
+### 8.10 TUI 图表技术约束
+
+Textual 的 `Sparkline` 组件仅支持柱状图（▁▂▃▄▅▆▇█），不适合展示连续趋势曲线。
+当前实现使用自定义 `render_area_chart()` 函数，基于 Unicode 块字符绘制面积图：
+
+- **█** — 曲线边缘（bold 前景色）
+- **░** — 曲线下方填充（dim 前景色）
+- **┄** — 阈值参考线（白色）
+- **┆** — 切换事件标记（bold 黄色）
+
+无 `plotext` 或 `LinePlot` 可用，不支持半块字符（▀▄）作为独立绘图单元。
+
+### 8.11 Shell 输出与 TUI 终端冲突
+
+`demo_run.sh` 在 TUI 启动后执行 `exec 3>&1; exec > runner.log 2>&1`，
+将所有后续 shell 输出重定向到日志文件。这避免了 shell echo/print 干扰 TUI 渲染。
+演示结束后 `exec 1>&3 3>&-` 恢复终端输出以打印最终摘要。
+
+### 8.12 演示后数据分析局限
+
+`analyze_demo.py` 将 Phase 1 数据按拓扑区间（2x2 切换前 vs 4x1 切换后）拆分对比，
+可验证 report.md 关于 prefill_heavy 场景下 4x1 吞吐优势的结论。
+
+但 Phase 2 (decode_heavy) 通常仅在 2x2 下运行，缺少 4x1 对照数据。
+若需验证 2x2 在 decode_heavy 下的优势，需在场景中追加高并发 decode_heavy 阶段
+（触发 4x1 后切换回 2x2 对比），或在报告中引用 report.md 的压测数据。
 
 ---
 

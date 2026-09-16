@@ -18,7 +18,7 @@ phases:
       input_len: 8192             # 输入 token 长度（prefill 重）
       output_len: 32              # 输出 token 长度（max_tokens）
       conc: 32                    # 并发线程数
-      duration: 100               # 总运行秒数
+      duration: 120               # 总运行秒数（给 4x1 阶段更多数据）
       tag: "prefill_heavy"
     expect:
       - event: "switch_up"
