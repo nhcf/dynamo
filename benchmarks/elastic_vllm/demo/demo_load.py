@@ -213,10 +213,12 @@ def main():
     except KeyboardInterrupt:
         pass
 
-    # Final flush
+    # Stop workers from starting new requests
     stop_event.set()
-    # Wait briefly for in-flight requests
-    time.sleep(1)
+    # Wait for all in-flight requests to complete
+    for t in threads:
+        t.join()
+    # Flush remaining results
     output_window(results_lock, window_results, all_results,
                   args.window, args.tag, args.conc, start_time, load_args=args)
 
