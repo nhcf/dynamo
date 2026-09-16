@@ -633,7 +633,7 @@ Screen {
 #topology-panel {
     width: 1fr;
     height: 100%;
-    border: round $cyan;
+    border: round darkcyan;
     padding: 0 1;
     margin-right: 1;
 }
@@ -641,7 +641,7 @@ Screen {
 #metrics-panel {
     width: 2fr;
     height: 100%;
-    border: round $cyan;
+    border: round darkcyan;
     padding: 0 1;
 }
 
@@ -654,14 +654,14 @@ Screen {
 .chart-box {
     height: 1fr;
     min-height: 5;
-    border: round $cyan;
+    border: round darkcyan;
     padding: 0 1;
     margin-bottom: 1;
 }
 
 #event-log {
     height: 10;
-    border: round $cyan;
+    border: round darkcyan;
     padding: 0 1;
     margin: 0 1;
 }

@@ -143,6 +143,9 @@ export DYN_ELASTIC_SWITCH_STRATEGY_UP
 export DYN_ELASTIC_SWITCH_STRATEGY_DOWN
 export DYN_ELASTIC_SWITCH_COOLDOWN_S
 
+# Control plane URL (shared across steps)
+CTRL_URL="http://localhost:9091"
+
 # Compute actual concurrency thresholds for TUI display
 # TUI needs the real concurrent-request count at which switching triggers,
 # not the raw FACTOR multiplier. Threshold = FACTOR × EXPECTED_WORKERS.
@@ -170,28 +173,58 @@ else
     cd "${PROJECT_DIR}"
 
     # ===================== Step 4: Verify Service =====================
-    echo ">>> Verifying service..."
+    # Use `service.sh health` as the primary readiness signal.
+    #   - Backend /health → 503 (initializing) / 200 (ready to serve)
+    #   - Frontend /health → 200 (ready)
+    # We require BOTH to report fully healthy before proceeding.
+    # `service.sh health` considers 503 as "ok" (still booting), so we
+    # parse its output to confirm the backend is truly healthy (not initializing).
+
+    echo ">>> Verifying service readiness via health check..."
     local_wait=0
-    while [[ $local_wait -lt 60 ]]; do
-        if curl -s -o /dev/null "http://localhost:9090/health" 2>/dev/null; then
-            echo "    Frontend healthy"
+    SERVICES_READY=0
+    while [[ $local_wait -lt 300 ]]; do
+        health_output=$(cd "${WORKSPACE_DIR}" && bash "${SERVICE_SCRIPT}" health 2>&1) || true
+
+        # Both frontend and control plane must report healthy (200),
+        # not just "initializing" (503) or "not available".
+        fe_ok=0; cp_ok=0
+        echo "$health_output" | grep -q "Frontend.*healthy" && fe_ok=1
+        echo "$health_output" | grep -q "Control plane.*healthy" && cp_ok=1
+
+        if [[ $fe_ok -eq 1 && $cp_ok -eq 1 ]]; then
+            echo "    ✅ Frontend healthy"
+            echo "    ✅ Control plane healthy"
+            SERVICES_READY=1
             break
         fi
-        sleep 3
-        local_wait=$((local_wait + 3))
+
+        # Show status for user visibility
+        if [[ $cp_ok -eq 0 ]]; then
+            cp_line=$(echo "$health_output" | grep "Control plane" | head -1)
+            echo "    ... ${cp_line:-waiting for control plane} (${local_wait}s)"
+        fi
+        if [[ $fe_ok -eq 0 ]]; then
+            fe_line=$(echo "$health_output" | grep "Frontend" | head -1)
+            echo "    ... ${fe_line:-waiting for frontend} (${local_wait}s)"
+        fi
+        sleep 5
+        local_wait=$((local_wait + 5))
     done
-    if [[ $local_wait -ge 60 ]]; then
-        echo "    ERROR: Frontend not healthy after 60s" >&2
+    if [[ $SERVICES_READY -eq 0 ]]; then
+        echo "    ERROR: Services not fully ready after 300s" >&2
+        echo "    Check ${LOG_DIR}/backend.log and ${LOG_DIR}/frontend.log" >&2
         exit 1
     fi
 
-    # Verify controller started
+    # Verify elastic controller started
     if [[ "$DYN_ELASTIC_SWITCH_ENABLE" != "0" ]]; then
+        echo ">>> Verifying elastic controller..."
         local_wait=0
         while [[ $local_wait -lt 30 ]]; do
             if [[ -f "${LOG_DIR}/frontend.log" ]] && \
                grep -q "\[TP/PP\] controller started" "${LOG_DIR}/frontend.log" 2>/dev/null; then
-                echo "    Elastic controller started"
+                echo "    ✅ Elastic controller started"
                 break
             fi
             sleep 2
@@ -203,11 +236,15 @@ else
     fi
 
     # Verify initial topology
-    topo_resp=$(curl -s -m 5 -X POST "http://localhost:9091/engine/control/parallel_strategy_state" \
+    topo_resp=$(curl -s -m 5 -X POST "${CTRL_URL}/engine/control/parallel_strategy_state" \
         -H 'Content-Type: application/json' -d '{}' 2>/dev/null || echo '{}')
     cur_tp=$(echo "$topo_resp" | jq -r '.tensor_parallel_size // "?"' 2>/dev/null)
     cur_pp=$(echo "$topo_resp" | jq -r '.pipeline_parallel_size // "?"' 2>/dev/null)
-    echo "    Current topology: TP=$cur_tp PP=$cur_pp"
+    if [[ "$cur_tp" == "?" || "$cur_tp" == "null" || "$cur_pp" == "?" || "$cur_pp" == "null" ]]; then
+        echo "    ERROR: Cannot read initial topology (TP=$cur_tp PP=$cur_pp)" >&2
+        exit 1
+    fi
+    echo "    ✅ Current topology: TP=$cur_tp PP=$cur_pp"
 fi
 
 # ===================== Prepare Output Files =====================
@@ -255,12 +292,60 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
     # Record event
     echo "[$(date +%H:%M:%S)] [LOAD] Phase started: ${phase_name}" >> "$EVENTS_FILE"
 
-    # Snapshot log position for scoped expectation checks
-    phase_log_pos=0
-    if [[ -f "${LOG_DIR}/frontend.log" ]]; then
-        phase_log_pos=$(wc -c < "${LOG_DIR}/frontend.log")
+    # Snapshot current topology via control plane API
+    phase_start_tp=$(curl -s -m 5 -X POST "${CTRL_URL}/engine/control/parallel_strategy_state" \
+        -H 'Content-Type: application/json' -d '{}' 2>/dev/null | jq -r '.tensor_parallel_size // "?"')
+    phase_start_pp=$(curl -s -m 5 -X POST "${CTRL_URL}/engine/control/parallel_strategy_state" \
+        -H 'Content-Type: application/json' -d '{}' 2>/dev/null | jq -r '.pipeline_parallel_size // "?"')
+    echo "    Topology at phase start: ${phase_start_tp}x${phase_start_pp}"
+
+    # ── Launch background topology monitor ──────────────────────────
+    # Polls parallel_strategy_state every 2s and records topology
+    # change events with elapsed time since phase start.
+    MONITOR_FILE="${OUTPUT_DIR}/topo_monitor_${phase_idx}.jsonl"
+    MONITOR_MAX_S=0
+    if [[ -n "$phase_expects" && "$phase_expects" != "null" && "$phase_expects" != "[]" ]]; then
+        # Compute the maximum polling horizon from within_s / during_s
+        num_exp=$(echo "$phase_expects" | jq 'length')
+        for ((ei=0; ei<num_exp; ei++)); do
+            w=$(echo "$phase_expects" | jq -r ".[$ei].within_s // .[$ei].during_s // 0")
+            [[ $w -gt $MONITOR_MAX_S ]] && MONITOR_MAX_S=$w
+        done
+        # Also cover load duration so we capture switches during load
+        if [[ -n "$phase_load" && "$phase_load" != "null" ]]; then
+            ld=$(echo "$phase_load" | jq -r '.duration // 0')
+            [[ $ld -gt $MONITOR_MAX_S ]] && MONITOR_MAX_S=$ld
+        fi
+        # Cover wait period
+        [[ $phase_wait -gt $MONITOR_MAX_S ]] && MONITOR_MAX_S=$phase_wait
+        MONITOR_MAX_S=$((MONITOR_MAX_S + 10))  # extra margin
     fi
 
+    if [[ $MONITOR_MAX_S -gt 0 ]]; then
+        rm -f "$MONITOR_FILE"
+        (
+            elapsed=0
+            prev_topo=""
+            while [[ $elapsed -lt $MONITOR_MAX_S ]]; do
+                cur_state=$(curl -s -m 5 -X POST "${CTRL_URL}/engine/control/parallel_strategy_state" \
+                    -H 'Content-Type: application/json' -d '{}' 2>/dev/null || echo '{}')
+                cur_tp=$(echo "$cur_state" | jq -r '.tensor_parallel_size // "?"')
+                cur_pp=$(echo "$cur_state" | jq -r '.pipeline_parallel_size // "?"')
+                cur_sw=$(echo "$cur_state" | jq -r 'if .is_switching == false then "false" elif .is_switching == true then "true" else "?" end')
+                cur_topo="${cur_tp}x${cur_pp}"
+                # Always write a record (every 2s) for precise timing
+                echo "{\"elapsed\":${elapsed},\"tp\":${cur_tp},\"pp\":${cur_pp},\"is_switching\":\"${cur_sw}\",\"topo\":\"${cur_topo}\"}" >> "$MONITOR_FILE"
+                prev_topo="$cur_topo"
+                sleep 2
+                elapsed=$((elapsed + 2))
+            done
+        ) &
+        MONITOR_PID=$!
+    else
+        MONITOR_PID=
+    fi
+
+    # ── Run phase load ──────────────────────────────────────────────
     if [[ -n "$phase_load" && "$phase_load" != "null" ]]; then
         # Extract load parameters
         l_model=$(echo "$phase_load" | jq -r '.model // ""')
@@ -300,55 +385,104 @@ for ((phase_idx=0; phase_idx<NUM_PHASES; phase_idx++)); do
         sleep "$phase_wait"
     fi
 
-    # Check expectations
+    # ── Stop background monitor ─────────────────────────────────────
+    if [[ -n "$MONITOR_PID" ]]; then
+        kill "$MONITOR_PID" 2>/dev/null || true
+        wait "$MONITOR_PID" 2>/dev/null || true
+    fi
+
+    # ── Check expectations from monitor data ────────────────────────
     if [[ -n "$phase_expects" && "$phase_expects" != "null" && "$phase_expects" != "[]" ]]; then
         num_expects=$(echo "$phase_expects" | jq 'length')
         for ((ei=0; ei<num_expects; ei++)); do
             exp_event=$(echo "$phase_expects" | jq -r ".[$ei].event")
-            exp_pattern=$(echo "$phase_expects" | jq -r ".[$ei].log_pattern // empty")
             exp_within=$(echo "$phase_expects" | jq -r ".[$ei].within_s // 0")
+            exp_during=$(echo "$phase_expects" | jq -r ".[$ei].during_s // 0")
+            exp_tp=$(echo "$phase_expects" | jq -r ".[$ei].state.tp // 0")
+            exp_pp=$(echo "$phase_expects" | jq -r ".[$ei].state.pp // 0")
+            # NOTE: jq `false // null` returns null (jq treats false as empty),
+            # so we must use if/then/else to preserve the boolean value.
+            exp_not_switching=$(echo "$phase_expects" | jq -r "if .[$ei].state.is_switching == false then \"false\" elif .[$ei].state.is_switching == true then \"true\" else \"unset\" end")
 
             result="SKIP"
             detail=""
 
             case "$exp_event" in
                 switch_up|switch_down)
-                    dir=$(echo "$exp_event" | sed 's/switch_/SWITCH /' | tr '[:lower:]' '[:upper:]')
-                    if [[ -n "$exp_pattern" ]] && [[ -f "${LOG_DIR}/frontend.log" ]]; then
-                        # Only check log content added during this phase
-                        phase_log_tail=$(tail -c +"$((phase_log_pos + 1))" "${LOG_DIR}/frontend.log" 2>/dev/null || echo "")
-                        if echo "$phase_log_tail" | grep -q "$exp_pattern"; then
+                    # Look through monitor data for switch initiation within within_s.
+                    # A switch is considered "initiated" when either:
+                    #   a) is_switching transitions from false to true, OR
+                    #   b) topology actually changes (switch completes quickly)
+                    # We prefer (a) because it captures the decision moment,
+                    # while topology change only appears after completion.
+                    if [[ -f "$MONITOR_FILE" ]]; then
+                        # Strategy 1: Find first sample where is_switching becomes true
+                        switch_start=$(jq -r "select(.elapsed <= ${exp_within} and .is_switching == \"true\") | .elapsed" "$MONITOR_FILE" 2>/dev/null | head -1)
+                        if [[ -n "$switch_start" ]]; then
                             result="PASS"
-                            detail="Found: $exp_pattern"
+                            detail="Switch initiated (is_switching=true) at ${switch_start}s (within ${exp_within}s)"
                         else
-                            result="FAIL"
-                            detail="Not found: $exp_pattern"
+                            # Strategy 2: Fall back to topology change detection
+                            change_line=$(jq -r "select(.elapsed <= ${exp_within} and .topo != \"${phase_start_tp}x${phase_start_pp}\") | .elapsed" "$MONITOR_FILE" 2>/dev/null | head -1)
+                            if [[ -n "$change_line" ]]; then
+                                change_topo=$(jq -r "select(.elapsed == ${change_line}) | .topo" "$MONITOR_FILE" 2>/dev/null | head -1)
+                                result="PASS"
+                                detail="Topology changed from ${phase_start_tp}x${phase_start_pp} to ${change_topo} at ${change_line}s (within ${exp_within}s)"
+                            else
+                                result="FAIL"
+                                detail="No switch initiated within ${exp_within}s (topology still ${phase_start_tp}x${phase_start_pp}, is_switching never true)"
+                            fi
                         fi
-                    fi
-                    ;;
-                switch_complete)
-                    if curl -s -m 5 -X POST "http://localhost:9091/engine/control/parallel_strategy_state" \
-                        -H 'Content-Type: application/json' -d '{}' 2>/dev/null | \
-                        jq -e '.is_switching == false' >/dev/null 2>&1; then
-                        result="PASS"
-                        detail="is_switching=false"
                     else
                         result="FAIL"
-                        detail="is_switching=true or unreachable"
+                        detail="Monitor data not available"
                     fi
                     ;;
-                no_switch)
-                    # Check that no SWITCH UP/DOWN appeared during this phase
-                    exp_during=$(echo "$phase_expects" | jq -r ".[$ei].during_s // 0")
-                    if [[ -f "${LOG_DIR}/frontend.log" ]]; then
-                        phase_log_tail=$(tail -c +"$((phase_log_pos + 1))" "${LOG_DIR}/frontend.log" 2>/dev/null || echo "")
-                        if echo "$phase_log_tail" | grep -q "SWITCH"; then
-                            result="FAIL"
-                            detail="Unexpected switch found in phase log"
-                        else
+
+                switch_complete)
+                    # Find first sample where topology AND is_switching both match expected
+                    if [[ -f "$MONITOR_FILE" ]]; then
+                        # Build jq match condition
+                        match_conds=".elapsed <= ${exp_within}"
+                        [[ "$exp_tp" != "0" ]] && match_conds="${match_conds} and .tp == ${exp_tp}"
+                        [[ "$exp_pp" != "0" ]] && match_conds="${match_conds} and .pp == ${exp_pp}"
+                        [[ "$exp_not_switching" == "false" ]] && match_conds="${match_conds} and .is_switching == \"false\""
+                        match_line=$(jq -r "select(${match_conds}) | .elapsed" "$MONITOR_FILE" 2>/dev/null | head -1)
+                        if [[ -n "$match_line" ]]; then
+                            match_topo=$(jq -r "select(.elapsed == ${match_line}) | .topo" "$MONITOR_FILE" 2>/dev/null | head -1)
+                            match_sw=$(jq -r "select(.elapsed == ${match_line}) | .is_switching" "$MONITOR_FILE" 2>/dev/null | head -1)
                             result="PASS"
-                            detail="No switch detected"
+                            detail="State: ${match_topo} is_switching=${match_sw} at ${match_line}s (within ${exp_within}s)"
+                        else
+                            result="FAIL"
+                            # Show last sample for debugging
+                            last_topo=$(jq -r 'select(.elapsed <= '${exp_within}') | .topo' "$MONITOR_FILE" 2>/dev/null | tail -1)
+                            last_sw=$(jq -r 'select(.elapsed <= '${exp_within}') | .is_switching' "$MONITOR_FILE" 2>/dev/null | tail -1)
+                            detail="Target tp=${exp_tp} pp=${exp_pp} is_switching=${exp_not_switching} not reached within ${exp_within}s (last: ${last_topo} sw=${last_sw})"
                         fi
+                    else
+                        result="FAIL"
+                        detail="Monitor data not available"
+                    fi
+                    ;;
+
+                no_switch)
+                    # Verify topology stayed stable during entire during_s period
+                    if [[ -f "$MONITOR_FILE" ]]; then
+                        # Count samples where topology differs from phase start within during_s
+                        change_count=$(jq "select(.elapsed <= ${exp_during} and .topo != \"${phase_start_tp}x${phase_start_pp}\")" "$MONITOR_FILE" 2>/dev/null | jq -s 'length')
+                        if [[ "$change_count" == "0" || -z "$change_count" ]]; then
+                            result="PASS"
+                            detail="Topology stable at ${phase_start_tp}x${phase_start_pp} for ${exp_during}s"
+                        else
+                            first_change=$(jq -r "select(.elapsed <= ${exp_during} and .topo != \"${phase_start_tp}x${phase_start_pp}\") | .elapsed" "$MONITOR_FILE" 2>/dev/null | head -1)
+                            change_topo=$(jq -r "select(.elapsed == ${first_change}) | .topo" "$MONITOR_FILE" 2>/dev/null | head -1)
+                            result="FAIL"
+                            detail="Unexpected change from ${phase_start_tp}x${phase_start_pp} to ${change_topo} at ${first_change}s"
+                        fi
+                    else
+                        result="FAIL"
+                        detail="Monitor data not available"
                     fi
                     ;;
             esac
@@ -367,7 +501,9 @@ DEMO_END=$(date +%s)
 DEMO_DURATION=$((DEMO_END - DEMO_START))
 
 # Build expectation results JSON
-expect_json=$(printf '%s\n' "${EXPECT_RESULTS[@]}" | python3 - <<'PYEOF'
+# NOTE: Cannot use `printf | python3 - <<'HEREDOC'` because the heredoc
+# steals python's stdin, so the piped data is lost. Use `-c` instead.
+expect_json=$(printf '%s\n' "${EXPECT_RESULTS[@]}" | python3 -c '
 import sys, json
 results = []
 for line in sys.stdin:
@@ -383,8 +519,7 @@ for line in sys.stdin:
             "detail": parts[3]
         })
 print(json.dumps(results, indent=2))
-PYEOF
-)
+')
 
 # Collect final topology
 final_topo=$(curl -s -m 5 -X POST "http://localhost:9091/engine/control/parallel_strategy_state" \

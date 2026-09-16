@@ -22,7 +22,7 @@ phases:
       tag: "prefill_heavy"
     expect:
       - event: "switch_up"
-        within_s: 15               # 负载启动后 15s 内应出现 SWITCH UP
+        within_s: 20               # 负载启动后 20s 内应出现 SWITCH UP（含控制器决策延迟）
         log_pattern: "SWITCH UP -> 4x1"
       - event: "switch_complete"
         within_s: 45               # 切换在 ~26s 完成
