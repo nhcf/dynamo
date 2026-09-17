@@ -1,5 +1,5 @@
 # Elastic TP/PP 自动切换演示场景
-# 2x2 → 4x1: prefill heavy 逐步加压触发 SWITCH UP
+# 2x2 → 4x1: decode heavy 逐步加压触发 SWITCH UP
 
 # 服务启动配置
 service:
