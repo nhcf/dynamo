@@ -276,8 +276,8 @@ def main():
         all_ttfts = [r[0] for r in all_results if r[3]]
         all_tpots = [r[1] for r in all_results if r[3]]
         all_comp_tokens = [r[2] for r in all_results if r[3]]
-        all_oks = sum(1 for r in all_results if r[3]])
-        all_errs = sum(1 for r in all_results if not r[3]])
+        all_oks = sum(1 for r in all_results if r[3])
+        all_errs = sum(1 for r in all_results if not r[3])
         total_time = time.time() - start_time
         total_tokens = sum(all_comp_tokens)
 
