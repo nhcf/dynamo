@@ -54,8 +54,13 @@ def parse_args():
     return parser.parse_args()
 
 
-def send_request(host, port, model, prompt, output_len):
-    """Send one streaming completion request; return (ttft_ms, tpot_ms, completion_tokens, ok)."""
+def send_request(host, port, model, prompt, output_len,
+                 on_ttft=None, on_token=None):
+    """Send one streaming completion request; return (ttft_ms, tpot_ms, completion_tokens, ok).
+
+    on_ttft(ttft_ms): called once when first token arrives.
+    on_token(): called for each token received during streaming.
+    """
     try:
         conn = HTTPConnection(host, port, timeout=300)
         body = json.dumps({
@@ -95,10 +100,14 @@ def send_request(host, port, model, prompt, output_len):
 
             if t_first_token is None:
                 t_first_token = time.monotonic()
+                if on_ttft:
+                    on_ttft((t_first_token - t0) * 1000)
 
             choices = chunk.get("choices", [])
             if choices and choices[0].get("text", ""):
                 tokens += 1
+                if on_token:
+                    on_token()
 
         t_end = time.monotonic()
         conn.close()
@@ -118,30 +127,73 @@ def send_request(host, port, model, prompt, output_len):
 
 
 def worker(host, port, model, prompt, output_len, start_time, duration,
-           stop_event, results_lock, window_results, all_results):
+           stop_event, results_lock, window_results, all_results,
+           window_ttfts, window_tokens, window_token_times,
+           active_ttfts, in_flight):
     """Worker thread: closed-loop request sending."""
+    tid = threading.current_thread().ident
     end_time = start_time + duration
     while not stop_event.is_set() and time.time() < end_time:
-        ttft, tpot, comp_tokens, ok = send_request(host, port, model, prompt, output_len)
+        def on_ttft(ttft_ms):
+            with results_lock:
+                window_ttfts.append(ttft_ms)
+                active_ttfts[tid] = ttft_ms
+
+        def on_token():
+            with results_lock:
+                window_tokens[0] += 1
+                window_token_times.append(time.monotonic())
+
+        with results_lock:
+            in_flight[0] += 1
+        try:
+            ttft, tpot, comp_tokens, ok = send_request(
+                host, port, model, prompt, output_len,
+                on_ttft=on_ttft, on_token=on_token)
+        finally:
+            with results_lock:
+                in_flight[0] -= 1
+                active_ttfts.pop(tid, None)
         with results_lock:
             window_results.append((ttft, tpot, comp_tokens, ok))
             all_results.append((ttft, tpot, comp_tokens, ok))
 
 
-def compute_stats(batch, window, tag, conc, start_time, input_len=0, output_len=0):
-    """Compute window statistics from a list of result tuples."""
-    if not batch:
+def compute_stats(batch, window, tag, conc, start_time, input_len=0, output_len=0,
+                  window_ttfts=None, window_tokens=0, window_token_times=None,
+                  active_ttfts=None, in_flight=0):
+    """Compute window statistics from completed results and intermediate metrics."""
+    has_data = batch or window_ttfts or window_tokens > 0 or active_ttfts
+    if not has_data:
         return None
 
-    ttfts = [r[0] for r in batch if r[3]]
-    tpots = [r[1] for r in batch if r[3]]
-    comp_tokens_list = [r[2] for r in batch if r[3]]
+    # TTFT: use new window TTFTs first; if none, carry forward active request TTFTs
+    ttfts = list(window_ttfts or [])
+    if not ttfts and active_ttfts:
+        ttfts = list(active_ttfts.values())
+    ttfts += [r[0] for r in batch if r[3] and r[0] > 0]
+
+    tpots = [r[1] for r in batch if r[3] and r[1] > 0]
+    comp_tokens_list = [r[2] for r in batch if r[3] and r[2] > 0]
     oks = sum(1 for r in batch if r[3])
     errs = sum(1 for r in batch if not r[3])
 
-    total_comp_tokens = sum(comp_tokens_list)
     elapsed = time.time() - start_time
-    thr_out = total_comp_tokens / window if oks > 0 else 0
+    # Throughput: prefer intermediate token count (real-time), fall back to completed tokens
+    if window_tokens > 0:
+        thr_out = window_tokens / window
+    elif oks > 0:
+        thr_out = sum(comp_tokens_list) / window
+    else:
+        thr_out = 0
+
+    # Intermediate TPOT: estimate from token arrival timestamps in this window
+    intermediate_tpot = 0
+    if window_token_times and len(window_token_times) >= 2:
+        dur_s = window_token_times[-1] - window_token_times[0]
+        intermediate_tpot = (dur_s / (len(window_token_times) - 1)) * 1000
+
+    tpot_val = statistics.mean(tpots) if tpots else intermediate_tpot
 
     obj = {
         "t": round(elapsed, 1),
@@ -152,21 +204,38 @@ def compute_stats(batch, window, tag, conc, start_time, input_len=0, output_len=
         "thr_out": round(thr_out, 1),
         "ttft_mean": round(statistics.mean(ttfts), 0) if ttfts else 0,
         "ttft_p99": round(sorted(ttfts)[int(len(ttfts) * 0.99)] if len(ttfts) >= 2 else (ttfts[0] if ttfts else 0), 0),
-        "tpot_mean": round(statistics.mean(tpots), 0) if tpots else 0,
+        "tpot_mean": round(tpot_val, 0) if tpot_val else 0,
         "ok": oks,
         "err": errs,
+        "in_flight": in_flight,
     }
     return obj
 
 
-def output_window(results_lock, window_results, all_results, window, tag, conc, start_time, load_args=None):
+def output_window(results_lock, window_results, all_results, window, tag, conc, start_time,
+                  load_args=None, window_ttfts=None, window_tokens=None,
+                  window_token_times=None, active_ttfts=None, in_flight=None):
     """Pop current window results and output JSON."""
     with results_lock:
         batch = window_results[:]
         window_results.clear()
+        ttfts = window_ttfts[:] if window_ttfts else []
+        if window_ttfts:
+            window_ttfts.clear()
+        tokens = window_tokens[0] if window_tokens else 0
+        if window_tokens:
+            window_tokens[0] = 0
+        token_times = window_token_times[:] if window_token_times else []
+        if window_token_times:
+            window_token_times.clear()
+        active = dict(active_ttfts) if active_ttfts else {}
+        flight = in_flight[0] if in_flight else 0
     obj = compute_stats(batch, window, tag, conc, start_time,
                         input_len=load_args.input_len if load_args else 0,
-                        output_len=load_args.output_len if load_args else 0)
+                        output_len=load_args.output_len if load_args else 0,
+                        window_ttfts=ttfts, window_tokens=tokens,
+                        window_token_times=token_times, active_ttfts=active,
+                        in_flight=flight)
     if obj:
         print(json.dumps(obj), flush=True)
 
@@ -186,19 +255,26 @@ def main():
 
     # Shared state
     results_lock = threading.Lock()
-    window_results = []   # [(ttft_ms, tpot_ms, completion_tokens, ok), ...] for current window
-    all_results = []      # for final summary
+    window_results = []       # [(ttft_ms, tpot_ms, completion_tokens, ok), ...] for current window
+    all_results = []          # for final summary
+    window_ttfts = []         # intermediate TTFT measurements for current window
+    window_tokens = [0]       # intermediate token count for current window
+    window_token_times = []   # monotonic timestamps of tokens in current window (for intermediate TPOT)
+    active_ttfts = {}         # tid → ttft_ms, persists across windows until request completes
+    in_flight = [0]           # number of in-flight requests
     start_time = time.time()
     stop_event = threading.Event()
 
     # Start worker threads
     threads = []
-    for i in range(args.conc):
+    for _ in range(args.conc):
         t = threading.Thread(
             target=worker,
             args=(host, port, args.model, prompt, args.output_len,
                   start_time, args.duration, stop_event,
-                  results_lock, window_results, all_results),
+                  results_lock, window_results, all_results,
+                  window_ttfts, window_tokens, window_token_times,
+                  active_ttfts, in_flight),
             daemon=True,
         )
         t.start()
@@ -209,18 +285,32 @@ def main():
         while time.time() - start_time < args.duration:
             time.sleep(args.window)
             output_window(results_lock, window_results, all_results,
-                          args.window, args.tag, args.conc, start_time, load_args=args)
+                          args.window, args.tag, args.conc, start_time, load_args=args,
+                          window_ttfts=window_ttfts, window_tokens=window_tokens,
+                          window_token_times=window_token_times,
+                          active_ttfts=active_ttfts, in_flight=in_flight)
     except KeyboardInterrupt:
         pass
 
     # Stop workers from starting new requests
     stop_event.set()
-    # Wait for all in-flight requests to complete
-    for t in threads:
-        t.join()
-    # Flush remaining results
+    # Wait for all in-flight requests to complete, printing stats during the wait
+    while any(t.is_alive() for t in threads):
+        for t in threads:
+            if t.is_alive():
+                t.join(timeout=args.window)
+                break
+        output_window(results_lock, window_results, all_results,
+                      args.window, args.tag, args.conc, start_time, load_args=args,
+                      window_ttfts=window_ttfts, window_tokens=window_tokens,
+                      window_token_times=window_token_times,
+                      active_ttfts=active_ttfts, in_flight=in_flight)
+    # Final flush
     output_window(results_lock, window_results, all_results,
-                  args.window, args.tag, args.conc, start_time, load_args=args)
+                  args.window, args.tag, args.conc, start_time, load_args=args,
+                  window_ttfts=window_ttfts, window_tokens=window_tokens,
+                  window_token_times=window_token_times,
+                  active_ttfts=active_ttfts, in_flight=in_flight)
 
     # Final summary
     if all_results:
@@ -244,6 +334,7 @@ def main():
             "tpot_mean": round(statistics.mean(all_tpots), 0) if all_tpots else 0,
             "ok": all_oks,
             "err": all_errs,
+            "in_flight": in_flight[0],
             "final": True,
         }
         print(json.dumps(obj), flush=True)
