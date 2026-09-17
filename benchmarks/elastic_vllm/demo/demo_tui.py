@@ -6,7 +6,11 @@
 # Pure observer — never triggers a switch call
 #
 # Features:
-#   - Area-style line charts for Concurrency, Throughput, TTFT, TPOT
+#   - Shared-X dual scatter subplots: TTFT p99 + Throughput
+#   - Log Y scale to spread normal differences across chart height
+#   - Phase coloring (cyan/green/magenta/... per conc phase)
+#   - Phase boundaries marked with │ yellow vertical lines
+#   - Normal points • solid, final summary rows ○ hollow dim
 #   - Load Info panel showing current phase parameters
 #   - Topology status + Metrics snapshot
 #   - Event log with phase/expectation color-coding
@@ -29,18 +33,18 @@
 
 import argparse
 import json
+import math
 import os
 import re
 import time
 import urllib.request
-from collections import deque
 from dataclasses import dataclass, field
 from typing import Optional
 
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal, Vertical, Grid
+from textual.containers import Horizontal, Vertical
 from textual.reactive import reactive
 from textual.widgets import Footer, Header, Static
 from textual.worker import Worker, get_current_worker
@@ -77,6 +81,20 @@ def parse_args():
     return parser.parse_args()
 
 
+# ===================== Data Point =====================
+
+@dataclass
+class DataPoint:
+    """Single measurement from load_stats JSONL."""
+    t: float
+    conc: int
+    thr_out: float
+    ttft_p99: float
+    tpot_mean: float
+    is_final: bool = False
+    phase_idx: int = 0
+
+
 # ===================== State =====================
 
 @dataclass
@@ -101,11 +119,10 @@ class State:
     ok_pct: int = 100
     prev_ok_pct: int = 100
 
-    # History (4 metric curves)
-    hist_active: deque = field(default_factory=deque)
-    hist_thr: deque = field(default_factory=deque)
-    hist_ttft: deque = field(default_factory=deque)
-    hist_tpot: deque = field(default_factory=deque)
+    # Scatter chart data points
+    data_points: list = field(default_factory=list)
+    prev_conc: int = -1
+    phase_idx: int = 0
 
     # Switch events: list of (tick, direction)
     switch_events: list = field(default_factory=list)
@@ -225,20 +242,45 @@ def read_stats_file(state: State, stats_file: str):
             obj = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if obj.get("final", False):
-            continue
 
-        state.prev_thr_out = state.thr_out
-        state.thr_out = obj.get("thr_out", 0)
-        state.prev_ttft_p99 = state.ttft_p99
-        state.ttft_p99 = obj.get("ttft_p99", 0)
-        state.prev_tpot_mean = state.tpot_mean
-        state.tpot_mean = obj.get("tpot_mean", 0)
-        ok = obj.get("ok", 0)
-        err = obj.get("err", 0)
-        total = ok + err
-        state.prev_ok_pct = state.ok_pct
-        state.ok_pct = (ok * 100 // total) if total > 0 else 100
+        is_final = obj.get("final", False)
+        conc = obj.get("conc", 0)
+        t_val = obj.get("t", 0)
+
+        # Detect phase transition (conc change)
+        if state.prev_conc >= 0 and conc != state.prev_conc:
+            state.phase_idx += 1
+        state.prev_conc = conc
+
+        # Create data point for scatter charts
+        dp = DataPoint(
+            t=t_val,
+            conc=conc,
+            thr_out=obj.get("thr_out", 0),
+            ttft_p99=obj.get("ttft_p99", 0),
+            tpot_mean=obj.get("tpot_mean", 0),
+            is_final=is_final,
+            phase_idx=state.phase_idx,
+        )
+        state.data_points.append(dp)
+
+        # Cap data points to prevent unbounded memory growth
+        if len(state.data_points) > 10000:
+            state.data_points = state.data_points[-8000:]
+
+        # Update scalar metrics (for MetricsPanel) — skip final summary rows
+        if not is_final:
+            state.prev_thr_out = state.thr_out
+            state.thr_out = dp.thr_out
+            state.prev_ttft_p99 = state.ttft_p99
+            state.ttft_p99 = dp.ttft_p99
+            state.prev_tpot_mean = state.tpot_mean
+            state.tpot_mean = dp.tpot_mean
+            ok = obj.get("ok", 0)
+            err = obj.get("err", 0)
+            total = ok + err
+            state.prev_ok_pct = state.ok_pct
+            state.ok_pct = (ok * 100 // total) if total > 0 else 100
 
 
 def read_events_file(state: State, events_file: str):
@@ -337,21 +379,6 @@ def add_event(state: State, msg: str):
         state.event_log = state.event_log[-200:]
 
 
-def update_history(state: State, history: int):
-    # Only append when the value actually changed (change-driven, not time-driven)
-    if state.active_requests != state.prev_active or len(state.hist_active) == 0:
-        state.hist_active.append(state.active_requests)
-    if state.thr_out != state.prev_thr_out or len(state.hist_thr) == 0:
-        state.hist_thr.append(state.thr_out)
-    if state.ttft_p99 != state.prev_ttft_p99 or len(state.hist_ttft) == 0:
-        state.hist_ttft.append(state.ttft_p99)
-    if state.tpot_mean != state.prev_tpot_mean or len(state.hist_tpot) == 0:
-        state.hist_tpot.append(state.tpot_mean)
-    for dq in (state.hist_active, state.hist_thr, state.hist_ttft, state.hist_tpot):
-        while len(dq) > history:
-            dq.popleft()
-
-
 def check_shutdown(args) -> bool:
     """Check if demo_run.sh has written a shutdown signal file."""
     shutdown_file = os.path.join(os.path.dirname(args.events_file), ".tui_shutdown")
@@ -369,7 +396,6 @@ def poll_all(state: State, args):
     read_events_file(state, args.events_file)
     read_log_events(state, args.log_file)
     read_load_info(state, args.load_info)
-    update_history(state, args.history)
     state.tick += 1
     return None
 
@@ -393,145 +419,9 @@ def format_delta(curr: float, prev: float, unit: str = "", inverse: bool = False
         return f"  0{unit}"
 
 
-# ===================== Area Chart Rendering =====================
+# ===================== Scatter Chart Rendering =====================
 
-def render_area_chart(
-    data: deque,
-    width: int,
-    height: int,
-    *,
-    y_max: float = 0,
-    color: str = "green",
-    thresholds: list = None,
-    switch_events: list = None,
-    tick: int = 0,
-    history: int = 120,
-) -> Text:
-    """Render an area-style line chart using Unicode line-drawing characters.
-
-    - Thin ─╱╲ line at the curve edge with slope connectors
-    - Dim ░ fill below the curve
-    - Dashed ┄ threshold lines
-    - Dashed ┆ switch-event markers
-    """
-    n = len(data)
-    if n < 2 or width < 14 or height < 3:
-        return Text("  (waiting for data...)", style="dim")
-
-    y_w = 6  # width for y-axis labels (e.g. "  40┤")
-    cw = max(width - y_w - 1, 8)
-
-    # Downsample to chart width
-    data_list = list(data)
-    if n <= cw:
-        samples = [float(v) for v in data_list]
-    else:
-        bucket = n / cw
-        samples = []
-        for i in range(cw):
-            s = int(i * bucket)
-            e = min(int((i + 1) * bucket), n)
-            chunk = data_list[s:e]
-            if chunk:
-                samples.append(sum(float(v) for v in chunk) / len(chunk))
-            else:
-                samples.append(0.0)
-
-    if not samples or len(samples) < 2:
-        return Text("  (waiting for data...)", style="dim")
-
-    # Y range — use P95 to avoid outlier spikes compressing the chart
-    sorted_samples = sorted(abs(v) for v in samples)
-    p95_idx = max(0, int(len(sorted_samples) * 0.95) - 1)
-    data_p95 = sorted_samples[p95_idx]
-    ym = max(y_max, data_p95, 1)
-
-    # Compute curve rows (0 = top, height-1 = bottom)
-    curve_rows = []
-    for v in samples:
-        frac = min(v / ym, 1.0) if ym > 0 else 0
-        row = int((1 - frac) * (height - 1))
-        curve_rows.append(max(0, min(height - 1, row)))
-
-    # Precompute curve line characters based on slope
-    line_chars = []
-    for c in range(len(curve_rows)):
-        if c > 0:
-            prev_cr = curve_rows[c - 1]
-            cr = curve_rows[c]
-            if cr < prev_cr:      # curve goes UP visually
-                line_chars.append("\u2571")   # ╱
-            elif cr > prev_cr:    # curve goes DOWN visually
-                line_chars.append("\u2572")   # ╲
-            else:
-                line_chars.append("\u2500")   # ─
-        else:
-            line_chars.append("\u2500")       # ─
-
-    # Precompute threshold rows
-    thr_rows = {}
-    if thresholds:
-        for tv, tl, ts in thresholds:
-            tr = int((1 - min(tv / ym, 1.0)) * (height - 1)) if ym > 0 else height - 1
-            tr = max(0, min(height - 1, tr))
-            thr_rows[tr] = (tl, ts)
-
-    # Build output row by row
-    result = Text()
-    for r in range(height):
-        # Y-axis label
-        if r == 0:
-            result.append(f"{_fmt_axis(ym):>5}\u2507", style="dim")
-        elif r == height - 1:
-            result.append("    0\u2507", style="dim")
-        elif height > 4 and r == height // 2:
-            result.append(f"{_fmt_axis(ym / 2):>5}\u2507", style="dim")
-        else:
-            result.append("     \u2507", style="dim")
-
-        # Chart content
-        for c in range(len(curve_rows)):
-            cr = curve_rows[c]
-
-            # Check switch marker
-            is_marker = False
-            if switch_events:
-                for stick, sdir in switch_events:
-                    offset = tick - history
-                    if history > 0:
-                        col_pos = int((stick - offset) * len(curve_rows) / history)
-                        if col_pos == c and 0 <= col_pos < len(curve_rows):
-                            is_marker = True
-                            break
-
-            if is_marker:
-                result.append("\u2506", style="bold yellow")
-            elif r == cr:
-                # Curve line (thin with slope connectors)
-                result.append(line_chars[c], style=f"bold {color}")
-            elif r in thr_rows:
-                # Threshold line (overrides fill)
-                _, ts = thr_rows[r]
-                result.append("\u2504", style=ts)
-            elif r > cr:
-                # Below curve (empty)
-                result.append(" ")
-            else:
-                # Empty above curve
-                result.append(" ")
-
-        if r < height - 1:
-            result.append("\n")
-
-    # Legend line
-    result.append("\n ")
-    if thresholds:
-        for tv, tl, ts in thresholds:
-            result.append(f" \u2504 {tl}={int(tv)}", style=ts)
-    if switch_events:
-        result.append(" \u2506 Switch", style="bold yellow")
-
-    return result
+PHASE_COLORS = ["cyan", "green", "magenta", "yellow", "red", "blue"]
 
 
 def _fmt_axis(v: float) -> str:
@@ -541,6 +431,189 @@ def _fmt_axis(v: float) -> str:
     if v >= 1000:
         return f"{v / 1000:.1f}k"
     return f"{v:.0f}"
+
+
+def render_scatter_chart(
+    points: list,
+    y_field: str,
+    width: int,
+    height: int,
+    *,
+    title: str = "",
+    y_unit: str = "",
+    log_scale: bool = True,
+) -> Text:
+    """Render a scatter subplot with phase coloring and log Y scale.
+
+    - Each phase (different conc) gets a distinct color from PHASE_COLORS
+    - Phase boundaries are marked with │ yellow vertical lines
+    - Normal data points use • (solid), final summary rows use ○ (hollow dim)
+    - Log Y scale spreads normal differences across the chart height,
+      preventing outlier spikes from compressing the visible range
+    """
+    if width < 20 or height < 5:
+        return Text("  (terminal too small)", style="dim")
+
+    chart_h = height - 2  # title + x-axis
+    y_w = 7
+    cw = max(width - y_w - 1, 8)
+
+    if not points:
+        return Text("  (waiting for data...)", style="dim")
+
+    # X range — use sequential index (not t field, which may be inaccurate)
+    n_pts = len(points)
+    x_min = 0
+    x_max = max(n_pts - 1, 1)
+
+    # Y range — exclude final rows for scale calculation
+    vals = [getattr(p, y_field) for p in points if not p.is_final]
+    if not vals:
+        vals = [getattr(p, y_field) for p in points]
+    positive_vals = [abs(v) for v in vals if v > 0]
+    if not positive_vals:
+        positive_vals = [1]
+
+    # Percentile-based Y range — focus on the bulk of data so that
+    # normal variation (e.g. 800–1000 ms) fills most of the chart height.
+    # Outliers beyond the percentile window are clipped to the edges.
+    sorted_vals = sorted(positive_vals)
+    p5_idx = max(0, int(len(sorted_vals) * 0.05) - 1)
+    p95_idx = min(len(sorted_vals) - 1, max(0, int(len(sorted_vals) * 0.95) - 1))
+
+    if log_scale:
+        y_lo = sorted_vals[p5_idx]
+        y_hi = sorted_vals[p95_idx]
+        # Guarantee at least a small visible range
+        if y_hi <= y_lo:
+            y_hi = y_lo * 2 if y_lo > 0 else 1
+        # Add 10 % padding on each side so data doesn't sit on the very edge
+        log_lo = math.log10(y_lo)
+        log_hi = math.log10(y_hi)
+        pad = (log_hi - log_lo) * 0.1
+        y_lo = 10 ** (log_lo - pad) if y_lo > 0 else 10 ** (log_lo - pad)
+        y_hi = 10 ** (log_hi + pad)
+        scale_hint = f"(log {y_lo:.0f}~{y_hi:.0f}{y_unit})"
+    else:
+        y_lo = 0
+        y_hi = max(sorted_vals[p95_idx], 1)
+        scale_hint = f"(y_max={_fmt_axis(y_hi)}{y_unit})"
+
+    # Value <-> fraction mapping
+    def val_to_frac(v: float) -> float:
+        if log_scale:
+            if v <= 0:
+                return 0.0
+            log_v = math.log10(v)
+            log_lo_v = math.log10(y_lo) if y_lo > 0 else 0.0
+            log_hi_v = math.log10(y_hi) if y_hi > 1 else 1.0
+            span = log_hi_v - log_lo_v
+            if span <= 0:
+                return 0.5
+            return max(0.0, min(1.0, (log_v - log_lo_v) / span))
+        else:
+            if y_hi <= 0:
+                return 0.0
+            return max(0.0, min(1.0, v / y_hi))
+
+    def frac_to_val(frac: float) -> float:
+        if log_scale:
+            log_lo_v = math.log10(y_lo) if y_lo > 0 else 0.0
+            log_hi_v = math.log10(y_hi) if y_hi > 1 else 1.0
+            span = log_hi_v - log_lo_v
+            return 10 ** (log_lo_v + frac * span)
+        else:
+            return frac * y_hi
+
+    # Map each point to a grid cell; prefer non-final at same cell
+    grid: dict = {}
+    for i, p in enumerate(points):
+        col = int((i - x_min) / (x_max - x_min) * (cw - 1))
+        col = max(0, min(cw - 1, col))
+        v = getattr(p, y_field)
+        frac = val_to_frac(v)
+        row = int((1 - frac) * (chart_h - 1))
+        row = max(0, min(chart_h - 1, row))
+        key = (col, row)
+        if key not in grid or (not p.is_final and grid[key].is_final):
+            grid[key] = p
+
+    # Phase boundary columns
+    phase_start_cols: dict = {}
+    for i, p in enumerate(points):
+        col = int((i - x_min) / (x_max - x_min) * (cw - 1))
+        col = max(0, min(cw - 1, col))
+        if p.phase_idx not in phase_start_cols:
+            phase_start_cols[p.phase_idx] = col
+
+    # Build canvas row by row
+    result = Text()
+
+    # Title line
+    result.append(f"  {title}", style="bold white")
+    result.append(f"  {scale_hint}", style="dim")
+    result.append("\n")
+
+    for r in range(chart_h):
+        # Y-axis labels
+        if r == 0:
+            label_val = frac_to_val(1.0)
+            result.append(f"{_fmt_axis(label_val):>6}\u2507", style="dim")
+        elif r == chart_h - 1:
+            if log_scale:
+                result.append(f"{_fmt_axis(y_lo):>6}\u2507", style="dim")
+            else:
+                result.append("     0\u2507", style="dim")
+        elif chart_h > 4 and r == chart_h // 2:
+            row_frac = 1.0 - r / (chart_h - 1)
+            label_val = frac_to_val(row_frac)
+            result.append(f"{_fmt_axis(label_val):>6}\u2507", style="dim")
+        else:
+            result.append("      \u2507", style="dim")
+
+        # Chart content
+        for c in range(cw):
+            key = (c, r)
+            if key in grid:
+                p = grid[key]
+                color = PHASE_COLORS[p.phase_idx % len(PHASE_COLORS)]
+                if p.is_final:
+                    result.append("\u25CB", style=f"dim {color}")  # ○ hollow
+                else:
+                    result.append("\u2022", style=color)  # • solid
+            else:
+                # Phase boundary │
+                is_boundary = False
+                for pidx, pcol in phase_start_cols.items():
+                    if pidx > 0 and c == pcol:
+                        is_boundary = True
+                        break
+                if is_boundary:
+                    result.append("\u2502", style="bold yellow")
+                else:
+                    result.append(" ")
+
+        if r < chart_h - 1:
+            result.append("\n")
+
+    # X axis with sample-index labels
+    result.append("\n")
+    result.append("      \u2514", style="dim")
+    n_ticks = min(5, cw // 8)
+    if n_ticks > 0:
+        x_line = [" "] * cw
+        for i in range(n_ticks + 1):
+            frac = i / n_ticks
+            col = int(frac * (cw - 1))
+            idx_val = x_min + frac * (x_max - x_min)
+            label = f"#{int(idx_val)}"
+            for j, ch in enumerate(label):
+                pos = col + j
+                if 0 <= pos < cw:
+                    x_line[pos] = ch
+        result.append("".join(x_line), style="dim")
+
+    return result
 
 
 # ===================== Textual Widgets =====================
@@ -626,69 +699,28 @@ class MetricsPanel(Static):
         return t
 
 
-class ChartWidget(Static):
-    """Area-style line chart widget."""
+class ScatterChartWidget(Static):
+    """Scatter chart widget with phase coloring and log Y scale."""
 
-    def __init__(self, title: str, data_key: str, color: str = "green",
-                 thresholds: list = None, y_max: float = 0, **kwargs):
+    def __init__(self, title: str, y_field: str, y_unit: str = "",
+                 log_scale: bool = True, **kwargs):
         super().__init__(**kwargs)
         self.chart_title = title
-        self.data_key = data_key
-        self.color = color
-        self.chart_thresholds = thresholds or []
-        self.y_max_override = y_max
+        self.y_field = y_field
+        self.y_unit = y_unit
+        self.log_scale = log_scale
 
     def render(self) -> Text:
-        app = self.app
-        state = app.monitor_state
-        args = app.monitor_args
-
-        data = getattr(state, self.data_key)
-        current = data[-1] if data else 0
-
-        # Resolve thresholds dynamically for Concurrency chart
-        thresholds = self.chart_thresholds
-        y_max = self.y_max_override
-        if self.data_key == "hist_active" and state.thresholds_loaded:
-            thresholds = []
-            if state.up_threshold > 0:
-                thresholds.append((state.up_threshold, "UP", "bold red"))
-                y_max = state.up_threshold * 4
-            if state.down_threshold > 0:
-                thresholds.append((state.down_threshold, "DOWN", "bold blue"))
-                if y_max == 0:
-                    y_max = state.down_threshold * 8
-
-        # Title with current value
-        t = Text()
-        t.append(f"{self.chart_title}", style=f"bold {self.color}")
-        t.append(f"  {self._fmt_val(current)}", style="white")
-        t.append("\n")
-
-        # Chart area (subtract title + legend lines)
-        chart_h = max(self.size.height - 3, 3)
-        chart = render_area_chart(
-            data, self.size.width, chart_h,
-            y_max=y_max,
-            color=self.color,
-            thresholds=thresholds if thresholds else None,
-            switch_events=state.switch_events,
-            tick=state.tick,
-            history=args.history,
+        state = self.app.monitor_state
+        return render_scatter_chart(
+            state.data_points,
+            self.y_field,
+            self.size.width,
+            self.size.height,
+            title=self.chart_title,
+            y_unit=self.y_unit,
+            log_scale=self.log_scale,
         )
-        t.append(chart)
-        return t
-
-    def _fmt_val(self, v: float) -> str:
-        if self.data_key == "hist_active":
-            return f"{int(v)}"
-        elif self.data_key == "hist_thr":
-            return f"{v:.1f} t/s"
-        elif self.data_key == "hist_ttft":
-            return f"{v:.0f} ms"
-        elif self.data_key == "hist_tpot":
-            return f"{v:.0f} ms"
-        return f"{v:.1f}"
 
 
 class EventLogPanel(Static):
@@ -774,9 +806,7 @@ Screen {
 }
 
 #charts {
-    layout: grid;
-    grid-size: 2 2;
-    grid-gutter: 0 1;
+    layout: vertical;
     height: 1fr;
     margin: 0 1;
 }
@@ -830,36 +860,22 @@ class ElasticMonitorApp(App):
             yield TopologyPanel(id="topo-panel")
             yield MetricsPanel(id="metrics-panel")
 
-        with Grid(id="charts"):
-            yield ChartWidget(
-                "Concurrency (active)",
-                "hist_active",
-                color="cyan",
-                thresholds=[],  # Set dynamically in render
-                y_max=0,        # Set dynamically in render
-                classes="chart-box",
-                id="chart-conc",
-            )
-            yield ChartWidget(
-                "Throughput (out tok/s)",
-                "hist_thr",
-                color="green",
-                y_max=0,
-                classes="chart-box",
-            )
-            yield ChartWidget(
+        with Vertical(id="charts"):
+            yield ScatterChartWidget(
                 "TTFT p99 (ms)",
-                "hist_ttft",
-                color="magenta",
-                y_max=0,
+                "ttft_p99",
+                y_unit="ms",
+                log_scale=True,
                 classes="chart-box",
+                id="chart-ttft",
             )
-            yield ChartWidget(
-                "TPOT mean (ms)",
-                "hist_tpot",
-                color="yellow",
-                y_max=0,
+            yield ScatterChartWidget(
+                "Throughput (out tok/s)",
+                "thr_out",
+                y_unit=" tok/s",
+                log_scale=True,
                 classes="chart-box",
+                id="chart-thr",
             )
 
         yield EventLogPanel(id="event-log")
