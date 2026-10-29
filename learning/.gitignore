@@ -1,0 +1,5 @@
+__pycache__/
+*.py[cod]
+*-validation-report.json
+validation-report.json
+*-coverage.json

@@ -1,0 +1,151 @@
+{
+  "higress_prometheus_deployment": {
+    "containers": [
+      {
+        "name": "prometheus",
+        "args": [
+          "--config.file=/etc/prometheus/prometheus.yml",
+          "--web.external-url=/prometheus",
+          "--storage.tsdb.path=/prometheus",
+          "--storage.tsdb.retention=6h"
+        ],
+        "command": [
+          "/bin/prometheus"
+        ],
+        "volumeMounts": [
+          {
+            "mountPath": "/prometheus",
+            "name": "data"
+          },
+          {
+            "mountPath": "/etc/prometheus",
+            "name": "config"
+          }
+        ]
+      }
+    ],
+    "configmap_volumes": [
+      {
+        "configMap": {
+          "defaultMode": 420,
+          "name": "higress-console-prometheus"
+        },
+        "name": "config"
+      }
+    ]
+  },
+  "higress_scrape_config": {
+    "name": "higress-console-prometheus",
+    "jobs": [
+      {
+        "job_name": "prometheus",
+        "kubernetes_sd_configs": null,
+        "relabel_configs": null
+      },
+      {
+        "job_name": "k8s_nodes",
+        "kubernetes_sd_configs": [
+          {
+            "role": "node"
+          }
+        ],
+        "relabel_configs": [
+          {
+            "action": "labelmap",
+            "regex": "__meta_kubernetes_node_label_(.+)"
+          },
+          {
+            "replacement": "kubernetes.default.svc:443",
+            "target_label": "__address__"
+          },
+          {
+            "regex": "(.+)",
+            "replacement": "/api/v1/nodes/$1/proxy/metrics/cadvisor",
+            "source_labels": [
+              "__meta_kubernetes_node_name"
+            ],
+            "target_label": "__metrics_path__"
+          }
+        ]
+      },
+      {
+        "job_name": "k8s_pods",
+        "kubernetes_sd_configs": [
+          {
+            "role": "pod"
+          }
+        ],
+        "relabel_configs": [
+          {
+            "source_labels": [
+              "__meta_kubernetes_namespace"
+            ],
+            "regex": "higress-system",
+            "action": "keep"
+          },
+          {
+            "source_labels": [
+              "__meta_kubernetes_pod_label_app"
+            ],
+            "regex": "higress-gateway",
+            "action": "keep"
+          },
+          {
+            "source_labels": [
+              "__meta_kubernetes_pod_annotation_prometheus_io_scrape"
+            ],
+            "action": "keep",
+            "regex": true
+          },
+          {
+            "source_labels": [
+              "__meta_kubernetes_pod_annotation_prometheus_io_path"
+            ],
+            "action": "replace",
+            "target_label": "__metrics_path__",
+            "regex": "(.+)"
+          },
+          {
+            "source_labels": [
+              "__address__",
+              "__meta_kubernetes_pod_annotation_prometheus_io_port"
+            ],
+            "action": "replace",
+            "regex": "([^:]+)(?::\\d+)?;(\\d+)",
+            "replacement": "$1:$2",
+            "target_label": "__address__"
+          },
+          {
+            "action": "labelmap",
+            "regex": "__meta_kubernetes_pod_label_(.+)"
+          },
+          {
+            "source_labels": [
+              "__meta_kubernetes_namespace"
+            ],
+            "action": "replace",
+            "target_label": "kubernetes_namespace"
+          },
+          {
+            "source_labels": [
+              "__meta_kubernetes_pod_name"
+            ],
+            "action": "replace",
+            "target_label": "kubernetes_pod_name"
+          }
+        ]
+      }
+    ]
+  },
+  "operator_recent_log_summary": {
+    "read_success": true,
+    "line_count": 100,
+    "mentions_version": [],
+    "level_counts": {
+      "info": 100,
+      "warn": 99,
+      "error": 0
+    },
+    "level_counts_note": "Substring counts only, not log severity. Warning is embedded in INFO messages; do not interpret warn count as WARN-level records."
+  }
+}

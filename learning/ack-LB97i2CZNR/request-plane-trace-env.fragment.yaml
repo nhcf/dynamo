@@ -1,0 +1,48 @@
+# ACK Request Plane Trace 环境变量候选片段，不是完整 DGD，不能直接 apply。
+# 对象：nhss-job / dynamo-qwen38-27b-mixed-demo
+# 来源：dynamo-test-deployment.md（2026-10-28）；本次未修改集群。
+# 使用前核查实际私有镜像/CRD，替换所有 Collector 示例地址。
+# 按 name 合并到真实配置源，保留原 envs、服务配置、资源与启动参数。
+# 三个 Worker 的完整现有命令还需追加：
+# --enable-trace --otlp-traces-endpoint <真实Collector-FQDN>:4317
+# command/args 原始结构尚未提供，因此不生成替换数组。
+spec:
+  envs:
+    - name: DYN_LOGGING_JSONL
+      value: "true"
+    - name: OTEL_EXPORT_ENABLED
+      value: "true"
+    - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+      value: "http://otel-collector.observability.svc.cluster.local:4317"
+    # 以下先核对实际镜像支持和现有 signal-specific 配置优先级。
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: "http://otel-collector.observability.svc.cluster.local:4317"
+    - name: OTEL_EXPORTER_OTLP_PROTOCOL
+      value: "grpc"
+    - name: OTEL_TRACES_SAMPLE_RATIO
+      value: "1.0" # 联调；上游/引擎/Collector 的采样也要核查
+  services:
+    Frontend:
+      extraPodSpec:
+        mainContainer:
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "dynamo-qwen38-27b-frontend"
+    prefill:
+      extraPodSpec:
+        mainContainer:
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "dynamo-qwen38-27b-prefill"
+    decode:
+      extraPodSpec:
+        mainContainer:
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "dynamo-qwen38-27b-decode"
+    aggregated:
+      extraPodSpec:
+        mainContainer:
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "dynamo-qwen38-27b-aggregated"

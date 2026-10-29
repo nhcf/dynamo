@@ -1,0 +1,78 @@
+{
+  "operator_metrics_unauthenticated": {
+    "status": 401,
+    "response": "Unauthorized\n"
+  },
+  "nats_runtime": {
+    "version": "2.10.21",
+    "jetstream": {
+      "config": {
+        "max_memory": 0,
+        "max_storage": 118552068096,
+        "store_dir": "/data/jetstream",
+        "sync_interval": 120000000000
+      },
+      "stats": {
+        "memory": 0,
+        "storage": 0,
+        "reserved_memory": 0,
+        "reserved_storage": 0,
+        "accounts": 1,
+        "ha_assets": 0,
+        "api": {
+          "total": 0,
+          "errors": 0
+        }
+      }
+    },
+    "connections": 0,
+    "total_connections": 0,
+    "subscriptions": 59,
+    "in_msgs": 0,
+    "out_msgs": 0,
+    "max_payload": 15728640,
+    "uptime": "34d5h17m58s"
+  },
+  "higress_targets": {
+    "endpoint_path": "/prometheus/api/v1/targets",
+    "status": "success",
+    "total": 7,
+    "jobs": [
+      "k8s_nodes",
+      "k8s_pods",
+      "prometheus"
+    ],
+    "dynamo_targets": []
+  },
+  "collector_prometheus_jobs": [
+    {
+      "job_name": "litellm",
+      "scrape_interval": "15s"
+    }
+  ],
+  "higress_dynamo_query": {
+    "status": "success",
+    "result_count": 0
+  },
+  "grove_metrics": {
+    "status": 200,
+    "metric_family_count": 170,
+    "family_examples": [
+      "certwatcher_read_certificate_errors_total",
+      "certwatcher_read_certificate_total",
+      "controller_runtime_active_workers",
+      "controller_runtime_conversion_webhook_panics_total",
+      "controller_runtime_max_concurrent_reconciles",
+      "controller_runtime_reconcile_errors_total",
+      "controller_runtime_reconcile_panics_total",
+      "controller_runtime_reconcile_time_seconds",
+      "controller_runtime_reconcile_timeouts_total",
+      "controller_runtime_reconcile_total",
+      "controller_runtime_terminal_reconcile_errors_total",
+      "controller_runtime_webhook_panics_total"
+    ]
+  },
+  "nats_prometheus_path": {
+    "status": 404
+  }
+}

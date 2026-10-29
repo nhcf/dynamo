@@ -1,0 +1,83 @@
+{
+  "maas_dev_collector": {
+    "config.yaml": {
+      "receivers": [
+        "otlp",
+        "prometheus"
+      ],
+      "processors": [
+        "k8sattributes",
+        "transform",
+        "batch",
+        "memory_limiter",
+        "resource"
+      ],
+      "exporters": [
+        "kafka",
+        "prometheusremotewrite",
+        "otlphttp",
+        "debug"
+      ],
+      "pipelines": {
+        "traces": {
+          "receivers": [
+            "otlp"
+          ],
+          "processors": [
+            "memory_limiter",
+            "k8sattributes",
+            "transform",
+            "batch"
+          ],
+          "exporters": [
+            "kafka",
+            "otlphttp",
+            "debug"
+          ]
+        },
+        "metrics": {
+          "receivers": [
+            "prometheus"
+          ],
+          "processors": [
+            "memory_limiter",
+            "resource",
+            "batch"
+          ],
+          "exporters": [
+            "prometheusremotewrite"
+          ]
+        }
+      }
+    }
+  },
+  "arms_agent": {
+    "serviceAccountName": "arms-prom-operator",
+    "containers": [
+      {
+        "name": "arms-prometheus-operator",
+        "image": "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/arms-prometheus-operator:v1.0",
+        "env_names": [
+          "MY_POD_NAME",
+          "ARMS_PROM_ACCESSKEY",
+          "ARMS_PROM_ACCESSKEY_SECRET"
+        ],
+        "mounts": [
+          {
+            "mountPath": "/etc/config/prometheusDisk",
+            "name": "prom-config"
+          },
+          {
+            "mountPath": "/var/run/arms-pilot",
+            "name": "certs",
+            "readOnly": true
+          }
+        ]
+      }
+    ],
+    "configmap_volumes": []
+  },
+  "higress_prometheus": {
+    "error": "Error from server (NotFound): the server could not find the requested resource\n"
+  }
+}

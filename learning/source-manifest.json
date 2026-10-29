@@ -1,0 +1,271 @@
+{
+  "revision": "2f296b59274867529ea8deef994e6954520024b6",
+  "analysis_date": "2026-10-28",
+  "method": "Graph discovery followed by source verification; inference experiments not executed.",
+  "excerpts": [
+    {
+      "id": "workspace",
+      "path": "Cargo.toml",
+      "start": 5,
+      "end": 57,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "b22cd886b1a72d4d13d749f361d4d06a7facae5bc12b108b893a8dc79d30c9b6"
+    },
+    {
+      "id": "registry",
+      "path": "lib/runtime/src/metrics.rs",
+      "start": 796,
+      "end": 829,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "5b31472853686070e70c681aa7856e531397b82e9a4ebf049130a862837b79cf"
+    },
+    {
+      "id": "create",
+      "path": "lib/runtime/src/metrics.rs",
+      "start": 284,
+      "end": 375,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "5b31472853686070e70c681aa7856e531397b82e9a4ebf049130a862837b79cf"
+    },
+    {
+      "id": "register",
+      "path": "lib/runtime/src/metrics.rs",
+      "start": 494,
+      "end": 505,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "5b31472853686070e70c681aa7856e531397b82e9a4ebf049130a862837b79cf"
+    },
+    {
+      "id": "scrape",
+      "path": "lib/runtime/src/metrics.rs",
+      "start": 932,
+      "end": 963,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "5b31472853686070e70c681aa7856e531397b82e9a4ebf049130a862837b79cf"
+    },
+    {
+      "id": "typed",
+      "path": "lib/runtime/src/metrics.rs",
+      "start": 974,
+      "end": 1014,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "5b31472853686070e70c681aa7856e531397b82e9a4ebf049130a862837b79cf"
+    },
+    {
+      "id": "python",
+      "path": "components/src/dynamo/common/utils/prometheus.py",
+      "start": 158,
+      "end": 239,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3cea212efdd591fad3e73f2b376363bbd242aed1484f29189231679ea2a0ff31"
+    },
+    {
+      "id": "binding",
+      "path": "lib/bindings/python/rust/prometheus_metrics.rs",
+      "start": 109,
+      "end": 131,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "92733281f51e432021e29d398ae4cd5407bcac30b3a16f3d6353b4427b9a6336"
+    },
+    {
+      "id": "pyo3",
+      "path": "lib/bindings/python/rust/prometheus_metrics.rs",
+      "start": 15,
+      "end": 91,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "92733281f51e432021e29d398ae4cd5407bcac30b3a16f3d6353b4427b9a6336"
+    },
+    {
+      "id": "system",
+      "path": "lib/runtime/src/system_status_server.rs",
+      "start": 537,
+      "end": 587,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "c04941fd115c60f75015948d18774fdfc48f3faef519b2fa0bfb3ac42a394b04"
+    },
+    {
+      "id": "bootstrap",
+      "path": "lib/runtime/src/distributed.rs",
+      "start": 357,
+      "end": 410,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "ceaebb950eb2c6f47a984a44992098d0eb69aa8fdcff91b09fc45468ffe8e89d"
+    },
+    {
+      "id": "exportconfig",
+      "path": "lib/runtime/src/metrics/otlp_export.rs",
+      "start": 453,
+      "end": 520,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "c2d4a367bfe71aa3e26732b661244fefff15cbe6d8f050e731846bfbecb4129f"
+    },
+    {
+      "id": "exportloop",
+      "path": "lib/runtime/src/metrics/otlp_export.rs",
+      "start": 567,
+      "end": 683,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "c2d4a367bfe71aa3e26732b661244fefff15cbe6d8f050e731846bfbecb4129f"
+    },
+    {
+      "id": "httpregistry",
+      "path": "lib/llm/src/http/service/service_v2.rs",
+      "start": 1369,
+      "end": 1407,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "53e51350d7e0aae1069b36787522ac0636e8b920920197cf7c561d6777d058c9"
+    },
+    {
+      "id": "frontend",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 2968,
+      "end": 3009,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "guardnew",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 2128,
+      "end": 2162,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "guarddrop",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 2212,
+      "end": 2287,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "finish",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 878,
+      "end": 891,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "collectornew",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 2377,
+      "end": 2425,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "observe",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 2574,
+      "end": 2670,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "collectordrop",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 2674,
+      "end": 2725,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "rootspan",
+      "path": "lib/runtime/src/logging.rs",
+      "start": 623,
+      "end": 665,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "91ada36b1a7472e781620f4e99ee7ea8f2c1af0fb105e510f8292274ee010648"
+    },
+    {
+      "id": "inject",
+      "path": "lib/runtime/src/logging.rs",
+      "start": 852,
+      "end": 873,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "91ada36b1a7472e781620f4e99ee7ea8f2c1af0fb105e510f8292274ee010648"
+    },
+    {
+      "id": "logging",
+      "path": "lib/runtime/src/logging.rs",
+      "start": 1243,
+      "end": 1386,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "91ada36b1a7472e781620f4e99ee7ea8f2c1af0fb105e510f8292274ee010648"
+    },
+    {
+      "id": "requestsink",
+      "path": "lib/llm/src/request_trace/sink.rs",
+      "start": 496,
+      "end": 571,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "379e50cf779f620b47b4946cc800c1dd3e75460f04a3270a9c6a1915ac8201c3"
+    },
+    {
+      "id": "fpm",
+      "path": "lib/llm/src/fpm_trace/mod.rs",
+      "start": 137,
+      "end": 164,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "841538e48aa2c8019302b5a44f9b0966960e3643274d41514acbeb8003d11780"
+    },
+    {
+      "id": "fpmsampled",
+      "path": "lib/llm/src/fpm_trace/sink.rs",
+      "start": 401,
+      "end": 459,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "62625ee5ca491a319dc878626dbf066ccd4c3d90a97268d5cb9469a27d1b053a"
+    },
+    {
+      "id": "canary",
+      "path": "lib/runtime/src/health_check.rs",
+      "start": 201,
+      "end": 296,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "a919368b8028ee9369041cab859d15a0a67fb87d52fdae1c5646b33782f31d93"
+    },
+    {
+      "id": "podmonitor",
+      "path": "deploy/helm/charts/platform/components/operator/templates/prometheus.yaml",
+      "start": 15,
+      "end": 88,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "f0ff6b218f1a2a392722abd9f7f1dd5eaf2055e66c888b66a0c16253b554c5bb"
+    },
+    {
+      "id": "servicemonitor",
+      "path": "deploy/helm/charts/platform/components/operator/templates/operator-servicemonitor.yaml",
+      "start": 15,
+      "end": 49,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "56c90d75fd4b88d0dba33ad1bb996335449ac6dd02e5d7f0662e517c27a2f70c"
+    },
+    {
+      "id": "operator",
+      "path": "deploy/operator/internal/observability/metrics.go",
+      "start": 35,
+      "end": 115,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "37615031f6b5e1cdb4b28c543a756da5eeaed85b852438716f654ddd51b534aa"
+    },
+    {
+      "id": "planner",
+      "path": "components/src/dynamo/planner/monitoring/traffic_metrics.py",
+      "start": 249,
+      "end": 277,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "5b39d68813e822f9fb88da03502e72a0934e6289648298c3615ef71c17fa052f"
+    },
+    {
+      "id": "otelcollector",
+      "path": "dev/observability/otel-collector.yaml",
+      "start": 1,
+      "end": 35,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "dcec33a0133d8bde5b772f47fa6efc96800892aa1c65eb7d5941a8fc40e05713"
+    }
+  ]
+}

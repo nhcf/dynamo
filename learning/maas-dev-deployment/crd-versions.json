@@ -1,0 +1,71 @@
+[
+  {
+    "name": "dynamographdeployments.nvidia.com",
+    "labels": {},
+    "versions": [
+      {
+        "name": "v1alpha1",
+        "served": true,
+        "storage": true,
+        "deprecated": true,
+        "deprecationWarning": "nvidia.com/v1alpha1 DynamoGraphDeployment is deprecated; use nvidia.com/v1beta1 DynamoGraphDeployment"
+      },
+      {
+        "name": "v1beta1",
+        "served": true,
+        "storage": false,
+        "deprecated": null,
+        "deprecationWarning": null
+      }
+    ],
+    "storedVersions": [
+      "v1alpha1"
+    ]
+  },
+  {
+    "name": "dynamocomponentdeployments.nvidia.com",
+    "labels": {},
+    "versions": [
+      {
+        "name": "v1alpha1",
+        "served": true,
+        "storage": true,
+        "deprecated": true,
+        "deprecationWarning": "nvidia.com/v1alpha1 DynamoComponentDeployment is deprecated; use nvidia.com/v1beta1 DynamoComponentDeployment"
+      },
+      {
+        "name": "v1beta1",
+        "served": true,
+        "storage": false,
+        "deprecated": null,
+        "deprecationWarning": null
+      }
+    ],
+    "storedVersions": [
+      "v1alpha1"
+    ]
+  },
+  {
+    "name": "dynamographdeploymentscalingadapters.nvidia.com",
+    "labels": {},
+    "versions": [
+      {
+        "name": "v1alpha1",
+        "served": true,
+        "storage": true,
+        "deprecated": true,
+        "deprecationWarning": "nvidia.com/v1alpha1 DynamoGraphDeploymentScalingAdapter is deprecated; use nvidia.com/v1beta1 DynamoGraphDeploymentScalingAdapter"
+      },
+      {
+        "name": "v1beta1",
+        "served": true,
+        "storage": false,
+        "deprecated": null,
+        "deprecationWarning": null
+      }
+    ],
+    "storedVersions": [
+      "v1alpha1"
+    ]
+  }
+]

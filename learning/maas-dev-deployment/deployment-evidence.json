@@ -1,0 +1,3844 @@
+{
+  "context": "maas-dev",
+  "captured_at": "2026-10-28T08:39:02.249823+00:00",
+  "collection_policy": "Read-only API and Helm metadata; no Secrets queried. Sensitive keys/values redacted.",
+  "helm_releases": [
+    {
+      "name": "ack-node-problem-detector",
+      "namespace": "kube-system",
+      "revision": "1",
+      "updated": "2025-10-23 15:55:58.619183992 +0800 CST",
+      "status": "deployed",
+      "chart": "ack-node-problem-detector-1.2.18",
+      "app_version": "0.8.0"
+    },
+    {
+      "name": "ack-nvidia-device-plugin",
+      "namespace": "kube-system",
+      "revision": "1",
+      "updated": "2025-10-23 15:54:57.893823591 +0800 CST",
+      "status": "deployed",
+      "chart": "ack-nvidia-device-plugin-0.2.0",
+      "app_version": "0.17.0-49a827fd-aliyun"
+    },
+    {
+      "name": "arms-prometheus",
+      "namespace": "arms-prom",
+      "revision": "1",
+      "updated": "2025-10-23 15:55:56.943754509 +0800 CST",
+      "status": "deployed",
+      "chart": "ack-arms-prometheus-0.1.6",
+      "app_version": "1.0.5"
+    },
+    {
+      "name": "dynamo-system",
+      "namespace": "dynamo",
+      "revision": "6",
+      "updated": "2026-08-25 10:08:11.376403916 +0800 CST",
+      "status": "deployed",
+      "chart": "dynamo-platform-1.4.1",
+      "app_version": "1.4.1"
+    },
+    {
+      "name": "evalscope",
+      "namespace": "maas-dev",
+      "revision": "1",
+      "updated": "2026-06-03 15:24:05.322752786 +0800 CST",
+      "status": "deployed",
+      "chart": "evalscope-0.1.0",
+      "app_version": "v1.5.1"
+    },
+    {
+      "name": "gateway-api",
+      "namespace": "kube-system",
+      "revision": "1",
+      "updated": "2025-10-23 15:54:53.252917454 +0800 CST",
+      "status": "deployed",
+      "chart": "gateway-api-1.2.1",
+      "app_version": "v1.2.1"
+    },
+    {
+      "name": "higress",
+      "namespace": "higress-system",
+      "revision": "5",
+      "updated": "2026-06-12 22:08:22.151792525 +0800 CST",
+      "status": "deployed",
+      "chart": "higress-offline-2.2.2",
+      "app_version": "2.2.2"
+    },
+    {
+      "name": "kafka",
+      "namespace": "nanhu",
+      "revision": "3",
+      "updated": "2026-06-03 15:49:42.527299362 +0800 CST",
+      "status": "deployed",
+      "chart": "kafka-4.0.0",
+      "app_version": "4.0.0"
+    },
+    {
+      "name": "kafka",
+      "namespace": "maas-dev",
+      "revision": "1",
+      "updated": "2026-06-03 17:16:34.338906568 +0800 CST",
+      "status": "deployed",
+      "chart": "kafka-4.0.0",
+      "app_version": "4.0.0"
+    },
+    {
+      "name": "maas-controller",
+      "namespace": "maas-dev",
+      "revision": "55",
+      "updated": "2026-10-12 14:56:30.47832458 +0800 CST",
+      "status": "deployed",
+      "chart": "maas-controller-0.1.0",
+      "app_version": "v0.0.1"
+    },
+    {
+      "name": "maas-manager",
+      "namespace": "maas-dev",
+      "revision": "15",
+      "updated": "2026-07-30 14:57:55.476943031 +0800 CST",
+      "status": "deployed",
+      "chart": "maas-manager-0.1.0",
+      "app_version": "0.1.0"
+    },
+    {
+      "name": "mysql",
+      "namespace": "maas-dev",
+      "revision": "1",
+      "updated": "2026-06-03 15:24:04.576198066 +0800 CST",
+      "status": "deployed",
+      "chart": "mysql-5.7.1",
+      "app_version": "5.7"
+    },
+    {
+      "name": "nanhu-infer",
+      "namespace": "nanhu",
+      "revision": "1",
+      "updated": "2026-07-17 07:39:47.980391 +0800 CST",
+      "status": "deployed",
+      "chart": "nanhu-infer-0.3.3-rc4",
+      "app_version": "0.3.3-rc4"
+    },
+    {
+      "name": "nanhu-infer-autoscaler",
+      "namespace": "maas-dev",
+      "revision": "1",
+      "updated": "2026-06-03 15:24:04.211700745 +0800 CST",
+      "status": "deployed",
+      "chart": "autoscaler-chart-0.0.1",
+      "app_version": "0.0.1"
+    },
+    {
+      "name": "nanhu-infer-global-planner-shadow-soak",
+      "namespace": "dynamo",
+      "revision": "1",
+      "updated": "2026-07-31 08:57:54.082529 +0800 CST",
+      "status": "deployed",
+      "chart": "nanhu-infer-global-planner-0.0.1",
+      "app_version": "0.0.1"
+    },
+    {
+      "name": "nhi",
+      "namespace": "nhi",
+      "revision": "21",
+      "updated": "2026-07-17 10:00:41.354021433 +0800 CST",
+      "status": "deployed",
+      "chart": "nanhu-insight-0.23.2",
+      "app_version": "v0.1.0"
+    }
+  ],
+  "helm_user_values": {
+    "dynamo-operator": {
+      "controllerManager": {
+        "manager": {
+          "image": {
+            "tag": "1.4.1"
+          },
+          "resources": {
+            "limits": {
+              "cpu": "500m",
+              "memory": "1Gi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "memory": "256Mi"
+            }
+          }
+        }
+      },
+      "fullnameOverride": "dynamo-system"
+    },
+    "global": {
+      "grove": {
+        "install": true
+      },
+      "kai-scheduler": {
+        "install": false
+      },
+      "nats": {
+        "install": true
+      }
+    },
+    "grove": {
+      "crdInstaller": {
+        "enabled": true
+      },
+      "deployment": {
+        "name": "dynamo-system-grove-operator"
+      },
+      "service": {
+        "name": "grove-operator"
+      }
+    },
+    "nats": {
+      "config": {
+        "jetstream": {
+          "fileStore": {
+            "pvc": {
+              "enabled": false
+            }
+          }
+        }
+      },
+      "fullnameOverride": "dynamo-system-nats"
+    }
+  },
+  "helm_computed_values": {
+    "dynamo-operator": {
+      "checkpoint": {
+        "cleanupImage": "busybox:1.36",
+        "enabled": false,
+        "seccomp": {
+          "disabled": false,
+          "profile": "profiles/block-iouring.json"
+        },
+        "storage": {}
+      },
+      "controllerManager": {
+        "affinity": {},
+        "leaderElection": {
+          "id": "",
+          "namespace": ""
+        },
+        "manager": {
+          "args": [
+            "--health-probe-bind-address=:8081",
+            "--metrics-bind-address=127.0.0.1:8080"
+          ],
+          "containerSecurityContext": {
+            "allowPrivilegeEscalation": false,
+            "capabilities": {
+              "drop": [
+                "ALL"
+              ]
+            }
+          },
+          "image": {
+            "pullPolicy": "IfNotPresent",
+            "repository": "nvcr.io/nvidia/ai-dynamo/kubernetes-operator",
+            "tag": "1.4.1"
+          },
+          "resources": {
+            "limits": {
+              "cpu": "500m",
+              "memory": "1Gi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "memory": "256Mi"
+            }
+          }
+        },
+        "podAnnotations": {},
+        "podLabels": {},
+        "replicas": 1,
+        "serviceAccount": {
+          "annotations": {}
+        },
+        "tolerations": []
+      },
+      "discoveryBackend": "kubernetes",
+      "dynamo": {
+        "components": {
+          "serviceAccount": {
+            "annotations": {}
+          }
+        },
+        "dockerRegistry": {
+          "existingSecretName": null,
+          "password": "[REDACTED]",
+          "secure": true,
+          "server": null,
+          "useKubernetesSecret": false,
+          "username": null
+        },
+        "groveTerminationDelay": "4h",
+        "ingress": {
+          "className": null,
+          "enabled": false,
+          "tlsSecretName": "my-tls-secret"
+        },
+        "ingressHostSuffix": "",
+        "istio": {
+          "enabled": false,
+          "gateway": null
+        },
+        "metrics": {
+          "podMonitors": {
+            "enabled": null,
+            "nixlTelemetry": false
+          },
+          "prometheusEndpoint": ""
+        },
+        "mpiRun": {
+          "secretName": "mpi-run-ssh-secret"
+        },
+        "serviceMesh": {
+          "enabled": false,
+          "istio": {
+            "caCertificates": "",
+            "clientCertificate": "",
+            "insecureSkipVerify": true,
+            "privateKey": "[REDACTED]",
+            "tlsMode": "SIMPLE"
+          },
+          "provider": "istio"
+        },
+        "virtualServiceSupportsHTTPS": false
+      },
+      "enabled": true,
+      "env": [],
+      "etcdAddr": "",
+      "featureGates": {
+        "gmsSnapshot": false
+      },
+      "fullnameOverride": "dynamo-system",
+      "global": {
+        "etcd": {
+          "install": false
+        },
+        "grove": {
+          "enabled": false,
+          "install": true
+        },
+        "kai-scheduler": {
+          "enabled": false,
+          "install": false
+        },
+        "nats": {
+          "install": true
+        },
+        "volcano-scheduler": {
+          "enabled": false
+        }
+      },
+      "gpuDiscovery": {
+        "enabled": true
+      },
+      "imagePullSecrets": [],
+      "kubernetesClusterDomain": "cluster.local",
+      "metricsService": {
+        "enabled": null,
+        "ports": [
+          {
+            "name": "metrics",
+            "port": 8080,
+            "protocol": "TCP",
+            "targetPort": "metrics"
+          }
+        ],
+        "type": "ClusterIP"
+      },
+      "modelExpressURL": "",
+      "namespaceRestriction": {
+        "enabled": false,
+        "lease": {
+          "duration": "30s",
+          "renewInterval": "10s"
+        },
+        "targetNamespace": null
+      },
+      "natsAddr": "",
+      "upgradeCRD": true,
+      "webhook": {
+        "caBundle": "",
+        "certManager": {
+          "certificate": {
+            "duration": "8760h",
+            "renewBefore": "360h",
+            "rootCA": {
+              "duration": "87600h",
+              "renewBefore": "720h"
+            }
+          },
+          "enabled": false
+        },
+        "certificateSecret": {
+          "external": false,
+          "name": "webhook-server-cert"
+        },
+        "failurePolicy": "Fail",
+        "namespaceSelector": {},
+        "podCheckpointRestoreFailurePolicy": "Ignore",
+        "timeoutSeconds": 10
+      }
+    },
+    "etcd": {
+      "affinity": {},
+      "auth": {
+        "rbac": {
+          "create": false
+        }
+      },
+      "image": {
+        "repository": "bitnamilegacy/etcd",
+        "tag": "3.5.18-debian-12-r5"
+      },
+      "livenessProbe": {
+        "enabled": false
+      },
+      "pdb": {
+        "create": false
+      },
+      "persistence": {
+        "enabled": true,
+        "size": "1Gi",
+        "storageClass": null
+      },
+      "preUpgradeJob": {
+        "enabled": false
+      },
+      "readinessProbe": {
+        "enabled": false
+      },
+      "replicaCount": 1,
+      "tolerations": []
+    },
+    "global": {
+      "etcd": {
+        "install": false
+      },
+      "grove": {
+        "enabled": false,
+        "install": true
+      },
+      "kai-scheduler": {
+        "enabled": false,
+        "install": false
+      },
+      "nats": {
+        "install": true
+      },
+      "volcano-scheduler": {
+        "enabled": false
+      }
+    },
+    "grove": {
+      "affinity": {},
+      "clusterRole": {
+        "labels": {
+          "app.kubernetes.io/component": "operator-clusterrole",
+          "app.kubernetes.io/name": "grove-operator",
+          "app.kubernetes.io/part-of": "grove"
+        },
+        "name": "grove:system:grove-operator"
+      },
+      "clusterRoleBinding": {
+        "labels": {
+          "app.kubernetes.io/component": "operator-clusterrolebinding",
+          "app.kubernetes.io/name": "grove-operator",
+          "app.kubernetes.io/part-of": "grove"
+        },
+        "name": "grove:system:grove-operator"
+      },
+      "config": {
+        "authorizer": {
+          "enabled": false,
+          "exemptServiceAccountUserNames": [
+            "system:serviceaccount:kube-system:generic-garbage-collector",
+            "system:serviceaccount:kube-system:horizontal-pod-autoscaler",
+            "system:kube-controller-manager",
+            "system:serviceaccount:kai-scheduler:pod-grouper",
+            "system:serviceaccount:kai-scheduler:binder"
+          ]
+        },
+        "controllers": {
+          "podClique": {
+            "concurrentSyncs": 3
+          },
+          "podCliqueScalingGroup": {
+            "concurrentSyncs": 3
+          },
+          "podCliqueSet": {
+            "concurrentSyncs": 3
+          }
+        },
+        "debugging": {
+          "enableProfiling": false,
+          "pprofBindHost": "127.0.0.1",
+          "pprofBindPort": 2753
+        },
+        "leaderElection": {
+          "enabled": true,
+          "leaseDuration": "15s",
+          "renewDeadline": "10s",
+          "resourceLock": "leases",
+          "resourceName": "grove-operator-leader-election",
+          "retryPeriod": "2s"
+        },
+        "logFormat": "json",
+        "logLevel": "info",
+        "network": {
+          "autoMNNVLEnabled": false
+        },
+        "runtimeClientConnection": {
+          "burst": 150,
+          "qps": 100
+        },
+        "scheduler": {
+          "profiles": [
+            {
+              "name": "default-scheduler"
+            },
+            {
+              "name": "kai-scheduler"
+            }
+          ]
+        },
+        "server": {
+          "healthProbes": {
+            "enable": true,
+            "port": 9444
+          },
+          "metrics": {
+            "port": 9445
+          },
+          "webhooks": {
+            "certProvisionMode": "auto",
+            "port": 9443,
+            "secretName": "grove-webhook-server-cert",
+            "serverCertDir": "/etc/grove-operator/webhook-certs"
+          }
+        },
+        "topologyAwareScheduling": {
+          "enabled": false
+        }
+      },
+      "configMap": {
+        "labels": {
+          "app.kubernetes.io/component": "operator-configmap",
+          "app.kubernetes.io/name": "grove-operator",
+          "app.kubernetes.io/part-of": "grove"
+        }
+      },
+      "crdInstaller": {
+        "enabled": true,
+        "image": {
+          "pullPolicy": "IfNotPresent",
+          "repository": "ghcr.io/ai-dynamo/grove/grove-install-crds",
+          "tag": "v0.1.0-alpha.12-rc1"
+        }
+      },
+      "deployment": {
+        "env": [
+          {
+            "name": "GROVE_INIT_CONTAINER_IMAGE",
+            "value": "ghcr.io/ai-dynamo/grove/grove-initc"
+          }
+        ],
+        "labels": {
+          "app.kubernetes.io/component": "operator-deployment",
+          "app.kubernetes.io/name": "grove-operator",
+          "app.kubernetes.io/part-of": "grove"
+        },
+        "name": "dynamo-system-grove-operator"
+      },
+      "global": {
+        "etcd": {
+          "install": false
+        },
+        "grove": {
+          "enabled": false,
+          "install": true
+        },
+        "kai-scheduler": {
+          "enabled": false,
+          "install": false
+        },
+        "nats": {
+          "install": true
+        },
+        "volcano-scheduler": {
+          "enabled": false
+        }
+      },
+      "image": {
+        "pullPolicy": "IfNotPresent",
+        "repository": "ghcr.io/ai-dynamo/grove/grove-operator",
+        "tag": "v0.1.0-alpha.12-rc1"
+      },
+      "leaseRole": {
+        "labels": {
+          "app.kubernetes.io/component": "operator-lease-role",
+          "app.kubernetes.io/name": "grove-operator",
+          "app.kubernetes.io/part-of": "grove"
+        },
+        "name": "grove:system:grove-operator-lease"
+      },
+      "leaseRoleBinding": {
+        "labels": {
+          "app.kubernetes.io/component": "operator-lease-rolebinding",
+          "app.kubernetes.io/name": "grove-operator",
+          "app.kubernetes.io/part-of": "grove"
+        },
+        "name": "grove:system:grove-operator-lease"
+      },
+      "nodeSelector": {},
+      "podAnnotations": {},
+      "priorityClass": {
+        "enabled": false,
+        "name": "grove-operator-priority-critical",
+        "value": 999999550
+      },
+      "replicaCount": 1,
+      "resources": {
+        "limits": {
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "50m",
+          "ephemeral-storage": "128Mi",
+          "memory": "128Mi"
+        }
+      },
+      "service": {
+        "labels": {
+          "app.kubernetes.io/component": "operator-service",
+          "app.kubernetes.io/name": "grove-operator",
+          "app.kubernetes.io/part-of": "grove"
+        },
+        "name": "grove-operator",
+        "port": 80,
+        "type": "ClusterIP"
+      },
+      "serviceAccount": {
+        "automount": false,
+        "labels": {
+          "app.kubernetes.io/component": "operator-serviceaccount",
+          "app.kubernetes.io/name": "grove-operator-service-account",
+          "app.kubernetes.io/part-of": "grove"
+        },
+        "name": "grove-operator"
+      },
+      "tolerations": [],
+      "webhookServerSecret": {
+        "enabled": true,
+        "labels": {
+          "app.kubernetes.io/component": "operator-webhook-server-secret",
+          "app.kubernetes.io/name": "grove-webhook-server-secret",
+          "app.kubernetes.io/part-of": "grove"
+        }
+      },
+      "webhooks": {
+        "authorizerWebhook": {
+          "annotations": {},
+          "labels": {
+            "app.kubernetes.io/component": "operator-authorizer-webhook",
+            "app.kubernetes.io/name": "authorizer-webhook",
+            "app.kubernetes.io/part-of": "grove"
+          }
+        },
+        "caBundle": "",
+        "clusterTopologyValidationWebhook": {
+          "annotations": {},
+          "labels": {
+            "app.kubernetes.io/component": "operator-clustertopology-validating-webhook",
+            "app.kubernetes.io/name": "clustertopology-validating-webhook",
+            "app.kubernetes.io/part-of": "grove"
+          }
+        },
+        "podCliqueSetDefaultingWebhook": {
+          "annotations": {},
+          "labels": {
+            "app.kubernetes.io/component": "operator-pcs-defaulting-webhook",
+            "app.kubernetes.io/name": "pcs-defaulting-webhook",
+            "app.kubernetes.io/part-of": "grove"
+          }
+        },
+        "podCliqueSetValidationWebhook": {
+          "annotations": {},
+          "labels": {
+            "app.kubernetes.io/component": "operator-pcs-validating-webhook",
+            "app.kubernetes.io/name": "pcs-validating-webhook",
+            "app.kubernetes.io/part-of": "grove"
+          }
+        }
+      }
+    },
+    "kai-scheduler": {
+      "global": {
+        "affinity": {},
+        "tolerations": []
+      }
+    },
+    "nats": {
+      "config": {
+        "cluster": {
+          "enabled": false,
+          "merge": {},
+          "patch": [],
+          "port": 6222,
+          "replicas": 3,
+          "routeURLs": {
+            "k8sClusterDomain": "cluster.local",
+            "password": "[REDACTED]",
+            "useFQDN": false,
+            "user": null
+          },
+          "tls": {
+            "cert": "tls.crt",
+            "dir": "/etc/nats-certs/cluster",
+            "enabled": false,
+            "key": "tls.key",
+            "merge": {},
+            "patch": [],
+            "secretName": null
+          }
+        },
+        "gateway": {
+          "enabled": false,
+          "merge": {},
+          "patch": [],
+          "port": 7222,
+          "tls": {
+            "cert": "tls.crt",
+            "dir": "/etc/nats-certs/gateway",
+            "enabled": false,
+            "key": "tls.key",
+            "merge": {},
+            "patch": [],
+            "secretName": null
+          }
+        },
+        "jetstream": {
+          "enabled": true,
+          "fileStore": {
+            "dir": "/data",
+            "enabled": true,
+            "maxSize": null,
+            "pvc": {
+              "enabled": false,
+              "merge": {},
+              "name": null,
+              "patch": [],
+              "size": "10Gi",
+              "storageClassName": null
+            }
+          },
+          "memoryStore": {
+            "enabled": false,
+            "maxSize": "1Gi"
+          },
+          "merge": {},
+          "patch": []
+        },
+        "leafnodes": {
+          "enabled": false,
+          "merge": {},
+          "patch": [],
+          "port": 7422,
+          "tls": {
+            "cert": "tls.crt",
+            "dir": "/etc/nats-certs/leafnodes",
+            "enabled": false,
+            "key": "tls.key",
+            "merge": {},
+            "patch": [],
+            "secretName": null
+          }
+        },
+        "merge": {
+          "max_payload": 15728640
+        },
+        "monitor": {
+          "enabled": true,
+          "port": 8222,
+          "tls": {
+            "enabled": false
+          }
+        },
+        "mqtt": {
+          "enabled": false,
+          "merge": {},
+          "patch": [],
+          "port": 1883,
+          "tls": {
+            "cert": "tls.crt",
+            "dir": "/etc/nats-certs/mqtt",
+            "enabled": false,
+            "key": "tls.key",
+            "merge": {},
+            "patch": [],
+            "secretName": null
+          }
+        },
+        "nats": {
+          "port": 4222,
+          "tls": {
+            "cert": "tls.crt",
+            "dir": "/etc/nats-certs/nats",
+            "enabled": false,
+            "key": "tls.key",
+            "merge": {},
+            "patch": [],
+            "secretName": null
+          }
+        },
+        "patch": [],
+        "profiling": {
+          "enabled": false,
+          "port": 65432
+        },
+        "resolver": {
+          "dir": "/data/resolver",
+          "enabled": false,
+          "merge": {},
+          "patch": [],
+          "pvc": {
+            "enabled": true,
+            "merge": {},
+            "name": null,
+            "patch": [],
+            "size": "1Gi",
+            "storageClassName": null
+          }
+        },
+        "serverNamePrefix": "",
+        "websocket": {
+          "enabled": false,
+          "ingress": {
+            "className": null,
+            "enabled": false,
+            "hosts": [],
+            "merge": {},
+            "name": null,
+            "patch": [],
+            "path": "/",
+            "pathType": "Exact",
+            "tlsSecretName": null
+          },
+          "merge": {},
+          "patch": [],
+          "port": 8080,
+          "tls": {
+            "cert": "tls.crt",
+            "dir": "/etc/nats-certs/websocket",
+            "enabled": false,
+            "key": "tls.key",
+            "merge": {},
+            "patch": [],
+            "secretName": null
+          }
+        }
+      },
+      "configMap": {
+        "merge": {},
+        "name": null,
+        "patch": []
+      },
+      "container": {
+        "env": {},
+        "image": {
+          "digest": null,
+          "fullImageName": null,
+          "pullPolicy": null,
+          "registry": null,
+          "repository": "nats",
+          "tag": "2.10.21-alpine"
+        },
+        "merge": {},
+        "patch": [],
+        "ports": {
+          "cluster": {},
+          "gateway": {},
+          "leafnodes": {},
+          "monitor": {},
+          "mqtt": {},
+          "nats": {},
+          "profiling": {},
+          "websocket": {}
+        }
+      },
+      "extraResources": [],
+      "fullnameOverride": "dynamo-system-nats",
+      "global": {
+        "etcd": {
+          "install": false
+        },
+        "grove": {
+          "enabled": false,
+          "install": true
+        },
+        "image": {
+          "pullPolicy": null,
+          "pullSecretNames": [],
+          "registry": null
+        },
+        "kai-scheduler": {
+          "enabled": false,
+          "install": false
+        },
+        "labels": {},
+        "nats": {
+          "install": true
+        },
+        "volcano-scheduler": {
+          "enabled": false
+        }
+      },
+      "headlessService": {
+        "merge": {},
+        "name": null,
+        "patch": []
+      },
+      "nameOverride": null,
+      "namespaceOverride": null,
+      "natsBox": {
+        "container": {
+          "env": {},
+          "image": {
+            "digest": null,
+            "fullImageName": null,
+            "pullPolicy": null,
+            "registry": null,
+            "repository": "natsio/nats-box",
+            "tag": "0.14.5"
+          },
+          "merge": {},
+          "patch": []
+        },
+        "contentsSecret": {
+          "merge": {},
+          "name": null,
+          "patch": []
+        },
+        "contexts": {
+          "default": {
+            "creds": {
+              "contents": null,
+              "dir": null,
+              "key": "nats.creds",
+              "secretName": null
+            },
+            "merge": {},
+            "nkey": {
+              "contents": null,
+              "dir": null,
+              "key": "nats.nk",
+              "secretName": null
+            },
+            "patch": [],
+            "tls": {
+              "cert": "tls.crt",
+              "dir": null,
+              "key": "tls.key",
+              "secretName": null
+            }
+          }
+        },
+        "contextsSecret": {
+          "merge": {},
+          "name": null,
+          "patch": []
+        },
+        "defaultContextName": "default",
+        "deployment": {
+          "merge": {},
+          "name": null,
+          "patch": []
+        },
+        "enabled": false,
+        "podTemplate": {
+          "merge": {
+            "spec": {
+              "affinity": {},
+              "tolerations": []
+            }
+          },
+          "patch": []
+        },
+        "serviceAccount": {
+          "enabled": false,
+          "merge": {},
+          "name": null,
+          "patch": []
+        }
+      },
+      "podDisruptionBudget": {
+        "enabled": true,
+        "merge": {},
+        "name": null,
+        "patch": []
+      },
+      "podTemplate": {
+        "configChecksumAnnotation": true,
+        "merge": {
+          "metadata": {
+            "annotations": {
+              "sidecar.istio.io/inject": "false"
+            }
+          },
+          "spec": {
+            "affinity": {},
+            "tolerations": []
+          }
+        },
+        "patch": [],
+        "topologySpreadConstraints": {}
+      },
+      "promExporter": {
+        "enabled": false,
+        "env": {},
+        "image": {
+          "digest": null,
+          "fullImageName": null,
+          "pullPolicy": null,
+          "registry": null,
+          "repository": "natsio/prometheus-nats-exporter",
+          "tag": "0.16.0"
+        },
+        "merge": {},
+        "patch": [],
+        "podMonitor": {
+          "enabled": false,
+          "merge": {},
+          "name": null,
+          "patch": []
+        },
+        "port": 7777
+      },
+      "reloader": {
+        "enabled": true,
+        "env": {},
+        "image": {
+          "digest": null,
+          "fullImageName": null,
+          "pullPolicy": null,
+          "registry": null,
+          "repository": "natsio/nats-server-config-reloader",
+          "tag": "0.16.0"
+        },
+        "merge": {},
+        "natsVolumeMountPrefixes": [
+          "/etc/"
+        ],
+        "patch": []
+      },
+      "service": {
+        "enabled": true,
+        "merge": {},
+        "name": null,
+        "patch": [],
+        "ports": {
+          "cluster": {
+            "enabled": false
+          },
+          "gateway": {
+            "enabled": false
+          },
+          "leafnodes": {
+            "enabled": true
+          },
+          "monitor": {
+            "enabled": false
+          },
+          "mqtt": {
+            "enabled": true
+          },
+          "nats": {
+            "enabled": true
+          },
+          "profiling": {
+            "enabled": false
+          },
+          "websocket": {
+            "enabled": true
+          }
+        }
+      },
+      "serviceAccount": {
+        "enabled": false,
+        "merge": {},
+        "name": null,
+        "patch": []
+      },
+      "statefulSet": {
+        "merge": {},
+        "name": null,
+        "patch": []
+      },
+      "tlsCA": {
+        "configMapName": null,
+        "dir": "/etc/nats-ca-cert",
+        "enabled": false,
+        "key": "ca.crt",
+        "secretName": null
+      }
+    }
+  },
+  "dynamographdeployments": {
+    "count": 0
+  },
+  "dynamocomponentdeployments": {
+    "count": 0
+  },
+  "dynamographdeploymentrequests": {
+    "count": 0
+  },
+  "dynamomodels": {
+    "count": 0
+  },
+  "dynamographdeploymentscalingadapters": {
+    "count": 0
+  },
+  "dynamo_pods": [
+    {
+      "namespace": "dynamo",
+      "name": "dynamo-system-controller-manager-7d6b8fc87f-lxcwd",
+      "labels": {
+        "app.kubernetes.io/instance": "dynamo-system",
+        "app.kubernetes.io/name": "dynamo-operator",
+        "control-plane": "controller-manager",
+        "pod-template-hash": "7d6b8fc87f"
+      },
+      "creationTimestamp": "2026-09-24T03:37:34Z",
+      "generation": null,
+      "nodeName": "cn-hangzhou-zjy-d01.10.200.44.111",
+      "serviceAccountName": "dynamo-system-controller-manager",
+      "containers": [
+        {
+          "name": "manager",
+          "image": "nvcr.io/nvidia/ai-dynamo/kubernetes-operator:1.4.1",
+          "imagePullPolicy": "IfNotPresent",
+          "command": [
+            "/manager"
+          ],
+          "args": [
+            "--config=/etc/dynamo-operator/config.yaml",
+            "--operator-version=1.4.1",
+            "--operator-image=nvcr.io/nvidia/ai-dynamo/kubernetes-operator:1.4.1",
+            "--operator-image-pull-policy=IfNotPresent"
+          ],
+          "ports": [
+            {
+              "containerPort": 8080,
+              "name": "metrics",
+              "protocol": "TCP"
+            },
+            {
+              "containerPort": 9443,
+              "name": "webhook-server",
+              "protocol": "TCP"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "500m",
+              "memory": "1Gi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "memory": "256Mi"
+            }
+          },
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz",
+              "port": 8081,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 15,
+            "periodSeconds": 20,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "readinessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/readyz",
+              "port": 8081,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 5,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/etc/dynamo-operator",
+              "name": "operator-config",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/tmp/k8s-webhook-server/serving-certs",
+              "name": "cert",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-sqsjk",
+              "readOnly": true
+            }
+          ],
+          "env": [
+            {
+              "name": "KUBERNETES_CLUSTER_DOMAIN",
+              "value": "[not retained]"
+            },
+            {
+              "name": "POD_SERVICE_ACCOUNT",
+              "valueFrom": {
+                "fieldRef": {
+                  "apiVersion": "v1",
+                  "fieldPath": "spec.serviceAccountName"
+                }
+              }
+            },
+            {
+              "name": "POD_NAMESPACE",
+              "valueFrom": {
+                "fieldRef": {
+                  "apiVersion": "v1",
+                  "fieldPath": "metadata.namespace"
+                }
+              }
+            }
+          ],
+          "envFrom": []
+        }
+      ],
+      "status": {
+        "phase": "Running",
+        "conditions": [
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T03:47:02Z",
+            "status": "True",
+            "type": "PodReadyToStartContainers"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T03:55:56Z",
+            "status": "True",
+            "type": "Initialized"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T03:56:04Z",
+            "status": "True",
+            "type": "Ready"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T03:56:04Z",
+            "status": "True",
+            "type": "ContainersReady"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T03:37:34Z",
+            "status": "True",
+            "type": "PodScheduled"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "containerID": "containerd://59a08eef322ce303e90b36719176065e0dbb0db069345ee3f5571bf7d46e4f0c",
+            "image": "nvcr.io/nvidia/ai-dynamo/kubernetes-operator:1.4.1",
+            "imageID": "nvcr.io/nvidia/ai-dynamo/kubernetes-operator@sha256:df56efa6d66236f4e5e14f4eb586babba4205f1896631a7ba7a2e16d1693bcbc",
+            "lastState": {},
+            "name": "manager",
+            "ready": true,
+            "restartCount": 0,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-09-24T03:55:56Z"
+              }
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/etc/dynamo-operator",
+                "name": "operator-config",
+                "readOnly": true,
+                "recursiveReadOnly": "Disabled"
+              },
+              {
+                "mountPath": "/tmp/k8s-webhook-server/serving-certs",
+                "name": "cert",
+                "readOnly": true,
+                "recursiveReadOnly": "Disabled"
+              },
+              {
+                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                "name": "kube-api-access-sqsjk",
+                "readOnly": true,
+                "recursiveReadOnly": "Disabled"
+              }
+            ]
+          }
+        ]
+      },
+      "volumes": [
+        {
+          "configMap": {
+            "defaultMode": 420,
+            "name": "dynamo-system-config"
+          },
+          "name": "operator-config"
+        },
+        {
+          "name": "cert",
+          "secret": {
+            "defaultMode": 420,
+            "optional": true,
+            "secretName": "webhook-server-cert"
+          }
+        },
+        {
+          "name": "kube-api-access-sqsjk",
+          "projected": {
+            "defaultMode": 420,
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "expirationSeconds": 3607,
+                  "path": "token"
+                }
+              },
+              {
+                "configMap": {
+                  "items": [
+                    {
+                      "key": "ca.crt",
+                      "path": "ca.crt"
+                    }
+                  ],
+                  "name": "kube-root-ca.crt"
+                }
+              },
+              {
+                "downwardAPI": {
+                  "items": [
+                    {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      },
+                      "path": "namespace"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "namespace": "dynamo",
+      "name": "dynamo-system-nats-0",
+      "labels": {
+        "app.kubernetes.io/component": "nats",
+        "app.kubernetes.io/instance": "dynamo-system",
+        "app.kubernetes.io/managed-by": "Helm",
+        "app.kubernetes.io/name": "nats",
+        "app.kubernetes.io/version": "2.11.1",
+        "apps.kubernetes.io/pod-index": "0",
+        "controller-revision-hash": "dynamo-system-nats-5df7d54666",
+        "helm.sh/chart": "nats-1.3.2",
+        "statefulset.kubernetes.io/pod-name": "dynamo-system-nats-0"
+      },
+      "creationTimestamp": "2026-09-24T03:22:13Z",
+      "generation": null,
+      "nodeName": "cn-hangzhou-zjy-d01.10.200.44.112",
+      "serviceAccountName": "default",
+      "containers": [
+        {
+          "name": "nats",
+          "image": "nats:2.10.21-alpine",
+          "imagePullPolicy": "IfNotPresent",
+          "args": [
+            "--config",
+            "/etc/nats-config/nats.conf"
+          ],
+          "ports": [
+            {
+              "containerPort": 4222,
+              "name": "nats",
+              "protocol": "TCP"
+            },
+            {
+              "containerPort": 8222,
+              "name": "monitor",
+              "protocol": "TCP"
+            }
+          ],
+          "resources": {},
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz?js-enabled-only=true",
+              "port": "monitor",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 10,
+            "periodSeconds": 30,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "readinessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz?js-server-only=true",
+              "port": "monitor",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 10,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "startupProbe": {
+            "failureThreshold": 90,
+            "httpGet": {
+              "path": "/healthz",
+              "port": "monitor",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 10,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/etc/nats-config",
+              "name": "config"
+            },
+            {
+              "mountPath": "/var/run/nats",
+              "name": "pid"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-6gs7b",
+              "readOnly": true
+            }
+          ],
+          "env": [
+            {
+              "name": "POD_NAME",
+              "valueFrom": {
+                "fieldRef": {
+                  "apiVersion": "v1",
+                  "fieldPath": "metadata.name"
+                }
+              }
+            },
+            {
+              "name": "SERVER_NAME",
+              "value": "[not retained]"
+            }
+          ],
+          "envFrom": []
+        },
+        {
+          "name": "reloader",
+          "image": "natsio/nats-server-config-reloader:0.16.0",
+          "imagePullPolicy": "IfNotPresent",
+          "args": [
+            "-pid",
+            "/var/run/nats/nats.pid",
+            "-config",
+            "/etc/nats-config/nats.conf"
+          ],
+          "resources": {},
+          "volumeMounts": [
+            {
+              "mountPath": "/var/run/nats",
+              "name": "pid"
+            },
+            {
+              "mountPath": "/etc/nats-config",
+              "name": "config"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-6gs7b",
+              "readOnly": true
+            }
+          ],
+          "env": [],
+          "envFrom": []
+        }
+      ],
+      "status": {
+        "phase": "Running",
+        "conditions": [
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T03:22:30Z",
+            "status": "True",
+            "type": "PodReadyToStartContainers"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T03:22:13Z",
+            "status": "True",
+            "type": "Initialized"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T03:22:53Z",
+            "status": "True",
+            "type": "Ready"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T03:22:53Z",
+            "status": "True",
+            "type": "ContainersReady"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T03:22:13Z",
+            "status": "True",
+            "type": "PodScheduled"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "containerID": "containerd://56b0de3e1a05deb23f926cd774df8ff6f2a8fd51ac73bf4d6e2b59056baa5e30",
+            "image": "docker.io/library/nats:2.10.21-alpine",
+            "imageID": "docker.io/library/nats@sha256:b76faa6b447604217b5526b8adc1229d3db5c5d2773e43ae4aea328817e7fecb",
+            "lastState": {},
+            "name": "nats",
+            "ready": true,
+            "restartCount": 0,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-09-24T03:22:24Z"
+              }
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/etc/nats-config",
+                "name": "config"
+              },
+              {
+                "mountPath": "/var/run/nats",
+                "name": "pid"
+              },
+              {
+                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                "name": "kube-api-access-6gs7b",
+                "readOnly": true,
+                "recursiveReadOnly": "Disabled"
+              }
+            ]
+          },
+          {
+            "containerID": "containerd://e90dc3732ec1bce5a1bbcc7349112e0f4d20f02aae6e84d7dbfc7daee4d73c85",
+            "image": "docker.io/natsio/nats-server-config-reloader:0.16.0",
+            "imageID": "docker.io/natsio/nats-server-config-reloader@sha256:261b6a3b041fa7a54cd9eb974177b07326c4fed0856155c4970cc9a7e54edc53",
+            "lastState": {},
+            "name": "reloader",
+            "ready": true,
+            "restartCount": 0,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-09-24T03:22:29Z"
+              }
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/var/run/nats",
+                "name": "pid"
+              },
+              {
+                "mountPath": "/etc/nats-config",
+                "name": "config"
+              },
+              {
+                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                "name": "kube-api-access-6gs7b",
+                "readOnly": true,
+                "recursiveReadOnly": "Disabled"
+              }
+            ]
+          }
+        ]
+      },
+      "volumes": [
+        {
+          "configMap": {
+            "defaultMode": 420,
+            "name": "dynamo-system-nats-config"
+          },
+          "name": "config"
+        },
+        {
+          "emptyDir": {},
+          "name": "pid"
+        },
+        {
+          "name": "kube-api-access-6gs7b",
+          "projected": {
+            "defaultMode": 420,
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "expirationSeconds": 3607,
+                  "path": "token"
+                }
+              },
+              {
+                "configMap": {
+                  "items": [
+                    {
+                      "key": "ca.crt",
+                      "path": "ca.crt"
+                    }
+                  ],
+                  "name": "kube-root-ca.crt"
+                }
+              },
+              {
+                "downwardAPI": {
+                  "items": [
+                    {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      },
+                      "path": "namespace"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "namespace": "dynamo",
+      "name": "grove-operator-5fdbf7f8d5-lmkf2",
+      "labels": {
+        "app.kubernetes.io/component": "operator-deployment",
+        "app.kubernetes.io/name": "grove-operator",
+        "app.kubernetes.io/part-of": "grove",
+        "chart": "grove-v0.1.0-alpha.12-rc1",
+        "pod-template-hash": "5fdbf7f8d5",
+        "release": "dynamo-system"
+      },
+      "creationTimestamp": "2026-09-24T05:45:51Z",
+      "generation": null,
+      "nodeName": "cn-hangzhou-zjy-d01.10.200.44.111",
+      "serviceAccountName": "grove-operator",
+      "containers": [
+        {
+          "name": "grove-operator",
+          "image": "ghcr.io/ai-dynamo/grove/grove-operator:v0.1.0-alpha.12-rc1",
+          "imagePullPolicy": "IfNotPresent",
+          "args": [
+            "--config=/etc/grove-operator/config/config.yaml"
+          ],
+          "resources": {
+            "limits": {
+              "memory": "1Gi"
+            },
+            "requests": {
+              "cpu": "50m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          },
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz",
+              "port": 9444,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 15,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "readinessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/readyz",
+              "port": 9444,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 10,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/etc/grove-operator/config",
+              "name": "operator-config"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-grove",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/etc/grove-operator/webhook-certs",
+              "name": "grove-webhook-server-cert",
+              "readOnly": true
+            }
+          ],
+          "env": [
+            {
+              "name": "GROVE_OPERATOR_SERVICE_ACCOUNT_NAME",
+              "valueFrom": {
+                "fieldRef": {
+                  "apiVersion": "v1",
+                  "fieldPath": "spec.serviceAccountName"
+                }
+              }
+            },
+            {
+              "name": "GROVE_INIT_CONTAINER_IMAGE",
+              "value": "ghcr.io/ai-dynamo/grove/grove-initc"
+            }
+          ],
+          "envFrom": []
+        }
+      ],
+      "status": {
+        "phase": "Running",
+        "conditions": [
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T05:47:44Z",
+            "status": "True",
+            "type": "PodReadyToStartContainers"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T05:47:45Z",
+            "status": "True",
+            "type": "Initialized"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T05:50:12Z",
+            "status": "True",
+            "type": "Ready"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T05:50:12Z",
+            "status": "True",
+            "type": "ContainersReady"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-09-24T05:45:51Z",
+            "status": "True",
+            "type": "PodScheduled"
+          }
+        ],
+        "containerStatuses": [
+          {
+            "containerID": "containerd://8aecc6de71f8b97f483b20ba79f6d8b47eadb06f0d777254187498834056782a",
+            "image": "ghcr.io/ai-dynamo/grove/grove-operator:v0.1.0-alpha.12-rc1",
+            "imageID": "ghcr.io/ai-dynamo/grove/grove-operator@sha256:d1f153e5510ac3d9168dbe95b61d89bfe97fa58ae5103f07ef37e7ca5ac96784",
+            "lastState": {},
+            "name": "grove-operator",
+            "ready": true,
+            "restartCount": 0,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-09-24T05:49:54Z"
+              }
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/etc/grove-operator/config",
+                "name": "operator-config"
+              },
+              {
+                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                "name": "kube-api-access-grove",
+                "readOnly": true,
+                "recursiveReadOnly": "Disabled"
+              },
+              {
+                "mountPath": "/etc/grove-operator/webhook-certs",
+                "name": "grove-webhook-server-cert",
+                "readOnly": true,
+                "recursiveReadOnly": "Disabled"
+              }
+            ]
+          }
+        ]
+      },
+      "volumes": [
+        {
+          "name": "kube-api-access-grove",
+          "projected": {
+            "defaultMode": 420,
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "expirationSeconds": 43200,
+                  "path": "token"
+                }
+              },
+              {
+                "configMap": {
+                  "items": [
+                    {
+                      "key": "ca.crt",
+                      "path": "ca.crt"
+                    }
+                  ],
+                  "name": "kube-root-ca.crt"
+                }
+              },
+              {
+                "downwardAPI": {
+                  "items": [
+                    {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      },
+                      "path": "namespace"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "configMap": {
+            "defaultMode": 420,
+            "name": "grove-operator-cm-7bd5db4f"
+          },
+          "name": "operator-config"
+        },
+        {
+          "name": "grove-webhook-server-cert",
+          "secret": {
+            "defaultMode": 420,
+            "optional": true,
+            "secretName": "grove-webhook-server-cert"
+          }
+        }
+      ]
+    }
+  ],
+  "related_pods": [
+    {
+      "namespace": "arms-prom",
+      "name": "arms-prometheus-ack-arms-prometheus-58595bd79-khhk5",
+      "labels": {
+        "app": "arms-prometheus-ack-arms-prometheus",
+        "chart": "ack-arms-prometheus-0.1.6",
+        "heritage": "Helm",
+        "pod-template-hash": "58595bd79",
+        "release": "arms-prometheus",
+        "releaseRevision": "1"
+      },
+      "creationTimestamp": "2026-09-24T03:22:10Z",
+      "generation": null,
+      "images": [
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/arms-prometheus-operator:v1.0"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "arms-prom",
+      "name": "kube-state-metrics-5b96ddd9b5-5n9ww",
+      "labels": {
+        "k8s-app": "kube-state-metrics",
+        "pod-template-hash": "5b96ddd9b5"
+      },
+      "creationTimestamp": "2026-09-24T03:22:12Z",
+      "generation": null,
+      "images": [
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/kube-state-metrics:v1.6.0"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "arms-prom",
+      "name": "node-exporter-fttzq",
+      "labels": {
+        "app": "node-exporter",
+        "controller-revision-hash": "656659cf95",
+        "pod-template-generation": "1"
+      },
+      "creationTimestamp": "2025-10-23T07:58:17Z",
+      "generation": null,
+      "images": [
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/node-exporter:v0.17.0",
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/arms-kube-rbac-proxy:v0.11.0"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "arms-prom",
+      "name": "node-exporter-jmrmn",
+      "labels": {
+        "app": "node-exporter",
+        "controller-revision-hash": "656659cf95",
+        "pod-template-generation": "1"
+      },
+      "creationTimestamp": "2025-10-23T07:55:58Z",
+      "generation": null,
+      "images": [
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/node-exporter:v0.17.0",
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/arms-kube-rbac-proxy:v0.11.0"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "arms-prom",
+      "name": "node-exporter-m9pcs",
+      "labels": {
+        "app": "node-exporter",
+        "controller-revision-hash": "656659cf95",
+        "pod-template-generation": "1"
+      },
+      "creationTimestamp": "2025-10-23T07:58:17Z",
+      "generation": null,
+      "images": [
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/node-exporter:v0.17.0",
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/arms-kube-rbac-proxy:v0.11.0"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "arms-prom",
+      "name": "node-exporter-sdkzv",
+      "labels": {
+        "app": "node-exporter",
+        "controller-revision-hash": "656659cf95",
+        "pod-template-generation": "1"
+      },
+      "creationTimestamp": "2025-10-23T07:55:58Z",
+      "generation": null,
+      "images": [
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/node-exporter:v0.17.0",
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/arms-kube-rbac-proxy:v0.11.0"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "arms-prom",
+      "name": "node-exporter-zjf2v",
+      "labels": {
+        "app": "node-exporter",
+        "controller-revision-hash": "656659cf95",
+        "pod-template-generation": "1"
+      },
+      "creationTimestamp": "2025-10-23T07:55:58Z",
+      "generation": null,
+      "images": [
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/node-exporter:v0.17.0",
+        "cr-ee.registry.cn-hangzhou-zjy-d01.res.cloud.zhejianglab.com/prometheus_repo/arms-kube-rbac-proxy:v0.11.0"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "higress-system",
+      "name": "higress-console-grafana-697b9f8fc9-8pc7n",
+      "labels": {
+        "app": "higress-console-grafana",
+        "pod-template-hash": "697b9f8fc9"
+      },
+      "creationTimestamp": "2026-09-24T03:22:12Z",
+      "generation": null,
+      "images": [
+        "10.200.93.79:15080/public/grafana:9.3.6"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "higress-system",
+      "name": "higress-console-loki-5fc9d7f565-95fnx",
+      "labels": {
+        "app": "higress-console-loki",
+        "pod-template-hash": "5fc9d7f565"
+      },
+      "creationTimestamp": "2026-09-24T03:22:10Z",
+      "generation": null,
+      "images": [
+        "10.200.93.79:15080/public/loki:2.9.4"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "higress-system",
+      "name": "higress-console-prometheus-6746b9f84c-vxzbg",
+      "labels": {
+        "app": "higress-console-prometheus",
+        "pod-template-hash": "6746b9f84c"
+      },
+      "creationTimestamp": "2026-09-24T03:22:10Z",
+      "generation": null,
+      "images": [
+        "10.200.93.79:15080/public/prometheus:v2.40.7"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "isg",
+      "name": "otel-collector-75dd45cc98-5mzs5",
+      "labels": {
+        "app": "otel-collector",
+        "pod-template-hash": "75dd45cc98"
+      },
+      "creationTimestamp": "2026-09-24T05:45:51Z",
+      "generation": null,
+      "images": [
+        "otel/opentelemetry-collector-contrib:0.95.0"
+      ],
+      "phase": "Pending"
+    },
+    {
+      "namespace": "isg",
+      "name": "otel-collector-75dd45cc98-bgtvp",
+      "labels": {
+        "app": "otel-collector",
+        "pod-template-hash": "75dd45cc98"
+      },
+      "creationTimestamp": "2026-09-24T03:22:10Z",
+      "generation": null,
+      "images": [
+        "otel/opentelemetry-collector-contrib:0.95.0"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "isg",
+      "name": "otel-trace-demo-85fdbfcd9c-d2r8t",
+      "labels": {
+        "app": "otel-trace-demo",
+        "pod-template-hash": "85fdbfcd9c"
+      },
+      "creationTimestamp": "2026-09-24T03:22:10Z",
+      "generation": null,
+      "images": [
+        "10.200.93.79:15080/library/otel-trace-demo:v1.0"
+      ],
+      "phase": "Running"
+    },
+    {
+      "namespace": "nhi",
+      "name": "otel-collector-6485b88bf4-xskpx",
+      "labels": {
+        "app": "otel-collector",
+        "component": "llm-inference",
+        "pod-template-hash": "6485b88bf4",
+        "tier": "telemetry"
+      },
+      "creationTimestamp": "2026-09-24T03:37:34Z",
+      "generation": null,
+      "images": [
+        "otel/opentelemetry-collector-contrib:0.120.0"
+      ],
+      "phase": "Running"
+    }
+  ],
+  "deployments": [
+    {
+      "namespace": "dynamo",
+      "name": "dynamo-system-controller-manager",
+      "labels": {
+        "app.kubernetes.io/component": "manager",
+        "app.kubernetes.io/created-by": "dynamo-operator",
+        "app.kubernetes.io/instance": "dynamo-system",
+        "app.kubernetes.io/managed-by": "Helm",
+        "app.kubernetes.io/name": "dynamo-operator",
+        "app.kubernetes.io/part-of": "dynamo-operator",
+        "app.kubernetes.io/version": "1.4.1",
+        "control-plane": "controller-manager",
+        "helm.sh/chart": "dynamo-operator-1.4.1"
+      },
+      "creationTimestamp": "2026-07-15T03:22:47Z",
+      "generation": 8,
+      "replicas": 1,
+      "status": {
+        "availableReplicas": 1,
+        "conditions": [
+          {
+            "lastTransitionTime": "2026-07-15T03:22:47Z",
+            "lastUpdateTime": "2026-08-25T02:09:05Z",
+            "message": "ReplicaSet \"dynamo-system-controller-manager-7d6b8fc87f\" has successfully progressed.",
+            "reason": "NewReplicaSetAvailable",
+            "status": "True",
+            "type": "Progressing"
+          },
+          {
+            "lastTransitionTime": "2026-09-24T03:56:04Z",
+            "lastUpdateTime": "2026-09-24T03:56:04Z",
+            "message": "Deployment has minimum availability.",
+            "reason": "MinimumReplicasAvailable",
+            "status": "True",
+            "type": "Available"
+          }
+        ],
+        "observedGeneration": 8,
+        "readyReplicas": 1,
+        "replicas": 1,
+        "updatedReplicas": 1
+      },
+      "containers": [
+        {
+          "name": "manager",
+          "image": "nvcr.io/nvidia/ai-dynamo/kubernetes-operator:1.4.1",
+          "imagePullPolicy": "IfNotPresent",
+          "command": [
+            "/manager"
+          ],
+          "args": [
+            "--config=/etc/dynamo-operator/config.yaml",
+            "--operator-version=1.4.1",
+            "--operator-image=nvcr.io/nvidia/ai-dynamo/kubernetes-operator:1.4.1",
+            "--operator-image-pull-policy=IfNotPresent"
+          ],
+          "ports": [
+            {
+              "containerPort": 8080,
+              "name": "metrics",
+              "protocol": "TCP"
+            },
+            {
+              "containerPort": 9443,
+              "name": "webhook-server",
+              "protocol": "TCP"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "500m",
+              "memory": "1Gi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "memory": "256Mi"
+            }
+          },
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz",
+              "port": 8081,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 15,
+            "periodSeconds": 20,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "readinessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/readyz",
+              "port": 8081,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 5,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/etc/dynamo-operator",
+              "name": "operator-config",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/tmp/k8s-webhook-server/serving-certs",
+              "name": "cert",
+              "readOnly": true
+            }
+          ],
+          "env": [
+            {
+              "name": "KUBERNETES_CLUSTER_DOMAIN",
+              "value": "[not retained]"
+            },
+            {
+              "name": "POD_SERVICE_ACCOUNT",
+              "valueFrom": {
+                "fieldRef": {
+                  "apiVersion": "v1",
+                  "fieldPath": "spec.serviceAccountName"
+                }
+              }
+            },
+            {
+              "name": "POD_NAMESPACE",
+              "valueFrom": {
+                "fieldRef": {
+                  "apiVersion": "v1",
+                  "fieldPath": "metadata.namespace"
+                }
+              }
+            }
+          ],
+          "envFrom": []
+        }
+      ]
+    },
+    {
+      "namespace": "dynamo",
+      "name": "grove-operator",
+      "labels": {
+        "app.kubernetes.io/component": "operator-deployment",
+        "app.kubernetes.io/managed-by": "Helm",
+        "app.kubernetes.io/name": "grove-operator",
+        "app.kubernetes.io/part-of": "grove",
+        "chart": "grove-v0.1.0-alpha.12-rc1",
+        "release": "dynamo-system"
+      },
+      "creationTimestamp": "2026-08-19T02:22:54Z",
+      "generation": 1,
+      "replicas": 1,
+      "status": {
+        "availableReplicas": 1,
+        "conditions": [
+          {
+            "lastTransitionTime": "2026-08-19T02:22:54Z",
+            "lastUpdateTime": "2026-08-19T02:31:04Z",
+            "message": "ReplicaSet \"grove-operator-5fdbf7f8d5\" has successfully progressed.",
+            "reason": "NewReplicaSetAvailable",
+            "status": "True",
+            "type": "Progressing"
+          },
+          {
+            "lastTransitionTime": "2026-09-24T05:50:12Z",
+            "lastUpdateTime": "2026-09-24T05:50:12Z",
+            "message": "Deployment has minimum availability.",
+            "reason": "MinimumReplicasAvailable",
+            "status": "True",
+            "type": "Available"
+          }
+        ],
+        "observedGeneration": 1,
+        "readyReplicas": 1,
+        "replicas": 1,
+        "updatedReplicas": 1
+      },
+      "containers": [
+        {
+          "name": "grove-operator",
+          "image": "ghcr.io/ai-dynamo/grove/grove-operator:v0.1.0-alpha.12-rc1",
+          "imagePullPolicy": "IfNotPresent",
+          "args": [
+            "--config=/etc/grove-operator/config/config.yaml"
+          ],
+          "resources": {
+            "limits": {
+              "memory": "1Gi"
+            },
+            "requests": {
+              "cpu": "50m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          },
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz",
+              "port": 9444,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 15,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "readinessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/readyz",
+              "port": 9444,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 10,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/etc/grove-operator/config",
+              "name": "operator-config"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-grove",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/etc/grove-operator/webhook-certs",
+              "name": "grove-webhook-server-cert",
+              "readOnly": true
+            }
+          ],
+          "env": [
+            {
+              "name": "GROVE_OPERATOR_SERVICE_ACCOUNT_NAME",
+              "valueFrom": {
+                "fieldRef": {
+                  "apiVersion": "v1",
+                  "fieldPath": "spec.serviceAccountName"
+                }
+              }
+            },
+            {
+              "name": "GROVE_INIT_CONTAINER_IMAGE",
+              "value": "ghcr.io/ai-dynamo/grove/grove-initc"
+            }
+          ],
+          "envFrom": []
+        }
+      ]
+    }
+  ],
+  "statefulsets": [
+    {
+      "namespace": "dynamo",
+      "name": "dynamo-system-nats",
+      "labels": {
+        "app.kubernetes.io/component": "nats",
+        "app.kubernetes.io/instance": "dynamo-system",
+        "app.kubernetes.io/managed-by": "Helm",
+        "app.kubernetes.io/name": "nats",
+        "app.kubernetes.io/version": "2.11.1",
+        "helm.sh/chart": "nats-1.3.2"
+      },
+      "creationTimestamp": "2026-07-15T03:22:47Z",
+      "generation": 1,
+      "replicas": 1,
+      "status": {
+        "availableReplicas": 1,
+        "collisionCount": 0,
+        "currentReplicas": 1,
+        "currentRevision": "dynamo-system-nats-5df7d54666",
+        "observedGeneration": 1,
+        "readyReplicas": 1,
+        "replicas": 1,
+        "updateRevision": "dynamo-system-nats-5df7d54666",
+        "updatedReplicas": 1
+      },
+      "containers": [
+        {
+          "name": "nats",
+          "image": "nats:2.10.21-alpine",
+          "imagePullPolicy": "IfNotPresent",
+          "args": [
+            "--config",
+            "/etc/nats-config/nats.conf"
+          ],
+          "ports": [
+            {
+              "containerPort": 4222,
+              "name": "nats",
+              "protocol": "TCP"
+            },
+            {
+              "containerPort": 8222,
+              "name": "monitor",
+              "protocol": "TCP"
+            }
+          ],
+          "resources": {},
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz?js-enabled-only=true",
+              "port": "monitor",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 10,
+            "periodSeconds": 30,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "readinessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz?js-server-only=true",
+              "port": "monitor",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 10,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "startupProbe": {
+            "failureThreshold": 90,
+            "httpGet": {
+              "path": "/healthz",
+              "port": "monitor",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 10,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 5
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/etc/nats-config",
+              "name": "config"
+            },
+            {
+              "mountPath": "/var/run/nats",
+              "name": "pid"
+            }
+          ],
+          "env": [
+            {
+              "name": "POD_NAME",
+              "valueFrom": {
+                "fieldRef": {
+                  "apiVersion": "v1",
+                  "fieldPath": "metadata.name"
+                }
+              }
+            },
+            {
+              "name": "SERVER_NAME",
+              "value": "[not retained]"
+            }
+          ],
+          "envFrom": []
+        },
+        {
+          "name": "reloader",
+          "image": "natsio/nats-server-config-reloader:0.16.0",
+          "imagePullPolicy": "IfNotPresent",
+          "args": [
+            "-pid",
+            "/var/run/nats/nats.pid",
+            "-config",
+            "/etc/nats-config/nats.conf"
+          ],
+          "resources": {},
+          "volumeMounts": [
+            {
+              "mountPath": "/var/run/nats",
+              "name": "pid"
+            },
+            {
+              "mountPath": "/etc/nats-config",
+              "name": "config"
+            }
+          ],
+          "env": [],
+          "envFrom": []
+        }
+      ]
+    }
+  ],
+  "services": {
+    "apiVersion": "v1",
+    "items": [
+      {
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {
+          "annotations": {
+            "meta.helm.sh/release-name": "dynamo-system",
+            "meta.helm.sh/release-namespace": "dynamo"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "labels": {
+            "app.kubernetes.io/component": "metrics",
+            "app.kubernetes.io/created-by": "dynamo-operator",
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "dynamo-operator",
+            "app.kubernetes.io/part-of": "dynamo-operator",
+            "app.kubernetes.io/version": "1.4.1",
+            "control-plane": "controller-manager",
+            "helm.sh/chart": "dynamo-operator-1.4.1"
+          },
+          "name": "dynamo-system",
+          "namespace": "dynamo",
+          "resourceVersion": "194166996",
+          "uid": "1d24fdd1-3198-4c73-91ad-242eb23714ae"
+        },
+        "spec": {
+          "clusterIP": "172.21.3.80",
+          "clusterIPs": [
+            "172.21.3.80"
+          ],
+          "internalTrafficPolicy": "Cluster",
+          "ipFamilies": [
+            "IPv4"
+          ],
+          "ipFamilyPolicy": "SingleStack",
+          "ports": [
+            {
+              "name": "metrics",
+              "port": 8080,
+              "protocol": "TCP",
+              "targetPort": "metrics"
+            }
+          ],
+          "selector": {
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/name": "dynamo-operator",
+            "control-plane": "controller-manager"
+          },
+          "sessionAffinity": "None",
+          "type": "ClusterIP"
+        },
+        "status": {
+          "loadBalancer": {}
+        }
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {
+          "annotations": {
+            "meta.helm.sh/release-name": "dynamo-system",
+            "meta.helm.sh/release-namespace": "dynamo"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "labels": {
+            "app.kubernetes.io/component": "nats",
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "nats",
+            "app.kubernetes.io/version": "2.11.1",
+            "helm.sh/chart": "nats-1.3.2"
+          },
+          "name": "dynamo-system-nats",
+          "namespace": "dynamo",
+          "resourceVersion": "166032756",
+          "uid": "aa06ae16-b351-4722-aa07-1ad6358bbb0e"
+        },
+        "spec": {
+          "clusterIP": "172.21.4.174",
+          "clusterIPs": [
+            "172.21.4.174"
+          ],
+          "internalTrafficPolicy": "Cluster",
+          "ipFamilies": [
+            "IPv4"
+          ],
+          "ipFamilyPolicy": "SingleStack",
+          "ports": [
+            {
+              "appProtocol": "tcp",
+              "name": "nats",
+              "port": 4222,
+              "protocol": "TCP",
+              "targetPort": "nats"
+            }
+          ],
+          "selector": {
+            "app.kubernetes.io/component": "nats",
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/name": "nats"
+          },
+          "sessionAffinity": "None",
+          "type": "ClusterIP"
+        },
+        "status": {
+          "loadBalancer": {}
+        }
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {
+          "annotations": {
+            "meta.helm.sh/release-name": "dynamo-system",
+            "meta.helm.sh/release-namespace": "dynamo"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "labels": {
+            "app.kubernetes.io/component": "nats",
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "nats",
+            "app.kubernetes.io/version": "2.11.1",
+            "helm.sh/chart": "nats-1.3.2"
+          },
+          "name": "dynamo-system-nats-headless",
+          "namespace": "dynamo",
+          "resourceVersion": "166032755",
+          "uid": "ce456721-c839-4c8e-bcaf-b5092321b0fe"
+        },
+        "spec": {
+          "clusterIP": "None",
+          "clusterIPs": [
+            "None"
+          ],
+          "internalTrafficPolicy": "Cluster",
+          "ipFamilies": [
+            "IPv4"
+          ],
+          "ipFamilyPolicy": "SingleStack",
+          "ports": [
+            {
+              "appProtocol": "tcp",
+              "name": "nats",
+              "port": 4222,
+              "protocol": "TCP",
+              "targetPort": "nats"
+            },
+            {
+              "appProtocol": "http",
+              "name": "monitor",
+              "port": 8222,
+              "protocol": "TCP",
+              "targetPort": "monitor"
+            }
+          ],
+          "publishNotReadyAddresses": true,
+          "selector": {
+            "app.kubernetes.io/component": "nats",
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/name": "nats"
+          },
+          "sessionAffinity": "None",
+          "type": "ClusterIP"
+        },
+        "status": {
+          "loadBalancer": {}
+        }
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {
+          "annotations": {
+            "meta.helm.sh/release-name": "dynamo-system",
+            "meta.helm.sh/release-namespace": "dynamo"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "labels": {
+            "app.kubernetes.io/component": "webhook",
+            "app.kubernetes.io/created-by": "dynamo-operator",
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "dynamo-operator",
+            "app.kubernetes.io/part-of": "dynamo-operator",
+            "app.kubernetes.io/version": "1.4.1",
+            "helm.sh/chart": "dynamo-operator-1.4.1"
+          },
+          "name": "dynamo-system-webhook-service",
+          "namespace": "dynamo",
+          "resourceVersion": "194166998",
+          "uid": "24514635-df02-4455-9f77-5d6d453dd421"
+        },
+        "spec": {
+          "clusterIP": "172.21.10.134",
+          "clusterIPs": [
+            "172.21.10.134"
+          ],
+          "internalTrafficPolicy": "Cluster",
+          "ipFamilies": [
+            "IPv4"
+          ],
+          "ipFamilyPolicy": "SingleStack",
+          "ports": [
+            {
+              "name": "webhook",
+              "port": 443,
+              "protocol": "TCP",
+              "targetPort": 9443
+            }
+          ],
+          "selector": {
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/name": "dynamo-operator",
+            "control-plane": "controller-manager"
+          },
+          "sessionAffinity": "None",
+          "type": "ClusterIP"
+        },
+        "status": {
+          "loadBalancer": {}
+        }
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {
+          "annotations": {
+            "meta.helm.sh/release-name": "dynamo-system",
+            "meta.helm.sh/release-namespace": "dynamo"
+          },
+          "creationTimestamp": "2026-07-15T03:37:04Z",
+          "labels": {
+            "app.kubernetes.io/component": "operator-service",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "grove-operator",
+            "app.kubernetes.io/part-of": "grove",
+            "chart": "grove-v0.1.0-alpha.12-rc1",
+            "release": "dynamo-system"
+          },
+          "name": "grove-operator",
+          "namespace": "dynamo",
+          "resourceVersion": "190280216",
+          "uid": "e953c856-e99f-4ce6-8a87-3059f725f9b2"
+        },
+        "spec": {
+          "clusterIP": "172.21.7.83",
+          "clusterIPs": [
+            "172.21.7.83"
+          ],
+          "internalTrafficPolicy": "Cluster",
+          "ipFamilies": [
+            "IPv4"
+          ],
+          "ipFamilyPolicy": "SingleStack",
+          "ports": [
+            {
+              "name": "metrics",
+              "port": 9445,
+              "protocol": "TCP",
+              "targetPort": 9445
+            },
+            {
+              "name": "webhooks",
+              "port": 9443,
+              "protocol": "TCP",
+              "targetPort": 9443
+            }
+          ],
+          "selector": {
+            "app.kubernetes.io/component": "operator-deployment",
+            "app.kubernetes.io/name": "grove-operator",
+            "app.kubernetes.io/part-of": "grove"
+          },
+          "sessionAffinity": "None",
+          "type": "ClusterIP"
+        },
+        "status": {
+          "loadBalancer": {}
+        }
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {
+          "annotations": {
+            "meta.helm.sh/release-name": "nanhu-infer-global-planner-shadow-soak",
+            "meta.helm.sh/release-namespace": "dynamo"
+          },
+          "creationTimestamp": "2026-07-31T00:57:54Z",
+          "labels": {
+            "app.kubernetes.io/component": "global-planner",
+            "app.kubernetes.io/instance": "nanhu-infer-global-planner-shadow-soak",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "nanhu-infer-global-planner-shadow-soak",
+            "app.kubernetes.io/version": "0.0.1",
+            "helm.sh/chart": "nanhu-infer-global-planner-0.0.1"
+          },
+          "name": "nanhu-infer-global-planner-shadow-soak",
+          "namespace": "dynamo",
+          "resourceVersion": "177493985",
+          "uid": "db839e10-f366-45b2-98f1-5489a8b7a4ac"
+        },
+        "spec": {
+          "clusterIP": "172.21.1.93",
+          "clusterIPs": [
+            "172.21.1.93"
+          ],
+          "internalTrafficPolicy": "Cluster",
+          "ipFamilies": [
+            "IPv4"
+          ],
+          "ipFamilyPolicy": "SingleStack",
+          "ports": [
+            {
+              "name": "http",
+              "port": 8080,
+              "protocol": "TCP",
+              "targetPort": "http"
+            }
+          ],
+          "selector": {
+            "app.kubernetes.io/component": "global-planner",
+            "app.kubernetes.io/instance": "nanhu-infer-global-planner-shadow-soak",
+            "app.kubernetes.io/name": "nanhu-infer-global-planner-shadow-soak"
+          },
+          "sessionAffinity": "None",
+          "type": "ClusterIP"
+        },
+        "status": {
+          "loadBalancer": {}
+        }
+      }
+    ],
+    "kind": "List",
+    "metadata": {
+      "resourceVersion": ""
+    }
+  },
+  "endpoints": {
+    "apiVersion": "v1",
+    "items": [
+      {
+        "apiVersion": "v1",
+        "kind": "Endpoints",
+        "metadata": {
+          "annotations": {
+            "endpoints.kubernetes.io/last-change-trigger-time": "2026-09-24T03:56:04Z"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "labels": {
+            "app.kubernetes.io/component": "metrics",
+            "app.kubernetes.io/created-by": "dynamo-operator",
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "dynamo-operator",
+            "app.kubernetes.io/part-of": "dynamo-operator",
+            "app.kubernetes.io/version": "1.4.1",
+            "control-plane": "controller-manager",
+            "helm.sh/chart": "dynamo-operator-1.4.1"
+          },
+          "name": "dynamo-system",
+          "namespace": "dynamo",
+          "resourceVersion": "214113220",
+          "uid": "a5837c9e-948a-4651-9267-f2955565acf6"
+        },
+        "subsets": [
+          {
+            "addresses": [
+              {
+                "ip": "172.26.1.11",
+                "nodeName": "cn-hangzhou-zjy-d01.10.200.44.111",
+                "targetRef": {
+                  "kind": "Pod",
+                  "name": "dynamo-system-controller-manager-7d6b8fc87f-lxcwd",
+                  "namespace": "dynamo",
+                  "uid": "2a87ce7b-9c52-4c96-8ab1-289eda0a270c"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "name": "metrics",
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Endpoints",
+        "metadata": {
+          "annotations": {
+            "endpoints.kubernetes.io/last-change-trigger-time": "2026-09-24T03:22:53Z"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "labels": {
+            "app.kubernetes.io/component": "nats",
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "nats",
+            "app.kubernetes.io/version": "2.11.1",
+            "helm.sh/chart": "nats-1.3.2"
+          },
+          "name": "dynamo-system-nats",
+          "namespace": "dynamo",
+          "resourceVersion": "214096424",
+          "uid": "5ae99621-ff6f-4474-ac2d-79a8e010b1d0"
+        },
+        "subsets": [
+          {
+            "addresses": [
+              {
+                "ip": "172.26.0.224",
+                "nodeName": "cn-hangzhou-zjy-d01.10.200.44.112",
+                "targetRef": {
+                  "kind": "Pod",
+                  "name": "dynamo-system-nats-0",
+                  "namespace": "dynamo",
+                  "uid": "1c95e373-007d-459c-aa5b-9bc97628c8de"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "appProtocol": "tcp",
+                "name": "nats",
+                "port": 4222,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Endpoints",
+        "metadata": {
+          "annotations": {
+            "endpoints.kubernetes.io/last-change-trigger-time": "2026-09-24T03:22:13Z"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "labels": {
+            "app.kubernetes.io/component": "nats",
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "nats",
+            "app.kubernetes.io/version": "2.11.1",
+            "helm.sh/chart": "nats-1.3.2",
+            "service.kubernetes.io/headless": ""
+          },
+          "name": "dynamo-system-nats-headless",
+          "namespace": "dynamo",
+          "resourceVersion": "214096046",
+          "uid": "929c7a6c-bf99-4007-a6c4-56b21c95c03b"
+        },
+        "subsets": [
+          {
+            "addresses": [
+              {
+                "hostname": "dynamo-system-nats-0",
+                "ip": "172.26.0.224",
+                "nodeName": "cn-hangzhou-zjy-d01.10.200.44.112",
+                "targetRef": {
+                  "kind": "Pod",
+                  "name": "dynamo-system-nats-0",
+                  "namespace": "dynamo",
+                  "uid": "1c95e373-007d-459c-aa5b-9bc97628c8de"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "appProtocol": "http",
+                "name": "monitor",
+                "port": 8222,
+                "protocol": "TCP"
+              },
+              {
+                "appProtocol": "tcp",
+                "name": "nats",
+                "port": 4222,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Endpoints",
+        "metadata": {
+          "annotations": {
+            "endpoints.kubernetes.io/last-change-trigger-time": "2026-09-24T03:56:04Z"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "labels": {
+            "app.kubernetes.io/component": "webhook",
+            "app.kubernetes.io/created-by": "dynamo-operator",
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "dynamo-operator",
+            "app.kubernetes.io/part-of": "dynamo-operator",
+            "app.kubernetes.io/version": "1.4.1",
+            "helm.sh/chart": "dynamo-operator-1.4.1"
+          },
+          "name": "dynamo-system-webhook-service",
+          "namespace": "dynamo",
+          "resourceVersion": "214113218",
+          "uid": "9f7998d2-3bd5-4ecb-9f13-d22189b3968e"
+        },
+        "subsets": [
+          {
+            "addresses": [
+              {
+                "ip": "172.26.1.11",
+                "nodeName": "cn-hangzhou-zjy-d01.10.200.44.111",
+                "targetRef": {
+                  "kind": "Pod",
+                  "name": "dynamo-system-controller-manager-7d6b8fc87f-lxcwd",
+                  "namespace": "dynamo",
+                  "uid": "2a87ce7b-9c52-4c96-8ab1-289eda0a270c"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "name": "webhook",
+                "port": 9443,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Endpoints",
+        "metadata": {
+          "annotations": {
+            "endpoints.kubernetes.io/last-change-trigger-time": "2026-09-24T05:50:12Z"
+          },
+          "creationTimestamp": "2026-07-15T03:37:04Z",
+          "labels": {
+            "app.kubernetes.io/component": "operator-service",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "grove-operator",
+            "app.kubernetes.io/part-of": "grove",
+            "chart": "grove-v0.1.0-alpha.12-rc1",
+            "release": "dynamo-system"
+          },
+          "name": "grove-operator",
+          "namespace": "dynamo",
+          "resourceVersion": "214169743",
+          "uid": "31831044-6215-434a-97c8-bc5d71b0740d"
+        },
+        "subsets": [
+          {
+            "addresses": [
+              {
+                "ip": "172.26.1.21",
+                "nodeName": "cn-hangzhou-zjy-d01.10.200.44.111",
+                "targetRef": {
+                  "kind": "Pod",
+                  "name": "grove-operator-5fdbf7f8d5-lmkf2",
+                  "namespace": "dynamo",
+                  "uid": "c7618e24-3b87-4503-a0ae-78101db73bdb"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "name": "metrics",
+                "port": 9445,
+                "protocol": "TCP"
+              },
+              {
+                "name": "webhooks",
+                "port": 9443,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Endpoints",
+        "metadata": {
+          "creationTimestamp": "2026-07-31T00:57:54Z",
+          "labels": {
+            "app.kubernetes.io/component": "global-planner",
+            "app.kubernetes.io/instance": "nanhu-infer-global-planner-shadow-soak",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "nanhu-infer-global-planner-shadow-soak",
+            "app.kubernetes.io/version": "0.0.1",
+            "helm.sh/chart": "nanhu-infer-global-planner-0.0.1"
+          },
+          "name": "nanhu-infer-global-planner-shadow-soak",
+          "namespace": "dynamo",
+          "resourceVersion": "177721256",
+          "uid": "abf7fab5-5e3f-45f6-86b7-97e3bea5628f"
+        }
+      }
+    ],
+    "kind": "List",
+    "metadata": {
+      "resourceVersion": ""
+    }
+  },
+  "podmonitors": {
+    "apiVersion": "v1",
+    "items": [
+      {
+        "apiVersion": "monitoring.coreos.com/v1",
+        "kind": "PodMonitor",
+        "metadata": {
+          "annotations": {
+            "meta.helm.sh/release-name": "dynamo-system",
+            "meta.helm.sh/release-namespace": "dynamo"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "generation": 1,
+          "labels": {
+            "app.kubernetes.io/managed-by": "Helm"
+          },
+          "name": "dynamo-frontend",
+          "namespace": "dynamo",
+          "resourceVersion": "166032817",
+          "uid": "970156cf-d971-4eab-95b9-a27d14394b79"
+        },
+        "spec": {
+          "namespaceSelector": {
+            "any": true
+          },
+          "podMetricsEndpoints": [
+            {
+              "honorLabels": true,
+              "interval": "5s",
+              "path": "/metrics",
+              "port": "http",
+              "relabelings": [
+                {
+                  "action": "replace",
+                  "sourceLabels": [
+                    "__meta_kubernetes_pod_label_nvidia_com_dynamo_namespace"
+                  ],
+                  "targetLabel": "dynamo_namespace"
+                }
+              ]
+            }
+          ],
+          "selector": {
+            "matchLabels": {
+              "nvidia.com/dynamo-component-type": "frontend",
+              "nvidia.com/metrics-enabled": "true"
+            }
+          }
+        }
+      },
+      {
+        "apiVersion": "monitoring.coreos.com/v1",
+        "kind": "PodMonitor",
+        "metadata": {
+          "annotations": {
+            "meta.helm.sh/release-name": "dynamo-system",
+            "meta.helm.sh/release-namespace": "dynamo"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "generation": 1,
+          "labels": {
+            "app.kubernetes.io/managed-by": "Helm"
+          },
+          "name": "dynamo-planner",
+          "namespace": "dynamo",
+          "resourceVersion": "166032815",
+          "uid": "ed05e250-9952-47d8-9985-da8dda0dfa17"
+        },
+        "spec": {
+          "namespaceSelector": {
+            "any": true
+          },
+          "podMetricsEndpoints": [
+            {
+              "interval": "5s",
+              "path": "/metrics",
+              "port": "metrics"
+            }
+          ],
+          "selector": {
+            "matchLabels": {
+              "nvidia.com/dynamo-component-type": "planner",
+              "nvidia.com/metrics-enabled": "true"
+            }
+          }
+        }
+      },
+      {
+        "apiVersion": "monitoring.coreos.com/v1",
+        "kind": "PodMonitor",
+        "metadata": {
+          "annotations": {
+            "meta.helm.sh/release-name": "dynamo-system",
+            "meta.helm.sh/release-namespace": "dynamo"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "generation": 1,
+          "labels": {
+            "app.kubernetes.io/managed-by": "Helm"
+          },
+          "name": "dynamo-router",
+          "namespace": "dynamo",
+          "resourceVersion": "166032814",
+          "uid": "a2f43ff1-d061-4103-b3a9-d0aec71907ef"
+        },
+        "spec": {
+          "namespaceSelector": {
+            "any": true
+          },
+          "podMetricsEndpoints": [
+            {
+              "honorLabels": true,
+              "interval": "5s",
+              "path": "/metrics",
+              "relabelings": [
+                {
+                  "action": "replace",
+                  "regex": "([^:]+)(?::\\d+)?",
+                  "replacement": "${1}:9090",
+                  "sourceLabels": [
+                    "__address__"
+                  ],
+                  "targetLabel": "__address__"
+                },
+                {
+                  "action": "replace",
+                  "sourceLabels": [
+                    "__meta_kubernetes_pod_label_nvidia_com_dynamo_namespace"
+                  ],
+                  "targetLabel": "dynamo_namespace"
+                }
+              ]
+            }
+          ],
+          "selector": {
+            "matchLabels": {
+              "nvidia.com/dynamo-component-type": "default",
+              "nvidia.com/metrics-enabled": "true"
+            }
+          }
+        }
+      },
+      {
+        "apiVersion": "monitoring.coreos.com/v1",
+        "kind": "PodMonitor",
+        "metadata": {
+          "annotations": {
+            "meta.helm.sh/release-name": "dynamo-system",
+            "meta.helm.sh/release-namespace": "dynamo"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "generation": 4,
+          "labels": {
+            "app.kubernetes.io/managed-by": "Helm"
+          },
+          "name": "dynamo-worker",
+          "namespace": "dynamo",
+          "resourceVersion": "190280252",
+          "uid": "b7884a98-3aec-4fd7-b77d-be5f1c5120ea"
+        },
+        "spec": {
+          "namespaceSelector": {
+            "any": true
+          },
+          "podMetricsEndpoints": [
+            {
+              "interval": "5s",
+              "path": "/metrics",
+              "port": "system",
+              "relabelings": [
+                {
+                  "action": "replace",
+                  "sourceLabels": [
+                    "__meta_kubernetes_pod_label_nvidia_com_dynamo_component_type"
+                  ],
+                  "targetLabel": "dynamo_component_type"
+                }
+              ]
+            },
+            {
+              "interval": "5s",
+              "path": "/metrics",
+              "port": "system-0",
+              "relabelings": [
+                {
+                  "action": "replace",
+                  "sourceLabels": [
+                    "__meta_kubernetes_pod_label_nvidia_com_dynamo_component_type"
+                  ],
+                  "targetLabel": "dynamo_component_type"
+                },
+                {
+                  "action": "replace",
+                  "sourceLabels": [
+                    "__meta_kubernetes_pod_label_nvidia_com_dynamo_graph_deployment_name"
+                  ],
+                  "targetLabel": "dynamo_graph_deployment"
+                }
+              ]
+            },
+            {
+              "interval": "5s",
+              "path": "/metrics",
+              "port": "system-1",
+              "relabelings": [
+                {
+                  "action": "replace",
+                  "sourceLabels": [
+                    "__meta_kubernetes_pod_label_nvidia_com_dynamo_component_type"
+                  ],
+                  "targetLabel": "dynamo_component_type"
+                },
+                {
+                  "action": "replace",
+                  "sourceLabels": [
+                    "__meta_kubernetes_pod_label_nvidia_com_dynamo_graph_deployment_name"
+                  ],
+                  "targetLabel": "dynamo_graph_deployment"
+                }
+              ]
+            }
+          ],
+          "selector": {
+            "matchExpressions": [
+              {
+                "key": "nvidia.com/dynamo-component-type",
+                "operator": "In",
+                "values": [
+                  "worker",
+                  "decode",
+                  "prefill"
+                ]
+              },
+              {
+                "key": "nvidia.com/metrics-enabled",
+                "operator": "In",
+                "values": [
+                  "true"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "kind": "List",
+    "metadata": {
+      "resourceVersion": ""
+    }
+  },
+  "servicemonitors": {
+    "apiVersion": "v1",
+    "items": [
+      {
+        "apiVersion": "monitoring.coreos.com/v1",
+        "kind": "ServiceMonitor",
+        "metadata": {
+          "annotations": {
+            "meta.helm.sh/release-name": "dynamo-system",
+            "meta.helm.sh/release-namespace": "dynamo"
+          },
+          "creationTimestamp": "2026-07-15T03:22:47Z",
+          "generation": 1,
+          "labels": {
+            "app.kubernetes.io/instance": "dynamo-system",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/name": "dynamo-operator",
+            "app.kubernetes.io/version": "1.4.1",
+            "helm.sh/chart": "dynamo-operator-1.4.1",
+            "release": "prometheus"
+          },
+          "name": "dynamo-system-operator",
+          "namespace": "dynamo",
+          "resourceVersion": "194167025",
+          "uid": "e74164ff-cd76-4ee3-8688-cfe8f233dedb"
+        },
+        "spec": {
+          "endpoints": [
+            {
+              "bearerTokenFile": "[REDACTED]",
+              "interval": "15s",
+              "path": "/metrics",
+              "port": "metrics",
+              "scheme": "https",
+              "tlsConfig": {
+                "insecureSkipVerify": true
+              }
+            }
+          ],
+          "selector": {
+            "matchLabels": {
+              "app.kubernetes.io/instance": "dynamo-system",
+              "app.kubernetes.io/name": "dynamo-operator",
+              "control-plane": "controller-manager"
+            }
+          }
+        }
+      }
+    ],
+    "kind": "List",
+    "metadata": {
+      "resourceVersion": ""
+    }
+  },
+  "configmaps": [
+    {
+      "namespace": "dynamo",
+      "name": "dynamo-system-config",
+      "labels": {
+        "app.kubernetes.io/instance": "dynamo-system",
+        "app.kubernetes.io/managed-by": "Helm",
+        "app.kubernetes.io/name": "dynamo-operator",
+        "app.kubernetes.io/version": "1.4.1",
+        "helm.sh/chart": "dynamo-operator-1.4.1"
+      },
+      "creationTimestamp": "2026-07-15T03:22:47Z",
+      "generation": null,
+      "data": {
+        "config.yaml": "apiVersion: operator.config.dynamo.nvidia.com/v1alpha1\nkind: OperatorConfiguration\nserver:\n  metrics:\n    bindAddress: \"0.0.0.0\"\n    secure: true\n  webhook:\n    certProvisionMode: \"auto\"\n[REDACTED CONFIG LINE]\n    serviceName: dynamo-system-webhook-service\nleaderElection:\n  enabled: true\n  id: \"dynamo.nvidia.com\"\n  namespace: \"kube-system\"\norchestrators:\n  kaiScheduler:\n    enabled: false\n  volcanoScheduler:\n    enabled: false\n  grove:\n    enabled: true\n    terminationDelay: \"4h\"\ninfrastructure:\n  natsAddress: \"nats://dynamo-system-nats.dynamo.svc.cluster.local:4222\"\nserviceMesh:\n  enabled: false\nrbac:\n  plannerClusterRoleName: dynamo-system-planner\n  dgdrProfilingClusterRoleName: dynamo-system-dgdr-profiling\n  eppClusterRoleName: dynamo-system-epp\nmpi:\n[REDACTED CONFIG LINE]\n[REDACTED CONFIG LINE]"
+      }
+    },
+    {
+      "namespace": "dynamo",
+      "name": "dynamo-system-nats-config",
+      "labels": {
+        "app.kubernetes.io/component": "nats",
+        "app.kubernetes.io/instance": "dynamo-system",
+        "app.kubernetes.io/managed-by": "Helm",
+        "app.kubernetes.io/name": "nats",
+        "app.kubernetes.io/version": "2.11.1",
+        "helm.sh/chart": "nats-1.3.2"
+      },
+      "creationTimestamp": "2026-07-15T03:22:47Z",
+      "generation": null,
+      "data": {
+        "nats.conf": "{\n  \"http_port\": 8222,\n  \"jetstream\": {\n    \"max_memory_store\": 0,\n    \"store_dir\": \"/data\"\n  },\n  \"lame_duck_duration\": \"30s\",\n  \"lame_duck_grace_period\": \"10s\",\n  \"max_payload\": 15728640,\n  \"pid_file\": \"/var/run/nats/nats.pid\",\n  \"port\": 4222,\n  \"server_name\": $SERVER_NAME\n}"
+      }
+    },
+    {
+      "namespace": "dynamo",
+      "name": "grove-operator-cm-7bd5db4f",
+      "labels": {
+        "app.kubernetes.io/component": "operator-configmap",
+        "app.kubernetes.io/managed-by": "Helm",
+        "app.kubernetes.io/name": "grove-operator",
+        "app.kubernetes.io/part-of": "grove",
+        "chart": "grove-v0.1.0-alpha.12-rc1",
+        "release": "dynamo-system"
+      },
+      "creationTimestamp": "2026-07-15T03:22:47Z",
+      "generation": null,
+      "data": {
+        "config.yaml": "apiVersion: operator.config.grove.io/v1alpha1\nkind: OperatorConfiguration\nruntimeClientConnection:\n  qps: 100\n  burst: 150\nleaderElection:\n  enabled: true\n  leaseDuration: 15s\n  renewDeadline: 10s\n  retryPeriod: 2s\n  resourceLock: leases\n  resourceName: grove-operator-leader-election\n  resourceNamespace: dynamo\nserver:\n  webhooks:\n    port: 9443\n    serverCertDir: /etc/grove-operator/webhook-certs\n[REDACTED CONFIG LINE]\n    certProvisionMode: auto\n  healthProbes:\n    port: 9444\n  metrics:\n    port: 9445\ncontrollers:\n  podCliqueSet:\n    concurrentSyncs: 3\n  podClique:\n    concurrentSyncs: 3\n  podCliqueScalingGroup:\n    concurrentSyncs: 3\nscheduler:\n  profiles:\n  - name: default-scheduler\n  - name: kai-scheduler\ndebugging:\n  enableProfiling: false\n  pprofBindHost: \"127.0.0.1\"\n  pprofBindPort: 2753\nlogLevel: info\nlogFormat: json\ntopologyAwareScheduling:\n  enabled: false\nnetwork:\n  autoMNNVLEnabled: false"
+      }
+    }
+  ],
+  "prometheus_resources": {
+    "error": "error: the server doesn't have a resource type \"prometheuses\"",
+    "command": [
+      "kubectl",
+      "--context=maas-dev",
+      "--request-timeout=20s",
+      "get",
+      "prometheuses.monitoring.coreos.com",
+      "-A",
+      "-o",
+      "json"
+    ]
+  },
+  "monitoring_services": [
+    {
+      "namespace": "higress-system",
+      "name": "higress-console-loki",
+      "labels": {
+        "app.kubernetes.io/managed-by": "Helm"
+      },
+      "creationTimestamp": "2026-06-09T05:48:42Z",
+      "generation": null,
+      "spec": {
+        "clusterIP": "172.21.6.19",
+        "clusterIPs": [
+          "172.21.6.19"
+        ],
+        "internalTrafficPolicy": "Cluster",
+        "ipFamilies": [
+          "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+          {
+            "name": "http-metrics",
+            "port": 3100,
+            "protocol": "TCP",
+            "targetPort": "http-metrics"
+          },
+          {
+            "name": "grpc",
+            "port": 9095,
+            "protocol": "TCP",
+            "targetPort": "grpc"
+          },
+          {
+            "name": "http-memberlist",
+            "port": 7946,
+            "protocol": "TCP",
+            "targetPort": "http-memberlist"
+          }
+        ],
+        "selector": {
+          "app": "higress-console-loki"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "namespace": "higress-system",
+      "name": "higress-console-prometheus",
+      "labels": {
+        "app": "higress-console-prometheus",
+        "app.kubernetes.io/managed-by": "Helm"
+      },
+      "creationTimestamp": "2026-06-09T05:48:42Z",
+      "generation": null,
+      "spec": {
+        "clusterIP": "172.21.2.152",
+        "clusterIPs": [
+          "172.21.2.152"
+        ],
+        "internalTrafficPolicy": "Cluster",
+        "ipFamilies": [
+          "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+          {
+            "port": 9090,
+            "protocol": "TCP",
+            "targetPort": "http-prometheus"
+          }
+        ],
+        "selector": {
+          "app": "higress-console-prometheus"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "namespace": "isg",
+      "name": "otel-collector",
+      "labels": {
+        "app": "otel-collector"
+      },
+      "creationTimestamp": "2026-01-20T11:10:11Z",
+      "generation": null,
+      "spec": {
+        "clusterIP": "172.21.10.175",
+        "clusterIPs": [
+          "172.21.10.175"
+        ],
+        "internalTrafficPolicy": "Cluster",
+        "ipFamilies": [
+          "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+          {
+            "name": "otlp-grpc",
+            "port": 4317,
+            "protocol": "TCP",
+            "targetPort": 4317
+          },
+          {
+            "name": "otlp-http",
+            "port": 4318,
+            "protocol": "TCP",
+            "targetPort": 4318
+          },
+          {
+            "name": "metrics",
+            "port": 8888,
+            "protocol": "TCP",
+            "targetPort": 8888
+          }
+        ],
+        "selector": {
+          "app": "otel-collector"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kps-kube-prometheus-stack-kubelet",
+      "labels": {
+        "app.kubernetes.io/managed-by": "prometheus-operator",
+        "app.kubernetes.io/name": "kubelet",
+        "k8s-app": "kubelet"
+      },
+      "creationTimestamp": "2026-01-22T08:24:20Z",
+      "generation": null,
+      "spec": {
+        "clusterIP": "None",
+        "clusterIPs": [
+          "None"
+        ],
+        "internalTrafficPolicy": "Cluster",
+        "ipFamilies": [
+          "IPv4",
+          "IPv6"
+        ],
+        "ipFamilyPolicy": "RequireDualStack",
+        "ports": [
+          {
+            "name": "https-metrics",
+            "port": 10250,
+            "protocol": "TCP",
+            "targetPort": 10250
+          },
+          {
+            "name": "http-metrics",
+            "port": 10255,
+            "protocol": "TCP",
+            "targetPort": 10255
+          },
+          {
+            "name": "cadvisor",
+            "port": 4194,
+            "protocol": "TCP",
+            "targetPort": 4194
+          }
+        ],
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "namespace": "kube-system",
+      "name": "monitoring-kube-prometheus-kubelet",
+      "labels": {
+        "app.kubernetes.io/managed-by": "prometheus-operator",
+        "app.kubernetes.io/name": "kubelet",
+        "k8s-app": "kubelet"
+      },
+      "creationTimestamp": "2026-01-16T07:40:52Z",
+      "generation": null,
+      "spec": {
+        "clusterIP": "None",
+        "clusterIPs": [
+          "None"
+        ],
+        "internalTrafficPolicy": "Cluster",
+        "ipFamilies": [
+          "IPv4",
+          "IPv6"
+        ],
+        "ipFamilyPolicy": "RequireDualStack",
+        "ports": [
+          {
+            "name": "https-metrics",
+            "port": 10250,
+            "protocol": "TCP",
+            "targetPort": 10250
+          },
+          {
+            "name": "http-metrics",
+            "port": 10255,
+            "protocol": "TCP",
+            "targetPort": 10255
+          },
+          {
+            "name": "cadvisor",
+            "port": 4194,
+            "protocol": "TCP",
+            "targetPort": 4194
+          }
+        ],
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "namespace": "maas-dev",
+      "name": "otel-collector",
+      "labels": {
+        "app": "otel-collector"
+      },
+      "creationTimestamp": "2026-06-10T09:55:26Z",
+      "generation": null,
+      "spec": {
+        "clusterIP": "172.21.3.84",
+        "clusterIPs": [
+          "172.21.3.84"
+        ],
+        "internalTrafficPolicy": "Cluster",
+        "ipFamilies": [
+          "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+          {
+            "name": "otlp-grpc",
+            "port": 4317,
+            "protocol": "TCP",
+            "targetPort": 4317
+          },
+          {
+            "name": "otlp-http",
+            "port": 4318,
+            "protocol": "TCP",
+            "targetPort": 4318
+          }
+        ],
+        "selector": {
+          "app": "otel-collector"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "namespace": "nhi",
+      "name": "otel-collector",
+      "labels": {
+        "app": "otel-collector",
+        "component": "llm-inference",
+        "tier": "telemetry"
+      },
+      "creationTimestamp": "2026-04-17T07:54:55Z",
+      "generation": null,
+      "spec": {
+        "clusterIP": "172.21.14.24",
+        "clusterIPs": [
+          "172.21.14.24"
+        ],
+        "internalTrafficPolicy": "Cluster",
+        "ipFamilies": [
+          "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+          {
+            "name": "otlp-grpc",
+            "port": 4317,
+            "protocol": "TCP",
+            "targetPort": 4317
+          },
+          {
+            "name": "otlp-http",
+            "port": 4318,
+            "protocol": "TCP",
+            "targetPort": 4318
+          },
+          {
+            "name": "metrics",
+            "port": 8888,
+            "protocol": "TCP",
+            "targetPort": 8888
+          },
+          {
+            "name": "zipkin",
+            "port": 9411,
+            "protocol": "TCP",
+            "targetPort": 9411
+          }
+        ],
+        "selector": {
+          "app": "otel-collector"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "namespace": "open-telemetry",
+      "name": "otel-agent",
+      "labels": {
+        "app": "opentelemetry",
+        "component": "otel-agent"
+      },
+      "creationTimestamp": "2026-01-28T08:36:08Z",
+      "generation": null,
+      "spec": {
+        "clusterIP": "172.21.3.227",
+        "clusterIPs": [
+          "172.21.3.227"
+        ],
+        "internalTrafficPolicy": "Local",
+        "ipFamilies": [
+          "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+          {
+            "name": "otlp-grpc",
+            "port": 4317,
+            "protocol": "TCP",
+            "targetPort": 4317
+          },
+          {
+            "name": "otlp-http",
+            "port": 4318,
+            "protocol": "TCP",
+            "targetPort": 4318
+          },
+          {
+            "name": "metrics",
+            "port": 8888,
+            "protocol": "TCP",
+            "targetPort": 8888
+          }
+        ],
+        "selector": {
+          "component": "otel-agent"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "namespace": "open-telemetry",
+      "name": "sglang-router-otel-test",
+      "labels": null,
+      "creationTimestamp": "2026-03-26T01:58:41Z",
+      "generation": null,
+      "spec": {
+        "clusterIP": "172.21.13.167",
+        "clusterIPs": [
+          "172.21.13.167"
+        ],
+        "internalTrafficPolicy": "Cluster",
+        "ipFamilies": [
+          "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+          {
+            "name": "gateway",
+            "port": 9999,
+            "protocol": "TCP",
+            "targetPort": 9999
+          },
+          {
+            "name": "prometheus",
+            "port": 29009,
+            "protocol": "TCP",
+            "targetPort": 29009
+          }
+        ],
+        "selector": {
+          "app": "sglang-router-otel-test"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    }
+  ]
+}

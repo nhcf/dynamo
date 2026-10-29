@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ACK 实际部署：Request Plane Trace 工作清单</title>
+<style>body{margin:0;background:#f4f7fb;color:#253449;font:16px/1.8 system-ui}main{max-width:1120px;margin:auto;padding:30px 22px}h1,h2{color:#173f6d}section{background:white;border:1px solid #dce4ef;border-radius:12px;padding:24px;margin:22px 0}pre{background:#13243b;color:#e1edfc;padding:18px;overflow:auto;border-radius:8px}code{overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #dce4ef;padding:10px;text-align:left;vertical-align:top}.scroll{overflow:auto}.note{border-left:4px solid #df9e27;background:#fff7e5;padding:14px}.meta{color:#52647d;font-size:14px}a{color:#1261ac}input{margin-right:8px}nav a{margin-right:14px}button{padding:8px 14px}@media print{body{background:white}button{display:none}section{break-inside:avoid}}</style></head><body><main>
+<nav><a href="../index.html">教程首页</a><a href="dynamo-test-deployment.md">用户部署记录</a><a href="../pd-trace.html">源码能力分析</a><a href="request-plane-trace-env.fragment.yaml">环境变量候选片段</a></nav>
+<h1>ACK 实际部署：Request Plane Trace 工作清单</h1>
+<p>对象：<code>nhss-job / DynamoGraphDeployment / dynamo-qwen38-27b-mixed-demo</code>。按现有 SGLang 混合部署重排工作：确认真实请求路径，配置四个组件、引擎与采集链路，分别验收 PD 和 aggregated。</p>
+<p class="meta">编制日期：2026-10-29 · 部署快照：2026-10-28 · 本次仅生成本地文档和候选片段，未连接集群、未修改资源。执行项均为待办。</p>
+<button onclick="print()">打印 / 保存 PDF</button>
+<section id="evidence"><h2>1. 部署事实与证据边界</h2>
+<p>依据为用户提供的 <a href="dynamo-test-deployment.md">dynamo-test-deployment.md</a>；SHA-256：<code>b62a9055689d03a57248742c88c35f51a8820ba5f62f252692f6784bfd52ac75</code>。该快照补齐了此前本机 API 不可达时缺失的部署信息。</p>
+<div class="scroll"><table><tr><th>项目</th><th>部署记录</th><th>接入影响</th></tr>
+<tr><td>版本</td><td>Operator 1.4.1；统一镜像 10.200.88.53/nhss/dynamo-sglang-runtime:1.4.1-amd64</td><td>核查容器内实际 Dynamo/SGLang 版本、imageID 与私有修改，不直接套用本仓库 1.7.0 全部开关。</td></tr>
+<tr><td>拓扑</td><td>Frontend、prefill、decode、aggregated 各 1 副本；Worker TP=4</td><td>四组件接入；本 DGD 没有记录独立 Router/Planner。</td></tr>
+<tr><td>通信</td><td>Request Plane=tcp；Event Plane=zmq；Frontend router mode=kv</td><td>沿 TCP 请求链传播；无需为本任务新增 NATS/etcd。</td></tr>
+<tr><td>引擎</td><td>SGLang；P/D transfer backend=nixl；模型 Qwen3.8-27B</td><td>三个 Worker 开启引擎 trace；aggregated 单独验收。</td></tr>
+<tr><td>指标</td><td>Frontend :8000/metrics、Worker :9090/metrics 正常；PodMonitor 已有；nixl:19090</td><td>已有 metrics 不证明 trace 已开启；9090/19090 不是本清单的 OTLP 目标。</td></tr>
+<tr><td>Trace 状态</td><td>列出的 env/args 没有 OTEL 和 enable-trace；未提供 Collector/Tempo 资源</td><td>“记录未体现，待核实”，不能直接断言集群没有 tracing 平台。</td></tr></table></div>
+<p class="note">记录中的 kubectl 命令使用 Kubernetes namespace <code>nhss-job</code>。形如 <code>nhss-job-dynamo-...-pd</code>、worker hash 的字符串还涉及 Dynamo 逻辑 namespace/服务发现标识；记录对“运行时 Namespace”的表述需现场核实。以 Pod <code>metadata.namespace</code> 为 kubectl -n 的依据，不直接复制逻辑 namespace。</p></section>
+<section id="plan"><h2>2. 按依赖顺序执行</h2>
+<div class="scroll"><table><tr><th>编号/优先级</th><th>工作内容</th><th>完成证据</th></tr>
+<tr><td><label><input type="checkbox">T01 / P0</label></td><td><b>锁定配置与版本：</b>保存原 DGD、Deployment/Pod 的 command、args、相关 env、imageID；核查 ai-dynamo/sglang/OTel 包版本及 --help；确认现有 CRD 支持 spec.envs、extraPodSpec.mainContainer.env。</td><td>原始快照、包版本和参数表；四组件实际 namespace/容器名。</td></tr>
+<tr><td><label><input type="checkbox">T02 / P0</label></td><td><b>确认路由与 PD 归属：</b>核查 Frontend 实际可选 endpoint、模型和 namespace 过滤。/health 看见 igd-* 只证明可见性；通过注册信息与请求日志确认是否参与候选。明确如何选中本 DGD 的 PD，而非 aggregated/igd-*。</td><td>请求能归属具体 P/D 或 aggregated Pod；确定验收入口。不要直接删除 igd discovery 标签。</td></tr>
+<tr><td><label><input type="checkbox">T03 / P0</label></td><td><b>确认采集平台：</b>查现有 Collector/Tempo/Jaeger/Grafana，复用或补齐；确定真实 OTLP gRPC FQDN:4317、TLS/鉴权和存储。runtime 若同时导出日志，接通 logs pipeline/独立日志端点。</td><td>各角色 Pod 可达；receiver/exporter 正常；trace 可查询；示例地址已替换。</td></tr>
+<tr><td><label><input type="checkbox">T04 / P1</label></td><td><b>四组件打开 runtime tracing：</b>在 DGD 配公共变量；Frontend/prefill/decode/aggregated 各设 OTEL_SERVICE_NAME。按 1.4.1 文档使用 DYN_LOGGING_JSONL=true。</td><td>各 Pod 配置和服务名生效；Frontend 与 Worker runtime span 可见。</td></tr>
+<tr><td><label><input type="checkbox">T05 / P1</label></td><td><b>三个 Worker 打开 SGLang trace：</b>各自在现有完整命令追加 --enable-trace 和 --otlp-traces-endpoint；保留模型、TP、P/D、NIXL、bootstrap、缓存与解析器参数。</td><td>引擎内部 span 与 Dynamo context 可关联；P/D 两端均验证。</td></tr>
+<tr><td><label><input type="checkbox">T06 / P1</label></td><td><b>入口与采样：</b>先从有效 Frontend Service 验证；真实上游网关若存在，注入/透传 traceparent、tracestate 并导出自身 span。联调保留所有测试 trace，入站 sampled=01。</td><td>跨入口 context 正确；x-request-id 辅助查日志；排除上游/引擎/Collector 的采样干扰。</td></tr>
+<tr><td><label><input type="checkbox">T07 / P1</label></td><td><b>发布与恢复检查：</b>合并到真实配置源（如 GitOps），避免只改 Operator 管理的 Deployment。确认单副本更新窗口、GPU 重建容量、Worker 300s 优雅退出；纳入 Frontend 无探针的现状。</td><td>DGD Ready、注册/模型请求恢复；四组件配置生效；记录新 hash 与回退版本。</td></tr>
+<tr><td><label><input type="checkbox">T08 / P1</label></td><td><b>分路径验收：</b>PD 正常 SSE、aggregated 正常 SSE、取消/错误；如启用重试则补测。确认确实执行 Prefill，避免缓存或条件 PD 旁路。</td><td>Trace ID、请求 ID、参与 Pod、版本、截图/导出、父子/Link 关系及缺口说明。</td></tr>
+<tr><td><label><input type="checkbox">T09 / P2</label></td><td><b>稳定化：</b>按开销调整采样、引擎 span 级别与保留期；补 Collector 导出失败监控和排障入口。</td><td>正式采样策略、回溯范围和一次端到端回归记录。</td></tr></table></div>
+<p class="note">T02 是该混合部署的关键前置项：一次 Frontend 请求成功，不能证明已验证本 DGD 的 PD trace。若实际流向 igd-*，需先确定扩大接入范围还是使用隔离验收入口；不能仅凭 /health 注册可见性断言跨部署串流。</p></section>
+<section id="config"><h2>3. 精确到现有组件的配置</h2>
+<div class="scroll"><table><tr><th>DGD 服务键（保留大小写）</th><th>记录中的 Deployment</th><th>OTEL_SERVICE_NAME</th></tr>
+<tr><td>Frontend</td><td>dynamo-qwen38-27b-mixed-demo-frontend</td><td>dynamo-qwen38-27b-frontend</td></tr>
+<tr><td>prefill</td><td>dynamo-qwen38-27b-mixed-demo-prefill-76c417b5</td><td>dynamo-qwen38-27b-prefill</td></tr>
+<tr><td>decode</td><td>dynamo-qwen38-27b-mixed-demo-decode-76c417b5</td><td>dynamo-qwen38-27b-decode</td></tr>
+<tr><td>aggregated</td><td>dynamo-qwen38-27b-mixed-demo-aggregated-76c417b5</td><td>dynamo-qwen38-27b-aggregated</td></tr></table></div>
+<p>76c417b5 是快照中的 hash，更新后可能变化，不能固化为新配置目标。KV 路由在 Frontend 内，不额外创建 Router Deployment。</p>
+<h3>公共环境变量候选值</h3>
+<pre>DYN_LOGGING_JSONL=true
+OTEL_EXPORT_ENABLED=true
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://&lt;真实Collector-FQDN&gt;:4317
+
+# T01 确认实际镜像支持后配置；采样值用于联调
+OTEL_EXPORTER_OTLP_ENDPOINT=http://&lt;真实Collector-FQDN&gt;:4317
+OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+OTEL_TRACES_SAMPLE_RATIO=1.0</pre>
+<p>核查现有 signal-specific endpoint/protocol 覆盖关系。trace 专用地址不是日志出口的替代。候选配置见 <a href="request-plane-trace-env.fragment.yaml">DGD 环境变量片段</a>：包含四个真实服务键，Collector 地址仍是示例；它不是完整 DGD，不可直接 apply。</p>
+<h3>追加到 prefill、decode、aggregated 的现有完整命令</h3>
+<pre>--enable-trace \
+--otlp-traces-endpoint &lt;真实Collector-FQDN&gt;:4317</pre>
+<p>引擎使用裸 host:port；runtime endpoint 使用 http:// URL。先核对 command 是 shell 字符串还是 Python argv，追加到正确位置；不要用只有这两个参数的 args 数组覆盖完整启动配置。--enable-otel 是示例 launch 脚本开关，不直接添加到 python -m dynamo.sglang。</p>
+<p>可选在 Worker 设置 SGLANG_TRACE_LEVEL=1 或 2，先确认镜像支持，不默认启用高详细级别。这些 SGLang 开关依据 <a href="https://docs.nvidia.com/dynamo/v1.4.1/knowledge-base/modular-components/backends/sg-lang/observability">Dynamo 1.4.1 官方说明</a>；私有镜像仍需现场验证。</p>
+<p class="note">本仓库源码为 1.7.0。DYN_LIFECYCLE_TRACE_ENABLED、当前新增 span 名称及 P/D Link 实现不作为线上 1.4.1 的既定能力或必配项；验收按实际镜像契约确认。</p></section>
+<section id="commands"><h2>4. 现场核查命令（本次未执行）</h2>
+<p>使用用户此前提供的 Linux kubeconfig 路径，不复制原记录中的 macOS 路径；命令不切换全局 context。</p>
+<pre>export DYNAMO_TRACE_KUBECONFIG=/data/home/bage/kubeconfig/ack-LB97i2CZNR.kubeconfig
+export DYNAMO_TRACE_CONTEXT=kubernetes-admin-c37065475b3804893815ca672b2ed3643
+
+kubectl --kubeconfig "$DYNAMO_TRACE_KUBECONFIG" --context "$DYNAMO_TRACE_CONTEXT" \
+  --request-timeout=10s -n nhss-job get dgd dynamo-qwen38-27b-mixed-demo -o yaml
+
+kubectl --kubeconfig "$DYNAMO_TRACE_KUBECONFIG" --context "$DYNAMO_TRACE_CONTEXT" \
+  --request-timeout=10s -n nhss-job get deploy,pod,svc -o wide
+
+kubectl --kubeconfig "$DYNAMO_TRACE_KUBECONFIG" --context "$DYNAMO_TRACE_CONTEXT" \
+  --request-timeout=10s explain dynamographdeployment.spec.envs --api-version=nvidia.com/v1beta1
+
+# POD、CONTAINER 按现场值替换；为四个组件逐一记录。
+kubectl --kubeconfig "$DYNAMO_TRACE_KUBECONFIG" --context "$DYNAMO_TRACE_CONTEXT" \
+  --request-timeout=10s -n nhss-job exec POD -c CONTAINER -- \
+  python3 -c 'import importlib.metadata as m; print({p:m.version(p) for p in ["ai-dynamo","sglang"]})'
+
+# 在 Worker 内核对参数（--help 不启动第二个模型实例）
+kubectl --kubeconfig "$DYNAMO_TRACE_KUBECONFIG" --context "$DYNAMO_TRACE_CONTEXT" \
+  --request-timeout=10s -n nhss-job exec POD -c CONTAINER -- \
+  python3 -m dynamo.sglang --help</pre>
+<p>若包元数据名称或命令不匹配私有镜像，记录实际安装方式。另核对 OTel 依赖可导入和 Pod metadata.namespace。Collector 名称/namespace 记录未提供，需向现有平台确认，不能将 observability 命名空间视为已存在。</p></section>
+<section id="acceptance"><h2>5. 验收入口、请求和通过标准</h2>
+<p>使用有 Endpoints 的 Frontend Service。旧 <code>dynamo-qwen38-27b-prod-nodeport:32081</code> 的 Endpoints 为空，不用它验收，也不把修复旧 NodePort 作为 trace 前置条件。</p>
+<pre># 终端 A：本机端口转发；结束后 Ctrl-C
+kubectl --kubeconfig "$DYNAMO_TRACE_KUBECONFIG" --context "$DYNAMO_TRACE_CONTEXT" \
+  -n nhss-job port-forward svc/dynamo-qwen38-27b-mixed-demo-frontend 18000:8000
+
+# 终端 B：每次测试新建 W3C ID
+DYNAMO_TEST_TRACE_ID=$(python3 -c 'import secrets; print(secrets.token_hex(16))')
+DYNAMO_TEST_PARENT_ID=$(python3 -c 'import secrets; print(secrets.token_hex(8))')
+printf 'Trace ID: %s\n' "$DYNAMO_TEST_TRACE_ID"
+
+curl -N --max-time 120 http://127.0.0.1:18000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -H "traceparent: 00-$DYNAMO_TEST_TRACE_ID-$DYNAMO_TEST_PARENT_ID-01" \
+  -H "x-request-id: trace-check-$DYNAMO_TEST_TRACE_ID" \
+  -d '{"model":"Qwen3.8-27B","messages":[{"role":"user","content":"请用一句话介绍分布式推理。"}],"max_tokens":32,"stream":true}'</pre>
+<p>此请求只检查入口/传播，不会强制 PD。先按 T02 确认该版本路由选择/过滤方式；无法可靠选择时，在独立验收入口或隔离测试 DGD 验证，不能直接停用现有 aggregated/igd Worker。curl 提供外部 parent ID，但不导出客户端 span，界面不展示外部父节点不等于断链。</p>
+<div class="scroll"><table><tr><th>用例</th><th>通过条件</th></tr>
+<tr><td>A：PD 正常 SSE</td><td>本 DGD 的 P/D Pod 确实参与；Frontend、请求传输/处理和 SGLang 引擎 context 关联正确；检查 Trace ID、父子关系及该版本支持的 handoff Link。不能只凭 request_id 判定。</td></tr>
+<tr><td>B：aggregated 正常 SSE</td><td>独立得到 Frontend→aggregated→SGLang 关联，不替代用例 A。</td></tr>
+<tr><td>C：取消/错误</td><td>记录时间、span 结束和取消/错误状态，排除长期悬空；实际启用重试时增加重试用例。</td></tr>
+<tr><td>D：真实上游网关（若有）</td><td>真实入口 context 正确传递，网关自身 span 已导出；否则仅声明从 Frontend 起的覆盖范围。</td></tr></table></div>
+<p>同目录 evidence/ 建议保存：配置快照、imageID/包版本、请求 ID/Trace ID、实际参与 Pod、trace 导出/截图、Collector 接收/丢弃统计及验收时间。TP=4 的 rank span 覆盖以实际引擎支持为准，不机械要求四份相同跨度。</p></section>
+<section id="other"><h2>6. 旁项与覆盖边界</h2>
+<ul><li><b>PodMonitor system-0/system-1：</b>属于指标配置，另行核查；不能直接推断“每张 GPU 缺少抓取”，TP=4 不要求四个 Pod metrics 端口。</li>
+<li><b>Planner/Router PodMonitor：</b>监控对象存在不证明本 DGD 有对应独立组件。</li>
+<li><b>旧 NodePort、CRD storage 迁移、CPU limit、Operator 租约历史：</b>另排维护，不作为基础 trace 硬前置。</li>
+<li><b>Frontend 无探针：</b>本次纳入发布恢复检查，补探针可单独实施。</li>
+<li><b>NIXL :19090、ZMQ KV events、KV 存储：</b>不作为 trace 开关；本清单不承诺底层传输、事件与存储操作已请求级全覆盖。</li></ul>
+<p>当前源码能力和缺口见 <a href="../pd-trace.html">PD Trace 专题</a>；部署依据和参考文档已分开标明，均不替代现场验收。</p></section>
+<script>document.querySelectorAll('input').forEach((e,i)=>{const k='ack-LB97-trace-task-'+i;try{e.checked=localStorage.getItem(k)==='1'}catch{}e.onchange=()=>{try{localStorage.setItem(k,e.checked?'1':'0')}catch{}}})</script>
+</main></body></html>

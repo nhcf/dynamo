@@ -1,0 +1,613 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>maas-dev Dynamo 部署实战分析</title><style>*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f5f5f0;color:#20303c;font:16px/1.85 system-ui,'Microsoft YaHei',sans-serif;overflow-wrap:anywhere}main{max-width:1200px;margin:auto;padding:45px 28px 90px}h1{font-size:40px;line-height:1.3}h2{font-size:25px;margin:0 0 20px}h3{font-size:19px}header{border-bottom:1px solid #d6e0d8;padding-bottom:28px}section{padding:35px 0;border-bottom:1px solid #d6e0d8}.kicker,a{color:#146c59}.kicker{letter-spacing:.1em;font-weight:750;font-size:13px}.lead{color:#596c77;font-size:19px}.meta,small{color:#667985;font-size:12px}nav{display:flex;flex-wrap:wrap;gap:15px}nav a{font-size:14px}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;background:white;font-size:14px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid #dce4dd}th{background:#eaf0e9}td:first-child{min-width:120px}code{font:12px/1.7 ui-monospace,monospace;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#17252c;color:#d9e9e3;font:12px/1.8 ui-monospace,monospace;padding:20px;border-radius:8px;max-height:560px;overflow:auto}details{background:white;border:1px solid #dce4dd;border-radius:8px;margin:16px 0;padding:14px}summary{cursor:pointer;font-size:14px;font-weight:650}.callout{border-left:3px solid #146c59;background:#eaf4ef;padding:18px;margin:20px 0}footer{color:#667985;font-size:12px;margin-top:25px}@media(max-width:600px){main{padding:25px 16px}h1{font-size:30px}}@media print{body{background:white}nav{display:none}main{padding:0}pre{max-height:none}}</style></head><body><main><header><div class="kicker">DYNAMO / LIVE DEPLOYMENT AUDIT</div><h1>maas-dev：Dynamo 部署实战分析</h1><p class="lead">从 Helm 声明、运行镜像、CRD、观测发现到端点响应，逐层区分“已配置”和“已验证”。</p><p class="meta">主快照 2026-10-28T08:39:02.249823+00:00 · 后续端点核对：见保留的端点证据 · namespace dynamo · 只读分析</p><nav><a href="#conclusion">状态</a><a href="#versions">版本与镜像</a><a href="#operator">Operator</a><a href="#infra">NATS/Grove</a><a href="#monitoring">可观测性</a><a href="#differences">版本边界</a><a href="#next">下一步</a><a href="#evidence">证据</a></nav></header><section id="conclusion"><h2>01 / 当前状态与分析边界</h2><p><strong>范围更新：</strong>用户随后确认完整 Dynamo 部署在另一个 kubeconfig 集群；此处仅为 maas-dev 快照，不代表完整部署。<a href="../ack-LB97i2CZNR/index.html">目标集群连接检查</a>。</p><div class="callout">当前是“平台基础设施已安装、当前未见 Dynamo 推理工作负载”的状态，不能据此评价推理吞吐、TTFT/ITL 或模型端到端服务健康。</div><div class="scroll"><table><thead><tr><th>检查项</th><th>结果</th><th>结论边界</th></tr></thead><tbody><tr><td>Context</td><td>maas-dev；cluster 名 maas-product1</td><td>从 maas-prod 切换，所有后续查询显式指定 maas-dev；当前 context 保留为 maas-dev。</td></tr><tr><td>平台</td><td>Operator / NATS / Grove 共 3 个 Running、Ready Pod</td><td>全部容器 Ready、当前实例重启数 0；不是历史 SLA 证明。</td></tr><tr><td>Dynamo CR</td><td>DGD / DCD / DGDR / DynamoModel / ScalingAdapter 全命名空间均为 0</td><td>只描述采集时刻；不代表从未部署过或其他推理平台没有模型。</td></tr><tr><td>推理 Pod</td><td>未发现 Dynamo 命名/镜像或 Dynamo 标签的推理 Pod</td><td>未取得 Frontend / Worker / Planner 引擎配置和运行指标。</td></tr><tr><td>访问方式</td><td>Kubernetes/Helm 只读查询；本机临时 port-forward</td><td>未创建/修改/重启任何工作负载，未发起模型推理请求。</td></tr></tbody></table></div><details><summary>展开证据 · 采集说明</summary><pre>{
+  &quot;context&quot;: &quot;maas-dev&quot;,
+  &quot;captured_at&quot;: &quot;2026-10-28T08:39:02.249823+00:00&quot;,
+  &quot;collection_policy&quot;: &quot;Read-only API and Helm metadata; no Secrets queried. Sensitive keys/values redacted.&quot;
+}</pre></details></section><section id="versions"><h2>02 / 版本、镜像与发布元数据</h2><div class="scroll"><table><thead><tr><th>层次</th><th>实际值</th><th>判断</th></tr></thead><tbody><tr><td>Helm release</td><td>dynamo-system / namespace dynamo / revision 6</td><td>deployed；最近 Helm 更新时间 2026-08-25。</td></tr><tr><td>平台 Chart</td><td>dynamo-platform-1.4.1 / appVersion 1.4.1</td><td>与 Operator 的镜像和 --operator-version 一致。</td></tr><tr><td>Operator</td><td>nvcr.io/nvidia/ai-dynamo/kubernetes-operator:1.4.1</td><td>实际 imageID 已记录，复现优先使用 digest。</td></tr><tr><td>NATS</td><td>nats:2.10.21-alpine</td><td>/varz 实测 version=2.10.21；不能只看 label。</td></tr><tr><td>NATS reloader</td><td>natsio/nats-server-config-reloader:0.16.0</td><td>独立 sidecar，只负责配置重载。</td></tr><tr><td>Grove</td><td>v0.1.0-alpha.12-rc1</td><td>与官方 1.4.1 release 的 Grove 依赖一致。</td></tr><tr><td>本地源码</td><td>2f296b592，workspace.version=1.7.0</td><td>不是集群正在运行的版本，教程中的新功能需要按部署版本重新验证。</td></tr><tr><td>推理引擎</td><td>未部署可识别 Dynamo Worker</td><td>不能将 release notes 中的 vLLM / SGLang / TensorRT-LLM 版本当作集群实装版本。</td></tr></tbody></table></div><div class="scroll"><table><thead><tr><th>Pod / Container</th><th>期望镜像</th><th>当前健康</th><th>实际 digest</th></tr></thead><tbody><tr><td>dynamo-system-controller-manager-7d6b8fc87f-lxcwd<br><small>manager</small></td><td><code>nvcr.io/nvidia/ai-dynamo/kubernetes-operator:1.4.1</code></td><td>Ready=True<br>restarts=0</td><td><code>nvcr.io/nvidia/ai-dynamo/kubernetes-operator@sha256:df56efa6d66236f4e5e14f4eb586babba4205f1896631a7ba7a2e16d1693bcbc</code></td></tr><tr><td>dynamo-system-nats-0<br><small>nats</small></td><td><code>nats:2.10.21-alpine</code></td><td>Ready=True<br>restarts=0</td><td><code>docker.io/library/nats@sha256:b76faa6b447604217b5526b8adc1229d3db5c5d2773e43ae4aea328817e7fecb</code></td></tr><tr><td>dynamo-system-nats-0<br><small>reloader</small></td><td><code>natsio/nats-server-config-reloader:0.16.0</code></td><td>Ready=True<br>restarts=0</td><td><code>docker.io/natsio/nats-server-config-reloader@sha256:261b6a3b041fa7a54cd9eb974177b07326c4fed0856155c4970cc9a7e54edc53</code></td></tr><tr><td>grove-operator-5fdbf7f8d5-lmkf2<br><small>grove-operator</small></td><td><code>ghcr.io/ai-dynamo/grove/grove-operator:v0.1.0-alpha.12-rc1</code></td><td>Ready=True<br>restarts=0</td><td><code>ghcr.io/ai-dynamo/grove/grove-operator@sha256:d1f153e5510ac3d9168dbe95b61d89bfe97fa58ae5103f07ef37e7ca5ac96784</code></td></tr></tbody></table></div><p>NATS ConfigMap 的 app.kubernetes.io/version 标签为 2.11.1，但运行镜像、Helm computed image 和 /varz 都是 2.10.21。这里是 Chart 元数据与运行版本不同，不是镜像偏离 Helm 配置的证据。</p><p>版本参考：<a href="https://github.com/ai-dynamo/dynamo/releases/tag/v1.4.1">官方 v1.4.1 release notes</a>。本报告不把当前 dev 文档直接作为 1.4.1 功能清单。</p></section><section id="operator"><h2>03 / Operator：启动、调度与探针</h2><p>manager 使用 <code>/manager --config=/etc/dynamo-operator/config.yaml</code>，并显式传入 operator-version、operator-image 和 image-pull-policy。配置挂载自 dynamo-system-config。</p><div class="scroll"><table><thead><tr><th>配置项</th><th>实际值</th><th>含义</th></tr></thead><tbody><tr><td>副本/资源</td><td>1 replica；requests 100m CPU / 256Mi；limits 500m / 1Gi</td><td>单个控制面实例；leader election 已开启，不代表当前有多副本。</td></tr><tr><td>调度</td><td>Grove enabled；KAI=false；Volcano=false；terminationDelay=4h</td><td>Grove 接管协同编排；不要从它的安装推断已有 GPU 工作负载。</td></tr><tr><td>基础通信</td><td>nats://dynamo-system-nats.dynamo.svc.cluster.local:4222</td><td>已配置 NATS；本次没有据此推导所有发现路径或 etcd 是否必需。</td></tr><tr><td>服务网格</td><td>serviceMesh.enabled=false</td><td>不通过当前配置开启网格接入。</td></tr><tr><td>Metrics</td><td>bindAddress=0.0.0.0；secure=true；Service 8080</td><td>HTTPS 认证接口，与健康端口不同。</td></tr><tr><td>Liveness</td><td>HTTP /healthz:8081；initialDelay=15s；period=20s；timeout=1s</td><td>控制器进程健康，不是模型推理探测。</td></tr><tr><td>Readiness</td><td>HTTP /readyz:8081；initialDelay=5s；period=10s；timeout=5s</td><td>控制面就绪，不代表模型可服务。</td></tr><tr><td>OTLP/JSONL</td><td>Pod spec 未发现 DYN_LOG / OTEL_* 环境变量；所读日志是文本格式</td><td>未取得 Operator 主动导出 OTLP 的配置证据；也未验证外部日志 Agent 是否采集它。</td></tr></tbody></table></div><details><summary>展开证据 · Operator 实际启动与资源</summary><pre>[
+  {
+    &quot;name&quot;: &quot;manager&quot;,
+    &quot;image&quot;: &quot;nvcr.io/nvidia/ai-dynamo/kubernetes-operator:1.4.1&quot;,
+    &quot;imagePullPolicy&quot;: &quot;IfNotPresent&quot;,
+    &quot;command&quot;: [
+      &quot;/manager&quot;
+    ],
+    &quot;args&quot;: [
+      &quot;--config=/etc/dynamo-operator/config.yaml&quot;,
+      &quot;--operator-version=1.4.1&quot;,
+      &quot;--operator-image=nvcr.io/nvidia/ai-dynamo/kubernetes-operator:1.4.1&quot;,
+      &quot;--operator-image-pull-policy=IfNotPresent&quot;
+    ],
+    &quot;ports&quot;: [
+      {
+        &quot;containerPort&quot;: 8080,
+        &quot;name&quot;: &quot;metrics&quot;,
+        &quot;protocol&quot;: &quot;TCP&quot;
+      },
+      {
+        &quot;containerPort&quot;: 9443,
+        &quot;name&quot;: &quot;webhook-server&quot;,
+        &quot;protocol&quot;: &quot;TCP&quot;
+      }
+    ],
+    &quot;resources&quot;: {
+      &quot;limits&quot;: {
+        &quot;cpu&quot;: &quot;500m&quot;,
+        &quot;memory&quot;: &quot;1Gi&quot;
+      },
+      &quot;requests&quot;: {
+        &quot;cpu&quot;: &quot;100m&quot;,
+        &quot;memory&quot;: &quot;256Mi&quot;
+      }
+    },
+    &quot;livenessProbe&quot;: {
+      &quot;failureThreshold&quot;: 3,
+      &quot;httpGet&quot;: {
+        &quot;path&quot;: &quot;/healthz&quot;,
+        &quot;port&quot;: 8081,
+        &quot;scheme&quot;: &quot;HTTP&quot;
+      },
+      &quot;initialDelaySeconds&quot;: 15,
+      &quot;periodSeconds&quot;: 20,
+      &quot;successThreshold&quot;: 1,
+      &quot;timeoutSeconds&quot;: 1
+    },
+    &quot;readinessProbe&quot;: {
+      &quot;failureThreshold&quot;: 3,
+      &quot;httpGet&quot;: {
+        &quot;path&quot;: &quot;/readyz&quot;,
+        &quot;port&quot;: 8081,
+        &quot;scheme&quot;: &quot;HTTP&quot;
+      },
+      &quot;initialDelaySeconds&quot;: 5,
+      &quot;periodSeconds&quot;: 10,
+      &quot;successThreshold&quot;: 1,
+      &quot;timeoutSeconds&quot;: 5
+    },
+    &quot;volumeMounts&quot;: [
+      {
+        &quot;mountPath&quot;: &quot;/etc/dynamo-operator&quot;,
+        &quot;name&quot;: &quot;operator-config&quot;,
+        &quot;readOnly&quot;: true
+      },
+      {
+        &quot;mountPath&quot;: &quot;/tmp/k8s-webhook-server/serving-certs&quot;,
+        &quot;name&quot;: &quot;cert&quot;,
+        &quot;readOnly&quot;: true
+      },
+      {
+        &quot;mountPath&quot;: &quot;/var/run/secrets/kubernetes.io/serviceaccount&quot;,
+        &quot;name&quot;: &quot;kube-api-access-sqsjk&quot;,
+        &quot;readOnly&quot;: true
+      }
+    ],
+    &quot;env&quot;: [
+      {
+        &quot;name&quot;: &quot;KUBERNETES_CLUSTER_DOMAIN&quot;,
+        &quot;value&quot;: &quot;[not retained]&quot;
+      },
+      {
+        &quot;name&quot;: &quot;POD_SERVICE_ACCOUNT&quot;,
+        &quot;valueFrom&quot;: {
+          &quot;fieldRef&quot;: {
+            &quot;apiVersion&quot;: &quot;v1&quot;,
+            &quot;fieldPath&quot;: &quot;spec.serviceAccountName&quot;
+          }
+        }
+      },
+      {
+        &quot;name&quot;: &quot;POD_NAMESPACE&quot;,
+        &quot;valueFrom&quot;: {
+          &quot;fieldRef&quot;: {
+            &quot;apiVersion&quot;: &quot;v1&quot;,
+            &quot;fieldPath&quot;: &quot;metadata.namespace&quot;
+          }
+        }
+      }
+    ],
+    &quot;envFrom&quot;: []
+  }
+]</pre></details><details><summary>展开证据 · Operator ConfigMap</summary><pre>{
+  &quot;config.yaml&quot;: &quot;apiVersion: operator.config.dynamo.nvidia.com/v1alpha1\nkind: OperatorConfiguration\nserver:\n  metrics:\n    bindAddress: \&quot;0.0.0.0\&quot;\n    secure: true\n  webhook:\n    certProvisionMode: \&quot;auto\&quot;\n[REDACTED CONFIG LINE]\n    serviceName: dynamo-system-webhook-service\nleaderElection:\n  enabled: true\n  id: \&quot;dynamo.nvidia.com\&quot;\n  namespace: \&quot;kube-system\&quot;\norchestrators:\n  kaiScheduler:\n    enabled: false\n  volcanoScheduler:\n    enabled: false\n  grove:\n    enabled: true\n    terminationDelay: \&quot;4h\&quot;\ninfrastructure:\n  natsAddress: \&quot;nats://dynamo-system-nats.dynamo.svc.cluster.local:4222\&quot;\nserviceMesh:\n  enabled: false\nrbac:\n  plannerClusterRoleName: dynamo-system-planner\n  dgdrProfilingClusterRoleName: dynamo-system-dgdr-profiling\n  eppClusterRoleName: dynamo-system-epp\nmpi:\n[REDACTED CONFIG LINE]\n[REDACTED CONFIG LINE]&quot;
+}</pre></details></section><section id="infra"><h2>04 / NATS、Grove 与残留资源</h2><div class="scroll"><table><thead><tr><th>组件</th><th>实际配置/实测</th><th>影响与注意点</th></tr></thead><tbody><tr><td>NATS</td><td>单副本；4222 客户端、8222 monitor；JetStream 已开启；max_payload=15728640（15MiB）</td><td>本次 /varz connections=0、in_msgs=0、out_msgs=0；符合无推理工作负载的快照，不是历史利用率。</td></tr><tr><td>NATS 存储</td><td>fileStore PVC disabled；/data 未挂持久化卷</td><td>store_dir 位于容器可写层；Pod/容器替换可能丢失文件状态。当前存储统计为 0，未观察到数据丢失事件。</td></tr><tr><td>NATS 观测</td><td>8222 /varz=200；/metrics=404；当前 Pod 没有 Prometheus exporter sidecar</td><td>8222 是 JSON monitoring 接口，不能直接当 Prometheus exposition 抓取。</td></tr><tr><td>Grove</td><td>1 replica；requests 50m / 128Mi / ephemeral-storage 128Mi；memory limit 1Gi</td><td>CPU limit 未显式设置。health 9444、webhook 9443、metrics 9445。</td></tr><tr><td>Grove 功能</td><td>logLevel=info；logFormat=json；topologyAwareScheduling=false；autoMNNVL=false</td><td>配置声明这些高级功能关闭，不等于 GPU 网络存在故障。</td></tr><tr><td>Grove 观测</td><td>HTTP 9445 /metrics 实测 200；170 个 TYPE family</td><td>端点可输出指标，但本次未找到对应 Grove Monitor 资源；是否经外部平台采集仍待验证。</td></tr><tr><td>Global Planner 残留</td><td>nanhu-infer-global-planner-shadow-soak Service / Helm release 仍存在；Endpoints 地址数 0</td><td>dynamo namespace 当前没有对应 Deployment/Pod。不能视为正在运行的 Planner，也没有判定其历史用途。</td></tr></tbody></table></div><details><summary>展开证据 · NATS / Grove 运行端点</summary><pre>{
+  &quot;nats_runtime&quot;: {
+    &quot;version&quot;: &quot;2.10.21&quot;,
+    &quot;jetstream&quot;: {
+      &quot;config&quot;: {
+        &quot;max_memory&quot;: 0,
+        &quot;max_storage&quot;: 118552068096,
+        &quot;store_dir&quot;: &quot;/data/jetstream&quot;,
+        &quot;sync_interval&quot;: 120000000000
+      },
+      &quot;stats&quot;: {
+        &quot;memory&quot;: 0,
+        &quot;storage&quot;: 0,
+        &quot;reserved_memory&quot;: 0,
+        &quot;reserved_storage&quot;: 0,
+        &quot;accounts&quot;: 1,
+        &quot;ha_assets&quot;: 0,
+        &quot;api&quot;: {
+          &quot;total&quot;: 0,
+          &quot;errors&quot;: 0
+        }
+      }
+    },
+    &quot;connections&quot;: 0,
+    &quot;total_connections&quot;: 0,
+    &quot;subscriptions&quot;: 59,
+    &quot;in_msgs&quot;: 0,
+    &quot;out_msgs&quot;: 0,
+    &quot;max_payload&quot;: 15728640,
+    &quot;uptime&quot;: &quot;34d5h17m58s&quot;
+  },
+  &quot;nats_prometheus_path&quot;: {
+    &quot;status&quot;: 404
+  },
+  &quot;grove_metrics&quot;: {
+    &quot;status&quot;: 200,
+    &quot;metric_family_count&quot;: 170,
+    &quot;family_examples&quot;: [
+      &quot;certwatcher_read_certificate_errors_total&quot;,
+      &quot;certwatcher_read_certificate_total&quot;,
+      &quot;controller_runtime_active_workers&quot;,
+      &quot;controller_runtime_conversion_webhook_panics_total&quot;,
+      &quot;controller_runtime_max_concurrent_reconciles&quot;,
+      &quot;controller_runtime_reconcile_errors_total&quot;,
+      &quot;controller_runtime_reconcile_panics_total&quot;,
+      &quot;controller_runtime_reconcile_time_seconds&quot;,
+      &quot;controller_runtime_reconcile_timeouts_total&quot;,
+      &quot;controller_runtime_reconcile_total&quot;,
+      &quot;controller_runtime_terminal_reconcile_errors_total&quot;,
+      &quot;controller_runtime_webhook_panics_total&quot;
+    ]
+  }
+}</pre></details></section><section id="monitoring"><h2>05 / 可观测配置：配置存在与实际采集分开看</h2><h3>应用指标发现</h3><p>四个 PodMonitor 均存在，跨 namespace 选择；Helm computed values 的 podMonitors.enabled=null，安装时已生成资源。nixlTelemetry=false，Worker Monitor 当前没有 NIXL 端点。</p><div class="scroll"><table><thead><tr><th>PodMonitor</th><th>Pod selector</th><th>抓取端点</th><th>当前情况</th></tr></thead><tbody><tr><td>dynamo-frontend</td><td>{&quot;matchLabels&quot;: {&quot;nvidia.com/dynamo-component-type&quot;: &quot;frontend&quot;, &quot;nvidia.com/metrics-enabled&quot;: &quot;true&quot;}}</td><td>http /metrics / 5s</td><td>any=true；当前匹配 Dynamo 推理 Pod=0</td></tr><tr><td>dynamo-planner</td><td>{&quot;matchLabels&quot;: {&quot;nvidia.com/dynamo-component-type&quot;: &quot;planner&quot;, &quot;nvidia.com/metrics-enabled&quot;: &quot;true&quot;}}</td><td>metrics /metrics / 5s</td><td>any=true；当前匹配 Dynamo 推理 Pod=0</td></tr><tr><td>dynamo-router</td><td>{&quot;matchLabels&quot;: {&quot;nvidia.com/dynamo-component-type&quot;: &quot;default&quot;, &quot;nvidia.com/metrics-enabled&quot;: &quot;true&quot;}}</td><td>relabel → 9090 /metrics / 5s</td><td>any=true；当前匹配 Dynamo 推理 Pod=0</td></tr><tr><td>dynamo-worker</td><td>{&quot;matchExpressions&quot;: [{&quot;key&quot;: &quot;nvidia.com/dynamo-component-type&quot;, &quot;operator&quot;: &quot;In&quot;, &quot;values&quot;: [&quot;worker&quot;, &quot;decode&quot;, &quot;prefill&quot;]}, {&quot;key&quot;: &quot;nvidia.com/metrics-enabled&quot;, &quot;operator&quot;: &quot;In&quot;, &quot;values&quot;: [&quot;true&quot;]}]}</td><td>system /metrics / 5s, system-0 /metrics / 5s, system-1 /metrics / 5s</td><td>any=true；当前匹配 Dynamo 推理 Pod=0</td></tr></tbody></table></div><h3>Operator 指标</h3><div class="scroll"><table><thead><tr><th>检查</th><th>结果</th><th>结论</th></tr></thead><tbody><tr><td>ServiceMonitor</td><td>dynamo-system-operator；15s；HTTPS /metrics；命名端口 metrics；bearerTokenFile；insecureSkipVerify=true</td><td>配置了带 Token 的 HTTPS 抓取。</td></tr><tr><td>选择标签</td><td>ServiceMonitor 有 release=prometheus；PodMonitor 只有 managed-by=Helm</td><td>若平台按 release 标签选择，二者可能被区别对待；ARMS 实际选择规则未验证。</td></tr><tr><td>端点请求</td><td>临时端口转发后，未带认证请求返回 401 Unauthorized</td><td>证明 HTTPS 服务响应并要求认证，不是认证抓取成功的证据。</td></tr><tr><td>Prometheus CR</td><td>集群不提供 prometheuses.monitoring.coreos.com 资源类型</td><td>不能按标准 kube-prometheus-stack 的 Prometheus CR 来解释全部采集行为。</td></tr></tbody></table></div><h3>集群已有监控链路</h3><div class="scroll"><table><thead><tr><th>链路</th><th>读取到的证据</th><th>Dynamo 接入判断</th></tr></thead><tbody><tr><td>ARMS</td><td>arms-prom 中有 arms-prometheus-operator:v1.0，带云平台访问凭据引用/配置；未读取凭据值</td><td>未取得云端目标和选择规则，无法确认 Operator ServiceMonitor 是否被采集。</td></tr><tr><td>Higress Prometheus</td><td>/prometheus/api/v1/targets 成功；7 个 active targets；jobs=prometheus、k8s_nodes、k8s_pods</td><td>当前 targets 无 Dynamo；dynamo_operator_resources_total 即时查询为空。仅描述该 Prometheus。</td></tr><tr><td>Higress 配置</td><td>Pod 抓取仅保留 higress-system 的 higress-gateway；保留期 6h</td><td>它不是现成的 Dynamo 应用指标接入链路。</td></tr><tr><td>maas-dev OTel Collector</td><td>0.120.0；traces receiver=otlp；metrics receiver=prometheus；仅 litellm 抓取 job</td><td>不能因有 OTLP receiver 就认定 metrics 接受 OTLP。当前 metrics pipeline 未引用 otlp。</td></tr><tr><td>日志链路</td><td>该 Collector 无 logs pipeline；Dynamo namespace 无所见 Loki/Alloy/Tempo 部署</td><td>其他 namespace 有日志/OTel组件，但未验证其是否收集 Dynamo。不能宣称集群全局没有日志采集。</td></tr><tr><td>模型/硬件/传输</td><td>当前无 Dynamo Worker，未得到 TTFT/ITL、引擎、GPU 或 NIXL 样本</td><td>不能判断推理可观测闭环已完成。</td></tr></tbody></table></div><details><summary>展开证据 · 实际 Monitor 配置</summary><pre>{
+  &quot;podmonitors&quot;: {
+    &quot;apiVersion&quot;: &quot;v1&quot;,
+    &quot;items&quot;: [
+      {
+        &quot;apiVersion&quot;: &quot;monitoring.coreos.com/v1&quot;,
+        &quot;kind&quot;: &quot;PodMonitor&quot;,
+        &quot;metadata&quot;: {
+          &quot;annotations&quot;: {
+            &quot;meta.helm.sh/release-name&quot;: &quot;dynamo-system&quot;,
+            &quot;meta.helm.sh/release-namespace&quot;: &quot;dynamo&quot;
+          },
+          &quot;creationTimestamp&quot;: &quot;2026-07-15T03:22:47Z&quot;,
+          &quot;generation&quot;: 1,
+          &quot;labels&quot;: {
+            &quot;app.kubernetes.io/managed-by&quot;: &quot;Helm&quot;
+          },
+          &quot;name&quot;: &quot;dynamo-frontend&quot;,
+          &quot;namespace&quot;: &quot;dynamo&quot;,
+          &quot;resourceVersion&quot;: &quot;166032817&quot;,
+          &quot;uid&quot;: &quot;970156cf-d971-4eab-95b9-a27d14394b79&quot;
+        },
+        &quot;spec&quot;: {
+          &quot;namespaceSelector&quot;: {
+            &quot;any&quot;: true
+          },
+          &quot;podMetricsEndpoints&quot;: [
+            {
+              &quot;honorLabels&quot;: true,
+              &quot;interval&quot;: &quot;5s&quot;,
+              &quot;path&quot;: &quot;/metrics&quot;,
+              &quot;port&quot;: &quot;http&quot;,
+              &quot;relabelings&quot;: [
+                {
+                  &quot;action&quot;: &quot;replace&quot;,
+                  &quot;sourceLabels&quot;: [
+                    &quot;__meta_kubernetes_pod_label_nvidia_com_dynamo_namespace&quot;
+                  ],
+                  &quot;targetLabel&quot;: &quot;dynamo_namespace&quot;
+                }
+              ]
+            }
+          ],
+          &quot;selector&quot;: {
+            &quot;matchLabels&quot;: {
+              &quot;nvidia.com/dynamo-component-type&quot;: &quot;frontend&quot;,
+              &quot;nvidia.com/metrics-enabled&quot;: &quot;true&quot;
+            }
+          }
+        }
+      },
+      {
+        &quot;apiVersion&quot;: &quot;monitoring.coreos.com/v1&quot;,
+        &quot;kind&quot;: &quot;PodMonitor&quot;,
+        &quot;metadata&quot;: {
+          &quot;annotations&quot;: {
+            &quot;meta.helm.sh/release-name&quot;: &quot;dynamo-system&quot;,
+            &quot;meta.helm.sh/release-namespace&quot;: &quot;dynamo&quot;
+          },
+          &quot;creationTimestamp&quot;: &quot;2026-07-15T03:22:47Z&quot;,
+          &quot;generation&quot;: 1,
+          &quot;labels&quot;: {
+            &quot;app.kubernetes.io/managed-by&quot;: &quot;Helm&quot;
+          },
+          &quot;name&quot;: &quot;dynamo-planner&quot;,
+          &quot;namespace&quot;: &quot;dynamo&quot;,
+          &quot;resourceVersion&quot;: &quot;166032815&quot;,
+          &quot;uid&quot;: &quot;ed05e250-9952-47d8-9985-da8dda0dfa17&quot;
+        },
+        &quot;spec&quot;: {
+          &quot;namespaceSelector&quot;: {
+            &quot;any&quot;: true
+          },
+          &quot;podMetricsEndpoints&quot;: [
+            {
+              &quot;interval&quot;: &quot;5s&quot;,
+              &quot;path&quot;: &quot;/metrics&quot;,
+              &quot;port&quot;: &quot;metrics&quot;
+            }
+          ],
+          &quot;selector&quot;: {
+            &quot;matchLabels&quot;: {
+              &quot;nvidia.com/dynamo-component-type&quot;: &quot;planner&quot;,
+              &quot;nvidia.com/metrics-enabled&quot;: &quot;true&quot;
+            }
+          }
+        }
+      },
+      {
+        &quot;apiVersion&quot;: &quot;monitoring.coreos.com/v1&quot;,
+        &quot;kind&quot;: &quot;PodMonitor&quot;,
+        &quot;metadata&quot;: {
+          &quot;annotations&quot;: {
+            &quot;meta.helm.sh/release-name&quot;: &quot;dynamo-system&quot;,
+            &quot;meta.helm.sh/release-namespace&quot;: &quot;dynamo&quot;
+          },
+          &quot;creationTimestamp&quot;: &quot;2026-07-15T03:22:47Z&quot;,
+          &quot;generation&quot;: 1,
+          &quot;labels&quot;: {
+            &quot;app.kubernetes.io/managed-by&quot;: &quot;Helm&quot;
+          },
+          &quot;name&quot;: &quot;dynamo-router&quot;,
+          &quot;namespace&quot;: &quot;dynamo&quot;,
+          &quot;resourceVersion&quot;: &quot;166032814&quot;,
+          &quot;uid&quot;: &quot;a2f43ff1-d061-4103-b3a9-d0aec71907ef&quot;
+        },
+        &quot;spec&quot;: {
+          &quot;namespaceSelector&quot;: {
+            &quot;any&quot;: true
+          },
+          &quot;podMetricsEndpoints&quot;: [
+            {
+              &quot;honorLabels&quot;: true,
+              &quot;interval&quot;: &quot;5s&quot;,
+              &quot;path&quot;: &quot;/metrics&quot;,
+              &quot;relabelings&quot;: [
+                {
+                  &quot;action&quot;: &quot;replace&quot;,
+                  &quot;regex&quot;: &quot;([^:]+)(?::\\d+)?&quot;,
+                  &quot;replacement&quot;: &quot;${1}:9090&quot;,
+                  &quot;sourceLabels&quot;: [
+                    &quot;__address__&quot;
+                  ],
+                  &quot;targetLabel&quot;: &quot;__address__&quot;
+                },
+                {
+                  &quot;action&quot;: &quot;replace&quot;,
+                  &quot;sourceLabels&quot;: [
+                    &quot;__meta_kubernetes_pod_label_nvidia_com_dynamo_namespace&quot;
+                  ],
+                  &quot;targetLabel&quot;: &quot;dynamo_namespace&quot;
+                }
+              ]
+            }
+          ],
+          &quot;selector&quot;: {
+            &quot;matchLabels&quot;: {
+              &quot;nvidia.com/dynamo-component-type&quot;: &quot;default&quot;,
+              &quot;nvidia.com/metrics-enabled&quot;: &quot;true&quot;
+            }
+          }
+        }
+      },
+      {
+        &quot;apiVersion&quot;: &quot;monitoring.coreos.com/v1&quot;,
+        &quot;kind&quot;: &quot;PodMonitor&quot;,
+        &quot;metadata&quot;: {
+          &quot;annotations&quot;: {
+            &quot;meta.helm.sh/release-name&quot;: &quot;dynamo-system&quot;,
+            &quot;meta.helm.sh/release-namespace&quot;: &quot;dynamo&quot;
+          },
+          &quot;creationTimestamp&quot;: &quot;2026-07-15T03:22:47Z&quot;,
+          &quot;generation&quot;: 4,
+          &quot;labels&quot;: {
+            &quot;app.kubernetes.io/managed-by&quot;: &quot;Helm&quot;
+          },
+          &quot;name&quot;: &quot;dynamo-worker&quot;,
+          &quot;namespace&quot;: &quot;dynamo&quot;,
+          &quot;resourceVersion&quot;: &quot;190280252&quot;,
+          &quot;uid&quot;: &quot;b7884a98-3aec-4fd7-b77d-be5f1c5120ea&quot;
+        },
+        &quot;spec&quot;: {
+          &quot;namespaceSelector&quot;: {
+            &quot;any&quot;: true
+          },
+          &quot;podMetricsEndpoints&quot;: [
+            {
+              &quot;interval&quot;: &quot;5s&quot;,
+              &quot;path&quot;: &quot;/metrics&quot;,
+              &quot;port&quot;: &quot;system&quot;,
+              &quot;relabelings&quot;: [
+                {
+                  &quot;action&quot;: &quot;replace&quot;,
+                  &quot;sourceLabels&quot;: [
+                    &quot;__meta_kubernetes_pod_label_nvidia_com_dynamo_component_type&quot;
+                  ],
+                  &quot;targetLabel&quot;: &quot;dynamo_component_type&quot;
+                }
+              ]
+            },
+            {
+              &quot;interval&quot;: &quot;5s&quot;,
+              &quot;path&quot;: &quot;/metrics&quot;,
+              &quot;port&quot;: &quot;system-0&quot;,
+              &quot;relabelings&quot;: [
+                {
+                  &quot;action&quot;: &quot;replace&quot;,
+                  &quot;sourceLabels&quot;: [
+                    &quot;__meta_kubernetes_pod_label_nvidia_com_dynamo_component_type&quot;
+                  ],
+                  &quot;targetLabel&quot;: &quot;dynamo_component_type&quot;
+                },
+                {
+                  &quot;action&quot;: &quot;replace&quot;,
+                  &quot;sourceLabels&quot;: [
+                    &quot;__meta_kubernetes_pod_label_nvidia_com_dynamo_graph_deployment_name&quot;
+                  ],
+                  &quot;targetLabel&quot;: &quot;dynamo_graph_deployment&quot;
+                }
+              ]
+            },
+            {
+              &quot;interval&quot;: &quot;5s&quot;,
+              &quot;path&quot;: &quot;/metrics&quot;,
+              &quot;port&quot;: &quot;system-1&quot;,
+              &quot;relabelings&quot;: [
+                {
+                  &quot;action&quot;: &quot;replace&quot;,
+                  &quot;sourceLabels&quot;: [
+                    &quot;__meta_kubernetes_pod_label_nvidia_com_dynamo_component_type&quot;
+                  ],
+                  &quot;targetLabel&quot;: &quot;dynamo_component_type&quot;
+                },
+                {
+                  &quot;action&quot;: &quot;replace&quot;,
+                  &quot;sourceLabels&quot;: [
+                    &quot;__meta_kubernetes_pod_label_nvidia_com_dynamo_graph_deployment_name&quot;
+                  ],
+                  &quot;targetLabel&quot;: &quot;dynamo_graph_deployment&quot;
+                }
+              ]
+            }
+          ],
+          &quot;selector&quot;: {
+            &quot;matchExpressions&quot;: [
+              {
+                &quot;key&quot;: &quot;nvidia.com/dynamo-component-type&quot;,
+                &quot;operator&quot;: &quot;In&quot;,
+                &quot;values&quot;: [
+                  &quot;worker&quot;,
+                  &quot;decode&quot;,
+                  &quot;prefill&quot;
+                ]
+              },
+              {
+                &quot;key&quot;: &quot;nvidia.com/metrics-enabled&quot;,
+                &quot;operator&quot;: &quot;In&quot;,
+                &quot;values&quot;: [
+                  &quot;true&quot;
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    &quot;kind&quot;: &quot;List&quot;,
+    &quot;metadata&quot;: {
+      &quot;resourceVersion&quot;: &quot;&quot;
+    }
+  },
+  &quot;servicemonitors&quot;: {
+    &quot;apiVersion&quot;: &quot;v1&quot;,
+    &quot;items&quot;: [
+      {
+        &quot;apiVersion&quot;: &quot;monitoring.coreos.com/v1&quot;,
+        &quot;kind&quot;: &quot;ServiceMonitor&quot;,
+        &quot;metadata&quot;: {
+          &quot;annotations&quot;: {
+            &quot;meta.helm.sh/release-name&quot;: &quot;dynamo-system&quot;,
+            &quot;meta.helm.sh/release-namespace&quot;: &quot;dynamo&quot;
+          },
+          &quot;creationTimestamp&quot;: &quot;2026-07-15T03:22:47Z&quot;,
+          &quot;generation&quot;: 1,
+          &quot;labels&quot;: {
+            &quot;app.kubernetes.io/instance&quot;: &quot;dynamo-system&quot;,
+            &quot;app.kubernetes.io/managed-by&quot;: &quot;Helm&quot;,
+            &quot;app.kubernetes.io/name&quot;: &quot;dynamo-operator&quot;,
+            &quot;app.kubernetes.io/version&quot;: &quot;1.4.1&quot;,
+            &quot;helm.sh/chart&quot;: &quot;dynamo-operator-1.4.1&quot;,
+            &quot;release&quot;: &quot;prometheus&quot;
+          },
+          &quot;name&quot;: &quot;dynamo-system-operator&quot;,
+          &quot;namespace&quot;: &quot;dynamo&quot;,
+          &quot;resourceVersion&quot;: &quot;194167025&quot;,
+          &quot;uid&quot;: &quot;e74164ff-cd76-4ee3-8688-cfe8f233dedb&quot;
+        },
+        &quot;spec&quot;: {
+          &quot;endpoints&quot;: [
+            {
+              &quot;bearerTokenFile&quot;: &quot;[REDACTED]&quot;,
+              &quot;interval&quot;: &quot;15s&quot;,
+              &quot;path&quot;: &quot;/metrics&quot;,
+              &quot;port&quot;: &quot;metrics&quot;,
+              &quot;scheme&quot;: &quot;https&quot;,
+              &quot;tlsConfig&quot;: {
+                &quot;insecureSkipVerify&quot;: true
+              }
+            }
+          ],
+          &quot;selector&quot;: {
+            &quot;matchLabels&quot;: {
+              &quot;app.kubernetes.io/instance&quot;: &quot;dynamo-system&quot;,
+              &quot;app.kubernetes.io/name&quot;: &quot;dynamo-operator&quot;,
+              &quot;control-plane&quot;: &quot;controller-manager&quot;
+            }
+          }
+        }
+      }
+    ],
+    &quot;kind&quot;: &quot;List&quot;,
+    &quot;metadata&quot;: {
+      &quot;resourceVersion&quot;: &quot;&quot;
+    }
+  }
+}</pre></details><details><summary>展开证据 · Collector pipeline</summary><pre>{
+  &quot;config.yaml&quot;: {
+    &quot;receivers&quot;: [
+      &quot;otlp&quot;,
+      &quot;prometheus&quot;
+    ],
+    &quot;processors&quot;: [
+      &quot;k8sattributes&quot;,
+      &quot;transform&quot;,
+      &quot;batch&quot;,
+      &quot;memory_limiter&quot;,
+      &quot;resource&quot;
+    ],
+    &quot;exporters&quot;: [
+      &quot;kafka&quot;,
+      &quot;prometheusremotewrite&quot;,
+      &quot;otlphttp&quot;,
+      &quot;debug&quot;
+    ],
+    &quot;pipelines&quot;: {
+      &quot;traces&quot;: {
+        &quot;receivers&quot;: [
+          &quot;otlp&quot;
+        ],
+        &quot;processors&quot;: [
+          &quot;memory_limiter&quot;,
+          &quot;k8sattributes&quot;,
+          &quot;transform&quot;,
+          &quot;batch&quot;
+        ],
+        &quot;exporters&quot;: [
+          &quot;kafka&quot;,
+          &quot;otlphttp&quot;,
+          &quot;debug&quot;
+        ]
+      },
+      &quot;metrics&quot;: {
+        &quot;receivers&quot;: [
+          &quot;prometheus&quot;
+        ],
+        &quot;processors&quot;: [
+          &quot;memory_limiter&quot;,
+          &quot;resource&quot;,
+          &quot;batch&quot;
+        ],
+        &quot;exporters&quot;: [
+          &quot;prometheusremotewrite&quot;
+        ]
+      }
+    }
+  }
+}</pre></details><details><summary>展开证据 · 实测 Prometheus targets / query</summary><pre>{
+  &quot;higress_targets&quot;: {
+    &quot;endpoint_path&quot;: &quot;/prometheus/api/v1/targets&quot;,
+    &quot;status&quot;: &quot;success&quot;,
+    &quot;total&quot;: 7,
+    &quot;jobs&quot;: [
+      &quot;k8s_nodes&quot;,
+      &quot;k8s_pods&quot;,
+      &quot;prometheus&quot;
+    ],
+    &quot;dynamo_targets&quot;: []
+  },
+  &quot;higress_dynamo_query&quot;: {
+    &quot;status&quot;: &quot;success&quot;,
+    &quot;result_count&quot;: 0
+  },
+  &quot;operator_metrics_unauthenticated&quot;: {
+    &quot;status&quot;: 401,
+    &quot;response&quot;: &quot;Unauthorized\n&quot;
+  }
+}</pre></details></section><section id="differences"><h2>06 / 版本边界和配置差异</h2><div class="scroll"><table><thead><tr><th>事实</th><th>应如何理解</th></tr></thead><tbody><tr><td>Operator 运行版本 1.4.1；本地教程基线为 1.7.0 workspace</td><td>此前源码中的 OTLP metrics、FPM、Frontend 统计等能力需按实际运行镜像重新验证。</td></tr><tr><td>DGD/DCD/ScalingAdapter CRD 同时 served v1alpha1 和 v1beta1；storage 仍是 v1alpha1</td><td>Operator 最近 INFO 日志内反复出现 v1alpha1 deprecation warning；这是弃用提示，不是已证实 reconcile 失败。</td></tr><tr><td>CRD 标签无法直接确定 release</td><td>仅凭 API 形状不能断定 CRD 来源或不兼容；更新前应核对 Operator、CRD、Chart 组合。</td></tr><tr><td>Worker Monitor generation=4；当前含 system-0/system-1</td><td>与部分新教程形态相似，也不能据此认定 Operator 二进制是新版。以镜像 digest 为准。</td></tr><tr><td>NATS Label 2.11.1，镜像与 /varz 2.10.21</td><td>运行版本优先于 Chart appVersion 标签；computed image 与 Pod 一致。</td></tr></tbody></table></div><details><summary>展开证据 · 实际 CRD 版本</summary><pre>[
+  {
+    &quot;name&quot;: &quot;dynamographdeployments.nvidia.com&quot;,
+    &quot;labels&quot;: {},
+    &quot;versions&quot;: [
+      {
+        &quot;name&quot;: &quot;v1alpha1&quot;,
+        &quot;served&quot;: true,
+        &quot;storage&quot;: true,
+        &quot;deprecated&quot;: true,
+        &quot;deprecationWarning&quot;: &quot;nvidia.com/v1alpha1 DynamoGraphDeployment is deprecated; use nvidia.com/v1beta1 DynamoGraphDeployment&quot;
+      },
+      {
+        &quot;name&quot;: &quot;v1beta1&quot;,
+        &quot;served&quot;: true,
+        &quot;storage&quot;: false,
+        &quot;deprecated&quot;: null,
+        &quot;deprecationWarning&quot;: null
+      }
+    ],
+    &quot;storedVersions&quot;: [
+      &quot;v1alpha1&quot;
+    ]
+  },
+  {
+    &quot;name&quot;: &quot;dynamocomponentdeployments.nvidia.com&quot;,
+    &quot;labels&quot;: {},
+    &quot;versions&quot;: [
+      {
+        &quot;name&quot;: &quot;v1alpha1&quot;,
+        &quot;served&quot;: true,
+        &quot;storage&quot;: true,
+        &quot;deprecated&quot;: true,
+        &quot;deprecationWarning&quot;: &quot;nvidia.com/v1alpha1 DynamoComponentDeployment is deprecated; use nvidia.com/v1beta1 DynamoComponentDeployment&quot;
+      },
+      {
+        &quot;name&quot;: &quot;v1beta1&quot;,
+        &quot;served&quot;: true,
+        &quot;storage&quot;: false,
+        &quot;deprecated&quot;: null,
+        &quot;deprecationWarning&quot;: null
+      }
+    ],
+    &quot;storedVersions&quot;: [
+      &quot;v1alpha1&quot;
+    ]
+  },
+  {
+    &quot;name&quot;: &quot;dynamographdeploymentscalingadapters.nvidia.com&quot;,
+    &quot;labels&quot;: {},
+    &quot;versions&quot;: [
+      {
+        &quot;name&quot;: &quot;v1alpha1&quot;,
+        &quot;served&quot;: true,
+        &quot;storage&quot;: true,
+        &quot;deprecated&quot;: true,
+        &quot;deprecationWarning&quot;: &quot;nvidia.com/v1alpha1 DynamoGraphDeploymentScalingAdapter is deprecated; use nvidia.com/v1beta1 DynamoGraphDeploymentScalingAdapter&quot;
+      },
+      {
+        &quot;name&quot;: &quot;v1beta1&quot;,
+        &quot;served&quot;: true,
+        &quot;storage&quot;: false,
+        &quot;deprecated&quot;: null,
+        &quot;deprecationWarning&quot;: null
+      }
+    ],
+    &quot;storedVersions&quot;: [
+      &quot;v1alpha1&quot;
+    ]
+  }
+]</pre></details></section><section id="next"><h2>07 / 下一步实施与验收顺序</h2><div class="scroll"><table><thead><tr><th>优先级</th><th>工作</th><th>验收标准</th></tr></thead><tbody><tr><td>P0</td><td>先确认 maas-dev 当前是否只作为平台预置；若需推理实战，选定一个模型与实际 runtime 镜像版本</td><td>出现对应 DGD/DCD/Frontend/Worker，能关联部署声明、镜像 digest 和模型服务。</td></tr><tr><td>P1</td><td>确认 ARMS 是否消费 Dynamo Monitor，并验证抓取身份 /metrics 权限</td><td>在实际采集后台找到 Operator target UP，并查到该版本真实存在的指标。</td></tr><tr><td>P1</td><td>明确应用指标采用 ARMS PodMonitor 或 Collector Prometheus receiver；防止重复采集</td><td>有流量后看到 Frontend/Worker/引擎序列，标签能关联模型、部署和 Pod。</td></tr><tr><td>P1</td><td>补齐日志、Trace Collector 路由和部署端变量，遵循实际 runtime 版本能力</td><td>请求 ID / Trace ID 可关联到前端和 Worker；不能只验收 Collector Running。</td></tr><tr><td>P2</td><td>补齐 Grove 与 NATS 遥测；按需要设计 NATS PVC 和副本策略</td><td>观测端点与采集格式匹配；若需持久化，单独验证重建后状态。</td></tr><tr><td>P2</td><td>核对 CRD/Operator/Chart 版本组合与弃用 API 迁移方案</td><td>不依据当前源码直接升级或修改 CRD storage。</td></tr></tbody></table></div><p>以上是分析后的实施建议，本次均未执行配置修改、部署新模型或升级。NATS 持久化与控制面 API 迁移应在有具体工作负载和恢复要求后再确定方案。</p></section><section id="evidence"><h2>08 / 证据与复查命令</h2><p>证据保留在本地目录，未查询 Kubernetes Secret，配置中敏感值已做筛除。配置快照、运行端点和外部监控后台的可见性是不同证据层级。</p><ul><li><a href="deployment-evidence.json">部署、Helm、容器、Monitor 与 ConfigMap 摘要</a></li><li><a href="monitoring-evidence.json">现有 Collector pipeline 与 ARMS 组件摘要</a></li><li><a href="runtime-checks.json">Operator / Grove / NATS / Prometheus 端点实测</a></li><li><a href="additional-checks.json">Higress 配置与 Operator 日志摘要</a></li><li><a href="crd-versions.json">CRD served/storage/deprecated 版本</a></li></ul><pre>kubectl config current-context
+kubectl --context=maas-dev get pods -n dynamo -o wide
+helm list --kube-context maas-dev -n dynamo
+kubectl --context=maas-dev get dynamographdeployments,dynamocomponentdeployments -A
+kubectl --context=maas-dev get podmonitor,servicemonitor -n dynamo
+python3 learning/maas-dev-deployment/collect.py</pre><p>collect.py 重新采集主要配置；本次临时端点检查结果在 runtime-checks.json，不会仅靠重跑 collect.py 自动刷新。历史快照不保证当前集群状态不变。</p><p><a href="../index.html">返回系统教程大纲</a> · <a href="../observability.html">回到可观测性源码解读</a></p></section><footer>本报告保存在本地，不会向外部服务发布。context 已按请求切换至 maas-dev；port-forward 完成后关闭。</footer></main></body></html>

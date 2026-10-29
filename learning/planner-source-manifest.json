@@ -1,0 +1,367 @@
+{
+  "revision": "2f296b59274867529ea8deef994e6954520024b6",
+  "scope": "Online native/builtin Planner with emphasis on observability inputs and outputs",
+  "inference_or_scaling_executed": false,
+  "excerpts": [
+    {
+      "id": "pl-main",
+      "path": "components/src/dynamo/planner/__main__.py",
+      "start": 33,
+      "end": 52,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "01b82cbb34a220909a27b68e7463ef553d6e556281386375dbd5f9248455b128"
+    },
+    {
+      "id": "pl-factory",
+      "path": "components/src/dynamo/planner/core/planner_factory.py",
+      "start": 71,
+      "end": 139,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "a36e1c46b714257ed927f009e14572e5e6dc384191ffce815b9e56fda5c38313"
+    },
+    {
+      "id": "pl-tick",
+      "path": "components/src/dynamo/planner/core/base.py",
+      "start": 986,
+      "end": 1023,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3a738f0ab2387492fd30375c06c994b0ab5d93ad3f66e69beaaa393a03f22dca"
+    },
+    {
+      "id": "pl-observebridge",
+      "path": "components/src/dynamo/planner/plugins/orchestrator/engine_adapter.py",
+      "start": 777,
+      "end": 788,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "65dc0daf1b8b8dea0cb5da7dac047d255c1453702e413afda54ea55df50fd38e"
+    },
+    {
+      "id": "pl-observe",
+      "path": "components/src/dynamo/planner/plugins/builtins/observe.py",
+      "start": 55,
+      "end": 80,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "87f7e128d8c7ef889f44fe80baacd816aa1a408daba3296a4d6c7aeba08382c5"
+    },
+    {
+      "id": "pl-normalize",
+      "path": "components/src/dynamo/planner/config/planner_config.py",
+      "start": 1758,
+      "end": 1775,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "a4bc624400defc39099c5f79753c6b534d8520190f7765a7dc798c31a7054a85"
+    },
+    {
+      "id": "pl-defaults",
+      "path": "components/src/dynamo/planner/config/defaults.py",
+      "start": 23,
+      "end": 110,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "5718500309f3b95269ef3b3dfcf478c557b6c29879a738c20ad7fce4d5d8e67f"
+    },
+    {
+      "id": "pl-query",
+      "path": "components/src/dynamo/planner/environment/metrics_provider/prometheus_traffic_provider.py",
+      "start": 158,
+      "end": 196,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "1d9069c8ef6f20f9fe2d21d4e60f600540129f9bf0949349bf3c8ea13f6e4324"
+    },
+    {
+      "id": "pl-average",
+      "path": "components/src/dynamo/planner/monitoring/traffic_metrics.py",
+      "start": 164,
+      "end": 247,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "5b39d68813e822f9fb88da03502e72a0934e6289648298c3615ef71c17fa052f"
+    },
+    {
+      "id": "pl-demand",
+      "path": "components/src/dynamo/planner/monitoring/traffic_metrics.py",
+      "start": 298,
+      "end": 433,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "5b39d68813e822f9fb88da03502e72a0934e6289648298c3615ef71c17fa052f"
+    },
+    {
+      "id": "pl-valid",
+      "path": "components/src/dynamo/planner/monitoring/traffic_metrics.py",
+      "start": 54,
+      "end": 89,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "5b39d68813e822f9fb88da03502e72a0934e6289648298c3615ef71c17fa052f"
+    },
+    {
+      "id": "pl-traffic",
+      "path": "components/src/dynamo/planner/environment/metrics_provider/prometheus_traffic_provider.py",
+      "start": 64,
+      "end": 112,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "1d9069c8ef6f20f9fe2d21d4e60f600540129f9bf0949349bf3c8ea13f6e4324"
+    },
+    {
+      "id": "pl-collectlock",
+      "path": "components/src/dynamo/planner/environment/metrics_provider/prometheus_traffic_provider.py",
+      "start": 114,
+      "end": 139,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "1d9069c8ef6f20f9fe2d21d4e60f600540129f9bf0949349bf3c8ea13f6e4324"
+    },
+    {
+      "id": "pl-cadence",
+      "path": "components/src/dynamo/planner/plugins/orchestrator/engine_adapter.py",
+      "start": 823,
+      "end": 935,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "65dc0daf1b8b8dea0cb5da7dac047d255c1453702e413afda54ea55df50fd38e"
+    },
+    {
+      "id": "pl-cheap",
+      "path": "components/src/dynamo/planner/environment/metrics_provider/prometheus_traffic_provider.py",
+      "start": 217,
+      "end": 248,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "1d9069c8ef6f20f9fe2d21d4e60f600540129f9bf0949349bf3c8ea13f6e4324"
+    },
+    {
+      "id": "pl-schema",
+      "path": "components/src/dynamo/common/forward_pass_metrics.py",
+      "start": 153,
+      "end": 196,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "b1551b47794b1ed30f1e6c90eea404cb7ce7769e0263c86f1375cd39fb35513b"
+    },
+    {
+      "id": "pl-sub",
+      "path": "components/src/dynamo/planner/environment/metrics_provider/runtime_provider.py",
+      "start": 144,
+      "end": 181,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "e80103ae4ae2e9d9b6bd937292132c0d55722178c7462f496707a49847ccc0a5"
+    },
+    {
+      "id": "pl-rustfresh",
+      "path": "lib/bindings/python/rust/llm/fpm.rs",
+      "start": 150,
+      "end": 188,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "c426b981f2ea0c90a9c86325df610281b32af341c14d6af204665678d5c51674"
+    },
+    {
+      "id": "pl-healthy",
+      "path": "components/src/dynamo/planner/environment/metrics_provider/runtime_provider.py",
+      "start": 192,
+      "end": 217,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "e80103ae4ae2e9d9b6bd937292132c0d55722178c7462f496707a49847ccc0a5"
+    },
+    {
+      "id": "pl-fit",
+      "path": "components/src/dynamo/planner/core/perf_model/ais_adapter.py",
+      "start": 323,
+      "end": 354,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "83062669ab454552e7182b2630c0cdc0c9aedb9b6966c113b4431b02ecfb6bba"
+    },
+    {
+      "id": "pl-capacity",
+      "path": "components/src/dynamo/planner/core/perf_model/ais_adapter.py",
+      "start": 550,
+      "end": 597,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "83062669ab454552e7182b2630c0cdc0c9aedb9b6966c113b4431b02ecfb6bba"
+    },
+    {
+      "id": "pl-bootstrap",
+      "path": "components/src/dynamo/planner/monitoring/perf_metrics.py",
+      "start": 39,
+      "end": 115,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "f06b88fcca16f70fe59783265a8bbcf69019b9f50a9c2f676cb3f02a4638c4a4"
+    },
+    {
+      "id": "pl-predictshape",
+      "path": "components/src/dynamo/planner/plugins/builtins/local_planner.py",
+      "start": 141,
+      "end": 163,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "4ce99f6ec4bb4f304298da7798e0ac89f4be26c310ede1c18f4c1c671da9e313"
+    },
+    {
+      "id": "pl-predict",
+      "path": "components/src/dynamo/planner/plugins/builtins/local_planner.py",
+      "start": 185,
+      "end": 256,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "4ce99f6ec4bb4f304298da7798e0ac89f4be26c310ede1c18f4c1c671da9e313"
+    },
+    {
+      "id": "pl-tp",
+      "path": "components/src/dynamo/planner/core/state_machine.py",
+      "start": 318,
+      "end": 371,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "4c532171377768ea2b4b465c56e1b9f898e56c88469065cd358d01e486146ce2"
+    },
+    {
+      "id": "pl-replicas",
+      "path": "components/src/dynamo/planner/core/throughput_scaling.py",
+      "start": 344,
+      "end": 436,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "08ec8868fbf191178523dcbfbbf6bcc98d5abcd16d36e7fde648381f924aa127"
+    },
+    {
+      "id": "pl-propose",
+      "path": "components/src/dynamo/planner/plugins/builtins/local_planner.py",
+      "start": 268,
+      "end": 296,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "4ce99f6ec4bb4f304298da7798e0ac89f4be26c310ede1c18f4c1c671da9e313"
+    },
+    {
+      "id": "pl-loadgates",
+      "path": "components/src/dynamo/planner/core/load_scaling.py",
+      "start": 158,
+      "end": 213,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "f79df563debfaa9710838e7bec1b2df59e6405b52124a58c7105d598c75e33c3"
+    },
+    {
+      "id": "pl-prefill",
+      "path": "components/src/dynamo/planner/core/load_scaling.py",
+      "start": 516,
+      "end": 623,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "f79df563debfaa9710838e7bec1b2df59e6405b52124a58c7105d598c75e33c3"
+    },
+    {
+      "id": "pl-decode",
+      "path": "components/src/dynamo/planner/core/load_scaling.py",
+      "start": 625,
+      "end": 716,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "f79df563debfaa9710838e7bec1b2df59e6405b52124a58c7105d598c75e33c3"
+    },
+    {
+      "id": "pl-decision",
+      "path": "components/src/dynamo/planner/core/load_scaling.py",
+      "start": 1176,
+      "end": 1227,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "f79df563debfaa9710838e7bec1b2df59e6405b52124a58c7105d598c75e33c3"
+    },
+    {
+      "id": "pl-easy-prefill",
+      "path": "components/src/dynamo/planner/core/load_scaling.py",
+      "start": 944,
+      "end": 977,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "f79df563debfaa9710838e7bec1b2df59e6405b52124a58c7105d598c75e33c3"
+    },
+    {
+      "id": "pl-easy-decode",
+      "path": "components/src/dynamo/planner/core/load_scaling.py",
+      "start": 1049,
+      "end": 1068,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "f79df563debfaa9710838e7bec1b2df59e6405b52124a58c7105d598c75e33c3"
+    },
+    {
+      "id": "pl-mixed",
+      "path": "components/src/dynamo/planner/plugins/builtins/local_planner.py",
+      "start": 308,
+      "end": 368,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "4ce99f6ec4bb4f304298da7798e0ac89f4be26c310ede1c18f4c1c671da9e313"
+    },
+    {
+      "id": "pl-submit",
+      "path": "components/src/dynamo/planner/core/base.py",
+      "start": 709,
+      "end": 777,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3a738f0ab2387492fd30375c06c994b0ab5d93ad3f66e69beaaa393a03f22dca"
+    },
+    {
+      "id": "pl-advisory",
+      "path": "components/src/dynamo/planner/core/base.py",
+      "start": 844,
+      "end": 849,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3a738f0ab2387492fd30375c06c994b0ab5d93ad3f66e69beaaa393a03f22dca"
+    },
+    {
+      "id": "pl-effect",
+      "path": "components/src/dynamo/planner/core/adapters.py",
+      "start": 200,
+      "end": 235,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3ea0e173ee8d148e6baa9d0224fbd758e88f13819813630a0f89cd939e924e68"
+    },
+    {
+      "id": "pl-publish",
+      "path": "components/src/dynamo/planner/core/base.py",
+      "start": 555,
+      "end": 605,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3a738f0ab2387492fd30375c06c994b0ab5d93ad3f66e69beaaa393a03f22dca"
+    },
+    {
+      "id": "pl-diag",
+      "path": "components/src/dynamo/planner/core/base.py",
+      "start": 923,
+      "end": 971,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3a738f0ab2387492fd30375c06c994b0ab5d93ad3f66e69beaaa393a03f22dca"
+    },
+    {
+      "id": "pl-gpu",
+      "path": "components/src/dynamo/planner/core/base.py",
+      "start": 898,
+      "end": 920,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3a738f0ab2387492fd30375c06c994b0ab5d93ad3f66e69beaaa393a03f22dca"
+    },
+    {
+      "id": "pl-expose",
+      "path": "components/src/dynamo/planner/core/base.py",
+      "start": 128,
+      "end": 155,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3a738f0ab2387492fd30375c06c994b0ab5d93ad3f66e69beaaa393a03f22dca"
+    },
+    {
+      "id": "pl-signal",
+      "path": "components/src/dynamo/planner/monitoring/signal_health.py",
+      "start": 21,
+      "end": 125,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "ed6663b1d64956e1ae95efad55b96e1b17340c6e16fd00558513dbf0bf96682a"
+    },
+    {
+      "id": "pl-signalmetrics",
+      "path": "components/src/dynamo/planner/monitoring/planner_metrics.py",
+      "start": 240,
+      "end": 288,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "3a826d46776c9854ce300e6535a9c9109b2c27fe0c383a12499a6925af851ea5"
+    },
+    {
+      "id": "pl-healthtest",
+      "path": "components/src/dynamo/planner/tests/unit/test_signal_health.py",
+      "start": 53,
+      "end": 74,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "f5a6b53c1ebd36f1b7eb6a077f5d2fb0a6910e47c883daaa54b9b49b3a21ccd9"
+    },
+    {
+      "id": "pl-kv",
+      "path": "components/src/dynamo/planner/monitoring/traffic_metrics.py",
+      "start": 463,
+      "end": 528,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "5b39d68813e822f9fb88da03502e72a0934e6289648298c3615ef71c17fa052f"
+    }
+  ]
+}

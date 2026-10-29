@@ -1,0 +1,840 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>PD 全链路 Trace：支持到哪里？ · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 系统地图与讨论大纲</a><a href="observability.html">01 · 可观测性源码</a><a href="planner.html">08 · Planner 源码</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#pd-verdict">01 支持结论</a><a href="#pd-map">02 两类平面</a><a href="#pd-request">03 Request Plane</a><a href="#pd-handoff">04 PD handoff / Link</a><a href="#pd-engines">05 引擎内部</a><a href="#pd-events">06 Event Plane 断点</a><a href="#pd-storage">07 KV 存储</a><a href="#pd-nixl">08 NIXL 传输</a><a href="#pd-config">09 配置支持范围</a><a href="#pd-extension">10 扩展工作</a><a href="#pd-acceptance">11 验收方法</a><a href="#pd-evidence">12 源码证据</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 2f296b592</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>PD 全链路 Trace：支持到哪里？</h1><p class="lede">核对 Request Plane、KV 存储、异步事件与 NIXL 边界，区分上下文传播、因果关联、局部计时与真正的全链路覆盖。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 2f296b592</span><span class="pill ">PD Trace 源码专题 v0.1</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="pd-verdict" class="lesson"><div class="sectionhead"><h2>01 / 结论：请求主链可串，跨数据面全覆盖需补齐</h2><label class="done"><input type="checkbox" data-read="pd-verdict"> 已读</label></div><p><strong>当前 Dynamo 有 PD 请求主链的分布式上下文传播与部分因果关联能力，但不能把“Request Plane + KV 存储 + Events + NIXL 底层传输”整体视为已经开箱即用的一棵完整 OTel trace 树。</strong></p><p>本章固定代码 <code>2f296b592</code>，分析日期 2026-10-29。源码能力不同于线上已验证能力；未运行 PD 请求、抓取线上 Trace 或修改部署。外部引擎及 NIXL 版本可能独立变化。</p><div class="tablewrap"><table><thead><tr><th>范围</th><th>支持程度</th><th>判断依据</th></tr></thead><tbody><tr><td>HTTP Frontend → Runtime 请求传输 → Worker</td><td>已有传播契约</td><td>提取 W3C Context、注入请求 Header、接收侧 set_parent</td></tr><tr><td>Prefill → Decode handoff</td><td>支持特定路径的 OTel Link</td><td>Completed handoff 携带 worker_trace_link；Bootstrap 路径单独处理</td></tr><tr><td>Engine generate 与引擎内部</td><td>框架与参数接口已有；内部覆盖依 backend</td><td>engine.generate、Context.trace_headers、各引擎调用参数</td></tr><tr><td>KV 存储/缓存操作</td><td>部分本地 instrumentation / ID / 计时；未形成所审路径的统一跨异步 trace 契约</td><td>调度请求有 request_id/uuid；后台批处理和 TimingTrace 不能自动形成因果树</td></tr><tr><td>KV / FPM / 路由状态 Event Plane</td><td>通用传输没有自动 W3C 传播</td><td>EventEnvelope 无 Context；NATS publish 无 headers；ZMQ frames 无额外 trace metadata</td></tr><tr><td>NIXL 传输</td><td>遥测与局部诊断可用；不是通用请求级 trace 保证</td><td>KV transfer executor 负责 create/post/异步完成；需要明确绑定发起请求与完成回调</td></tr></tbody></table></div><aside class="note ">判断“全链路”要同时满足：上下文传播、操作 span、正确开始/完成边界、异步关联与导出。能搜到同一个 request_id，或者能画出传输耗时直方图，都不足以证明这些条件。</aside></section><section id="pd-map" class="lesson"><div class="sectionhead"><h2>02 / 把请求控制流与 KV 数据流分开</h2><label class="done"><input type="checkbox" data-read="pd-map"> 已读</label></div><div class="diagram"><div class="lane"><b>Request Plane</b><span>客户端 W3C Context → Frontend HTTP span → Router / Dispatch → Prefill Worker → Decode Worker → SSE 返回</span></div><div class="lane"><b>Engine KV 数据面</b><span>Prefill KV cache ↔ Engine connector / NIXL ↔ Decode KV cache；具体引擎可能使用 pull、push 或异步 bootstrap</span></div><div class="lane"><b>KV 分层存储</b><span>GPU ↔ CPU ↔ SSD / 远端，由所用 KVBM、引擎 connector 或其他缓存系统负责</span></div><div class="lane"><b>Events</b><span>Worker / Router / FPM publisher → NATS 或 ZMQ → 索引/订阅消费者；不是请求 RPC</span></div></div><p>PD 分离不要求所有 KV 都经过 Dynamo KVBM。vLLM/SGLang/TRT-LLM 的 connector、Dynamo KVBM、LMCache 等是不同实现边界；不能用一个 executor 的行为代替所有引擎数据面。</p><p>Span Link 表示因果关系，不会把两个已有 Trace ID 强行合并。共享缓存、批量搬运和广播事件通常是多对多关系，不适合全部硬挂成单个请求的子 span。</p></section><section id="pd-request" class="lesson"><div class="sectionhead"><h2>03 / Request Plane 已有的上下文契约</h2><label class="done"><input type="checkbox" data-read="pd-request"> 已读</label></div><details class="source" id="src-pd-root"><summary><b>源码 · Frontend 根/子 HTTP span：提取上游并 set_parent</b><small>lib/runtime/src/logging.rs:623–665</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/logging.rs#L623-L665" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>623</i>pub fn make_inference_request_span&lt;B&gt;(req: &amp;Request&lt;B&gt;) -&gt; Span {</span>
+<span class="line"><i>624</i>    let method = req.method();</span>
+<span class="line"><i>625</i>    let uri = req.uri();</span>
+<span class="line"><i>626</i>    let version = format!(&quot;{:?}&quot;, req.version());</span>
+<span class="line"><i>627</i>    let (trace_parent, otel_context) = extract_trace_parent(req.headers());</span>
+<span class="line"><i>628</i></span>
+<span class="line"><i>629</i>    // Ensure every inference request has a request_id on the span.</span>
+<span class="line"><i>630</i>    // This is the single source of truth — workers and get_or_create_request_id</span>
+<span class="line"><i>631</i>    // read it back via DistributedTraceIdLayer.</span>
+<span class="line"><i>632</i>    let request_id = trace_parent</span>
+<span class="line"><i>633</i>        .request_id</span>
+<span class="line"><i>634</i>        .unwrap_or_else(|| Uuid::new_v4().to_string());</span>
+<span class="line"><i>635</i></span>
+<span class="line"><i>636</i>    let span = tracing::info_span!(</span>
+<span class="line"><i>637</i>            target: &quot;request_span&quot;,</span>
+<span class="line"><i>638</i>        &quot;http-request&quot;,</span>
+<span class="line"><i>639</i>        method = %method,</span>
+<span class="line"><i>640</i>        uri = %uri,</span>
+<span class="line"><i>641</i>        version = %version,</span>
+<span class="line"><i>642</i>        trace_id = trace_parent.trace_id,</span>
+<span class="line"><i>643</i>        parent_id = trace_parent.parent_id,</span>
+<span class="line"><i>644</i>        trace_flags = trace_parent.trace_flags,</span>
+<span class="line"><i>645</i>        x_request_id = trace_parent.x_request_id,</span>
+<span class="line"><i>646</i>        request_id = %request_id,</span>
+<span class="line"><i>647</i>        model = tracing::field::Empty,</span>
+<span class="line"><i>648</i>        &quot;request.outcome&quot; = tracing::field::Empty,</span>
+<span class="line"><i>649</i>        input_tokens = tracing::field::Empty,</span>
+<span class="line"><i>650</i>        output_tokens = tracing::field::Empty,</span>
+<span class="line"><i>651</i>        image_count = tracing::field::Empty,</span>
+<span class="line"><i>652</i>        video_count = tracing::field::Empty,</span>
+<span class="line"><i>653</i>        audio_count = tracing::field::Empty,</span>
+<span class="line"><i>654</i>        ttft_ms = tracing::field::Empty,</span>
+<span class="line"><i>655</i>        avg_itl_ms = tracing::field::Empty,</span>
+<span class="line"><i>656</i>        prefill_worker_id = tracing::field::Empty,</span>
+<span class="line"><i>657</i>        decode_worker_id = tracing::field::Empty,</span>
+<span class="line"><i>658</i>    );</span>
+<span class="line"><i>659</i></span>
+<span class="line"><i>660</i>    if let Some(context) = otel_context {</span>
+<span class="line"><i>661</i>        let _ = span.set_parent(context);</span>
+<span class="line"><i>662</i>    }</span>
+<span class="line"><i>663</i></span>
+<span class="line"><i>664</i>    span</span>
+<span class="line"><i>665</i>}</span></code></pre></details><details class="source" id="src-pd-inject"><summary><b>源码 · 注入 traceparent / tracestate / 请求 ID</b><small>lib/runtime/src/logging.rs:852–873</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/logging.rs#L852-L873" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>852</i>pub fn inject_trace_headers_into_map(headers: &amp;mut std::collections::HashMap&lt;String, String&gt;) {</span>
+<span class="line"><i>853</i>    if let Some(trace_context) = get_distributed_tracing_context() {</span>
+<span class="line"><i>854</i>        // Inject W3C traceparent header</span>
+<span class="line"><i>855</i>        headers.insert(</span>
+<span class="line"><i>856</i>            &quot;traceparent&quot;.to_string(),</span>
+<span class="line"><i>857</i>            trace_context.create_traceparent(),</span>
+<span class="line"><i>858</i>        );</span>
+<span class="line"><i>859</i></span>
+<span class="line"><i>860</i>        // Inject optional tracestate</span>
+<span class="line"><i>861</i>        if let Some(tracestate) = trace_context.tracestate {</span>
+<span class="line"><i>862</i>            headers.insert(&quot;tracestate&quot;.to_string(), tracestate);</span>
+<span class="line"><i>863</i>        }</span>
+<span class="line"><i>864</i></span>
+<span class="line"><i>865</i>        // Inject custom request IDs</span>
+<span class="line"><i>866</i>        if let Some(x_request_id) = trace_context.x_request_id {</span>
+<span class="line"><i>867</i>            headers.insert(&quot;x-request-id&quot;.to_string(), x_request_id);</span>
+<span class="line"><i>868</i>        }</span>
+<span class="line"><i>869</i>        if let Some(request_id) = trace_context.request_id {</span>
+<span class="line"><i>870</i>            headers.insert(&quot;request-id&quot;.to_string(), request_id);</span>
+<span class="line"><i>871</i>        }</span>
+<span class="line"><i>872</i>    }</span>
+<span class="line"><i>873</i>}</span></code></pre></details><details class="source" id="src-pd-dispatch"><summary><b>源码 · TCP request-plane dispatch 明确注入 Header</b><small>lib/runtime/src/pipeline/network/egress/addressed_router.rs:1045–1073</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/pipeline/network/egress/addressed_router.rs#L1045-L1073" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1045</i>    /// frontend send-timestamp) and write the encoded buffer through the</span>
+<span class="line"><i>1046</i>    /// request-plane client.</span>
+<span class="line"><i>1047</i>    ///</span>
+<span class="line"><i>1048</i>    /// Returns the request-plane ACK bytes (empty `TcpResponseMessage` on the</span>
+<span class="line"><i>1049</i>    /// success path; a rejection-marker payload when the worker rejects the</span>
+<span class="line"><i>1050</i>    /// request — see [`detect_worker_rejection_response`]).</span>
+<span class="line"><i>1051</i>    async fn dispatch_buffer(</span>
+<span class="line"><i>1052</i>        &amp;self,</span>
+<span class="line"><i>1053</i>        address: String,</span>
+<span class="line"><i>1054</i>        buffer: bytes::Bytes,</span>
+<span class="line"><i>1055</i>        request_id: &amp;str,</span>
+<span class="line"><i>1056</i>    ) -&gt; Result&lt;bytes::Bytes, Error&gt; {</span>
+<span class="line"><i>1057</i>        let mut headers = std::collections::HashMap::new();</span>
+<span class="line"><i>1058</i>        inject_trace_headers_into_map(&amp;mut headers);</span>
+<span class="line"><i>1059</i>        headers.insert(&quot;request-id&quot;.to_string(), request_id.to_string());</span>
+<span class="line"><i>1060</i>        let send_ts_ns = std::time::SystemTime::now()</span>
+<span class="line"><i>1061</i>            .duration_since(std::time::UNIX_EPOCH)</span>
+<span class="line"><i>1062</i>            .unwrap_or_default()</span>
+<span class="line"><i>1063</i>            .as_nanos() as u64;</span>
+<span class="line"><i>1064</i>        headers.insert(&quot;x-frontend-send-ts-ns&quot;.to_string(), send_ts_ns.to_string());</span>
+<span class="line"><i>1065</i></span>
+<span class="line"><i>1066</i>        let _nvtx_send = dynamo_nvtx_range!(&quot;transport.tcp.send&quot;);</span>
+<span class="line"><i>1067</i>        let ack = self</span>
+<span class="line"><i>1068</i>            .req_client</span>
+<span class="line"><i>1069</i>            .send_request(address, buffer, headers)</span>
+<span class="line"><i>1070</i>            .await?;</span>
+<span class="line"><i>1071</i>        drop(_nvtx_send);</span>
+<span class="line"><i>1072</i>        Ok(ack)</span>
+<span class="line"><i>1073</i>    }</span></code></pre></details><details class="source" id="src-pd-ingress"><summary><b>源码 · 接收侧建立并 instrument handle_payload</b><small>lib/runtime/src/pipeline/network/ingress/shared_tcp_endpoint.rs:286–337</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/pipeline/network/ingress/shared_tcp_endpoint.rs#L286-L337" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>286</i>    async fn handle_work_item(work_item: WorkItem) {</span>
+<span class="line"><i>287</i>        tracing::trace!(</span>
+<span class="line"><i>288</i>            instance_id = work_item.instance_id,</span>
+<span class="line"><i>289</i>            &quot;TCP worker processing request&quot;</span>
+<span class="line"><i>290</i>        );</span>
+<span class="line"><i>291</i></span>
+<span class="line"><i>292</i>        // Compute network transit time from the transport header stamped right</span>
+<span class="line"><i>293</i>        // before the TCP write on the frontend side.</span>
+<span class="line"><i>294</i>        if let Some(t1_str) = work_item.headers.get(&quot;x-frontend-send-ts-ns&quot;)</span>
+<span class="line"><i>295</i>            &amp;&amp; let Ok(t1_ns) = t1_str.parse::&lt;u64&gt;()</span>
+<span class="line"><i>296</i>        {</span>
+<span class="line"><i>297</i>            let t2_ns = std::time::SystemTime::now()</span>
+<span class="line"><i>298</i>                .duration_since(std::time::UNIX_EPOCH)</span>
+<span class="line"><i>299</i>                .unwrap_or_default()</span>
+<span class="line"><i>300</i>                .as_nanos() as u64;</span>
+<span class="line"><i>301</i>            let transit_ns = t2_ns.saturating_sub(t1_ns);</span>
+<span class="line"><i>302</i>            crate::metrics::work_handler_perf::WORK_HANDLER_NETWORK_TRANSIT_SECONDS</span>
+<span class="line"><i>303</i>                .observe(transit_ns as f64 / 1_000_000_000.0);</span>
+<span class="line"><i>304</i>        }</span>
+<span class="line"><i>305</i></span>
+<span class="line"><i>306</i>        // Create span with trace context from headers</span>
+<span class="line"><i>307</i>        let span = crate::logging::make_handle_payload_span_from_tcp_headers(</span>
+<span class="line"><i>308</i>            &amp;work_item.headers,</span>
+<span class="line"><i>309</i>            &amp;work_item.component_name,</span>
+<span class="line"><i>310</i>            &amp;work_item.endpoint_name,</span>
+<span class="line"><i>311</i>            &amp;work_item.namespace,</span>
+<span class="line"><i>312</i>            work_item.instance_id,</span>
+<span class="line"><i>313</i>        );</span>
+<span class="line"><i>314</i></span>
+<span class="line"><i>315</i>        let request_id = work_item</span>
+<span class="line"><i>316</i>            .headers</span>
+<span class="line"><i>317</i>            .get(&quot;request-id&quot;)</span>
+<span class="line"><i>318</i>            .or_else(|| work_item.headers.get(&quot;x-dynamo-request-id&quot;))</span>
+<span class="line"><i>319</i>            .cloned();</span>
+<span class="line"><i>320</i></span>
+<span class="line"><i>321</i>        let result = work_item</span>
+<span class="line"><i>322</i>            .service_handler</span>
+<span class="line"><i>323</i>            .handle_payload(work_item.payload, request_id)</span>
+<span class="line"><i>324</i>            .instrument(span)</span>
+<span class="line"><i>325</i>            .await;</span>
+<span class="line"><i>326</i></span>
+<span class="line"><i>327</i>        if let Err(e) = result {</span>
+<span class="line"><i>328</i>            tracing::warn!(</span>
+<span class="line"><i>329</i>                instance_id = work_item.instance_id,</span>
+<span class="line"><i>330</i>                error = %e,</span>
+<span class="line"><i>331</i>                &quot;TCP worker failed to handle request&quot;</span>
+<span class="line"><i>332</i>            );</span>
+<span class="line"><i>333</i>        }</span>
+<span class="line"><i>334</i></span>
+<span class="line"><i>335</i>        work_item.inflight.fetch_sub(1, Ordering::SeqCst);</span>
+<span class="line"><i>336</i>        work_item.notify.notify_one();</span>
+<span class="line"><i>337</i>    }</span></code></pre></details><p>这条链路是实际传输和处理代码中的显式行为，不只是控制台日志格式。缺少入站 Context、采样关闭、异步任务没有继承当前 span，仍可能造成独立根或不可见片段。</p><aside class="note ">Router 在请求路径上不代表每个排队/选择细节已有独立 span。当前 lifecycle 代码明确把更细的 router queue/selection 阶段留给后续 instrumentation；不能照旧文档示意树承诺所有 span 名称稳定存在。</aside><details class="source" id="src-pd-lifecycle"><summary><b>源码 · 生命周期边界只覆盖粗粒度 runtime 阶段</b><small>lib/runtime/src/telemetry.rs:122–147</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/telemetry.rs#L122-L147" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>122</i>/// runtime boundaries around the worker operation; they are not direct engine</span>
+<span class="line"><i>123</i>/// execution measurements.</span>
+<span class="line"><i>124</i>///</span>
+<span class="line"><i>125</i>/// Router queue and selection stages are intentionally deferred. A later</span>
+<span class="line"><i>126</i>/// instrumentation milestone will add spans at the actual scheduling</span>
+<span class="line"><i>127</i>/// boundaries together with the router-specific metrics and invariants needed</span>
+<span class="line"><i>128</i>/// to interpret them.</span>
+<span class="line"><i>129</i>#[derive(Clone, Copy, Debug, Eq, PartialEq)]</span>
+<span class="line"><i>130</i>pub enum LifecycleStage {</span>
+<span class="line"><i>131</i>    RequestLifecycle,</span>
+<span class="line"><i>132</i>    RequestPreprocessing,</span>
+<span class="line"><i>133</i>    WorkerAdmission,</span>
+<span class="line"><i>134</i>    RequestDispatch,</span>
+<span class="line"><i>135</i>    WorkerOperation,</span>
+<span class="line"><i>136</i>    WorkerOperationEncode,</span>
+<span class="line"><i>137</i>    WorkerOperationPrefill,</span>
+<span class="line"><i>138</i>    WorkerOperationDecode,</span>
+<span class="line"><i>139</i>    ResponseStreaming,</span>
+<span class="line"><i>140</i>    ResponseStreamingEncode,</span>
+<span class="line"><i>141</i>    ResponseStreamingPrefill,</span>
+<span class="line"><i>142</i>    ResponseStreamingDecode,</span>
+<span class="line"><i>143</i>    ResponseStreamingWorker,</span>
+<span class="line"><i>144</i>}</span>
+<span class="line"><i>145</i></span>
+<span class="line"><i>146</i>impl LifecycleStage {</span>
+<span class="line"><i>147</i>    const fn component(self) -&gt; &amp;&#x27;static str {</span></code></pre></details><details class="exercise"><summary>阅读检查 · 开启 OTLP 能否自动生成每个函数的 span？</summary><p>不能。Exporter 只导出已创建并保留的 span，缺少埋点和上下文边界的操作仍然不可见。</p></details></section><section id="pd-handoff" class="lesson"><div class="sectionhead"><h2>04 / PD handoff：前驱信息与真正的 OTel Link</h2><label class="done"><input type="checkbox" data-read="pd-handoff"> 已读</label></div><details class="source" id="src-pd-autospan"><summary><b>源码 · engine.generate：span、前驱 Link 和自身身份</b><small>lib/backend-common/src/adapter.rs:227–307</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/backend-common/src/adapter.rs#L227-L307" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>227</i>    async fn generate(</span>
+<span class="line"><i>228</i>        &amp;self,</span>
+<span class="line"><i>229</i>        input: SingleIn&lt;PreprocessedRequest&gt;,</span>
+<span class="line"><i>230</i>    ) -&gt; Result&lt;ManyOut&lt;Annotated&lt;LLMEngineOutput&gt;&gt;, Error&gt; {</span>
+<span class="line"><i>231</i>        let (request, handle) = input.into_parts();</span>
+<span class="line"><i>232</i>        let ctx: Arc&lt;dyn AsyncEngineContext&gt; = handle.context();</span>
+<span class="line"><i>233</i></span>
+<span class="line"><i>234</i>        // Per-request worker-side span. Nests under `handle_payload` (set up</span>
+<span class="line"><i>235</i>        // by the runtime&#x27;s NATS ingress) so the trace tree has a contiguous</span>
+<span class="line"><i>236</i>        // worker layer. Attributes get filled in across the stream lifecycle:</span>
+<span class="line"><i>237</i>        // - `model`, `input_tokens`, `disagg_role` on entry,</span>
+<span class="line"><i>238</i>        // - `migration_trace_id` / `migration_span_id` on entry when the</span>
+<span class="line"><i>239</i>        //   request carries a predecessor link (prefill→decode handoff or</span>
+<span class="line"><i>240</i>        //   migration retry),</span>
+<span class="line"><i>241</i>        // - `ttft_ms` on first non-empty chunk,</span>
+<span class="line"><i>242</i>        // - `output_tokens`, `finish_reason`, `cancelled`, `itl_*_ms` on</span>
+<span class="line"><i>243</i>        //   terminal.</span>
+<span class="line"><i>244</i>        let span = tracing::info_span!(</span>
+<span class="line"><i>245</i>            target: &quot;request_span&quot;,</span>
+<span class="line"><i>246</i>            &quot;engine.generate&quot;,</span>
+<span class="line"><i>247</i>            model = %request.model,</span>
+<span class="line"><i>248</i>            input_tokens = request.token_ids.len(),</span>
+<span class="line"><i>249</i>            disagg_role = self.mode.as_str(),</span>
+<span class="line"><i>250</i>            migration_trace_id = tracing::field::Empty,</span>
+<span class="line"><i>251</i>            migration_span_id = tracing::field::Empty,</span>
+<span class="line"><i>252</i>            ttft_ms = tracing::field::Empty,</span>
+<span class="line"><i>253</i>            output_tokens = tracing::field::Empty,</span>
+<span class="line"><i>254</i>            finish_reason = tracing::field::Empty,</span>
+<span class="line"><i>255</i>            cancelled = tracing::field::Empty,</span>
+<span class="line"><i>256</i>            error_kind = tracing::field::Empty,</span>
+<span class="line"><i>257</i>            avg_itl_ms = tracing::field::Empty,</span>
+<span class="line"><i>258</i>            itl_p50_ms = tracing::field::Empty,</span>
+<span class="line"><i>259</i>            itl_p99_ms = tracing::field::Empty,</span>
+<span class="line"><i>260</i>            itl_max_ms = tracing::field::Empty,</span>
+<span class="line"><i>261</i>        );</span>
+<span class="line"><i>262</i></span>
+<span class="line"><i>263</i>        // If this request was migrated (either prefill→decode handoff or a</span>
+<span class="line"><i>264</i>        // retry from a previous attempt), attach a real OTel Link from</span>
+<span class="line"><i>265</i>        // engine.generate to the predecessor&#x27;s span. Tempo / Jaeger render</span>
+<span class="line"><i>266</i>        // this as a directional pointer — operators can trace the</span>
+<span class="line"><i>267</i>        // request&#x27;s path through any number of hops without copy-pasting</span>
+<span class="line"><i>268</i>        // span IDs. Attribute fallback (`migration_trace_id` /</span>
+<span class="line"><i>269</i>        // `migration_span_id`) covers JSONL log readers.</span>
+<span class="line"><i>270</i>        if let Some(link) = request.migration_link.as_ref() {</span>
+<span class="line"><i>271</i>            span.record(&quot;migration_trace_id&quot;, link.trace_id.as_str());</span>
+<span class="line"><i>272</i>            span.record(&quot;migration_span_id&quot;, link.span_id.as_str());</span>
+<span class="line"><i>273</i>            if let (Ok(trace_id), Ok(span_id)) = (</span>
+<span class="line"><i>274</i>                TraceId::from_hex(&amp;link.trace_id),</span>
+<span class="line"><i>275</i>                SpanId::from_hex(&amp;link.span_id),</span>
+<span class="line"><i>276</i>            ) {</span>
+<span class="line"><i>277</i>                span.add_link(SpanContext::new(</span>
+<span class="line"><i>278</i>                    trace_id,</span>
+<span class="line"><i>279</i>                    span_id,</span>
+<span class="line"><i>280</i>                    TraceFlags::SAMPLED,</span>
+<span class="line"><i>281</i>                    true, // is_remote</span>
+<span class="line"><i>282</i>                    TraceState::default(),</span>
+<span class="line"><i>283</i>                ));</span>
+<span class="line"><i>284</i>            }</span>
+<span class="line"><i>285</i>        }</span>
+<span class="line"><i>286</i></span>
+<span class="line"><i>287</i>        // Capture this worker&#x27;s trace identity once, for stamping on the</span>
+<span class="line"><i>288</i>        // first non-empty chunk. Yields None when `DistributedTraceIdLayer`</span>
+<span class="line"><i>289</i>        // is not installed.</span>
+<span class="line"><i>290</i>        let worker_trace_link: Option&lt;dynamo_llm::protocols::common::preprocessor::TraceLink&gt; = {</span>
+<span class="line"><i>291</i>            let link = span.in_scope(|| {</span>
+<span class="line"><i>292</i>                dynamo_runtime::logging::get_distributed_tracing_context().map(|tc| {</span>
+<span class="line"><i>293</i>                    dynamo_llm::protocols::common::preprocessor::TraceLink {</span>
+<span class="line"><i>294</i>                        trace_id: tc.trace_id,</span>
+<span class="line"><i>295</i>                        span_id: tc.span_id,</span>
+<span class="line"><i>296</i>                    }</span>
+<span class="line"><i>297</i>                })</span>
+<span class="line"><i>298</i>            });</span>
+<span class="line"><i>299</i>            if link.is_none() {</span>
+<span class="line"><i>300</i>                tracing::trace!(</span>
+<span class="line"><i>301</i>                    &quot;worker_trace_link inactive — no DistributedTraceContext on \</span>
+<span class="line"><i>302</i>                     engine.generate (enable OTLP export or JSONL trace context)&quot;</span>
+<span class="line"><i>303</i>                );</span>
+<span class="line"><i>304</i>            }</span>
+<span class="line"><i>305</i>            link</span>
+<span class="line"><i>306</i>        };</span>
+<span class="line"><i>307</i></span></code></pre></details><details class="source" id="src-pd-handoff"><summary><b>源码 · Completed 与 Bootstrap 两类 handoff</b><small>lib/llm/src/kv_router/prefill_router/mod.rs:127–157</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/kv_router/prefill_router/mod.rs#L127-L157" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>127</i>fn into_decode_request(</span>
+<span class="line"><i>128</i>    mut req: PreprocessedRequest,</span>
+<span class="line"><i>129</i>    outcome: PrefillOutcome,</span>
+<span class="line"><i>130</i>) -&gt; PreprocessedRequest {</span>
+<span class="line"><i>131</i>    match outcome {</span>
+<span class="line"><i>132</i>        PrefillOutcome::Bootstrap {</span>
+<span class="line"><i>133</i>            bootstrap_info,</span>
+<span class="line"><i>134</i>            worker_id,</span>
+<span class="line"><i>135</i>            prefill_dp_rank,</span>
+<span class="line"><i>136</i>        } =&gt; {</span>
+<span class="line"><i>137</i>            req.bootstrap_info = Some(bootstrap_info);</span>
+<span class="line"><i>138</i>            let routing = req.routing_mut();</span>
+<span class="line"><i>139</i>            routing.prefill_worker_id = Some(worker_id);</span>
+<span class="line"><i>140</i>            routing.prefill_dp_rank = prefill_dp_rank;</span>
+<span class="line"><i>141</i>        }</span>
+<span class="line"><i>142</i>        PrefillOutcome::Completed {</span>
+<span class="line"><i>143</i>            result,</span>
+<span class="line"><i>144</i>            worker_id,</span>
+<span class="line"><i>145</i>            worker_link,</span>
+<span class="line"><i>146</i>        } =&gt; {</span>
+<span class="line"><i>147</i>            req.prefill_result = Some(result);</span>
+<span class="line"><i>148</i>            req.migration_link = worker_link;</span>
+<span class="line"><i>149</i>            req.routing_mut().prefill_worker_id = Some(worker_id);</span>
+<span class="line"><i>150</i>        }</span>
+<span class="line"><i>151</i>        PrefillOutcome::Terminal { .. } =&gt; {</span>
+<span class="line"><i>152</i>            unreachable!(&quot;terminal prefill outcomes return before decode routing&quot;)</span>
+<span class="line"><i>153</i>        }</span>
+<span class="line"><i>154</i>    }</span>
+<span class="line"><i>155</i>    req.staged_kv_cleanup = true;</span>
+<span class="line"><i>156</i>    req</span>
+<span class="line"><i>157</i>}</span></code></pre></details><details class="source" id="src-pd-spawn"><summary><b>源码 · 派生 Prefill future 继承当前 span</b><small>lib/llm/src/kv_router/prefill_router/handoff.rs:50–61</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/kv_router/prefill_router/handoff.rs#L50-L61" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>50</i>                .await</span>
+<span class="line"><i>51</i>                .inspect_err(|error| Self::log_failure(error, prefill_context.as_ref()))</span>
+<span class="line"><i>52</i>        })</span>
+<span class="line"><i>53</i>    }</span>
+<span class="line"><i>54</i></span>
+<span class="line"><i>55</i>    /// Spawn a wrapper that delegates logging to its child, while logging its</span>
+<span class="line"><i>56</i>    /// own failures explicitly so the same child error is not reported twice.</span>
+<span class="line"><i>57</i>    pub(super) fn spawn_unlogged(</span>
+<span class="line"><i>58</i>        future: impl Future&lt;Output = Result&lt;PrefillOutput, PrefillError&gt;&gt; + Send + &#x27;static,</span>
+<span class="line"><i>59</i>    ) -&gt; Self {</span>
+<span class="line"><i>60</i>        Self(tokio::spawn(future.instrument(tracing::Span::current())))</span>
+<span class="line"><i>61</i>    }</span></code></pre></details><p>Completed 分支将 Prefill 的 worker_link 赋给 Decode 请求的 migration_link。尽管字段名称带 migration，这里也用于 PD handoff。EngineAdapter 解析 trace/span ID 后调用 add_link，同时写 migration_trace_id / migration_span_id 方便日志读者关联。</p><p>Bootstrap 分支写 bootstrap_info 和路由字段，不经过同一段 migration_link 赋值。它仍可依赖共同的请求上下文串联，但不应据 Completed 分支声称每种后端 handoff 必然产生同样的前驱 Link。</p><aside class="note ">同一 trace 的父子传播和跨操作 Span Link 是两种能力。验收需要查 parent_span_id 与 links，不能仅凭 UI 画在同一页面上判断因果关系。</aside><details class="exercise"><summary>阅读检查 · migration_link 只用于 Worker 故障重试吗？</summary><p>不是。所读 into_decode_request 的 Completed 分支也赋值该字段，明确用于 Prefill → Decode 关联。</p></details></section><section id="pd-engines" class="lesson"><div class="sectionhead"><h2>05 / 下沉到引擎：有接口，粒度依后端</h2><label class="done"><input type="checkbox" data-read="pd-engines"> 已读</label></div><details class="source" id="src-pd-context"><summary><b>源码 · Context 优先从 engine.generate 构造引擎 Header</b><small>lib/bindings/python/rust/context.rs:432–462</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/bindings/python/rust/context.rs#L432-L462" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>432</i>    /// Build W3C trace headers for propagating to downstream inference engines.</span>
+<span class="line"><i>433</i>    /// Returns `None` when no trace context is available (neither a captured</span>
+<span class="line"><i>434</i>    /// engine.generate span nor inbound trace headers); callers should</span>
+<span class="line"><i>435</i>    /// forward `None` as-is — inference engines treat it as &quot;no upstream</span>
+<span class="line"><i>436</i>    /// trace.&quot;</span>
+<span class="line"><i>437</i>    ///</span>
+<span class="line"><i>438</i>    /// Prefers the OTel context of the `engine.generate` auto-span when the</span>
+<span class="line"><i>439</i>    /// bridge is installed, so downstream engine internals (vLLM scheduler,</span>
+<span class="line"><i>440</i>    /// TRT-LLM forward, SGLang KV transfer) nest UNDER `engine.generate`.</span>
+<span class="line"><i>441</i>    /// Falls back to the inbound `DistributedTraceContext` for legacy</span>
+<span class="line"><i>442</i>    /// callers, Python-instantiated test contexts, and deployments without</span>
+<span class="line"><i>443</i>    /// the bridge.</span>
+<span class="line"><i>444</i>    ///</span>
+<span class="line"><i>445</i>    /// Always emits `traceparent`. Also emits `tracestate`, `x-request-id`,</span>
+<span class="line"><i>446</i>    /// and `request-id` when the upstream propagated them.</span>
+<span class="line"><i>447</i>    fn trace_headers(&amp;self) -&gt; Option&lt;HashMap&lt;String, String&gt;&gt; {</span>
+<span class="line"><i>448</i>        let mut headers = HashMap::new();</span>
+<span class="line"><i>449</i>        headers.insert(&quot;traceparent&quot;.to_string(), self.format_traceparent()?);</span>
+<span class="line"><i>450</i>        if let Some(tc) = self.trace_context.as_ref() {</span>
+<span class="line"><i>451</i>            if let Some(ts) = &amp;tc.tracestate {</span>
+<span class="line"><i>452</i>                headers.insert(&quot;tracestate&quot;.to_string(), ts.clone());</span>
+<span class="line"><i>453</i>            }</span>
+<span class="line"><i>454</i>            if let Some(id) = &amp;tc.x_request_id {</span>
+<span class="line"><i>455</i>                headers.insert(&quot;x-request-id&quot;.to_string(), id.clone());</span>
+<span class="line"><i>456</i>            }</span>
+<span class="line"><i>457</i>            if let Some(id) = &amp;tc.request_id {</span>
+<span class="line"><i>458</i>                headers.insert(&quot;request-id&quot;.to_string(), id.clone());</span>
+<span class="line"><i>459</i>            }</span>
+<span class="line"><i>460</i>        }</span>
+<span class="line"><i>461</i>        Some(headers)</span>
+<span class="line"><i>462</i>    }</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>后端</th><th>Dynamo 已做什么</th><th>不能直接推出什么</th></tr></thead><tbody><tr><td>vLLM</td><td>取 context.trace_headers，再传 engine_client.generate(trace_headers=...)</td><td>不能推出 model-worker 内的每次 NIXL create/post/complete 已有同请求 span</td></tr><tr><td>SGLang</td><td>enable_trace 时将 external_trace_header 放进 native generate 请求</td><td>不是所有传输后端都拥有同粒度的 KV span；需要对应 SGLang 版本与 connector 核对</td></tr><tr><td>TensorRT-LLM</td><td>传 generate_async 的 trace_headers 与 disaggregated_params</td><td>内部执行、KV fetch 和底层网络 span 依赖 TRT-LLM 实现及配置</td></tr><tr><td>自定义/统一 Backend</td><td>Context SpanProxy / telemetry.start_span 提供扩展点</td><td>README 的示例调用不是内置系统已经自动执行该埋点的证据</td></tr></tbody></table></div><details class="source" id="src-pd-vllmcontext"><summary><b>源码 · vLLM Decode 从 Context 取 Header</b><small>components/src/dynamo/vllm/handlers.py:4138–4153</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/components/src/dynamo/vllm/handlers.py#L4138-L4153" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>4138</i>            )</span>
+<span class="line"><i>4139</i>        routing = request.get(&quot;routing&quot;) or {}</span>
+<span class="line"><i>4140</i>        dp_rank = self._to_local_dp_rank(routing.get(&quot;dp_rank&quot;))</span>
+<span class="line"><i>4141</i>        priority = (</span>
+<span class="line"><i>4142</i>            engine_generate_input.priority</span>
+<span class="line"><i>4143</i>            if engine_generate_input is not None</span>
+<span class="line"><i>4144</i>            else -int(routing.get(&quot;priority&quot;, 0))</span>
+<span class="line"><i>4145</i>        )</span>
+<span class="line"><i>4146</i></span>
+<span class="line"><i>4147</i>        trace_headers = context.trace_headers()</span>
+<span class="line"><i>4148</i>        reasoning_ended, reasoning_parser_kwargs = _request_reasoning_metadata(request)</span>
+<span class="line"><i>4149</i>        session_id = session_id_from_request(request)</span>
+<span class="line"><i>4150</i>        # For P/D, apply hints only to prefill workers (kv_params is None).</span>
+<span class="line"><i>4151</i>        kv_hints = _build_vllm_kv_hints(request) if kv_params is None else None</span>
+<span class="line"><i>4152</i></span>
+<span class="line"><i>4153</i>        client_logprob_width = sampling_params.logprobs</span></code></pre></details><details class="source" id="src-pd-vllmcall"><summary><b>源码 · 传给 vLLM engine.generate</b><small>components/src/dynamo/vllm/handlers.py:3527–3539</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/components/src/dynamo/vllm/handlers.py#L3527-L3539" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>3527</i>            )</span>
+<span class="line"><i>3528</i>            gen = self._generate_with_lora_admission_lock(</span>
+<span class="line"><i>3529</i>                lora_request,</span>
+<span class="line"><i>3530</i>                lambda admitted_lora_request: self.engine_client.generate(</span>
+<span class="line"><i>3531</i>                    prompt,</span>
+<span class="line"><i>3532</i>                    sampling_params,</span>
+<span class="line"><i>3533</i>                    request_id,</span>
+<span class="line"><i>3534</i>                    lora_request=admitted_lora_request,</span>
+<span class="line"><i>3535</i>                    data_parallel_rank=data_parallel_rank,</span>
+<span class="line"><i>3536</i>                    trace_headers=trace_headers,</span>
+<span class="line"><i>3537</i>                    priority=priority,</span>
+<span class="line"><i>3538</i>                    session_id=session_id,</span>
+<span class="line"><i>3539</i>                    **({&quot;kv_hints&quot;: kv_hints} if kv_hints is not None else {}),</span></code></pre></details><details class="source" id="src-pd-sglang"><summary><b>源码 · SGLang trace gate</b><small>components/src/dynamo/sglang/request_handlers/llm/decode_handler.py:642–660</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/components/src/dynamo/sglang/request_handlers/llm/decode_handler.py#L642-L660" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>642</i></span>
+<span class="line"><i>643</i>        routing = request.get(&quot;routing&quot;) or {}</span>
+<span class="line"><i>644</i>        native_request = build_native_generate_request(</span>
+<span class="line"><i>645</i>            native_payload,</span>
+<span class="line"><i>646</i>            input_ids=input_ids,</span>
+<span class="line"><i>647</i>            request_id=sglang_request_id,</span>
+<span class="line"><i>648</i>            priority=self._priority_kwargs(priority).get(&quot;priority&quot;),</span>
+<span class="line"><i>649</i>            bootstrap_host=bootstrap_info.get(&quot;bootstrap_host&quot;),</span>
+<span class="line"><i>650</i>            bootstrap_port=bootstrap_info.get(&quot;bootstrap_port&quot;),</span>
+<span class="line"><i>651</i>            bootstrap_room=bootstrap_info.get(&quot;bootstrap_room&quot;),</span>
+<span class="line"><i>652</i>            external_trace_header=(</span>
+<span class="line"><i>653</i>                context.trace_headers() if self.enable_trace else None</span>
+<span class="line"><i>654</i>            ),</span>
+<span class="line"><i>655</i>            routed_dp_rank=routing.get(&quot;dp_rank&quot;),</span>
+<span class="line"><i>656</i>            prefill_dp_rank=routing.get(&quot;prefill_dp_rank&quot;),</span>
+<span class="line"><i>657</i>            lora_path=self._resolve_lora(request),</span>
+<span class="line"><i>658</i>            cache_salt=request_cache_salt(request),</span>
+<span class="line"><i>659</i>        )</span>
+<span class="line"><i>660</i>        return native_generate_stream(self.engine, native_request)</span></code></pre></details><details class="source" id="src-pd-trtllm"><summary><b>源码 · TRT-LLM generate 参数</b><small>components/src/dynamo/trtllm/request_handlers/handler_base.py:1318–1337</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/components/src/dynamo/trtllm/request_handlers/handler_base.py#L1318-L1337" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1318</i>                isinstance(processed_input, np.ndarray)</span>
+<span class="line"><i>1319</i>                and PreprocessedInputs is not None</span>
+<span class="line"><i>1320</i>            ):</span>
+<span class="line"><i>1321</i>                processed_input = PreprocessedInputs(prompt_token_ids=processed_input)</span>
+<span class="line"><i>1322</i>            generate_kwargs = {</span>
+<span class="line"><i>1323</i>                &quot;inputs&quot;: processed_input,  # Use the correctly extracted inputs</span>
+<span class="line"><i>1324</i>                &quot;sampling_params&quot;: sampling_params,</span>
+<span class="line"><i>1325</i>                &quot;disaggregated_params&quot;: disaggregated_params,</span>
+<span class="line"><i>1326</i>                &quot;streaming&quot;: streaming,</span>
+<span class="line"><i>1327</i>                &quot;trace_headers&quot;: trace_headers,</span>
+<span class="line"><i>1328</i>                &quot;scheduling_params&quot;: scheduling_params,</span>
+<span class="line"><i>1329</i>                **conv_kwargs,</span>
+<span class="line"><i>1330</i>                &quot;priority&quot;: priority,</span>
+<span class="line"><i>1331</i>                &quot;cache_salt&quot;: cache_salt,</span>
+<span class="line"><i>1332</i>            }</span>
+<span class="line"><i>1333</i>            generate_async = self.engine.llm.generate_async</span>
+<span class="line"><i>1334</i>            try:</span>
+<span class="line"><i>1335</i>                generation_result = generate_async(**generate_kwargs)</span>
+<span class="line"><i>1336</i>            except (ValueError, TypeError, NotImplementedError) as e:</span>
+<span class="line"><i>1337</i>                # TRT-LLM performs request validation and preprocessing synchronously in</span></code></pre></details><p>本地另一个 SGLang checkout 的 Mooncake sender 存在 TraceReqContext（按 bootstrap_room 建模），但它是独立版本和特定传输实现；不能据此证明当前 Dynamo 镜像中的 NIXL 路径全覆盖。本章不把该外部 checkout 当作 Dynamo 固定提交的事实。</p></section><section id="pd-events" class="lesson"><div class="sectionhead"><h2>06 / Event Plane 的关键断点：不是 RPC Header</h2><label class="done"><input type="checkbox" data-read="pd-events"> 已读</label></div><details class="source" id="src-pd-envelope"><summary><b>源码 · EventEnvelope 的全部字段</b><small>lib/runtime/src/transports/event_plane/traits.rs:12–25</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/transports/event_plane/traits.rs#L12-L25" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>12</i>#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]</span>
+<span class="line"><i>13</i>pub struct EventEnvelope {</span>
+<span class="line"><i>14</i>    /// Unique identifier of the publisher (typically discovery instance_id)</span>
+<span class="line"><i>15</i>    pub publisher_id: u64,</span>
+<span class="line"><i>16</i>    /// Monotonically increasing sequence number per publisher</span>
+<span class="line"><i>17</i>    pub sequence: u64,</span>
+<span class="line"><i>18</i>    /// Unix timestamp in milliseconds when the event was published</span>
+<span class="line"><i>19</i>    pub published_at: u64,</span>
+<span class="line"><i>20</i>    /// The topic this event was published to</span>
+<span class="line"><i>21</i>    pub topic: String,</span>
+<span class="line"><i>22</i>    /// The serialized event payload</span>
+<span class="line"><i>23</i>    #[serde(with = &quot;bytes_serde&quot;)]</span>
+<span class="line"><i>24</i>    pub payload: Bytes,</span>
+<span class="line"><i>25</i>}</span></code></pre></details><details class="source" id="src-pd-publisher"><summary><b>源码 · 编码 envelope：没有注入 Context</b><small>lib/runtime/src/transports/event_plane/mod.rs:662–683</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/transports/event_plane/mod.rs#L662-L683" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>662</i>    pub async fn publish&lt;T: Serialize + Send + Sync&gt;(&amp;self, event: &amp;T) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>663</i>        let payload = self.codec.encode_payload(event)?;</span>
+<span class="line"><i>664</i>        self.publish_bytes_ref(payload.as_ref()).await</span>
+<span class="line"><i>665</i>    }</span>
+<span class="line"><i>666</i></span>
+<span class="line"><i>667</i>    /// Publish raw bytes.</span>
+<span class="line"><i>668</i>    pub async fn publish_bytes(&amp;self, bytes: Vec&lt;u8&gt;) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>669</i>        self.publish_bytes_ref(&amp;bytes).await</span>
+<span class="line"><i>670</i>    }</span>
+<span class="line"><i>671</i></span>
+<span class="line"><i>672</i>    /// Publish raw bytes without taking ownership of the payload buffer.</span>
+<span class="line"><i>673</i>    pub async fn publish_bytes_ref(&amp;self, bytes: &amp;[u8]) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>674</i>        let envelope_bytes = self.codec.encode_envelope_parts(</span>
+<span class="line"><i>675</i>            self.publisher_id,</span>
+<span class="line"><i>676</i>            self.sequence.fetch_add(1, Ordering::SeqCst),</span>
+<span class="line"><i>677</i>            current_timestamp_ms(),</span>
+<span class="line"><i>678</i>            &amp;self.topic,</span>
+<span class="line"><i>679</i>            bytes,</span>
+<span class="line"><i>680</i>        )?;</span>
+<span class="line"><i>681</i></span>
+<span class="line"><i>682</i>        self.tx.publish(&amp;self.subject, envelope_bytes).await</span>
+<span class="line"><i>683</i>    }</span></code></pre></details><details class="source" id="src-pd-nats"><summary><b>源码 · 事件 NATS 传输只传 envelope bytes</b><small>lib/runtime/src/transports/event_plane/nats_transport.rs:36–65</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/transports/event_plane/nats_transport.rs#L36-L65" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>36</i>#[async_trait]</span>
+<span class="line"><i>37</i>impl EventTransportTx for NatsTransport {</span>
+<span class="line"><i>38</i>    async fn publish(&amp;self, subject: &amp;str, envelope_bytes: Bytes) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>39</i>        let subject = self</span>
+<span class="line"><i>40</i>            .publish_subject</span>
+<span class="line"><i>41</i>            .clone()</span>
+<span class="line"><i>42</i>            .unwrap_or_else(|| subject.into());</span>
+<span class="line"><i>43</i>        self.drt</span>
+<span class="line"><i>44</i>            .kv_router_nats_publish_subject(subject, envelope_bytes)</span>
+<span class="line"><i>45</i>            .await</span>
+<span class="line"><i>46</i>    }</span>
+<span class="line"><i>47</i></span>
+<span class="line"><i>48</i>    fn kind(&amp;self) -&gt; EventTransportKind {</span>
+<span class="line"><i>49</i>        EventTransportKind::Nats</span>
+<span class="line"><i>50</i>    }</span>
+<span class="line"><i>51</i>}</span>
+<span class="line"><i>52</i></span>
+<span class="line"><i>53</i>#[async_trait]</span>
+<span class="line"><i>54</i>impl EventTransportRx for NatsTransport {</span>
+<span class="line"><i>55</i>    async fn subscribe(&amp;self, subject: &amp;str) -&gt; Result&lt;WireStream&gt; {</span>
+<span class="line"><i>56</i>        let subscriber = self</span>
+<span class="line"><i>57</i>            .drt</span>
+<span class="line"><i>58</i>            .kv_router_nats_subscribe(subject.to_string())</span>
+<span class="line"><i>59</i>            .await?;</span>
+<span class="line"><i>60</i></span>
+<span class="line"><i>61</i>        let stream = subscriber.map(|msg| Ok(msg.payload));</span>
+<span class="line"><i>62</i></span>
+<span class="line"><i>63</i>        Ok(Box::pin(stream))</span>
+<span class="line"><i>64</i>    }</span>
+<span class="line"><i>65</i></span></code></pre></details><details class="source" id="src-pd-publish"><summary><b>源码 · 底层使用 publish，而不是带 Context 的 headers publish</b><small>lib/runtime/src/distributed.rs:727–738</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/distributed.rs#L727-L738" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>727</i>    pub(crate) async fn kv_router_nats_publish_subject(</span>
+<span class="line"><i>728</i>        &amp;self,</span>
+<span class="line"><i>729</i>        subject: async_nats::Subject,</span>
+<span class="line"><i>730</i>        payload: bytes::Bytes,</span>
+<span class="line"><i>731</i>    ) -&gt; anyhow::Result&lt;()&gt; {</span>
+<span class="line"><i>732</i>        let Some(nats_client) = self.nats_client.as_ref() else {</span>
+<span class="line"><i>733</i>            // NATS not available - this is expected in approximate mode (--no-kv-events)</span>
+<span class="line"><i>734</i>            tracing::trace!(&quot;Skipping NATS publish (NATS not configured): {subject}&quot;);</span>
+<span class="line"><i>735</i>            return Ok(());</span>
+<span class="line"><i>736</i>        };</span>
+<span class="line"><i>737</i>        Ok(nats_client.client().publish(subject, payload).await?)</span>
+<span class="line"><i>738</i>    }</span></code></pre></details><details class="source" id="src-pd-zmq"><summary><b>源码 · ZMQ topic / publisher / sequence / frame</b><small>lib/runtime/src/transports/event_plane/zmq_transport.rs:280–301</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/transports/event_plane/zmq_transport.rs#L280-L301" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>280</i>#[async_trait]</span>
+<span class="line"><i>281</i>impl EventTransportTx for ZmqPubTransport {</span>
+<span class="line"><i>282</i>    async fn publish(&amp;self, _subject: &amp;str, envelope_bytes: Bytes) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>283</i>        let codec = MsgpackCodec;</span>
+<span class="line"><i>284</i>        let (publisher_id, sequence) = codec.decode_envelope_identity(&amp;envelope_bytes)?;</span>
+<span class="line"><i>285</i></span>
+<span class="line"><i>286</i>        let frame = Frame::new(envelope_bytes);</span>
+<span class="line"><i>287</i>        let frames = vec![</span>
+<span class="line"><i>288</i>            self.topic.as_bytes().to_vec(),</span>
+<span class="line"><i>289</i>            publisher_id.to_be_bytes().to_vec(),</span>
+<span class="line"><i>290</i>            sequence.to_be_bytes().to_vec(),</span>
+<span class="line"><i>291</i>            frame.encode().to_vec(),</span>
+<span class="line"><i>292</i>        ];</span>
+<span class="line"><i>293</i></span>
+<span class="line"><i>294</i>        self.socket</span>
+<span class="line"><i>295</i>            .lock()</span>
+<span class="line"><i>296</i>            .await</span>
+<span class="line"><i>297</i>            .send(Multipart::from(frames))</span>
+<span class="line"><i>298</i>            .await?;</span>
+<span class="line"><i>299</i></span>
+<span class="line"><i>300</i>        Ok(())</span>
+<span class="line"><i>301</i>    }</span></code></pre></details><p>这不是说 NATS 协议不能传 Header，也不是说用户 payload 不能自带 Trace Context；是当前通用 Event Plane 没有替业务自动做。Request Plane 的 NATS ingress 有上下文处理，不代表同样使用 NATS 的 KV/FPM 事件天然共享该逻辑。</p><details class="source" id="src-pd-kv"><summary><b>源码 · KV cache 事件无标准 trace metadata</b><small>lib/kv-router/src/protocols.rs:1314–1323</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/kv-router/src/protocols.rs#L1314-L1323" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1314</i>#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]</span>
+<span class="line"><i>1315</i>pub struct KvCacheEvent {</span>
+<span class="line"><i>1316</i>    /// The unique identifier of the event.</span>
+<span class="line"><i>1317</i>    pub event_id: u64,</span>
+<span class="line"><i>1318</i>    /// The data associated with the event.</span>
+<span class="line"><i>1319</i>    pub data: KvCacheEventData,</span>
+<span class="line"><i>1320</i>    /// The data parallel rank of the worker emitting this event (0 if DP not enabled).</span>
+<span class="line"><i>1321</i>    #[serde(default)]</span>
+<span class="line"><i>1322</i>    pub dp_rank: DpRank,</span>
+<span class="line"><i>1323</i>}</span></code></pre></details><details class="source" id="src-pd-sequence"><summary><b>源码 · ActiveSequenceEvent 有 request_id，但它不是 W3C Context</b><small>lib/kv-router/src/protocols.rs:1250–1259</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/kv-router/src/protocols.rs#L1250-L1259" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1250</i>#[derive(Serialize, Deserialize, Debug, Clone)]</span>
+<span class="line"><i>1251</i>pub struct ActiveSequenceEvent {</span>
+<span class="line"><i>1252</i>    pub request_id: String,</span>
+<span class="line"><i>1253</i>    pub worker: WorkerWithDpRank,</span>
+<span class="line"><i>1254</i>    pub data: ActiveSequenceEventData,</span>
+<span class="line"><i>1255</i>    /// Source DRT identity, used to suppress a publisher&#x27;s own echo. Router events use the router</span>
+<span class="line"><i>1256</i>    /// ID; worker-origin completion marks use the worker ID.</span>
+<span class="line"><i>1257</i>    pub router_id: u64,</span>
+<span class="line"><i>1258</i>    pub lora_name: Option&lt;String&gt;,</span>
+<span class="line"><i>1259</i>}</span></code></pre></details><aside class="note warn">publisher_id / sequence / block hash 用于生产者身份、顺序与缓存索引；request_id 可帮助检索。它们不能代替 trace_id + parent span context + trace flags，消费者不会因此自动继承生产者 span。</aside><details class="exercise"><summary>阅读检查 · 把 NATS 的 exporter 打开能修复这个断点吗？</summary><p>不能自动修复。还要定义携带上下文的消息契约、在生产和消费边界创建 span / Link，并处理批量和广播语义。</p></details></section><section id="pd-storage" class="lesson"><div class="sectionhead"><h2>07 / KV 存储：局部 instrumentation 不等于跨异步串联</h2><label class="done"><input type="checkbox" data-read="pd-storage"> 已读</label></div><details class="source" id="src-pd-sched"><summary><b>源码 · 局部 debug instrument 与调度消息</b><small>lib/llm/src/block_manager/connector/scheduler.rs:39–80</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/block_manager/connector/scheduler.rs#L39-L80" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>39</i>    /// The completion handle be marked as completed after the</span>
+<span class="line"><i>40</i>    ///</span>
+<span class="line"><i>41</i>    /// If the [SchedulingDecision::Cancel] is returned, the transfer is cancelled and the completion handle</span>
+<span class="line"><i>42</i>    /// must not be dropped.</span>
+<span class="line"><i>43</i>    #[tracing::instrument(level = &quot;debug&quot;, skip_all, fields(request_id = %request.request_id, operation_id = %request.uuid))]</span>
+<span class="line"><i>44</i>    pub async fn schedule_transfer(</span>
+<span class="line"><i>45</i>        self,</span>
+<span class="line"><i>46</i>        request: LeaderTransferRequest,</span>
+<span class="line"><i>47</i>    ) -&gt; anyhow::Result&lt;Box&lt;dyn TransferCompletionHandle&gt;&gt; {</span>
+<span class="line"><i>48</i>        let scheduler_tx = self.scheduler_tx.clone();</span>
+<span class="line"><i>49</i>        match request.request_type {</span>
+<span class="line"><i>50</i>            RequestType::Immediate =&gt; {</span>
+<span class="line"><i>51</i>                let handle = ImmediateTransferCompletionHandle::new(</span>
+<span class="line"><i>52</i>                    request.request_id,</span>
+<span class="line"><i>53</i>                    request.uuid,</span>
+<span class="line"><i>54</i>                    scheduler_tx.clone(),</span>
+<span class="line"><i>55</i>                );</span>
+<span class="line"><i>56</i>                Ok(Box::new(handle))</span>
+<span class="line"><i>57</i>            }</span>
+<span class="line"><i>58</i>            RequestType::Scheduled =&gt; {</span>
+<span class="line"><i>59</i>                let (response_tx, response_rx) = oneshot::channel();</span>
+<span class="line"><i>60</i>                let request = TransferScheduleRequest {</span>
+<span class="line"><i>61</i>                    leader_request: request,</span>
+<span class="line"><i>62</i>                    response_tx,</span>
+<span class="line"><i>63</i>                };</span>
+<span class="line"><i>64</i></span>
+<span class="line"><i>65</i>                tracing::debug!(&quot;sending schedule request to scheduler&quot;);</span>
+<span class="line"><i>66</i>                scheduler_tx</span>
+<span class="line"><i>67</i>                    .send(TransferToSchedulerMessage::ScheduleRequest(request))</span>
+<span class="line"><i>68</i>                    .await?;</span>
+<span class="line"><i>69</i></span>
+<span class="line"><i>70</i>                tracing::debug!(&quot;awaiting response from scheduler&quot;);</span>
+<span class="line"><i>71</i>                let handle = response_rx.await?.wait_for_decision().await;</span>
+<span class="line"><i>72</i></span>
+<span class="line"><i>73</i>                tracing::debug!(</span>
+<span class="line"><i>74</i>                    &quot;received scheduler decision: {:?}&quot;,</span>
+<span class="line"><i>75</i>                    handle.scheduler_decision()</span>
+<span class="line"><i>76</i>                );</span>
+<span class="line"><i>77</i>                Ok(handle)</span>
+<span class="line"><i>78</i>            }</span>
+<span class="line"><i>79</i>        }</span>
+<span class="line"><i>80</i>    }</span></code></pre></details><details class="source" id="src-pd-request"><summary><b>源码 · LeaderTransferRequest：request_id / uuid 与调度信息</b><small>lib/llm/src/block_manager/connector/protocol.rs:93–113</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/block_manager/connector/protocol.rs#L93-L113" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>93</i>/// Issued by the leader, received by the TransferEngine.</span>
+<span class="line"><i>94</i>#[derive(Debug, Clone, Serialize, Deserialize)]</span>
+<span class="line"><i>95</i>pub struct LeaderTransferRequest {</span>
+<span class="line"><i>96</i>    pub request_id: String,</span>
+<span class="line"><i>97</i>    pub uuid: uuid::Uuid,</span>
+<span class="line"><i>98</i>    pub requirement: Option&lt;SchedulerRequirement&gt;,</span>
+<span class="line"><i>99</i>    pub request_type: RequestType,</span>
+<span class="line"><i>100</i>}</span>
+<span class="line"><i>101</i></span>
+<span class="line"><i>102</i>pub enum TransferToSchedulerMessage {</span>
+<span class="line"><i>103</i>    ScheduleRequest(TransferScheduleRequest),</span>
+<span class="line"><i>104</i>    ImmediateResult(ImmediateTransferResult),</span>
+<span class="line"><i>105</i>}</span>
+<span class="line"><i>106</i></span>
+<span class="line"><i>107</i>/// Issued by the TransferEngine, received by the Scheduler.</span>
+<span class="line"><i>108</i>/// Note: In order to be considered for scheduling, the [`TransferScheduleRequest`] and the [`WorkerTransferRequest`]</span>
+<span class="line"><i>109</i>/// for the same operation (uuid) must be present on the scheduler.</span>
+<span class="line"><i>110</i>pub struct TransferScheduleRequest {</span>
+<span class="line"><i>111</i>    pub leader_request: LeaderTransferRequest,</span>
+<span class="line"><i>112</i>    pub response_tx: oneshot::Sender&lt;ScheduledTaskHandle&gt;,</span>
+<span class="line"><i>113</i>}</span></code></pre></details><details class="source" id="src-pd-timing"><summary><b>源码 · TimingTrace 只是本地阶段时钟</b><small>lib/kvbm-engine/src/offload/batch.rs:24–60</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/kvbm-engine/src/offload/batch.rs#L24-L60" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>24</i>/// Timing trace for tracking block progression through pipeline stages.</span>
+<span class="line"><i>25</i>///</span>
+<span class="line"><i>26</i>/// Each block carries a timing trace that records when it passed through</span>
+<span class="line"><i>27</i>/// each stage. This enables per-container and batch-level timing analysis.</span>
+<span class="line"><i>28</i>#[derive(Debug, Clone)]</span>
+<span class="line"><i>29</i>pub struct TimingTrace {</span>
+<span class="line"><i>30</i>    /// When the block was initially enqueued into the pipeline</span>
+<span class="line"><i>31</i>    pub enqueued_at: Instant,</span>
+<span class="line"><i>32</i>    /// When policy evaluation completed for this block</span>
+<span class="line"><i>33</i>    pub policy_complete_at: Option&lt;Instant&gt;,</span>
+<span class="line"><i>34</i>    /// When the precondition (e.g., forward pass) completed</span>
+<span class="line"><i>35</i>    pub precondition_complete_at: Option&lt;Instant&gt;,</span>
+<span class="line"><i>36</i>    /// When the block was added to a transfer batch</span>
+<span class="line"><i>37</i>    pub batched_at: Option&lt;Instant&gt;,</span>
+<span class="line"><i>38</i>    /// When the transfer operation started</span>
+<span class="line"><i>39</i>    pub transfer_start_at: Option&lt;Instant&gt;,</span>
+<span class="line"><i>40</i>    /// When the transfer operation completed</span>
+<span class="line"><i>41</i>    pub transfer_complete_at: Option&lt;Instant&gt;,</span>
+<span class="line"><i>42</i>}</span>
+<span class="line"><i>43</i></span>
+<span class="line"><i>44</i>impl TimingTrace {</span>
+<span class="line"><i>45</i>    /// Create a new timing trace, recording the current time as enqueue time.</span>
+<span class="line"><i>46</i>    pub fn new() -&gt; Self {</span>
+<span class="line"><i>47</i>        Self {</span>
+<span class="line"><i>48</i>            enqueued_at: Instant::now(),</span>
+<span class="line"><i>49</i>            policy_complete_at: None,</span>
+<span class="line"><i>50</i>            precondition_complete_at: None,</span>
+<span class="line"><i>51</i>            batched_at: None,</span>
+<span class="line"><i>52</i>            transfer_start_at: None,</span>
+<span class="line"><i>53</i>            transfer_complete_at: None,</span>
+<span class="line"><i>54</i>        }</span>
+<span class="line"><i>55</i>    }</span>
+<span class="line"><i>56</i></span>
+<span class="line"><i>57</i>    /// Mark policy evaluation complete.</span>
+<span class="line"><i>58</i>    pub fn mark_policy_complete(&amp;mut self) {</span>
+<span class="line"><i>59</i>        self.policy_complete_at = Some(Instant::now());</span>
+<span class="line"><i>60</i>    }</span></code></pre></details><p>现有代码并非“完全没有 trace”：调度函数有 request_id/operation_id 字段和 debug instrumentation。但将消息放到后台 scheduler/worker 后，以上序列化请求没有 W3C Context；仅保留请求 ID 不会恢复分布式父子关系。</p><p>新 offload pipeline 的 TimingTrace 记录 enqueued/policy/precondition/batched/transfer 的 Instant，适合阶段耗时分析；它不等于 OTel TraceContext，也没有自动指向一个前端请求。</p><p>缓存块可被多个请求复用，offload 批次可跨请求聚合，eviction/prefetch 还可能由后台策略触发。正确分析应分别考虑当前请求等待、共享块生产历史和后台存储动作，必要时用多条 Span Link，而不是捏造单一 parent。</p><aside class="note ">本结论限定于已核对的调度消息、offload timing、transfer executor 和通用事件传输。其他第三方缓存系统或自定义插件可以自行埋点；本章没有证明它们一律不支持追踪。</aside></section><section id="pd-nixl" class="lesson"><div class="sectionhead"><h2>08 / NIXL：传输可观测与请求 trace 的区别</h2><label class="done"><input type="checkbox" data-read="pd-nixl"> 已读</label></div><details class="source" id="src-pd-nixl"><summary><b>源码 · 创建、提交、异步完成 notification</b><small>lib/kvbm-physical/src/transfer/executor/nixl.rs:350–380</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/kvbm-physical/src/transfer/executor/nixl.rs#L350-L380" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>350</i>        }</span>
+<span class="line"><i>351</i></span>
+<span class="line"><i>352</i>        // Create transfer request</span>
+<span class="line"><i>353</i>        // The remote agent depends on operation type:</span>
+<span class="line"><i>354</i>        // - For Write (push): remote is the destination</span>
+<span class="line"><i>355</i>        // - For Read (pull): remote is the source</span>
+<span class="line"><i>356</i>        let remote_agent = match xfer_op {</span>
+<span class="line"><i>357</i>            XferOp::Write =&gt; dst_metadata.agent_name(),</span>
+<span class="line"><i>358</i>            XferOp::Read =&gt; src_metadata.agent_name(),</span>
+<span class="line"><i>359</i>        };</span>
+<span class="line"><i>360</i></span>
+<span class="line"><i>361</i>        let xfer_req = nixl_agent.create_xfer_req(</span>
+<span class="line"><i>362</i>            xfer_op,</span>
+<span class="line"><i>363</i>            &amp;src_dl,</span>
+<span class="line"><i>364</i>            &amp;dst_dl,</span>
+<span class="line"><i>365</i>            remote_agent,</span>
+<span class="line"><i>366</i>            None, // opt_args</span>
+<span class="line"><i>367</i>        )?;</span>
+<span class="line"><i>368</i></span>
+<span class="line"><i>369</i>        // Post transfer request</span>
+<span class="line"><i>370</i>        // Note: Notification handling via OptArgs can be added later if needed</span>
+<span class="line"><i>371</i>        let still_pending = nixl_agent.post_xfer_req(&amp;xfer_req, None)?;</span>
+<span class="line"><i>372</i></span>
+<span class="line"><i>373</i>        if still_pending {</span>
+<span class="line"><i>374</i>            // Register for async completion via status polling</span>
+<span class="line"><i>375</i>            Ok(ctx.register_nixl_status(xfer_req))</span>
+<span class="line"><i>376</i>        } else {</span>
+<span class="line"><i>377</i>            // Transfer completed synchronously</span>
+<span class="line"><i>378</i>            Ok(TransferCompleteNotification::completed())</span>
+<span class="line"><i>379</i>        }</span>
+<span class="line"><i>380</i>    }</span></code></pre></details><details class="source" id="src-pd-xferctx"><summary><b>源码 · TransferContext 是资源/完成通知上下文</b><small>lib/kvbm-physical/src/transfer/context.rs:210–237</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/kvbm-physical/src/transfer/context.rs#L210-L237" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>210</i>#[derive(Clone)]</span>
+<span class="line"><i>211</i>#[doc(hidden)]</span>
+<span class="line"><i>212</i>pub struct TransferContext {</span>
+<span class="line"><i>213</i>    worker_id: u64,</span>
+<span class="line"><i>214</i>    nixl_agent: NixlAgent,</span>
+<span class="line"><i>215</i>    #[allow(dead_code)]</span>
+<span class="line"><i>216</i>    cuda_context: Arc&lt;CudaContext&gt;,</span>
+<span class="line"><i>217</i>    d2h_stream: Arc&lt;CudaStream&gt;,</span>
+<span class="line"><i>218</i>    h2d_stream: Arc&lt;CudaStream&gt;,</span>
+<span class="line"><i>219</i>    d2h_streams: Vec&lt;Arc&lt;CudaStream&gt;&gt;,</span>
+<span class="line"><i>220</i>    h2d_streams: Vec&lt;Arc&lt;CudaStream&gt;&gt;,</span>
+<span class="line"><i>221</i>    current_d2h_stream: Arc&lt;AtomicUsize&gt;,</span>
+<span class="line"><i>222</i>    current_h2d_stream: Arc&lt;AtomicUsize&gt;,</span>
+<span class="line"><i>223</i>    #[allow(dead_code)]</span>
+<span class="line"><i>224</i>    tokio_runtime: TokioRuntime,</span>
+<span class="line"><i>225</i>    capabilities: TransferCapabilities,</span>
+<span class="line"><i>226</i>    event_system: Arc&lt;EventManager&gt;,</span>
+<span class="line"><i>227</i>    // CUDA memory pool for kernel allocations</span>
+<span class="line"><i>228</i>    cuda_pool: Arc&lt;CudaMemPool&gt;,</span>
+<span class="line"><i>229</i>    // Channels for background notification handlers</span>
+<span class="line"><i>230</i>    tx_nixl_status: mpsc::Sender&lt;RegisterPollingNotification&lt;notifications::NixlStatusChecker&gt;&gt;,</span>
+<span class="line"><i>231</i>    tx_cuda_event: mpsc::Sender&lt;RegisterPollingNotification&lt;notifications::CudaEventChecker&gt;&gt;,</span>
+<span class="line"><i>232</i>    #[allow(dead_code)]</span>
+<span class="line"><i>233</i>    tx_nixl_events: mpsc::Sender&lt;notifications::RegisterNixlNotification&gt;,</span>
+<span class="line"><i>234</i>}</span>
+<span class="line"><i>235</i></span>
+<span class="line"><i>236</i>impl TransferContext {</span>
+<span class="line"><i>237</i>    pub fn builder() -&gt; TransferConfigBuilder {</span></code></pre></details><details class="source" id="src-pd-complete"><summary><b>源码 · 后台完成事件按 UUID 触发</b><small>lib/kvbm-physical/src/transfer/notifications/nixl_events.rs:152–192</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/kvbm-physical/src/transfer/notifications/nixl_events.rs#L152-L192" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>152</i>async fn process_events_core&lt;S: NotificationSource, R: Registration&gt;(</span>
+<span class="line"><i>153</i>    source: S,</span>
+<span class="line"><i>154</i>    mut rx: mpsc::Receiver&lt;R&gt;,</span>
+<span class="line"><i>155</i>    system: Arc&lt;EventManager&gt;,</span>
+<span class="line"><i>156</i>) {</span>
+<span class="line"><i>157</i>    let mut outstanding: HashMap&lt;Uuid, OutstandingTransfer&lt;R::Payload&gt;&gt; = HashMap::new();</span>
+<span class="line"><i>158</i>    let mut early_arrivals: HashSet&lt;Uuid&gt; = HashSet::new();</span>
+<span class="line"><i>159</i>    let mut last_early_arrival_warn: Option&lt;Instant&gt; = None;</span>
+<span class="line"><i>160</i>    let mut check_interval = interval(Duration::from_millis(1));</span>
+<span class="line"><i>161</i></span>
+<span class="line"><i>162</i>    loop {</span>
+<span class="line"><i>163</i>        tokio::select! {</span>
+<span class="line"><i>164</i>            // Handle new transfer requests</span>
+<span class="line"><i>165</i>            notification = rx.recv() =&gt; {</span>
+<span class="line"><i>166</i>                match notification {</span>
+<span class="line"><i>167</i>                    Some(reg) =&gt; {</span>
+<span class="line"><i>168</i>                        let (uuid, event_handle, payload) = reg.decompose();</span>
+<span class="line"><i>169</i>                        if early_arrivals.remove(&amp;uuid) {</span>
+<span class="line"><i>170</i>                            // Notification arrived before registration — complete immediately.</span>
+<span class="line"><i>171</i>                            // Payload is dropped here; the transfer is already done.</span>
+<span class="line"><i>172</i>                            drop(payload);</span>
+<span class="line"><i>173</i>                            if let Err(e) = system.trigger(event_handle) {</span>
+<span class="line"><i>174</i>                                error!(</span>
+<span class="line"><i>175</i>                                    uuid = %uuid,</span>
+<span class="line"><i>176</i>                                    error = %e,</span>
+<span class="line"><i>177</i>                                    &quot;Failed to trigger completion event for early arrival&quot;</span>
+<span class="line"><i>178</i>                                );</span>
+<span class="line"><i>179</i>                            }</span>
+<span class="line"><i>180</i>                        } else {</span>
+<span class="line"><i>181</i>                            outstanding.insert(uuid, OutstandingTransfer {</span>
+<span class="line"><i>182</i>                                _payload: payload,</span>
+<span class="line"><i>183</i>                                event_handle,</span>
+<span class="line"><i>184</i>                                arrived_at: Instant::now(),</span>
+<span class="line"><i>185</i>                                last_warned_at: None,</span>
+<span class="line"><i>186</i>                            });</span>
+<span class="line"><i>187</i>                        }</span>
+<span class="line"><i>188</i>                    }</span>
+<span class="line"><i>189</i>                    None =&gt; {</span>
+<span class="line"><i>190</i>                        // Channel closed, finish processing outstanding transfers then exit</span>
+<span class="line"><i>191</i>                        break;</span>
+<span class="line"><i>192</i>                    }</span></code></pre></details><p>TransferContext 名字中的 Context 是 NIXL/CUDA/运行时资源上下文，不是 OTel Context。所读 executor 使用 create_xfer_req / post_xfer_req，pending 时返回异步完成 notification；没有在这段逻辑中自动建立请求关联的跨端传输 span。</p><p>这里是 Dynamo KVBM physical transfer 的示例路径，不代表 vLLM/SGLang/TRT-LLM 都调用这个 executor。引擎自带 PD connector 需要在引擎源码或实际 Trace 中再核对。</p><div class="tablewrap"><table><thead><tr><th>信息</th><th>能够说明</th><th>不能自动证明</th></tr></thead><tbody><tr><td>NIXL bytes/requests/latency telemetry</td><td>传输了多少、成功失败与耗时分布</td><td>哪个请求 span 是这次传输的父节点</td></tr><tr><td>引擎 KV transfer Histogram</td><td>引擎暴露的传输时延统计</td><td>某次请求的 send/recv span 链</td></tr><tr><td>NVTX / Nsight timeline</td><td>GPU/CPU/传输的性能时间线</td><td>自动出现在 Tempo/Jaeger 同一分布式 Trace</td></tr><tr><td>completion UUID / transfer ID</td><td>本地或协议层异步完成关联</td><td>跨进程 OTel Context 已传到接收/完成处理器</td></tr></tbody></table></div><aside class="note ">NIXL 有遥测和新版本的专用 tracing/NVTX 能力，不能笼统说“NIXL 没有 trace”。这里的缺口是与 Dynamo 请求 Context 自动接合的契约，不是性能观测手段不存在。</aside><details class="source" id="src-pd-nop"><summary><b>源码 · vLLM NIXL capture-only 插件不是 OTel exporter</b><small>components/src/dynamo/vllm/nixl_telemetry.py:18–40</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/components/src/dynamo/vllm/nixl_telemetry.py#L18-L40" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>18</i>def allow_nixl_telemetry_capture() -&gt; bool:</span>
+<span class="line"><i>19</i>    &quot;&quot;&quot;Replace a false NIXL_TELEMETRY_ENABLE with capture-only collection.</span>
+<span class="line"><i>20</i></span>
+<span class="line"><i>21</i>    NIXL 1.4 treats a set false value as a veto of capture_telemetry=True,</span>
+<span class="line"><i>22</i>    so that value is removed. The exporter is pinned to NOP so 1.4 does not</span>
+<span class="line"><i>23</i>    fall through to NIXL_TELEMETRY_DIR or a config file. Enable is left</span>
+<span class="line"><i>24</i>    unset: NIXL 1.3.2, which the vLLM image builds, has no NOP plugin and</span>
+<span class="line"><i>25</i>    loads an exporter only when enable is true. Returns True when the</span>
+<span class="line"><i>26</i>    environment was changed.</span>
+<span class="line"><i>27</i></span>
+<span class="line"><i>28</i>    Registered as a vLLM general plugin so Ray model actors apply this policy</span>
+<span class="line"><i>29</i>    locally, before worker initialization. Driver environment deletions do not</span>
+<span class="line"><i>30</i>    propagate to actors, and Ray preserves their existing exporter settings.</span>
+<span class="line"><i>31</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>32</i>    enable = os.environ.get(&quot;NIXL_TELEMETRY_ENABLE&quot;)</span>
+<span class="line"><i>33</i>    if enable is None or enable.lower() not in _FALSE:</span>
+<span class="line"><i>34</i>        return False</span>
+<span class="line"><i>35</i></span>
+<span class="line"><i>36</i>    os.environ.pop(&quot;NIXL_TELEMETRY_ENABLE&quot;, None)</span>
+<span class="line"><i>37</i>    os.environ[&quot;NIXL_TELEMETRY_EXPORTER&quot;] = _NOP_EXPORTER</span>
+<span class="line"><i>38</i>    os.environ.pop(&quot;NIXL_TELEMETRY_DIR&quot;, None)</span>
+<span class="line"><i>39</i>    logger.info(&quot;Pinned NIXL telemetry to the NOP exporter&quot;)</span>
+<span class="line"><i>40</i>    return True</span></code></pre></details></section><section id="pd-config" class="lesson"><div class="sectionhead"><h2>09 / 仅配置即可实现的部分</h2><label class="done"><input type="checkbox" data-read="pd-config"> 已读</label></div><p>所有参与的 Frontend、独立 Router 和 Worker 都应配置到可达 Collector。只在 Frontend 开启导出无法保证下游服务发出 span。</p><pre><code># 基础 runtime traces/logs 导出（每个参与进程）
+OTEL_EXPORT_ENABLED=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+DYN_LOGGING_CONSOLE_FORMAT=jsonl
+
+# 不同角色使用不同 OTEL_SERVICE_NAME
+# 新基线中的可选粗粒度 lifecycle spans
+DYN_LIFECYCLE_TRACE_ENABLED=1</code></pre><p>引擎内部 exporter、SGLang enable_trace / OTLP 参数以及依赖须按实际镜像版本配置。生命周期开关只是粗粒度 runtime 边界，不会自动补齐 storage/event/NIXL span。</p><details class="source" id="src-pd-enabled"><summary><b>源码 · 生命周期开关独立存在</b><small>lib/runtime/src/telemetry.rs:450–452</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/telemetry.rs#L450-L452" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>450</i>pub(crate) fn lifecycle_tracing_enabled() -&gt; bool {</span>
+<span class="line"><i>451</i>    *LIFECYCLE_ENABLED.get_or_init(|| crate::config::env_is_truthy(DYN_LIFECYCLE_TRACE_ENABLED))</span>
+<span class="line"><i>452</i>}</span></code></pre></details><details class="source" id="src-pd-filters"><summary><b>源码 · lifecycle target 的 OTel filter</b><small>lib/runtime/src/logging.rs:1533–1543</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/logging.rs#L1533-L1543" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1533</i>/// Lifecycle spans bypass `DYN_LOG` only in the OTel layer. The console</span>
+<span class="line"><i>1534</i>/// formatter keeps its normal filter, so enabling lifecycle tracing does not</span>
+<span class="line"><i>1535</i>/// increase stderr logging volume.</span>
+<span class="line"><i>1536</i>fn otel_filters(mut config: LoggingConfig, lifecycle_enabled: bool) -&gt; LoggingFilter {</span>
+<span class="line"><i>1537</i>    if lifecycle_enabled {</span>
+<span class="line"><i>1538</i>        config</span>
+<span class="line"><i>1539</i>            .log_filters</span>
+<span class="line"><i>1540</i>            .insert(LIFECYCLE_TARGET.to_string(), &quot;info&quot;.to_string());</span>
+<span class="line"><i>1541</i>    }</span>
+<span class="line"><i>1542</i>    filters(config)</span>
+<span class="line"><i>1543</i>}</span></code></pre></details><p>联调时使用一致的父采样策略，确认网关保留 traceparent/tracestate；x-request-id 只能辅助关联，不会自动让独立根共享 Trace ID。正式采样比例与每 token/每 block 埋点粒度需要测量后再定。</p></section><section id="pd-extension" class="lesson"><div class="sectionhead"><h2>10 / 要覆盖 Storage & Events，需要补什么</h2><label class="done"><input type="checkbox" data-read="pd-extension"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>边界</th><th>建议实现</th><th>关键语义</th></tr></thead><tbody><tr><td>存储操作入口</td><td>从当前请求捕获 SpanContext，创建 cache.lookup/load/save/offload 等实际操作 span</td><td>区分当前请求 miss 等待、异步写回与共享 prefetch</td></tr><tr><td>后台任务 / 队列</td><td>在消息中保存关联 Context 或显式 Link；任务运行时恢复/attach</td><td>spawn/thread/task-local 不会自动跨任意消息序列化</td></tr><tr><td>通用 Event Plane</td><td>定义可选、版本化 trace metadata，生产/消费两侧有 span</td><td>兼容现有 envelope/codec；不能只改 NATS 而漏掉 ZMQ</td></tr><tr><td>NIXL connector</td><td>将 request ↔ transfer_id ↔ remote request/notification 绑定</td><td>span 结束于完成/失败/取消，不是 post 调用返回</td></tr><tr><td>批处理与共享块</td><td>每批一个操作 span，links 指向来源/等待者</td><td>避免把共享资源强归属到一个请求</td></tr><tr><td>指标 / 日志 / trace</td><td>低基数指标保留；高基数 request/transfer ID 放 span/log</td><td>需要单请求点击跳转时评估 exemplar；不能从汇总指标反推 span</td></tr></tbody></table></div><details class="source" id="src-pd-extension"><summary><b>源码 · 现成 engine-author telemetry facade</b><small>components/src/dynamo/common/backend/telemetry.py:39–85</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/components/src/dynamo/common/backend/telemetry.py#L39-L85" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>39</i>def current_span(context: Context) -&gt; &quot;SpanProxy&quot;:</span>
+<span class="line"><i>40</i>    &quot;&quot;&quot;Return a handle on the framework&#x27;s ``engine.generate`` span.&quot;&quot;&quot;</span>
+<span class="line"><i>41</i>    return context.current_span()</span>
+<span class="line"><i>42</i></span>
+<span class="line"><i>43</i></span>
+<span class="line"><i>44</i>def start_span(context: Context, name: str, **attrs: Any) -&gt; &quot;SpanProxy&quot;:</span>
+<span class="line"><i>45</i>    &quot;&quot;&quot;Open a child span under ``engine.generate`` with the given dynamic</span>
+<span class="line"><i>46</i>    name. The returned ``SpanProxy`` is a context manager — use ``with``</span>
+<span class="line"><i>47</i>    so the span ends on exit.</span>
+<span class="line"><i>48</i></span>
+<span class="line"><i>49</i>    Example::</span>
+<span class="line"><i>50</i></span>
+<span class="line"><i>51</i>        with telemetry.start_span(context, &quot;tokenize&quot;, batch_size=8) as s:</span>
+<span class="line"><i>52</i>            tokens = tokenizer.encode(prompt)</span>
+<span class="line"><i>53</i>            s.add_event(&quot;encoder_warmup_complete&quot;)</span>
+<span class="line"><i>54</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>55</i>    return context.start_span(name, dict(attrs) if attrs else None)</span>
+<span class="line"><i>56</i></span>
+<span class="line"><i>57</i></span>
+<span class="line"><i>58</i>def trace_headers(context: Context) -&gt; dict[str, str] | None:</span>
+<span class="line"><i>59</i>    &quot;&quot;&quot;W3C trace headers to forward to the underlying inference engine.</span>
+<span class="line"><i>60</i></span>
+<span class="line"><i>61</i>    Thin wrapper over ``Context.trace_headers()``; see that method&#x27;s</span>
+<span class="line"><i>62</i>    docstring for return semantics. Most engine code should prefer</span>
+<span class="line"><i>63</i>    :func:`engine_trace_kwargs` instead — it builds a splat-ready kwargs dict</span>
+<span class="line"><i>64</i>    with the keyword name and optional engine-specific gate.</span>
+<span class="line"><i>65</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>66</i>    return context.trace_headers()</span>
+<span class="line"><i>67</i></span>
+<span class="line"><i>68</i></span>
+<span class="line"><i>69</i>def engine_trace_kwargs(</span>
+<span class="line"><i>70</i>    context: Context,</span>
+<span class="line"><i>71</i>    *,</span>
+<span class="line"><i>72</i>    kwarg_name: str = &quot;trace_headers&quot;,</span>
+<span class="line"><i>73</i>    enabled: bool = True,</span>
+<span class="line"><i>74</i>) -&gt; dict[str, dict[str, str]]:</span>
+<span class="line"><i>75</i>    &quot;&quot;&quot;Return ``{kwarg_name: headers}`` for the inference-engine call.</span>
+<span class="line"><i>76</i></span>
+<span class="line"><i>77</i>    Returns an empty dict when no traceparent is available or ``enabled`` is</span>
+<span class="line"><i>78</i>    false. See CLAUDE.md for usage guidance.</span>
+<span class="line"><i>79</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>80</i>    if not enabled:</span>
+<span class="line"><i>81</i>        return {}</span>
+<span class="line"><i>82</i>    headers = context.trace_headers()</span>
+<span class="line"><i>83</i>    if headers is None:</span>
+<span class="line"><i>84</i>        return {}</span>
+<span class="line"><i>85</i>    return {kwarg_name: headers}</span></code></pre></details><details class="source" id="src-pd-child"><summary><b>源码 · 动态子 span 在有效 parent Context 下创建</b><small>lib/bindings/python/rust/context.rs:392–430</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/bindings/python/rust/context.rs#L392-L430" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>392</i>    /// Open a child span under the `engine.generate` parent. Use this for</span>
+<span class="line"><i>393</i>    /// dynamic span names (`tracing::info_span!` requires compile-time</span>
+<span class="line"><i>394</i>    /// names). Returned `SpanProxy` is a context manager; the span ends on</span>
+<span class="line"><i>395</i>    /// `__exit__` / `close()` / drop.</span>
+<span class="line"><i>396</i>    ///</span>
+<span class="line"><i>397</i>    /// Returns a no-op proxy when no parent was plumbed in or the bridge</span>
+<span class="line"><i>398</i>    /// isn&#x27;t installed. Prefer the</span>
+<span class="line"><i>399</i>    /// `dynamo.common.backend.telemetry.start_span(context, name)` facade</span>
+<span class="line"><i>400</i>    /// in engine code.</span>
+<span class="line"><i>401</i>    #[pyo3(signature = (name, attrs=None))]</span>
+<span class="line"><i>402</i>    fn start_span(&amp;self, name: &amp;str, attrs: Option&lt;&amp;Bound&lt;&#x27;_, PyDict&gt;&gt;) -&gt; PyResult&lt;SpanProxy&gt; {</span>
+<span class="line"><i>403</i>        let Some(parent) = &amp;self.span else {</span>
+<span class="line"><i>404</i>            return Ok(SpanProxy {</span>
+<span class="line"><i>405</i>                inner: SpanProxyInner::NoOp,</span>
+<span class="line"><i>406</i>            });</span>
+<span class="line"><i>407</i>        };</span>
+<span class="line"><i>408</i>        let parent_ctx = parent.context();</span>
+<span class="line"><i>409</i>        if !parent_ctx.span().span_context().is_valid() {</span>
+<span class="line"><i>410</i>            warn_bridge_missing_once(&quot;start_span&quot;);</span>
+<span class="line"><i>411</i>            return Ok(SpanProxy {</span>
+<span class="line"><i>412</i>                inner: SpanProxyInner::NoOp,</span>
+<span class="line"><i>413</i>            });</span>
+<span class="line"><i>414</i>        }</span>
+<span class="line"><i>415</i>        let tracer = global::tracer(&quot;dynamo&quot;);</span>
+<span class="line"><i>416</i>        let mut otel_attrs = Vec::new();</span>
+<span class="line"><i>417</i>        if let Some(d) = attrs {</span>
+<span class="line"><i>418</i>            for (k, v) in d.iter() {</span>
+<span class="line"><i>419</i>                otel_attrs.push(KeyValue::new(k.extract::&lt;String&gt;()?, py_to_otel_value(&amp;v)?));</span>
+<span class="line"><i>420</i>            }</span>
+<span class="line"><i>421</i>        }</span>
+<span class="line"><i>422</i>        let mut builder = tracer.span_builder(name.to_string());</span>
+<span class="line"><i>423</i>        if !otel_attrs.is_empty() {</span>
+<span class="line"><i>424</i>            builder = builder.with_attributes(otel_attrs);</span>
+<span class="line"><i>425</i>        }</span>
+<span class="line"><i>426</i>        let span = builder.start_with_context(&amp;tracer, &amp;parent_ctx);</span>
+<span class="line"><i>427</i>        Ok(SpanProxy {</span>
+<span class="line"><i>428</i>            inner: SpanProxyInner::Otel(Some(span)),</span>
+<span class="line"><i>429</i>        })</span>
+<span class="line"><i>430</i>    }</span></code></pre></details><pre><code># 扩展点演示，不是当前系统自动执行的内置埋点
+with telemetry.start_span(context, "kv.load", tier="cpu") as span:
+    # 必须等待实际完成，而不是仅发起操作就退出 with
+    await wait_for_kv_load_completion()
+    span.set_attribute("bytes", transferred_bytes)
+
+# 跨后台线程/进程时还需显式传播 Context；不能把此同步示例
+# 直接套到批量 RDMA、eviction 或异步事件消费者。</code></pre><aside class="note ">这是实施建议，本次没有修改 Dynamo 协议、KV 管理器或 NIXL connector，也没有提交架构变更。</aside></section><section id="pd-acceptance" class="lesson"><div class="sectionhead"><h2>11 / 如何验收“串起来了”</h2><label class="done"><input type="checkbox" data-read="pd-acceptance"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>测试场景</th><th>必须核对的证据</th></tr></thead><tbody><tr><td>PD cache miss</td><td>同一个请求的 Frontend、Prefill、Decode Context；parent/links 与 worker identity</td></tr><tr><td>已完成 Prefill handoff</td><td>前驱 worker link 出现在 Decode engine span 的 links；不要只看同名属性</td></tr><tr><td>Bootstrap/并行 handoff</td><td>分别验证其上下文路径，不能借用 Completed 分支的结论</td></tr><tr><td>跨端 KV transfer</td><td>发起、远端接收/处理、完成/超时 span 与 transfer_id 的实际关联</td></tr><tr><td>CPU/SSD/远端 cache miss</td><td>命中/未命中、load起止、等待时间和数据位置，是否有真实 span</td></tr><tr><td>KV stored/remove 事件</td><td>生产与消费 Context/Link，事件去重/重放/批量后的因果关系</td></tr><tr><td>共享 prefix、多并发、批量迁移</td><td>没有串错请求；能表达一个动作影响多个请求</td></tr><tr><td>失败/取消/重试</td><td>span 完成状态正确，不出现永不结束或仅凭请求 ID 拼起来的链</td></tr></tbody></table></div><p>先用低并发受控请求与测试父 Context，分别触发 miss、hit、offload、传输失败；检查原始 OTLP 数据中的 trace_id、span_id、parent_span_id 和 links。Collector 收到数据只证明导出链路，不能证明应用的因果关系。</p><p>本次没有执行以上实验；结论是源码能力和缺口分析，不是对某个已部署镜像的端到端验证。</p></section><section id="pd-evidence" class="lesson"><div class="sectionhead"><h2>12 / 证据与阅读范围</h2><label class="done"><input type="checkbox" data-read="pd-evidence"> 已读</label></div><ul><li><a href="pd-trace-source-manifest.json">固定提交的源码摘录清单</a>：路径、范围、文件 SHA256。</li><li><a href="https://github.com/ai-dynamo/nixl/blob/main/docs/telemetry.md">NIXL 官方 telemetry 文档</a>：遥测与 exporter；main 文档随版本变化。</li><li><a href="https://github.com/ai-dynamo/nixl/blob/main/src/plugins/telemetry/README.md">NIXL telemetry 插件接口</a>：统计事件不自动成为 OTel span。</li><li><a href="https://github.com/vllm-project/vllm/blob/main/docs/features/nixl_connector_usage.md">vLLM 官方 NixlConnector 使用与指标</a>：引擎路径独立于 Dynamo physical executor。</li><li><a href="https://docs.nvidia.com/dynamo/dev/reference/observability/environment-variables">Dynamo 官方观测配置</a>：核对所部署版本的开关。</li><li><a href="observability.html">可观测性源码专题</a> · <a href="planner.html">Planner 专题</a> · <a href="index.html">教程首页</a></li></ul><p>结论主要依赖正向代码证据：明确的 Header 注入/提取、PD 前驱 Link、通用 envelope 字段、NATS/ZMQ 发布函数、存储调度消息与 NIXL 完成路径。局部缺少字段不作为全仓库绝对否定；自定义 payload、第三方缓存与其他引擎版本可额外实现能力。</p></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 2f296b59274867529ea8deef994e6954520024b6。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

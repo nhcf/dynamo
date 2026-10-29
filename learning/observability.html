@@ -1,0 +1,1805 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>可观测性：从埋点到导出 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 系统地图与讨论大纲</a><a href="observability.html">01 · 可观测性源码</a><a href="planner.html">08 · Planner 源码</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#overview">01 观测架构</a><a href="#registry">02 Registry / 标签</a><a href="#bridge">03 Python / PyO3</a><a href="#exports">04 导出与线程模型</a><a href="#lifecycle">05 请求生命周期</a><a href="#latency">06 TTFT / ITL</a><a href="#tracing">07 日志与上下文</a><a href="#capture">08 Request Trace / FPM</a><a href="#health">09 健康探测</a><a href="#kubernetes">10 Kubernetes / Planner</a><a href="#practice">11 跟读与验证</a><a href="#references">12 参考与差异</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 2f296b592</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>可观测性：从埋点到导出</h1><p class="lede">沿真实源码追踪 Registry、跨语言回调、请求生命周期与诊断通道，用实现解释监控平台中的数据。</p><div class="meta"><span class="pill">2026-10-28</span><span class="pill">commit 2f296b592</span><span class="pill ">首个源码专题 v0.1</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="overview" class="lesson"><div class="sectionhead"><h2>01 / 阅读目标与信号架构</h2><label class="done"><input type="checkbox" data-read="overview"> 已读</label></div><p>一个指标在哪里注册？什么时候更新？从哪个出口被采集？异常时还能相信它吗？本章先跟踪现有 Python Worker → PyO3 → Rust Runtime 链路，再分析 Frontend 本地指标与请求生命周期。</p><div class="tablewrap"><table><thead><tr><th>信号</th><th>代码职责</th><th>平台职责</th></tr></thead><tbody><tr><td>Metrics</td><td>注册、更新、汇总、/metrics 与可选 OTLP exporter</td><td>发现、采集、存储、查询、告警</td></tr><tr><td>Logs / Spans</td><td>结构化事件、上下文传播、OTLP 导出</td><td>接收、存储、采样治理、日志/链路关联</td></tr><tr><td>Request Trace / FPM</td><td>请求或调度遥测捕获、广播到 sink</td><td>保留、分析、回放、内容访问控制</td></tr><tr><td>Health</td><td>系统状态与可选主动推理探测</td><td>探针、模型和真实推理验收</td></tr></tbody></table></div><div class="diagram"><div class="lane"><b>拉取</b><span>Prometheus → /metrics → Registry 汇总 → Rust collectors + Python 引擎文本回调</span></div><div class="lane"><b>指标推送</b><span>Runtime 定时任务 → 原生 collectors + 类型化回调 → OTLP → Collector</span></div><div class="lane"><b>日志与链路</b><span>tracing subscriber → OTel provider / bridge → Collector → Trace / Log 存储</span></div><div class="lane"><b>诊断分支</b><span>请求事件 / 已归一 FPM → 有界广播队列 → 各 sink 独立消费</span></div></div><aside class="note ">本章主线是已核对的现有 Worker 路径。Rust Sidecar、新后端和不同模型任务存在独立入口，不声称所有部署都经过相同 Python 回调。</aside></section><section id="registry" class="lesson"><div class="sectionhead"><h2>02 / Registry：注册本层，采集子树</h2><label class="done"><input type="checkbox" data-read="registry"> 已读</label></div><p><code>MetricsRegistry</code> 持有本地 Registry、子 Registry 列表和三类回调。Arc 让克隆句柄共享注册状态。过去向所有父层级重复注册会造成描述符与常量标签冲突；现在只在本层注册，根抓取时再合并 family。</p><details class="source" id="src-registry"><summary><b>源码 · Registry 数据结构</b><small>lib/runtime/src/metrics.rs:796–829</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/metrics.rs#L796-L829" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>796</i>pub struct MetricsRegistry {</span>
+<span class="line"><i>797</i>    /// The Prometheus registry for this hierarchy.</span>
+<span class="line"><i>798</i>    /// Arc-wrapped so clones share the same registry (metrics registered on clones are visible everywhere).</span>
+<span class="line"><i>799</i>    pub prometheus_registry: Arc&lt;std::sync::RwLock&lt;prometheus::Registry&gt;&gt;,</span>
+<span class="line"><i>800</i></span>
+<span class="line"><i>801</i>    /// Child registries included when emitting combined `/metrics` output.</span>
+<span class="line"><i>802</i>    ///</span>
+<span class="line"><i>803</i>    /// Why this exists:</span>
+<span class="line"><i>804</i>    /// - Previously, `create_metric()` registered every collector into *all* parent registries</span>
+<span class="line"><i>805</i>    ///   (Endpoint → Component → Namespace → DRT) so scraping the root registry included everything.</span>
+<span class="line"><i>806</i>    /// - That fan-out caused Prometheus collisions when different endpoints tried to register the</span>
+<span class="line"><i>807</i>    ///   same metric name with different const-labels (descriptor mismatch).</span>
+<span class="line"><i>808</i>    ///</span>
+<span class="line"><i>809</i>    /// We now register metrics only into the local hierarchy registry to avoid collisions.</span>
+<span class="line"><i>810</i>    /// `child_registries` rebuilds “what to scrape” as a tree of registries so `/metrics` can:</span>
+<span class="line"><i>811</i>    /// - traverse registries recursively,</span>
+<span class="line"><i>812</i>    /// - merge metric families into one exposition payload,</span>
+<span class="line"><i>813</i>    /// - warn/drop exact duplicate series, while allowing same metric name with different labels.</span>
+<span class="line"><i>814</i>    child_registries: Arc&lt;std::sync::RwLock&lt;Vec&lt;MetricsRegistry&gt;&gt;&gt;,</span>
+<span class="line"><i>815</i></span>
+<span class="line"><i>816</i>    /// Update callbacks invoked before metrics are scraped.</span>
+<span class="line"><i>817</i>    /// Wrapped in Arc to preserve callbacks across clones (prevents callback loss when MetricsRegistry is cloned).</span>
+<span class="line"><i>818</i>    pub prometheus_update_callbacks: Arc&lt;std::sync::RwLock&lt;Vec&lt;PrometheusUpdateCallback&gt;&gt;&gt;,</span>
+<span class="line"><i>819</i></span>
+<span class="line"><i>820</i>    /// Callbacks returning engine exposition text; these feed `/metrics` only.</span>
+<span class="line"><i>821</i>    #[allow(clippy::type_complexity)]</span>
+<span class="line"><i>822</i>    pub prometheus_expfmt_callbacks:</span>
+<span class="line"><i>823</i>        Arc&lt;std::sync::RwLock&lt;Vec&lt;PrometheusExpositionFormatCallback&gt;&gt;&gt;,</span>
+<span class="line"><i>824</i></span>
+<span class="line"><i>825</i>    /// Callbacks returning engine metric families; these feed OTLP only.</span>
+<span class="line"><i>826</i>    /// Wrapped in Arc to preserve callbacks across clones (e.g. vLLM callbacks</span>
+<span class="line"><i>827</i>    /// registered at Endpoint remain reachable at DRT).</span>
+<span class="line"><i>828</i>    pub prometheus_typed_callbacks: Arc&lt;std::sync::RwLock&lt;Vec&lt;PrometheusTypedCallback&gt;&gt;&gt;,</span>
+<span class="line"><i>829</i>}</span></code></pre></details><div class="flow"><div><b>01</b>create_metric_with_options</div><div><b>02</b>注入 namespace / component / endpoint 等标签</div><div><b>03</b>仅向当前层级注册 collector</div><div><b>04</b>抓取子树、合并 family、编码</div></div><details class="source" id="src-create"><summary><b>源码 · 创建与自动标签</b><small>lib/runtime/src/metrics.rs:284–375</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/metrics.rs#L284-L375" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>284</i>pub fn create_metric_with_options&lt;T: PrometheusMetric, H: MetricsHierarchy + ?Sized&gt;(</span>
+<span class="line"><i>285</i>    hierarchy: &amp;H,</span>
+<span class="line"><i>286</i>    options: MetricOptions,</span>
+<span class="line"><i>287</i>    metric_name: &amp;str,</span>
+<span class="line"><i>288</i>    metric_desc: &amp;str,</span>
+<span class="line"><i>289</i>    labels: &amp;[(&amp;str, &amp;str)],</span>
+<span class="line"><i>290</i>    buckets: Option&lt;Vec&lt;f64&gt;&gt;,</span>
+<span class="line"><i>291</i>    const_labels: Option&lt;&amp;[&amp;str]&gt;,</span>
+<span class="line"><i>292</i>) -&gt; anyhow::Result&lt;T&gt; {</span>
+<span class="line"><i>293</i>    // Validate that user-provided labels don&#x27;t have duplicate keys</span>
+<span class="line"><i>294</i>    validate_no_duplicate_label_keys(labels)?;</span>
+<span class="line"><i>295</i>    // Note: stored labels functionality has been removed</span>
+<span class="line"><i>296</i></span>
+<span class="line"><i>297</i>    let basename = hierarchy.basename();</span>
+<span class="line"><i>298</i>    let parent_hierarchies = hierarchy.parent_hierarchies();</span>
+<span class="line"><i>299</i></span>
+<span class="line"><i>300</i>    // Build hierarchy path as vector of strings: parent names + [basename]</span>
+<span class="line"><i>301</i>    let mut hierarchy_names: Vec&lt;String&gt; =</span>
+<span class="line"><i>302</i>        parent_hierarchies.iter().map(|p| p.basename()).collect();</span>
+<span class="line"><i>303</i>    hierarchy_names.push(basename.clone());</span>
+<span class="line"><i>304</i></span>
+<span class="line"><i>305</i>    let metric_name = build_metric_name(options.prefix, metric_name);</span>
+<span class="line"><i>306</i></span>
+<span class="line"><i>307</i>    // Build updated_labels: auto-labels first, then `labels` + stored labels</span>
+<span class="line"><i>308</i>    let mut updated_labels: Vec&lt;(String, String)&gt; = Vec::new();</span>
+<span class="line"><i>309</i></span>
+<span class="line"><i>310</i>    // Auto-label injection: Always add dynamo_namespace, dynamo_component, dynamo_endpoint labels</span>
+<span class="line"><i>311</i>    // based on the hierarchy. Label constants defined in prometheus_names.rs labels module.</span>
+<span class="line"><i>312</i>    //</span>
+<span class="line"><i>313</i>    // Python counterpart: components/src/dynamo/common/utils/prometheus.py register_engine_metrics_callback()</span>
+<span class="line"><i>314</i></span>
+<span class="line"><i>315</i>    // Validate that user-provided labels don&#x27;t conflict with auto-generated labels</span>
+<span class="line"><i>316</i>    for (key, _) in labels {</span>
+<span class="line"><i>317</i>        if *key == labels::NAMESPACE</span>
+<span class="line"><i>318</i>            || *key == labels::COMPONENT</span>
+<span class="line"><i>319</i>            || *key == labels::ENDPOINT</span>
+<span class="line"><i>320</i>            || *key == labels::WORKER_ID</span>
+<span class="line"><i>321</i>        {</span>
+<span class="line"><i>322</i>            return Err(anyhow::anyhow!(</span>
+<span class="line"><i>323</i>                &quot;Label &#x27;{}&#x27; is automatically added by auto-label injection and cannot be manually set&quot;,</span>
+<span class="line"><i>324</i>                key</span>
+<span class="line"><i>325</i>            ));</span>
+<span class="line"><i>326</i>        }</span>
+<span class="line"><i>327</i>    }</span>
+<span class="line"><i>328</i></span>
+<span class="line"><i>329</i>    // Also validate that vector label names (const_labels) don&#x27;t collide with auto-injected</span>
+<span class="line"><i>330</i>    // const labels. A variable label named &quot;worker_id&quot; would conflict with the auto-injected</span>
+<span class="line"><i>331</i>    // worker_id const label, causing a prometheus registration error or ambiguous output.</span>
+<span class="line"><i>332</i>    if let Some(label_names) = const_labels {</span>
+<span class="line"><i>333</i>        for name in label_names.iter() {</span>
+<span class="line"><i>334</i>            if *name == labels::NAMESPACE</span>
+<span class="line"><i>335</i>                || *name == labels::COMPONENT</span>
+<span class="line"><i>336</i>                || *name == labels::ENDPOINT</span>
+<span class="line"><i>337</i>                || *name == labels::WORKER_ID</span>
+<span class="line"><i>338</i>            {</span>
+<span class="line"><i>339</i>                return Err(anyhow::anyhow!(</span>
+<span class="line"><i>340</i>                    &quot;Variable label name &#x27;{}&#x27; conflicts with auto-injected const label and cannot be used&quot;,</span>
+<span class="line"><i>341</i>                    name</span>
+<span class="line"><i>342</i>                ));</span>
+<span class="line"><i>343</i>            }</span>
+<span class="line"><i>344</i>        }</span>
+<span class="line"><i>345</i>    }</span>
+<span class="line"><i>346</i></span>
+<span class="line"><i>347</i>    // Add auto-generated labels with sanitized values</span>
+<span class="line"><i>348</i>    // Hierarchy: [drt, namespace, component, endpoint]</span>
+<span class="line"><i>349</i>    if hierarchy_names.len() &gt; 1 {</span>
+<span class="line"><i>350</i>        let namespace = &amp;hierarchy_names[1];</span>
+<span class="line"><i>351</i>        if !namespace.is_empty() {</span>
+<span class="line"><i>352</i>            let valid_namespace = sanitize_prometheus_label(namespace)?;</span>
+<span class="line"><i>353</i>            if !valid_namespace.is_empty() {</span>
+<span class="line"><i>354</i>                updated_labels.push((labels::NAMESPACE.to_string(), valid_namespace));</span>
+<span class="line"><i>355</i>            }</span>
+<span class="line"><i>356</i>        }</span>
+<span class="line"><i>357</i>    }</span>
+<span class="line"><i>358</i>    if hierarchy_names.len() &gt; 2 {</span>
+<span class="line"><i>359</i>        let component = &amp;hierarchy_names[2];</span>
+<span class="line"><i>360</i>        if !component.is_empty() {</span>
+<span class="line"><i>361</i>            let valid_component = sanitize_prometheus_label(component)?;</span>
+<span class="line"><i>362</i>            if !valid_component.is_empty() {</span>
+<span class="line"><i>363</i>                updated_labels.push((labels::COMPONENT.to_string(), valid_component));</span>
+<span class="line"><i>364</i>            }</span>
+<span class="line"><i>365</i>        }</span>
+<span class="line"><i>366</i>    }</span>
+<span class="line"><i>367</i>    if hierarchy_names.len() &gt; 3 {</span>
+<span class="line"><i>368</i>        let endpoint = &amp;hierarchy_names[3];</span>
+<span class="line"><i>369</i>        if !endpoint.is_empty() {</span>
+<span class="line"><i>370</i>            let valid_endpoint = sanitize_prometheus_label(endpoint)?;</span>
+<span class="line"><i>371</i>            if !valid_endpoint.is_empty() {</span>
+<span class="line"><i>372</i>                updated_labels.push((labels::ENDPOINT.to_string(), valid_endpoint));</span>
+<span class="line"><i>373</i>            }</span>
+<span class="line"><i>374</i>        }</span>
+<span class="line"><i>375</i>    }</span></code></pre></details><details class="source" id="src-register"><summary><b>源码 · 只注册本层</b><small>lib/runtime/src/metrics.rs:494–505</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/metrics.rs#L494-L505" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>494</i>    };</span>
+<span class="line"><i>495</i></span>
+<span class="line"><i>496</i>    let collector: Box&lt;dyn prometheus::core::Collector&gt; = Box::new(prometheus_metric.clone());</span>
+<span class="line"><i>497</i>    let registry = hierarchy.get_metrics_registry();</span>
+<span class="line"><i>498</i>    if options.warn_on_registration_failure {</span>
+<span class="line"><i>499</i>        registry.add_metric_or_warn(collector, &amp;metric_name);</span>
+<span class="line"><i>500</i>    } else {</span>
+<span class="line"><i>501</i>        registry.add_metric(collector)?;</span>
+<span class="line"><i>502</i>    }</span>
+<span class="line"><i>503</i></span>
+<span class="line"><i>504</i>    Ok(prometheus_metric)</span>
+<span class="line"><i>505</i>}</span></code></pre></details><details class="source" id="src-scrape"><summary><b>源码 · 文本汇总出口</b><small>lib/runtime/src/metrics.rs:932–963</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/metrics.rs#L932-L963" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>932</i>    pub fn prometheus_expfmt_combined(&amp;self) -&gt; anyhow::Result&lt;String&gt; {</span>
+<span class="line"><i>933</i>        let registries = self.registries_for_combined_scrape();</span>
+<span class="line"><i>934</i>        run_update_callbacks(&amp;registries);</span>
+<span class="line"><i>935</i></span>
+<span class="line"><i>936</i>        let merged = FamilyMerger::from_gathered(&amp;registries)?.into_sorted();</span>
+<span class="line"><i>937</i></span>
+<span class="line"><i>938</i>        let encoder = prometheus::TextEncoder::new();</span>
+<span class="line"><i>939</i>        let mut buffer = Vec::new();</span>
+<span class="line"><i>940</i>        encoder.encode(&amp;merged, &amp;mut buffer)?;</span>
+<span class="line"><i>941</i>        let mut result = String::from_utf8(buffer)?;</span>
+<span class="line"><i>942</i></span>
+<span class="line"><i>943</i>        // Append expfmt callbacks deterministically in registry order.</span>
+<span class="line"><i>944</i>        let mut expfmt = String::new();</span>
+<span class="line"><i>945</i>        for registry in &amp;registries {</span>
+<span class="line"><i>946</i>            let text = registry.execute_expfmt_callbacks();</span>
+<span class="line"><i>947</i>            if !text.is_empty() {</span>
+<span class="line"><i>948</i>                if !expfmt.is_empty() &amp;&amp; !expfmt.ends_with(&#x27;\n&#x27;) {</span>
+<span class="line"><i>949</i>                    expfmt.push(&#x27;\n&#x27;);</span>
+<span class="line"><i>950</i>                }</span>
+<span class="line"><i>951</i>                expfmt.push_str(&amp;text);</span>
+<span class="line"><i>952</i>            }</span>
+<span class="line"><i>953</i>        }</span>
+<span class="line"><i>954</i></span>
+<span class="line"><i>955</i>        if !expfmt.is_empty() {</span>
+<span class="line"><i>956</i>            if !result.ends_with(&#x27;\n&#x27;) {</span>
+<span class="line"><i>957</i>                result.push(&#x27;\n&#x27;);</span>
+<span class="line"><i>958</i>            }</span>
+<span class="line"><i>959</i>            result.push_str(&amp;expfmt);</span>
+<span class="line"><i>960</i>        }</span>
+<span class="line"><i>961</i></span>
+<span class="line"><i>962</i>        Ok(result)</span>
+<span class="line"><i>963</i>    }</span></code></pre></details><details class="source" id="src-typed"><summary><b>源码 · 类型化汇总出口</b><small>lib/runtime/src/metrics.rs:974–1014</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/metrics.rs#L974-L1014" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>974</i>    pub fn metric_families_combined(&amp;self) -&gt; anyhow::Result&lt;CollectedFamilies&gt; {</span>
+<span class="line"><i>975</i>        let registries = self.registries_for_combined_scrape();</span>
+<span class="line"><i>976</i>        run_update_callbacks(&amp;registries);</span>
+<span class="line"><i>977</i></span>
+<span class="line"><i>978</i>        let mut merger = FamilyMerger::from_gathered(&amp;registries)?;</span>
+<span class="line"><i>979</i></span>
+<span class="line"><i>980</i>        // The unit travels beside the family, keyed by name: the proto model</span>
+<span class="line"><i>981</i>        // has no unit field, so it would otherwise be dropped here.</span>
+<span class="line"><i>982</i>        let mut units: HashMap&lt;String, String&gt; = HashMap::new();</span>
+<span class="line"><i>983</i>        let mut prom_types: HashMap&lt;String, String&gt; = HashMap::new();</span>
+<span class="line"><i>984</i>        for registry in &amp;registries {</span>
+<span class="line"><i>985</i>            for built in registry.execute_typed_callbacks() {</span>
+<span class="line"><i>986</i>                let name = built.family.name().to_string();</span>
+<span class="line"><i>987</i>                // Publish the side metadata only once the family is accepted.</span>
+<span class="line"><i>988</i>                // The maps are keyed by name, so metadata from a family the</span>
+<span class="line"><i>989</i>                // merger rejects would otherwise be applied to the family that</span>
+<span class="line"><i>990</i>                // did survive under that name -- a rejected `info` could make a</span>
+<span class="line"><i>991</i>                // surviving gauge encode as a non-monotonic Sum.</span>
+<span class="line"><i>992</i>                if let Err(error) = merger.add_family(built.family) {</span>
+<span class="line"><i>993</i>                    tracing::warn!(metric_name = %name, %error, &quot;skipping typed metric family&quot;);</span>
+<span class="line"><i>994</i>                    continue;</span>
+<span class="line"><i>995</i>                }</span>
+<span class="line"><i>996</i>                // First writer wins, matching how the merger itself resolves a</span>
+<span class="line"><i>997</i>                // conflict: the first family fixes help and type, and later</span>
+<span class="line"><i>998</i>                // ones must agree. A later family can be accepted and still</span>
+<span class="line"><i>999</i>                // have every sample dropped as a duplicate series, so letting</span>
+<span class="line"><i>1000</i>                // it overwrite the unit would label the surviving data with a</span>
+<span class="line"><i>1001</i>                // unit from a source that contributed none of it.</span>
+<span class="line"><i>1002</i>                if !built.unit.is_empty() {</span>
+<span class="line"><i>1003</i>                    units.entry(name.clone()).or_insert(built.unit);</span>
+<span class="line"><i>1004</i>                }</span>
+<span class="line"><i>1005</i>                prom_types.entry(name).or_insert(built.prom_type);</span>
+<span class="line"><i>1006</i>            }</span>
+<span class="line"><i>1007</i>        }</span>
+<span class="line"><i>1008</i></span>
+<span class="line"><i>1009</i>        Ok(CollectedFamilies {</span>
+<span class="line"><i>1010</i>            families: merger.into_sorted(),</span>
+<span class="line"><i>1011</i>            units,</span>
+<span class="line"><i>1012</i>            prom_types,</span>
+<span class="line"><i>1013</i>        })</span>
+<span class="line"><i>1014</i>    }</span></code></pre></details><p>调用方不能重复手工设置自动标签。文本与类型化出口共享 Registry 树，但引擎回调是两套：文本供 scrape，类型化供 OTLP。类型化合并还保留 unit 和 Prometheus type 元数据，接受 family 后才写入侧边元数据。</p><details class="exercise"><summary>阅读检查 · 重复注册父层级有什么风险？</summary><p>子树会被遍历，重复注册可能重复执行回调并产生重复序列；当前绑定只在所在层级注册。</p></details></section><section id="bridge" class="lesson"><div class="sectionhead"><h2>03 / Python → PyO3 → Rust</h2><label class="done"><input type="checkbox" data-read="bridge"> 已读</label></div><div class="flow"><div><b>01</b>引擎 CollectorRegistry</div><div><b>02</b>Python 标签注入、注册双回调</div><div><b>03</b>PyO3 包装 callable</div><div><b>04</b>Rust 在采集时调用</div></div><details class="source" id="src-python"><summary><b>源码 · 引擎标签与双回调</b><small>components/src/dynamo/common/utils/prometheus.py:158–239</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/components/src/dynamo/common/utils/prometheus.py#L158-L239" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>158</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>159</i></span>
+<span class="line"><i>160</i>    # Auto-inject hierarchy labels</span>
+<span class="line"><i>161</i>    final_inject_labels = inject_custom_labels.copy() if inject_custom_labels else {}</span>
+<span class="line"><i>162</i></span>
+<span class="line"><i>163</i>    if namespace_name and component_name:</span>
+<span class="line"><i>164</i>        # Extract hierarchy information</span>
+<span class="line"><i>165</i>        # Mirrors Rust auto-label injection in lib/runtime/src/metrics.rs create_metric()</span>
+<span class="line"><i>166</i>        endpoint_name_final = endpoint_name or &quot;generate&quot;</span>
+<span class="line"><i>167</i></span>
+<span class="line"><i>168</i>        # Add auto-labels using constants from prometheus_names.labels</span>
+<span class="line"><i>169</i>        # These align with Rust auto-labels defined in lib/runtime/src/metrics/prometheus_names.rs</span>
+<span class="line"><i>170</i>        auto_labels = {</span>
+<span class="line"><i>171</i>            labels.NAMESPACE: namespace_name,  # &quot;dynamo_namespace&quot;</span>
+<span class="line"><i>172</i>            labels.COMPONENT: component_name,  # &quot;dynamo_component&quot;</span>
+<span class="line"><i>173</i>            labels.ENDPOINT: endpoint_name_final,  # &quot;dynamo_endpoint&quot;</span>
+<span class="line"><i>174</i>        }</span>
+<span class="line"><i>175</i></span>
+<span class="line"><i>176</i>        # Add worker_id label from connection_id (discovery instance ID).</span>
+<span class="line"><i>177</i>        # This provides a stable per-worker identity label so metrics from different</span>
+<span class="line"><i>178</i>        # workers serving the same endpoint can be distinguished without relying on</span>
+<span class="line"><i>179</i>        # Kubernetes labels. Mirrors Rust auto-label injection in create_metric().</span>
+<span class="line"><i>180</i>        try:</span>
+<span class="line"><i>181</i>            conn_id = endpoint.connection_id()</span>
+<span class="line"><i>182</i>            auto_labels[labels.WORKER_ID] = format(conn_id, &quot;x&quot;)</span>
+<span class="line"><i>183</i>        except Exception as e:</span>
+<span class="line"><i>184</i>            logging.debug(</span>
+<span class="line"><i>185</i>                f&quot;Could not obtain connection_id for worker_id label injection: {e}&quot;</span>
+<span class="line"><i>186</i>            )</span>
+<span class="line"><i>187</i></span>
+<span class="line"><i>188</i>        # Add model labels if model_name is provided</span>
+<span class="line"><i>189</i>        if model_name:</span>
+<span class="line"><i>190</i>            auto_labels[labels.MODEL] = model_name  # &quot;model&quot; (OpenAI standard)</span>
+<span class="line"><i>191</i>            auto_labels[</span>
+<span class="line"><i>192</i>                labels.MODEL_NAME</span>
+<span class="line"><i>193</i>            ] = model_name  # &quot;model_name&quot; (engine-native compatibility)</span>
+<span class="line"><i>194</i></span>
+<span class="line"><i>195</i>        # Validate that user didn&#x27;t provide conflicting auto-labels</span>
+<span class="line"><i>196</i>        # Warn but don&#x27;t error - custom labels have lower precedence than auto-labels</span>
+<span class="line"><i>197</i>        if inject_custom_labels:</span>
+<span class="line"><i>198</i>            for key in auto_labels:</span>
+<span class="line"><i>199</i>                if key in inject_custom_labels:</span>
+<span class="line"><i>200</i>                    logging.warning(</span>
+<span class="line"><i>201</i>                        f&quot;Custom label &#x27;{key}&#x27; conflicts with auto-injected label. &quot;</span>
+<span class="line"><i>202</i>                        f&quot;Auto-injected value takes precedence. Custom value &#x27;{inject_custom_labels[key]}&#x27; ignored.&quot;</span>
+<span class="line"><i>203</i>                    )</span>
+<span class="line"><i>204</i></span>
+<span class="line"><i>205</i>        # Merge labels with correct precedence:</span>
+<span class="line"><i>206</i>        # 1. Existing labels (from source metrics) - never overwritten</span>
+<span class="line"><i>207</i>        # 2. Auto-labels (dynamo_*, worker_id, model*) - injected by Dynamo</span>
+<span class="line"><i>208</i>        # 3. Custom labels (inject_custom_labels) - user-provided, lowest precedence</span>
+<span class="line"><i>209</i>        # Put custom labels first, then overwrite with auto-labels (higher precedence)</span>
+<span class="line"><i>210</i>        final_inject_labels = {**final_inject_labels, **auto_labels}</span>
+<span class="line"><i>211</i>        logging.debug(</span>
+<span class="line"><i>212</i>            f&quot;Auto-injecting labels: &quot;</span>
+<span class="line"><i>213</i>            f&quot;namespace={namespace_name}, component={component_name}, endpoint={endpoint_name_final}, model={model_name}&quot;</span>
+<span class="line"><i>214</i>        )</span>
+<span class="line"><i>215</i></span>
+<span class="line"><i>216</i>    def get_expfmt() -&gt; str:</span>
+<span class="line"><i>217</i>        &quot;&quot;&quot;Callback to return engine Prometheus metrics in exposition format&quot;&quot;&quot;</span>
+<span class="line"><i>218</i>        result = get_prometheus_expfmt(</span>
+<span class="line"><i>219</i>            registry,</span>
+<span class="line"><i>220</i>            metric_prefix_filters=metric_prefix_filters,</span>
+<span class="line"><i>221</i>            exclude_prefixes=exclude_prefixes,</span>
+<span class="line"><i>222</i>            inject_custom_labels=final_inject_labels if final_inject_labels else None,</span>
+<span class="line"><i>223</i>        )</span>
+<span class="line"><i>224</i>        return result</span>
+<span class="line"><i>225</i></span>
+<span class="line"><i>226</i>    def get_typed() -&gt; list:</span>
+<span class="line"><i>227</i>        &quot;&quot;&quot;Callback returning engine metrics as a typed structure.&quot;&quot;&quot;</span>
+<span class="line"><i>228</i>        return get_prometheus_typed(</span>
+<span class="line"><i>229</i>            registry,</span>
+<span class="line"><i>230</i>            metric_prefix_filters=metric_prefix_filters,</span>
+<span class="line"><i>231</i>            exclude_prefixes=exclude_prefixes,</span>
+<span class="line"><i>232</i>            inject_custom_labels=final_inject_labels or None,</span>
+<span class="line"><i>233</i>        )</span>
+<span class="line"><i>234</i></span>
+<span class="line"><i>235</i>    # Two independent surfaces: /metrics renders the engine&#x27;s own exposition</span>
+<span class="line"><i>236</i>    # text, OTLP exports the same metrics handed over as a structure. Both are</span>
+<span class="line"><i>237</i>    # registered here so an engine cannot end up on only one of them.</span>
+<span class="line"><i>238</i>    endpoint.metrics.register_prometheus_expfmt_callback(get_expfmt)</span>
+<span class="line"><i>239</i>    endpoint.metrics.register_prometheus_typed_callback(get_typed)</span></code></pre></details><p>源指标标签优先，Dynamo 自动标签其次，自定义补充标签最后。辅助函数在注册阶段准备参数，采集阶段才执行回调。</p><details class="source" id="src-binding"><summary><b>源码 · RuntimeMetrics 注册到当前层级</b><small>lib/bindings/python/rust/prometheus_metrics.rs:109–131</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/bindings/python/rust/prometheus_metrics.rs#L109-L131" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>109</i>#[pymethods]</span>
+<span class="line"><i>110</i>impl RuntimeMetrics {</span>
+<span class="line"><i>111</i>    /// Register a callback that returns Prometheus exposition text. The</span>
+<span class="line"><i>112</i>    /// returned text is appended to the `/metrics` endpoint output.</span>
+<span class="line"><i>113</i>    fn register_prometheus_expfmt_callback(&amp;self, callback: PyObject) -&gt; PyResult&lt;()&gt; {</span>
+<span class="line"><i>114</i>        // Register on this hierarchy level only — combined scrapes traverse</span>
+<span class="line"><i>115</i>        // children, so registering on parents would double-count.</span>
+<span class="line"><i>116</i>        self.hierarchy</span>
+<span class="line"><i>117</i>            .get_metrics_registry()</span>
+<span class="line"><i>118</i>            .add_expfmt_callback(wrap_py_expfmt_callback(callback, &quot;RuntimeMetrics&quot;));</span>
+<span class="line"><i>119</i>        Ok(())</span>
+<span class="line"><i>120</i>    }</span>
+<span class="line"><i>121</i></span>
+<span class="line"><i>122</i>    /// Register a callback returning typed metric families, which feed the</span>
+<span class="line"><i>123</i>    /// OTLP export. Independent of the exposition-text callback above: a</span>
+<span class="line"><i>124</i>    /// registry that should reach both surfaces registers both.</span>
+<span class="line"><i>125</i>    fn register_prometheus_typed_callback(&amp;self, callback: PyObject) -&gt; PyResult&lt;()&gt; {</span>
+<span class="line"><i>126</i>        self.hierarchy</span>
+<span class="line"><i>127</i>            .get_metrics_registry()</span>
+<span class="line"><i>128</i>            .add_typed_callback(wrap_py_typed_callback(callback, &quot;RuntimeMetrics&quot;));</span>
+<span class="line"><i>129</i>        Ok(())</span>
+<span class="line"><i>130</i>    }</span>
+<span class="line"><i>131</i>}</span></code></pre></details><details class="source" id="src-pyo3"><summary><b>源码 · GIL 与返回值契约</b><small>lib/bindings/python/rust/prometheus_metrics.rs:15–91</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/bindings/python/rust/prometheus_metrics.rs#L15-L91" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>15</i>fn wrap_py_expfmt_callback(</span>
+<span class="line"><i>16</i>    callback: PyObject,</span>
+<span class="line"><i>17</i>    source: &amp;&#x27;static str,</span>
+<span class="line"><i>18</i>) -&gt; PrometheusExpositionFormatCallback {</span>
+<span class="line"><i>19</i>    Arc::new(move || {</span>
+<span class="line"><i>20</i>        Python::with_gil(|py| match callback.call0(py) {</span>
+<span class="line"><i>21</i>            Ok(result) =&gt; match result.extract::&lt;String&gt;(py) {</span>
+<span class="line"><i>22</i>                Ok(text) =&gt; Ok(text),</span>
+<span class="line"><i>23</i>                Err(e) =&gt; {</span>
+<span class="line"><i>24</i>                    tracing::error!(error = %e, source, &quot;expfmt callback must return a string&quot;);</span>
+<span class="line"><i>25</i>                    Ok(String::new())</span>
+<span class="line"><i>26</i>                }</span>
+<span class="line"><i>27</i>            },</span>
+<span class="line"><i>28</i>            Err(e) =&gt; {</span>
+<span class="line"><i>29</i>                tracing::error!(error = %e, source, &quot;expfmt callback raised&quot;);</span>
+<span class="line"><i>30</i>                Ok(String::new())</span>
+<span class="line"><i>31</i>            }</span>
+<span class="line"><i>32</i>        })</span>
+<span class="line"><i>33</i>    })</span>
+<span class="line"><i>34</i>}</span>
+<span class="line"><i>35</i></span>
+<span class="line"><i>36</i>/// What a typed callback returns: `[(name, help, type, [(sample, [(k, v)], value)])]`.</span>
+<span class="line"><i>37</i>///</span>
+<span class="line"><i>38</i>/// Extracted natively by pyo3 -- deliberately not JSON or any other string, so</span>
+<span class="line"><i>39</i>/// the structure never round-trips through text on either side of the boundary.</span>
+<span class="line"><i>40</i>type PyTypedFamilies = Vec&lt;(</span>
+<span class="line"><i>41</i>    String,</span>
+<span class="line"><i>42</i>    String,</span>
+<span class="line"><i>43</i>    String,</span>
+<span class="line"><i>44</i>    String,</span>
+<span class="line"><i>45</i>    Vec&lt;(String, Vec&lt;(String, String)&gt;, f64, Option&lt;f64&gt;)&gt;,</span>
+<span class="line"><i>46</i>)&gt;;</span>
+<span class="line"><i>47</i></span>
+<span class="line"><i>48</i>/// Wrap a Python callable returning typed families into the Rust callback shape.</span>
+<span class="line"><i>49</i>fn wrap_py_typed_callback(</span>
+<span class="line"><i>50</i>    callback: PyObject,</span>
+<span class="line"><i>51</i>    source: &amp;&#x27;static str,</span>
+<span class="line"><i>52</i>) -&gt; crate::rs::metrics::PrometheusTypedCallback {</span>
+<span class="line"><i>53</i>    Arc::new(move || {</span>
+<span class="line"><i>54</i>        // Hold the GIL only for the call and the extraction. Building families</span>
+<span class="line"><i>55</i>        // is pure Rust, and the point of the typed contract is to give the</span>
+<span class="line"><i>56</i>        // engine its GIL time back.</span>
+<span class="line"><i>57</i>        let typed: PyTypedFamilies = Python::with_gil(|py| {</span>
+<span class="line"><i>58</i>            let result = callback</span>
+<span class="line"><i>59</i>                .call0(py)</span>
+<span class="line"><i>60</i>                .map_err(|e| anyhow::anyhow!(&quot;{source} typed callback raised: {e}&quot;))?;</span>
+<span class="line"><i>61</i>            result.extract(py).map_err(|e| {</span>
+<span class="line"><i>62</i>                anyhow::anyhow!(&quot;{source} typed callback returned an unexpected shape: {e}&quot;)</span>
+<span class="line"><i>63</i>            })</span>
+<span class="line"><i>64</i>        })?;</span>
+<span class="line"><i>65</i></span>
+<span class="line"><i>66</i>        Ok(crate::rs::metrics::prom_typed::build_families(</span>
+<span class="line"><i>67</i>            typed</span>
+<span class="line"><i>68</i>                .into_iter()</span>
+<span class="line"><i>69</i>                .map(|(name, help, kind, unit, samples)| {</span>
+<span class="line"><i>70</i>                    crate::rs::metrics::prom_typed::TypedFamily {</span>
+<span class="line"><i>71</i>                        name,</span>
+<span class="line"><i>72</i>                        help,</span>
+<span class="line"><i>73</i>                        kind,</span>
+<span class="line"><i>74</i>                        unit,</span>
+<span class="line"><i>75</i>                        samples: samples</span>
+<span class="line"><i>76</i>                            .into_iter()</span>
+<span class="line"><i>77</i>                            .map(|(name, labels, value, timestamp)| {</span>
+<span class="line"><i>78</i>                                crate::rs::metrics::prom_typed::TypedSample {</span>
+<span class="line"><i>79</i>                                    name,</span>
+<span class="line"><i>80</i>                                    labels: labels.into_iter().collect(),</span>
+<span class="line"><i>81</i>                                    value,</span>
+<span class="line"><i>82</i>                                    timestamp,</span>
+<span class="line"><i>83</i>                                }</span>
+<span class="line"><i>84</i>                            })</span>
+<span class="line"><i>85</i>                            .collect(),</span>
+<span class="line"><i>86</i>                    }</span>
+<span class="line"><i>87</i>                })</span>
+<span class="line"><i>88</i>                .collect(),</span>
+<span class="line"><i>89</i>        ))</span>
+<span class="line"><i>90</i>    })</span>
+<span class="line"><i>91</i>}</span></code></pre></details><p>文本回调执行或返回值提取失败时，会记录错误并返回空字符串，其他指标仍可能正常输出。类型化回调则返回 Rust 上层错误；从 tuple/list 提取数据后，用 Rust 构造 family，避免文本往返。GIL 只覆盖 Python 调用和提取。</p><div class="tablewrap"><table><thead><tr><th>后端阅读入口</th><th>重点</th></tr></thead><tbody><tr><td>vLLM setup_metrics_collection</td><td>REGISTRY 与 multiprocess Registry 的区别</td></tr><tr><td>SGLang setup_sgl_metrics / setup_prometheus_registry</td><td>引擎开关与多进程采集</td></tr><tr><td>TensorRT-LLM init_llm_worker</td><td>--publish-metrics 与附加统计</td></tr></tbody></table></div><details class="exercise"><summary>阅读检查 · 为什么 HTTP 200 不足以验收引擎指标？</summary><p>单个 Python 文本回调可以失败并返回空文本，但其他 collectors 仍能编码成功；必须检查预期序列和错误日志。</p></details></section><section id="exports" class="lesson"><div class="sectionhead"><h2>04 / 出口与线程模型</h2><label class="done"><input type="checkbox" data-read="exports"> 已读</label></div><div class="tabs" role="tablist" aria-label="指标出口"><button id="tab-pull" role="tab" aria-controls="panel-pull" data-tab="pull" aria-selected="true">Prometheus 拉取</button><button id="tab-push" role="tab" aria-controls="panel-push" data-tab="push" aria-selected="false">OTLP 推送</button></div><div class="tab-panel" id="panel-pull" role="tabpanel" aria-labelledby="tab-pull" data-panel="pull"><b>Worker：metrics_handler → render_scrape_at → spawn_blocking → prometheus_expfmt_combined</b><p>Mutex 串行保护最近渲染结果。等待者在发现另一次渲染的起点晚于或等于自己的请求起点时复用结果；不是固定 TTL 缓存。</p></div><div class="tab-panel" id="panel-push" role="tabpanel" aria-labelledby="tab-push" data-panel="push" hidden><b>Runtime → ExportConfig → tokio::spawn(run) → tick → 类型化汇总 → OTLP RPC</b><p>默认 60000ms，连接/RPC deadline 为周期与 30 秒的较小值。连接失败在后续 tick 重试，RPC 失败清空连接，partial_success 的拒绝点数会记录。</p></div><details class="source" id="src-system"><summary><b>源码 · Worker handler 与并发抓取合并</b><small>lib/runtime/src/system_status_server.rs:537–587</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/system_status_server.rs#L537-L587" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>537</i>async fn metrics_handler(state: Arc&lt;SystemStatusState&gt;) -&gt; impl IntoResponse {</span>
+<span class="line"><i>538</i>    // Get all metrics from the DistributedRuntime.</span>
+<span class="line"><i>539</i>    // The uptime gauge is updated automatically via a PrometheusUpdateCallback</span>
+<span class="line"><i>540</i>    // registered in DistributedRuntime::new(), so it is always fresh before scrape.</span>
+<span class="line"><i>541</i>    //</span>
+<span class="line"><i>542</i>    // NOTE: We use a multi-registry model (e.g. one registry per endpoint) and merge at scrape time,</span>
+<span class="line"><i>543</i>    // so /metrics traverses registered child registries and produces a single combined output.</span>
+<span class="line"><i>544</i>    let registry = state.drt().get_metrics_registry().clone();</span>
+<span class="line"><i>545</i>    match render_scrape_at(state.last_scrape.clone(), registry, Instant::now()).await {</span>
+<span class="line"><i>546</i>        Ok(text) =&gt; (</span>
+<span class="line"><i>547</i>            StatusCode::OK,</span>
+<span class="line"><i>548</i>            [(</span>
+<span class="line"><i>549</i>                axum::http::header::CONTENT_TYPE,</span>
+<span class="line"><i>550</i>                &quot;text/plain; charset=utf-8&quot;,</span>
+<span class="line"><i>551</i>            )],</span>
+<span class="line"><i>552</i>            text,</span>
+<span class="line"><i>553</i>        )</span>
+<span class="line"><i>554</i>            .into_response(),</span>
+<span class="line"><i>555</i>        Err(e) =&gt; {</span>
+<span class="line"><i>556</i>            tracing::error!(&quot;Failed to get metrics from registry: {e}&quot;);</span>
+<span class="line"><i>557</i>            (StatusCode::INTERNAL_SERVER_ERROR, &quot;Failed to get metrics&quot;).into_response()</span>
+<span class="line"><i>558</i>        }</span>
+<span class="line"><i>559</i>    }</span>
+<span class="line"><i>560</i>}</span>
+<span class="line"><i>561</i></span>
+<span class="line"><i>562</i>/// Render `/metrics` for a scrape that arrived at `requested_at`. A render</span>
+<span class="line"><i>563</i>/// that started collecting after the scrape arrived is reused; otherwise the</span>
+<span class="line"><i>564</i>/// scrape renders on the blocking pool. The owned guard moves into the</span>
+<span class="line"><i>565</i>/// closure, so a cancelled request cannot release the gate before its render</span>
+<span class="line"><i>566</i>/// finishes and let the next scrape queue inside the pool.</span>
+<span class="line"><i>567</i>async fn render_scrape_at(</span>
+<span class="line"><i>568</i>    last_scrape: Arc&lt;tokio::sync::Mutex&lt;LastScrape&gt;&gt;,</span>
+<span class="line"><i>569</i>    registry: crate::metrics::MetricsRegistry,</span>
+<span class="line"><i>570</i>    requested_at: Instant,</span>
+<span class="line"><i>571</i>) -&gt; anyhow::Result&lt;bytes::Bytes&gt; {</span>
+<span class="line"><i>572</i>    let mut last = last_scrape.lock_owned().await;</span>
+<span class="line"><i>573</i>    if last.started_at.is_some_and(|at| at &gt;= requested_at) {</span>
+<span class="line"><i>574</i>        return Ok(last.text.clone());</span>
+<span class="line"><i>575</i>    }</span>
+<span class="line"><i>576</i>    tokio::task::spawn_blocking(move || {</span>
+<span class="line"><i>577</i>        let started_at = Instant::now();</span>
+<span class="line"><i>578</i>        let text = bytes::Bytes::from(registry.prometheus_expfmt_combined()?);</span>
+<span class="line"><i>579</i>        *last = LastScrape {</span>
+<span class="line"><i>580</i>            started_at: Some(started_at),</span>
+<span class="line"><i>581</i>            text: text.clone(),</span>
+<span class="line"><i>582</i>        };</span>
+<span class="line"><i>583</i>        Ok(text)</span>
+<span class="line"><i>584</i>    })</span>
+<span class="line"><i>585</i>    .await</span>
+<span class="line"><i>586</i>    .map_err(|e| anyhow::anyhow!(&quot;metrics render task failed: {e}&quot;))?</span>
+<span class="line"><i>587</i>}</span></code></pre></details><details class="source" id="src-bootstrap"><summary><b>源码 · Runtime 启动 exporter</b><small>lib/runtime/src/distributed.rs:357–410</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/distributed.rs#L357-L410" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>357</i>            .lock()</span>
+<span class="line"><i>358</i>            .initialize_uptime_gauge(&amp;distributed_runtime)?;</span>
+<span class="line"><i>359</i></span>
+<span class="line"><i>360</i>        // Register an update callback so the uptime gauge is refreshed before</span>
+<span class="line"><i>361</i>        // every Prometheus scrape (both system status server and frontend).</span>
+<span class="line"><i>362</i>        {</span>
+<span class="line"><i>363</i>            let system_health = distributed_runtime.system_health.clone();</span>
+<span class="line"><i>364</i>            distributed_runtime</span>
+<span class="line"><i>365</i>                .metrics_registry</span>
+<span class="line"><i>366</i>                .add_update_callback(std::sync::Arc::new(move || {</span>
+<span class="line"><i>367</i>                    system_health.lock().update_uptime_gauge();</span>
+<span class="line"><i>368</i>                    Ok(())</span>
+<span class="line"><i>369</i>                }));</span>
+<span class="line"><i>370</i>        }</span>
+<span class="line"><i>371</i></span>
+<span class="line"><i>372</i>        // Opt-in OTLP metrics export. Deliberately not tied to the system</span>
+<span class="line"><i>373</i>        // status server: that server is disabled by default</span>
+<span class="line"><i>374</i>        // (DYN_SYSTEM_PORT=-1), and gating export on it would make</span>
+<span class="line"><i>375</i>        // OTEL_METRICS_EXPORTER=otlp a silent no-op in the default</span>
+<span class="line"><i>376</i>        // configuration. Traces and logs are set up in logging::init() for the</span>
+<span class="line"><i>377</i>        // same reason -- an OTEL_* variable should mean the same thing for</span>
+<span class="line"><i>378</i>        // every signal. Metrics cannot join them there because the exporter</span>
+<span class="line"><i>379</i>        // needs the registry, which only exists once the runtime does.</span>
+<span class="line"><i>380</i>        match crate::metrics::otlp_export::ExportConfig::from_env() {</span>
+<span class="line"><i>381</i>            Ok(Some(export_config)) =&gt; {</span>
+<span class="line"><i>382</i>                tracing::info!(</span>
+<span class="line"><i>383</i>                    endpoint = %export_config.endpoint,</span>
+<span class="line"><i>384</i>                    interval_ms = export_config.interval.as_millis(),</span>
+<span class="line"><i>385</i>                    &quot;exporting metrics over OTLP&quot;</span>
+<span class="line"><i>386</i>                );</span>
+<span class="line"><i>387</i>                // Hold a graceful-shutdown guard for the task&#x27;s life so the</span>
+<span class="line"><i>388</i>                // final export is not abandoned mid-RPC. `child_token()`</span>
+<span class="line"><i>389</i>                // derives from the endpoint shutdown token, which Phase 1</span>
+<span class="line"><i>390</i>                // cancels *before* the Phase 2 wait, so the exporter is told to</span>
+<span class="line"><i>391</i>                // stop and then waited for -- it cannot deadlock the wait on a</span>
+<span class="line"><i>392</i>                // token that only fires in Phase 3.</span>
+<span class="line"><i>393</i>                let shutdown_guard = distributed_runtime</span>
+<span class="line"><i>394</i>                    .runtime</span>
+<span class="line"><i>395</i>                    .graceful_shutdown_tracker()</span>
+<span class="line"><i>396</i>                    .register_task();</span>
+<span class="line"><i>397</i>                let registry = distributed_runtime.metrics_registry.clone();</span>
+<span class="line"><i>398</i>                let cancel = distributed_runtime.runtime.child_token();</span>
+<span class="line"><i>399</i>                tokio::spawn(async move {</span>
+<span class="line"><i>400</i>                    crate::metrics::otlp_export::run(registry, export_config, cancel).await;</span>
+<span class="line"><i>401</i>                    drop(shutdown_guard);</span>
+<span class="line"><i>402</i>                });</span>
+<span class="line"><i>403</i>            }</span>
+<span class="line"><i>404</i>            Ok(None) =&gt; {}</span>
+<span class="line"><i>405</i>            Err(error) =&gt; {</span>
+<span class="line"><i>406</i>                tracing::error!(%error, &quot;OTLP metrics export is misconfigured; not exporting&quot;);</span>
+<span class="line"><i>407</i>            }</span>
+<span class="line"><i>408</i>        }</span>
+<span class="line"><i>409</i></span>
+<span class="line"><i>410</i>        // Start health check manager if enabled</span></code></pre></details><details class="source" id="src-exportconfig"><summary><b>源码 · 环境变量解析</b><small>lib/runtime/src/metrics/otlp_export.rs:453–520</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/metrics/otlp_export.rs#L453-L520" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>453</i>    pub fn from_env() -&gt; anyhow::Result&lt;Option&lt;Self&gt;&gt; {</span>
+<span class="line"><i>454</i>        let Ok(exporter) = std::env::var(env_otlp::OTEL_METRICS_EXPORTER) else {</span>
+<span class="line"><i>455</i>            return Ok(None);</span>
+<span class="line"><i>456</i>        };</span>
+<span class="line"><i>457</i>        if !exporter.trim().eq_ignore_ascii_case(&quot;otlp&quot;) {</span>
+<span class="line"><i>458</i>            return Ok(None);</span>
+<span class="line"><i>459</i>        }</span>
+<span class="line"><i>460</i></span>
+<span class="line"><i>461</i>        // Only gRPC is implemented. Validated as *configured* rather than as</span>
+<span class="line"><i>462</i>        // resolved: the shared resolver falls back to grpc for anything it does</span>
+<span class="line"><i>463</i>        // not recognise, so a typo would otherwise be sent over gRPC silently.</span>
+<span class="line"><i>464</i>        // The error names whichever variable actually supplied the value.</span>
+<span class="line"><i>465</i>        let metrics_protocol = std::env::var(env_otlp::OTEL_EXPORTER_OTLP_METRICS_PROTOCOL).ok();</span>
+<span class="line"><i>466</i>        let generic_protocol = std::env::var(env_otlp::OTEL_EXPORTER_OTLP_PROTOCOL).ok();</span>
+<span class="line"><i>467</i>        let configured = [</span>
+<span class="line"><i>468</i>            (</span>
+<span class="line"><i>469</i>                metrics_protocol.as_deref(),</span>
+<span class="line"><i>470</i>                env_otlp::OTEL_EXPORTER_OTLP_METRICS_PROTOCOL,</span>
+<span class="line"><i>471</i>            ),</span>
+<span class="line"><i>472</i>            (</span>
+<span class="line"><i>473</i>                generic_protocol.as_deref(),</span>
+<span class="line"><i>474</i>                env_otlp::OTEL_EXPORTER_OTLP_PROTOCOL,</span>
+<span class="line"><i>475</i>            ),</span>
+<span class="line"><i>476</i>        ]</span>
+<span class="line"><i>477</i>        .into_iter()</span>
+<span class="line"><i>478</i>        .find_map(|(value, source)| {</span>
+<span class="line"><i>479</i>            value</span>
+<span class="line"><i>480</i>                .map(str::trim)</span>
+<span class="line"><i>481</i>                .filter(|value| !value.is_empty())</span>
+<span class="line"><i>482</i>                .map(|value| (value, source))</span>
+<span class="line"><i>483</i>        });</span>
+<span class="line"><i>484</i></span>
+<span class="line"><i>485</i>        if let Some((value, source)) = configured</span>
+<span class="line"><i>486</i>            &amp;&amp; !value.eq_ignore_ascii_case(&quot;grpc&quot;)</span>
+<span class="line"><i>487</i>        {</span>
+<span class="line"><i>488</i>            anyhow::bail!(</span>
+<span class="line"><i>489</i>                &quot;{source}={value} is not supported for metrics; only grpc is implemented. \</span>
+<span class="line"><i>490</i>                 Set {}=grpc to override.&quot;,</span>
+<span class="line"><i>491</i>                env_otlp::OTEL_EXPORTER_OTLP_METRICS_PROTOCOL</span>
+<span class="line"><i>492</i>            );</span>
+<span class="line"><i>493</i>        }</span>
+<span class="line"><i>494</i>        let protocol = crate::logging::OtlpProtocol::Grpc;</span>
+<span class="line"><i>495</i></span>
+<span class="line"><i>496</i>        // Signal-specific headers replace the generic set rather than merging,</span>
+<span class="line"><i>497</i>        // per the OTLP exporter spec.</span>
+<span class="line"><i>498</i>        let headers = std::env::var(env_otlp::OTEL_EXPORTER_OTLP_METRICS_HEADERS)</span>
+<span class="line"><i>499</i>            .or_else(|_| std::env::var(env_otlp::OTEL_EXPORTER_OTLP_HEADERS))</span>
+<span class="line"><i>500</i>            .map(|raw| parse_key_value_list(&amp;raw))</span>
+<span class="line"><i>501</i>            .unwrap_or_default();</span>
+<span class="line"><i>502</i></span>
+<span class="line"><i>503</i>        let resource_attributes = std::env::var(env_otlp::OTEL_RESOURCE_ATTRIBUTES)</span>
+<span class="line"><i>504</i>            .map(|raw| parse_key_value_list(&amp;raw))</span>
+<span class="line"><i>505</i>            .unwrap_or_default();</span>
+<span class="line"><i>506</i></span>
+<span class="line"><i>507</i>        Ok(Some(Self {</span>
+<span class="line"><i>508</i>            headers,</span>
+<span class="line"><i>509</i>            resource_attributes,</span>
+<span class="line"><i>510</i>            endpoint: crate::logging::resolve_otlp_endpoint(</span>
+<span class="line"><i>511</i>                protocol,</span>
+<span class="line"><i>512</i>                std::env::var(env_otlp::OTEL_EXPORTER_OTLP_METRICS_ENDPOINT).ok(),</span>
+<span class="line"><i>513</i>                std::env::var(env_otlp::OTEL_EXPORTER_OTLP_ENDPOINT).ok(),</span>
+<span class="line"><i>514</i>                &quot;/v1/metrics&quot;,</span>
+<span class="line"><i>515</i>            ),</span>
+<span class="line"><i>516</i>            interval: export_interval(),</span>
+<span class="line"><i>517</i>            service_name: crate::logging::get_service_name(),</span>
+<span class="line"><i>518</i>        }))</span>
+<span class="line"><i>519</i>    }</span>
+<span class="line"><i>520</i>}</span></code></pre></details><details class="source" id="src-exportloop"><summary><b>源码 · 导出循环、关闭和重连</b><small>lib/runtime/src/metrics/otlp_export.rs:567–683</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/metrics/otlp_export.rs#L567-L683" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>567</i>pub async fn run(registry: MetricsRegistry, config: ExportConfig, cancel: CancellationToken) {</span>
+<span class="line"><i>568</i>    let attrs = attributes_for(&amp;config);</span>
+<span class="line"><i>569</i>    // Fixed for the process lifetime; a moving start time reads as a counter</span>
+<span class="line"><i>570</i>    // reset on every export.</span>
+<span class="line"><i>571</i>    let start_time = SystemTime::now();</span>
+<span class="line"><i>572</i></span>
+<span class="line"><i>573</i>    // The interval is the natural deadline -- a call still outstanding when the</span>
+<span class="line"><i>574</i>    // next is due has missed its window -- but capped, so a long interval does</span>
+<span class="line"><i>575</i>    // not buy an equally long hang.</span>
+<span class="line"><i>576</i>    const MAX_RPC_DEADLINE: Duration = Duration::from_secs(30);</span>
+<span class="line"><i>577</i>    let rpc_deadline = config.interval.min(MAX_RPC_DEADLINE);</span>
+<span class="line"><i>578</i>    let mut ticker = tokio::time::interval(config.interval);</span>
+<span class="line"><i>579</i>    ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);</span>
+<span class="line"><i>580</i>    let mut client: Option&lt;MetricsServiceClient&lt;tonic::transport::Channel&gt;&gt; = None;</span>
+<span class="line"><i>581</i></span>
+<span class="line"><i>582</i>    loop {</span>
+<span class="line"><i>583</i>        tokio::select! {</span>
+<span class="line"><i>584</i>            _ = cancel.cancelled() =&gt; break,</span>
+<span class="line"><i>585</i>            _ = ticker.tick() =&gt; {}</span>
+<span class="line"><i>586</i>        }</span>
+<span class="line"><i>587</i></span>
+<span class="line"><i>588</i>        // Connect lazily and retry on every tick. Connecting once up front</span>
+<span class="line"><i>589</i>        // would strand the exporter for the process lifetime if the collector</span>
+<span class="line"><i>590</i>        // happened to be down when this worker started.</span>
+<span class="line"><i>591</i>        if client.is_none() {</span>
+<span class="line"><i>592</i>            let connecting = async {</span>
+<span class="line"><i>593</i>                tonic::transport::Endpoint::from_shared(config.endpoint.clone())?</span>
+<span class="line"><i>594</i>                    .connect_timeout(rpc_deadline)</span>
+<span class="line"><i>595</i>                    .timeout(rpc_deadline)</span>
+<span class="line"><i>596</i>                    .connect()</span>
+<span class="line"><i>597</i>                    .await</span>
+<span class="line"><i>598</i>                    .map_err(anyhow::Error::from)</span>
+<span class="line"><i>599</i>            };</span>
+<span class="line"><i>600</i>            let connected = tokio::select! {</span>
+<span class="line"><i>601</i>                _ = cancel.cancelled() =&gt; break,</span>
+<span class="line"><i>602</i>                result = connecting =&gt; result,</span>
+<span class="line"><i>603</i>            };</span>
+<span class="line"><i>604</i>            match connected {</span>
+<span class="line"><i>605</i>                Ok(channel) =&gt; client = Some(MetricsServiceClient::new(channel)),</span>
+<span class="line"><i>606</i>                Err(error) =&gt; {</span>
+<span class="line"><i>607</i>                    tracing::warn!(%error, endpoint = %config.endpoint, &quot;OTLP metrics connect failed&quot;);</span>
+<span class="line"><i>608</i>                    continue;</span>
+<span class="line"><i>609</i>                }</span>
+<span class="line"><i>610</i>            }</span>
+<span class="line"><i>611</i>        }</span>
+<span class="line"><i>612</i></span>
+<span class="line"><i>613</i>        // Callbacks take the Python GIL, so collection must not park an async</span>
+<span class="line"><i>614</i>        // worker. Awaited rather than raced against `cancel`: a blocking task</span>
+<span class="line"><i>615</i>        // cannot be cancelled, so racing it would leave the closure running</span>
+<span class="line"><i>616</i>        // detached, reaching for the GIL during teardown.</span>
+<span class="line"><i>617</i>        let collector = registry.clone();</span>
+<span class="line"><i>618</i>        let collected =</span>
+<span class="line"><i>619</i>            tokio::task::spawn_blocking(move || collector.metric_families_combined()).await;</span>
+<span class="line"><i>620</i>        let families = match collected {</span>
+<span class="line"><i>621</i>            Ok(Ok(families)) =&gt; families,</span>
+<span class="line"><i>622</i>            Ok(Err(error)) =&gt; {</span>
+<span class="line"><i>623</i>                tracing::warn!(%error, &quot;OTLP metrics collection failed&quot;);</span>
+<span class="line"><i>624</i>                continue;</span>
+<span class="line"><i>625</i>            }</span>
+<span class="line"><i>626</i>            Err(error) =&gt; {</span>
+<span class="line"><i>627</i>                tracing::warn!(%error, &quot;OTLP metrics collection task failed&quot;);</span>
+<span class="line"><i>628</i>                continue;</span>
+<span class="line"><i>629</i>            }</span>
+<span class="line"><i>630</i>        };</span>
+<span class="line"><i>631</i></span>
+<span class="line"><i>632</i>        let request = ExportMetricsServiceRequest {</span>
+<span class="line"><i>633</i>            resource_metrics: vec![to_resource_metrics(&amp;families, &amp;attrs, start_time)],</span>
+<span class="line"><i>634</i>        };</span>
+<span class="line"><i>635</i>        let mut request = tonic::Request::new(request);</span>
+<span class="line"><i>636</i>        for (key, value) in &amp;config.headers {</span>
+<span class="line"><i>637</i>            match (</span>
+<span class="line"><i>638</i>                tonic::metadata::MetadataKey::from_bytes(key.as_bytes()),</span>
+<span class="line"><i>639</i>                tonic::metadata::MetadataValue::try_from(value),</span>
+<span class="line"><i>640</i>            ) {</span>
+<span class="line"><i>641</i>                (Ok(key), Ok(value)) =&gt; {</span>
+<span class="line"><i>642</i>                    request.metadata_mut().insert(key, value);</span>
+<span class="line"><i>643</i>                }</span>
+<span class="line"><i>644</i>                _ =&gt; {</span>
+<span class="line"><i>645</i>                    // Logged once per export rather than dropped silently: a</span>
+<span class="line"><i>646</i>                    // malformed auth header means every request is rejected.</span>
+<span class="line"><i>647</i>                    tracing::warn!(header = %key, &quot;skipping unusable OTLP header&quot;);</span>
+<span class="line"><i>648</i>                }</span>
+<span class="line"><i>649</i>            }</span>
+<span class="line"><i>650</i>        }</span>
+<span class="line"><i>651</i></span>
+<span class="line"><i>652</i>        if let Some(connected) = client.as_mut() {</span>
+<span class="line"><i>653</i>            let exported = tokio::select! {</span>
+<span class="line"><i>654</i>                _ = cancel.cancelled() =&gt; break,</span>
+<span class="line"><i>655</i>                result = connected.export(request) =&gt; result,</span>
+<span class="line"><i>656</i>            };</span>
+<span class="line"><i>657</i>            match exported {</span>
+<span class="line"><i>658</i>                Ok(response) =&gt; {</span>
+<span class="line"><i>659</i>                    // A successful status can still report dropped series --</span>
+<span class="line"><i>660</i>                    // cardinality limits are the usual cause. Reporting the</span>
+<span class="line"><i>661</i>                    // export as clean would hide data loss the collector has</span>
+<span class="line"><i>662</i>                    // already told us about.</span>
+<span class="line"><i>663</i>                    if let Some(partial) = response.into_inner().partial_success</span>
+<span class="line"><i>664</i>                        &amp;&amp; partial.rejected_data_points &gt; 0</span>
+<span class="line"><i>665</i>                    {</span>
+<span class="line"><i>666</i>                        tracing::warn!(</span>
+<span class="line"><i>667</i>                            rejected_data_points = partial.rejected_data_points,</span>
+<span class="line"><i>668</i>                            error_message = %partial.error_message,</span>
+<span class="line"><i>669</i>                            endpoint = %config.endpoint,</span>
+<span class="line"><i>670</i>                            &quot;OTLP collector rejected part of the export&quot;</span>
+<span class="line"><i>671</i>                        );</span>
+<span class="line"><i>672</i>                    }</span>
+<span class="line"><i>673</i>                }</span>
+<span class="line"><i>674</i>                Err(error) =&gt; {</span>
+<span class="line"><i>675</i>                    tracing::warn!(%error, endpoint = %config.endpoint, &quot;OTLP metrics export failed&quot;);</span>
+<span class="line"><i>676</i>                    // Drop the channel so the next tick reconnects; a broken</span>
+<span class="line"><i>677</i>                    // transport will not recover on its own.</span>
+<span class="line"><i>678</i>                    client = None;</span>
+<span class="line"><i>679</i>                }</span>
+<span class="line"><i>680</i>            }</span>
+<span class="line"><i>681</i>        }</span>
+<span class="line"><i>682</i>    }</span>
+<span class="line"><i>683</i>}</span></code></pre></details><h3>为什么 spawn_blocking？</h3><p>采集回调可能等待 Python GIL，不能让同步工作阻塞 Tokio 异步执行线程。OTLP 路径等待 collection 完成再处理关闭，因为已启动的 blocking task 无法直接取消；否则 Python teardown 后可能仍有任务访问 GIL。</p><aside class="note warn">当前 Runtime 中，配置解析错误进入 Err 分支，记录 misconfigured; not exporting，然后继续初始化。不能把“协议只支持 gRPC、解析返回错误”推断为“整个进程必然启动失败”。</aside><h3>Frontend 有自己的 Registry</h3><p>Frontend handler 先编码本地 Registry，再追加可选 DRT 子树。它未直接复用 Worker 的 render_scrape_at；不能把 Worker 的抓取隔离和 exporter 覆盖结论无条件推广到 Frontend 本地指标。</p><details class="source" id="src-httpregistry"><summary><b>源码 · Frontend 本地注册</b><small>lib/llm/src/http/service/service_v2.rs:1369–1407</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/http/service/service_v2.rs#L1369-L1407" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1369</i>        let registry = metrics::Registry::new();</span>
+<span class="line"><i>1370</i>        state</span>
+<span class="line"><i>1371</i>            .metrics_clone()</span>
+<span class="line"><i>1372</i>            .register_with_model_manager(&amp;registry, Some(state.manager_clone()))?;</span>
+<span class="line"><i>1373</i></span>
+<span class="line"><i>1374</i>        // Readiness is evaluated from the live routing catalog at scrape time.</span>
+<span class="line"><i>1375</i>        register_model_ready_metric(&amp;registry, state.manager_clone(), model_ready_metrics_prefix)?;</span>
+<span class="line"><i>1376</i></span>
+<span class="line"><i>1377</i>        register_worker_metrics(&amp;registry, state.manager_clone())?;</span>
+<span class="line"><i>1378</i></span>
+<span class="line"><i>1379</i>        // Register router queue metrics (pending requests per worker_type)</span>
+<span class="line"><i>1380</i>        // These are updated by KvScheduler on enqueue/update/free</span>
+<span class="line"><i>1381</i>        if let Err(e) = register_router_queue_metrics(&amp;registry) {</span>
+<span class="line"><i>1382</i>            tracing::warn!(&quot;Failed to register router queue metrics: {}&quot;, e);</span>
+<span class="line"><i>1383</i>        }</span>
+<span class="line"><i>1384</i></span>
+<span class="line"><i>1385</i>        if let Some(ref discovery) = config.drt_discovery {</span>
+<span class="line"><i>1386</i>            let instance_id = discovery.instance_id();</span>
+<span class="line"><i>1387</i>            if let Err(e) = RoutingOverheadMetrics::register(&amp;registry, instance_id) {</span>
+<span class="line"><i>1388</i>                tracing::warn!(&quot;Failed to register routing overhead metrics: {}&quot;, e);</span>
+<span class="line"><i>1389</i>            }</span>
+<span class="line"><i>1390</i>        }</span>
+<span class="line"><i>1391</i></span>
+<span class="line"><i>1392</i>        if let Err(e) = ensure_request_plane_metrics_registered_prometheus(&amp;registry) {</span>
+<span class="line"><i>1393</i>            tracing::warn!(&quot;Failed to register request-plane metrics: {}&quot;, e);</span>
+<span class="line"><i>1394</i>        }</span>
+<span class="line"><i>1395</i>        if let Err(e) = ensure_frontend_perf_metrics_registered_prometheus(&amp;registry) {</span>
+<span class="line"><i>1396</i>            tracing::warn!(&quot;Failed to register frontend perf metrics: {}&quot;, e);</span>
+<span class="line"><i>1397</i>        }</span>
+<span class="line"><i>1398</i>        if let Err(e) = ensure_tokio_perf_metrics_registered_prometheus(&amp;registry) {</span>
+<span class="line"><i>1399</i>            tracing::warn!(&quot;Failed to register tokio perf metrics: {}&quot;, e);</span>
+<span class="line"><i>1400</i>        }</span>
+<span class="line"><i>1401</i>        if let Err(e) = ensure_transport_metrics_registered_prometheus(&amp;registry) {</span>
+<span class="line"><i>1402</i>            tracing::warn!(&quot;Failed to register transport metrics: {}&quot;, e);</span>
+<span class="line"><i>1403</i>        }</span>
+<span class="line"><i>1404</i>        if let Err(e) = register_lora_allocation_metrics(&amp;registry) {</span>
+<span class="line"><i>1405</i>            tracing::warn!(&quot;Failed to register LoRA allocation metrics: {}&quot;, e);</span>
+<span class="line"><i>1406</i>        }</span>
+<span class="line"><i>1407</i></span></code></pre></details><details class="source" id="src-frontend"><summary><b>源码 · Frontend 输出拼接</b><small>lib/llm/src/http/service/metrics.rs:2968–3009</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/http/service/metrics.rs#L2968-L3009" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2968</i>async fn handler_metrics(State(state): State&lt;Arc&lt;MetricsHandlerState&gt;&gt;) -&gt; impl IntoResponse {</span>
+<span class="line"><i>2969</i>    let encoder = prometheus::TextEncoder::new();</span>
+<span class="line"><i>2970</i>    let metric_families = state.registry.gather();</span>
+<span class="line"><i>2971</i>    let mut buffer = vec![];</span>
+<span class="line"><i>2972</i>    if encoder.encode(&amp;metric_families, &amp;mut buffer).is_err() {</span>
+<span class="line"><i>2973</i>        return (</span>
+<span class="line"><i>2974</i>            StatusCode::INTERNAL_SERVER_ERROR,</span>
+<span class="line"><i>2975</i>            &quot;Failed to encode metrics&quot;,</span>
+<span class="line"><i>2976</i>        )</span>
+<span class="line"><i>2977</i>            .into_response();</span>
+<span class="line"><i>2978</i>    }</span>
+<span class="line"><i>2979</i></span>
+<span class="line"><i>2980</i>    let mut metrics = match String::from_utf8(buffer) {</span>
+<span class="line"><i>2981</i>        Ok(metrics) =&gt; metrics,</span>
+<span class="line"><i>2982</i>        Err(_) =&gt; {</span>
+<span class="line"><i>2983</i>            return (</span>
+<span class="line"><i>2984</i>                StatusCode::INTERNAL_SERVER_ERROR,</span>
+<span class="line"><i>2985</i>                &quot;Failed to encode metrics&quot;,</span>
+<span class="line"><i>2986</i>            )</span>
+<span class="line"><i>2987</i>                .into_response();</span>
+<span class="line"><i>2988</i>        }</span>
+<span class="line"><i>2989</i>    };</span>
+<span class="line"><i>2990</i></span>
+<span class="line"><i>2991</i>    // Append DRT registry tree metrics (anything created via metrics().create*()).</span>
+<span class="line"><i>2992</i>    if let Some(ref drt_metrics) = state.drt_metrics {</span>
+<span class="line"><i>2993</i>        match drt_metrics.prometheus_expfmt_combined() {</span>
+<span class="line"><i>2994</i>            Ok(drt_text) =&gt; {</span>
+<span class="line"><i>2995</i>                if !drt_text.is_empty() {</span>
+<span class="line"><i>2996</i>                    if !metrics.is_empty() &amp;&amp; !metrics.ends_with(&#x27;\n&#x27;) {</span>
+<span class="line"><i>2997</i>                        metrics.push(&#x27;\n&#x27;);</span>
+<span class="line"><i>2998</i>                    }</span>
+<span class="line"><i>2999</i>                    metrics.push_str(&amp;drt_text);</span>
+<span class="line"><i>3000</i>                }</span>
+<span class="line"><i>3001</i>            }</span>
+<span class="line"><i>3002</i>            Err(e) =&gt; {</span>
+<span class="line"><i>3003</i>                tracing::warn!(&quot;Failed to gather DRT metrics: {}&quot;, e);</span>
+<span class="line"><i>3004</i>            }</span>
+<span class="line"><i>3005</i>        }</span>
+<span class="line"><i>3006</i>    }</span>
+<span class="line"><i>3007</i></span>
+<span class="line"><i>3008</i>    (StatusCode::OK, metrics).into_response()</span>
+<span class="line"><i>3009</i>}</span></code></pre></details><details class="exercise"><summary>阅读检查 · 为什么必须继续读 ExportConfig 的调用方？</summary><p>配置函数返回 Result；调用方决定退出还是降级。本版本调用方记录错误并跳过 exporter。</p></details></section><section id="lifecycle" class="lesson"><div class="sectionhead"><h2>05 / 请求指标：Guard 从进入到退出</h2><label class="done"><input type="checkbox" data-read="lifecycle"> 已读</label></div><p>InflightGuard::new 增加 in-flight 和 started，默认状态为错误，正常路径再标记成功。Drop 会扣减并发、增加完成计数、记录耗时和 outcome；提前退出也能走收尾。</p><details class="source" id="src-guardnew"><summary><b>源码 · 请求进入</b><small>lib/llm/src/http/service/metrics.rs:2128–2162</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/http/service/metrics.rs#L2128-L2162" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2128</i>    fn new(</span>
+<span class="line"><i>2129</i>        metrics: Arc&lt;Metrics&gt;,</span>
+<span class="line"><i>2130</i>        model: String,</span>
+<span class="line"><i>2131</i>        endpoint: Endpoint,</span>
+<span class="line"><i>2132</i>        request_type: RequestType,</span>
+<span class="line"><i>2133</i>        request_id: String,</span>
+<span class="line"><i>2134</i>    ) -&gt; Self {</span>
+<span class="line"><i>2135</i>        let timer = Instant::now();</span>
+<span class="line"><i>2136</i>        let request = Arc::new(RequestMetrics::new(&amp;metrics, &amp;model));</span>
+<span class="line"><i>2137</i>        metrics.inc_inflight_gauge(&amp;model);</span>
+<span class="line"><i>2138</i>        metrics.inc_request_started_counter(&amp;model, &amp;endpoint, &amp;request_type);</span>
+<span class="line"><i>2139</i></span>
+<span class="line"><i>2140</i>        tracing::Span::current().record(&quot;model&quot;, model.as_str());</span>
+<span class="line"><i>2141</i></span>
+<span class="line"><i>2142</i>        tracing::info!(</span>
+<span class="line"><i>2143</i>            request_id = %request_id,</span>
+<span class="line"><i>2144</i>            model = %model,</span>
+<span class="line"><i>2145</i>            endpoint = %endpoint,</span>
+<span class="line"><i>2146</i>            request_type = %request_type,</span>
+<span class="line"><i>2147</i>            &quot;request received&quot;</span>
+<span class="line"><i>2148</i>        );</span>
+<span class="line"><i>2149</i></span>
+<span class="line"><i>2150</i>        InflightGuard {</span>
+<span class="line"><i>2151</i>            metrics,</span>
+<span class="line"><i>2152</i>            request,</span>
+<span class="line"><i>2153</i>            model,</span>
+<span class="line"><i>2154</i>            endpoint,</span>
+<span class="line"><i>2155</i>            request_type,</span>
+<span class="line"><i>2156</i>            status: Status::Error,</span>
+<span class="line"><i>2157</i>            error_type: ErrorType::Internal,</span>
+<span class="line"><i>2158</i>            timer,</span>
+<span class="line"><i>2159</i>            request_id,</span>
+<span class="line"><i>2160</i>            span: tracing::Span::current(),</span>
+<span class="line"><i>2161</i>        }</span>
+<span class="line"><i>2162</i>    }</span></code></pre></details><div class="flow"><div><b>01</b>进入：in-flight +1 / started +1</div><div><b>02</b>生成：观测输出与时延</div><div><b>03</b>完成 / 错误 / 取消状态</div><div><b>04</b>Drop：in-flight -1 / 完成计数 / 耗时</div></div><details class="source" id="src-guarddrop"><summary><b>源码 · 请求收尾</b><small>lib/llm/src/http/service/metrics.rs:2212–2287</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/http/service/metrics.rs#L2212-L2287" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2212</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>2213</i>        let _enter = self.span.enter();</span>
+<span class="line"><i>2214</i>        let duration = self.timer.elapsed().as_secs_f64();</span>
+<span class="line"><i>2215</i>        self.metrics.dec_inflight_gauge(&amp;self.model);</span>
+<span class="line"><i>2216</i>        self.metrics.inc_request_counter(</span>
+<span class="line"><i>2217</i>            &amp;self.model,</span>
+<span class="line"><i>2218</i>            &amp;self.endpoint,</span>
+<span class="line"><i>2219</i>            &amp;self.request_type,</span>
+<span class="line"><i>2220</i>            &amp;self.status,</span>
+<span class="line"><i>2221</i>            &amp;self.error_type,</span>
+<span class="line"><i>2222</i>        );</span>
+<span class="line"><i>2223</i>        self.metrics</span>
+<span class="line"><i>2224</i>            .request_duration</span>
+<span class="line"><i>2225</i>            .with_label_values(&amp;[&amp;self.model])</span>
+<span class="line"><i>2226</i>            .observe(duration);</span>
+<span class="line"><i>2227</i></span>
+<span class="line"><i>2228</i>        let completion = self.request_completion();</span>
+<span class="line"><i>2229</i>        self.request.finish();</span>
+<span class="line"><i>2230</i>        self.span.record(&quot;request.outcome&quot;, completion.as_str());</span>
+<span class="line"><i>2231</i></span>
+<span class="line"><i>2232</i>        let elapsed_ms = (duration * 1000.0) as u64;</span>
+<span class="line"><i>2233</i>        let status_str = self.status.as_str();</span>
+<span class="line"><i>2234</i>        match completion {</span>
+<span class="line"><i>2235</i>            RequestCompletion::Error =&gt; {</span>
+<span class="line"><i>2236</i>                let detail = match self.error_type {</span>
+<span class="line"><i>2237</i>                    ErrorType::ResponseTimeout =&gt; &quot;backend stream inactivity timeout&quot;,</span>
+<span class="line"><i>2238</i>                    ErrorType::Internal =&gt; &quot;internal server error during processing&quot;,</span>
+<span class="line"><i>2239</i>                    ErrorType::Validation =&gt; &quot;invalid request parameters&quot;,</span>
+<span class="line"><i>2240</i>                    ErrorType::NotFound =&gt; &quot;model or resource not found&quot;,</span>
+<span class="line"><i>2241</i>                    ErrorType::Overload =&gt; &quot;service overloaded or rate limited&quot;,</span>
+<span class="line"><i>2242</i>                    ErrorType::Unavailable =&gt; &quot;no backend worker available&quot;,</span>
+<span class="line"><i>2243</i>                    ErrorType::NotImplemented =&gt; &quot;requested feature not implemented&quot;,</span>
+<span class="line"><i>2244</i>                    // `request_completion()` routes `(Error, Cancelled)` to</span>
+<span class="line"><i>2245</i>                    // `RequestCompletion::Cancelled`, so only `None` reaches</span>
+<span class="line"><i>2246</i>                    // here. `Cancelled` is listed to keep the match total</span>
+<span class="line"><i>2247</i>                    // without a panic in a `Drop` impl.</span>
+<span class="line"><i>2248</i>                    ErrorType::None | ErrorType::Cancelled =&gt; &quot;unknown error&quot;,</span>
+<span class="line"><i>2249</i>                };</span>
+<span class="line"><i>2250</i>                tracing::error!(</span>
+<span class="line"><i>2251</i>                    request_id = %self.request_id,</span>
+<span class="line"><i>2252</i>                    model = %self.model,</span>
+<span class="line"><i>2253</i>                    endpoint = %self.endpoint,</span>
+<span class="line"><i>2254</i>                    request_type = %self.request_type,</span>
+<span class="line"><i>2255</i>                    status = %status_str,</span>
+<span class="line"><i>2256</i>                    error_type = %self.error_type,</span>
+<span class="line"><i>2257</i>                    error_detail = %detail,</span>
+<span class="line"><i>2258</i>                    elapsed_ms = %elapsed_ms,</span>
+<span class="line"><i>2259</i>                    &quot;request completed&quot;</span>
+<span class="line"><i>2260</i>                );</span>
+<span class="line"><i>2261</i>            }</span>
+<span class="line"><i>2262</i>            RequestCompletion::Cancelled =&gt; {</span>
+<span class="line"><i>2263</i>                tracing::info!(</span>
+<span class="line"><i>2264</i>                    request_id = %self.request_id,</span>
+<span class="line"><i>2265</i>                    model = %self.model,</span>
+<span class="line"><i>2266</i>                    endpoint = %self.endpoint,</span>
+<span class="line"><i>2267</i>                    request_type = %self.request_type,</span>
+<span class="line"><i>2268</i>                    status = %completion.as_str(),</span>
+<span class="line"><i>2269</i>                    error_type = %self.error_type,</span>
+<span class="line"><i>2270</i>                    error_detail = &quot;cancelled before completion&quot;,</span>
+<span class="line"><i>2271</i>                    elapsed_ms = %elapsed_ms,</span>
+<span class="line"><i>2272</i>                    &quot;request completed&quot;</span>
+<span class="line"><i>2273</i>                );</span>
+<span class="line"><i>2274</i>            }</span>
+<span class="line"><i>2275</i>            RequestCompletion::Success =&gt; {</span>
+<span class="line"><i>2276</i>                tracing::info!(</span>
+<span class="line"><i>2277</i>                    request_id = %self.request_id,</span>
+<span class="line"><i>2278</i>                    model = %self.model,</span>
+<span class="line"><i>2279</i>                    endpoint = %self.endpoint,</span>
+<span class="line"><i>2280</i>                    request_type = %self.request_type,</span>
+<span class="line"><i>2281</i>                    status = %status_str,</span>
+<span class="line"><i>2282</i>                    elapsed_ms = %elapsed_ms,</span>
+<span class="line"><i>2283</i>                    &quot;request completed&quot;</span>
+<span class="line"><i>2284</i>                );</span>
+<span class="line"><i>2285</i>            }</span>
+<span class="line"><i>2286</i>        }</span>
+<span class="line"><i>2287</i>    }</span></code></pre></details><details class="source" id="src-finish"><summary><b>源码 · 幂等 finish</b><small>lib/llm/src/http/service/metrics.rs:878–891</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/http/service/metrics.rs#L878-L891" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>878</i>    fn finish(&amp;self) {</span>
+<span class="line"><i>879</i>        let previous = self.state.fetch_or(FINISHED, Relaxed);</span>
+<span class="line"><i>880</i>        if previous &amp; FINISHED != 0 {</span>
+<span class="line"><i>881</i>            return;</span>
+<span class="line"><i>882</i>        }</span>
+<span class="line"><i>883</i>        self.flush_output_tokens();</span>
+<span class="line"><i>884</i>        let input = (previous &amp; INPUT_TOKENS) as i64;</span>
+<span class="line"><i>885</i>        if previous &amp; GENERATING != 0 {</span>
+<span class="line"><i>886</i>            self.generating_input_tokens.sub(input);</span>
+<span class="line"><i>887</i>        } else {</span>
+<span class="line"><i>888</i>            self.awaiting_first_token_requests.dec();</span>
+<span class="line"><i>889</i>            self.awaiting_first_token_input_tokens.sub(input);</span>
+<span class="line"><i>890</i>        }</span>
+<span class="line"><i>891</i>    }</span></code></pre></details><p>RequestMetrics::finish 用原子 FINISHED 位避免重复扣减，并依据是否进入 generating，扣减对应 token 与等待计数。</p><aside class="note ">流式 HTTP 返回 Header 不等于请求结束，需要继续跟踪 response stream 对 Guard 的持有与 disconnect 包装。这里的服务端生命周期也不证明客户端已完整接收；强制终止进程不能保证执行 Drop。</aside><details class="exercise"><summary>阅读检查 · 默认错误、正常路径再 mark_ok 有何意义？</summary><p>提前返回而没有完成成功标记时仍记录失败，减少误记成功；取消等路径仍需明确分类。</p></details></section><section id="latency" class="lesson"><div class="sectionhead"><h2>06 / TTFT 与 ITL：计时起点和响应块</h2><label class="done"><input type="checkbox" data-read="latency"> 已读</label></div><p>ResponseMetricCollector::new 使用 Instant::now 记录自身起点，并预先解析 per-model handle。要确认某个入口的计时是否含 tokenization 或 routing，必须追踪该入口在哪里创建 Collector，不能从名称猜测。</p><details class="source" id="src-collectornew"><summary><b>源码 · Collector 起点</b><small>lib/llm/src/http/service/metrics.rs:2377–2425</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/http/service/metrics.rs#L2377-L2425" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2377</i>    fn new(metrics: Arc&lt;Metrics&gt;, model: String, request: Arc&lt;RequestMetrics&gt;) -&gt; Self {</span>
+<span class="line"><i>2378</i>        // Resolve the per-model handles once (cheap clones of the vec entries) so the</span>
+<span class="line"><i>2379</i>        // per-chunk / per-token hot path in `observe_response` does no label hashing.</span>
+<span class="line"><i>2380</i>        let time_to_first_token = metrics.time_to_first_token.with_label_values(&amp;[&amp;model]);</span>
+<span class="line"><i>2381</i>        let input_sequence_length = metrics.input_sequence_length.with_label_values(&amp;[&amp;model]);</span>
+<span class="line"><i>2382</i>        let cached_tokens = metrics.cached_tokens.with_label_values(&amp;[&amp;model]);</span>
+<span class="line"><i>2383</i>        let images_per_request = metrics.images_per_request.with_label_values(&amp;[&amp;model]);</span>
+<span class="line"><i>2384</i>        let videos_per_request = metrics.videos_per_request.with_label_values(&amp;[&amp;model]);</span>
+<span class="line"><i>2385</i>        let audio_per_request = metrics.audio_per_request.with_label_values(&amp;[&amp;model]);</span>
+<span class="line"><i>2386</i>        let image_tokens_per_request = metrics</span>
+<span class="line"><i>2387</i>            .image_tokens_per_request</span>
+<span class="line"><i>2388</i>            .with_label_values(&amp;[&amp;model]);</span>
+<span class="line"><i>2389</i>        ResponseMetricCollector {</span>
+<span class="line"><i>2390</i>            metrics,</span>
+<span class="line"><i>2391</i>            request,</span>
+<span class="line"><i>2392</i>            model,</span>
+<span class="line"><i>2393</i>            time_to_first_token,</span>
+<span class="line"><i>2394</i>            inter_token_latency: None,</span>
+<span class="line"><i>2395</i>            input_sequence_length,</span>
+<span class="line"><i>2396</i>            cached_tokens,</span>
+<span class="line"><i>2397</i>            images_per_request,</span>
+<span class="line"><i>2398</i>            videos_per_request,</span>
+<span class="line"><i>2399</i>            audio_per_request,</span>
+<span class="line"><i>2400</i>            image_tokens_per_request,</span>
+<span class="line"><i>2401</i>            image_count_val: 0,</span>
+<span class="line"><i>2402</i>            video_count_val: 0,</span>
+<span class="line"><i>2403</i>            audio_count_val: 0,</span>
+<span class="line"><i>2404</i>            multimodal_counts_observed: false,</span>
+<span class="line"><i>2405</i>            is_first_token: true,</span>
+<span class="line"><i>2406</i>            last_response_time: None,</span>
+<span class="line"><i>2407</i>            start_time: Instant::now(),</span>
+<span class="line"><i>2408</i>            osl: 0,</span>
+<span class="line"><i>2409</i>            isl: 0,</span>
+<span class="line"><i>2410</i>            ttft_ms: None,</span>
+<span class="line"><i>2411</i>            itl_sum_secs: 0.0,</span>
+<span class="line"><i>2412</i>            itl_count: 0,</span>
+<span class="line"><i>2413</i>            cached_tokens_observed: false,</span>
+<span class="line"><i>2414</i>            tokenize_latency_observed: false,</span>
+<span class="line"><i>2415</i>            detokenize_latency_total: Duration::ZERO,</span>
+<span class="line"><i>2416</i>            detokenize_count_total: 0,</span>
+<span class="line"><i>2417</i>            prefill_worker_id: None,</span>
+<span class="line"><i>2418</i>            prefill_dp_rank: None,</span>
+<span class="line"><i>2419</i>            prefill_worker_type: None,</span>
+<span class="line"><i>2420</i>            decode_worker_id: None,</span>
+<span class="line"><i>2421</i>            decode_dp_rank: None,</span>
+<span class="line"><i>2422</i>            decode_worker_type: None,</span>
+<span class="line"><i>2423</i>            decode_itl_gauge: None,</span>
+<span class="line"><i>2424</i>        }</span>
+<span class="line"><i>2425</i>    }</span></code></pre></details><p>observe_response 首先更新 token 状态。零输出块直接返回，不产生 TTFT/ITL，也不更新 last_response_time。首次有效输出块记录 TTFT；即使首块有多个 token，也不补造块内 ITL。后续块以“块间时间 ÷ 本块 token 数”折算 ITL，并向 Histogram 写入同等数量的该值。</p><details class="source" id="src-observe"><summary><b>源码 · 首 token 与块间 ITL</b><small>lib/llm/src/http/service/metrics.rs:2574–2670</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/http/service/metrics.rs#L2574-L2670" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2574</i>    pub fn observe_response(&amp;mut self, isl: usize, num_tokens: usize) {</span>
+<span class="line"><i>2575</i>        self.request.observe_input_tokens(isl);</span>
+<span class="line"><i>2576</i>        self.request.add_output_tokens(num_tokens);</span>
+<span class="line"><i>2577</i>        if num_tokens == 0 {</span>
+<span class="line"><i>2578</i>            return;</span>
+<span class="line"><i>2579</i>        }</span>
+<span class="line"><i>2580</i></span>
+<span class="line"><i>2581</i>        // Store ISL for span recording on drop</span>
+<span class="line"><i>2582</i>        self.isl = isl;</span>
+<span class="line"><i>2583</i></span>
+<span class="line"><i>2584</i>        if self.is_first_token {</span>
+<span class="line"><i>2585</i>            // NOTE: when there are multiple tokens in the first response,</span>
+<span class="line"><i>2586</i>            // we use the full response time as TTFT and ignore the ITL</span>
+<span class="line"><i>2587</i>            self.is_first_token = false;</span>
+<span class="line"><i>2588</i></span>
+<span class="line"><i>2589</i>            // Publish TTFT and store for span recording</span>
+<span class="line"><i>2590</i>            let ttft = self.start_time.elapsed().as_secs_f64();</span>
+<span class="line"><i>2591</i>            self.ttft_ms = Some(ttft * 1000.0);</span>
+<span class="line"><i>2592</i>            self.time_to_first_token.observe(ttft);</span>
+<span class="line"><i>2593</i></span>
+<span class="line"><i>2594</i>            // Update per-worker TTFT and input sequence tokens gauges - attributed to prefill worker.</span>
+<span class="line"><i>2595</i>            // Both gauges are updated atomically from the same request to correlate latency with input size.</span>
+<span class="line"><i>2596</i>            // Use stored worker_type (from routing time) to avoid MDC lookup.</span>
+<span class="line"><i>2597</i>            // Falls back to WORKER_TYPE_PREFILL if not available.</span>
+<span class="line"><i>2598</i>            if let Some(worker_id) = self.prefill_worker_id {</span>
+<span class="line"><i>2599</i>                let worker_id_str = worker_id.to_string();</span>
+<span class="line"><i>2600</i>                let dp_rank_str = self</span>
+<span class="line"><i>2601</i>                    .prefill_dp_rank</span>
+<span class="line"><i>2602</i>                    .map_or(UNSET_DP_RANK_LABEL.to_string(), |r| r.to_string());</span>
+<span class="line"><i>2603</i>                let worker_type = self</span>
+<span class="line"><i>2604</i>                    .prefill_worker_type</span>
+<span class="line"><i>2605</i>                    .as_deref()</span>
+<span class="line"><i>2606</i>                    .unwrap_or(WORKER_TYPE_PREFILL);</span>
+<span class="line"><i>2607</i>                let labels = &amp;[worker_id_str.as_str(), dp_rank_str.as_str(), worker_type];</span>
+<span class="line"><i>2608</i>                WORKER_LAST_TIME_TO_FIRST_TOKEN_GAUGE</span>
+<span class="line"><i>2609</i>                    .with_label_values(labels)</span>
+<span class="line"><i>2610</i>                    .set(ttft);</span>
+<span class="line"><i>2611</i>                WORKER_LAST_INPUT_SEQUENCE_TOKENS_GAUGE</span>
+<span class="line"><i>2612</i>                    .with_label_values(labels)</span>
+<span class="line"><i>2613</i>                    .set(isl as i64);</span>
+<span class="line"><i>2614</i>            }</span>
+<span class="line"><i>2615</i></span>
+<span class="line"><i>2616</i>            // Publish ISL</span>
+<span class="line"><i>2617</i>            // TODO: publish ISL as soon as the tokenization process completes</span>
+<span class="line"><i>2618</i>            self.input_sequence_length.observe(isl as f64);</span>
+<span class="line"><i>2619</i>        }</span>
+<span class="line"><i>2620</i></span>
+<span class="line"><i>2621</i>        let current_duration = self.start_time.elapsed();</span>
+<span class="line"><i>2622</i></span>
+<span class="line"><i>2623</i>        if let Some(last_response_time) = self.last_response_time {</span>
+<span class="line"><i>2624</i>            let response_duration = current_duration - last_response_time;</span>
+<span class="line"><i>2625</i>            let itl = response_duration.as_secs_f64() / num_tokens as f64;</span>
+<span class="line"><i>2626</i>            self.itl_sum_secs += itl * num_tokens as f64;</span>
+<span class="line"><i>2627</i>            self.itl_count += num_tokens as u64;</span>
+<span class="line"><i>2628</i>            // Resolve the request-local histogram on the first ITL only, then reuse</span>
+<span class="line"><i>2629</i>            // it without re-hashing the model label for each output token.</span>
+<span class="line"><i>2630</i>            let histogram = self.local_inter_token_latency();</span>
+<span class="line"><i>2631</i>            for _ in 0..num_tokens {</span>
+<span class="line"><i>2632</i>                histogram.observe(itl);</span>
+<span class="line"><i>2633</i>            }</span>
+<span class="line"><i>2634</i>            if histogram.get_sample_count() &gt;= LOCAL_FLUSH_TOKENS {</span>
+<span class="line"><i>2635</i>                histogram.flush();</span>
+<span class="line"><i>2636</i>            }</span>
+<span class="line"><i>2637</i></span>
+<span class="line"><i>2638</i>            // Update per-worker ITL gauge - attributed to decode worker.</span>
+<span class="line"><i>2639</i>            // Use stored worker_type (from routing time) to avoid MDC lookup.</span>
+<span class="line"><i>2640</i>            // Falls back to WORKER_TYPE_DECODE if not available.</span>
+<span class="line"><i>2641</i>            //</span>
+<span class="line"><i>2642</i>            // The worker labels are fixed for the request&#x27;s lifetime (latched in</span>
+<span class="line"><i>2643</i>            // `set_worker_info`), so resolve the GaugeVec handle once and cache it.</span>
+<span class="line"><i>2644</i>            // This keeps the per-token path free of `to_string()` allocations and</span>
+<span class="line"><i>2645</i>            // label hashing; subsequent tokens only call `set`.</span>
+<span class="line"><i>2646</i>            if self.decode_itl_gauge.is_none()</span>
+<span class="line"><i>2647</i>                &amp;&amp; let Some(worker_id) = self.decode_worker_id</span>
+<span class="line"><i>2648</i>            {</span>
+<span class="line"><i>2649</i>                let worker_id_str = worker_id.to_string();</span>
+<span class="line"><i>2650</i>                let dp_rank_str = self</span>
+<span class="line"><i>2651</i>                    .decode_dp_rank</span>
+<span class="line"><i>2652</i>                    .map_or(UNSET_DP_RANK_LABEL.to_string(), |r| r.to_string());</span>
+<span class="line"><i>2653</i>                let worker_type = self</span>
+<span class="line"><i>2654</i>                    .decode_worker_type</span>
+<span class="line"><i>2655</i>                    .as_deref()</span>
+<span class="line"><i>2656</i>                    .unwrap_or(WORKER_TYPE_DECODE);</span>
+<span class="line"><i>2657</i>                self.decode_itl_gauge =</span>
+<span class="line"><i>2658</i>                    Some(WORKER_LAST_INTER_TOKEN_LATENCY_GAUGE.with_label_values(&amp;[</span>
+<span class="line"><i>2659</i>                        worker_id_str.as_str(),</span>
+<span class="line"><i>2660</i>                        dp_rank_str.as_str(),</span>
+<span class="line"><i>2661</i>                        worker_type,</span>
+<span class="line"><i>2662</i>                    ]));</span>
+<span class="line"><i>2663</i>            }</span>
+<span class="line"><i>2664</i>            if let Some(gauge) = &amp;self.decode_itl_gauge {</span>
+<span class="line"><i>2665</i>                gauge.set(itl);</span>
+<span class="line"><i>2666</i>            }</span>
+<span class="line"><i>2667</i>        }</span>
+<span class="line"><i>2668</i></span>
+<span class="line"><i>2669</i>        self.last_response_time = Some(current_duration);</span>
+<span class="line"><i>2670</i>    }</span></code></pre></details><div class="sim"><h3>交互演算：两次有效输出块</h3><p class="fine">仅解释源码公式，不模拟调度、GPU 和网络性能。</p><label>首块到达：<b id="ttft-value"></b> ms<input id="ttft" type="range" min="50" max="2000" step="10" value="500"></label><label>第二块间隔：<b id="gap-value"></b> ms<input id="gap" type="range" min="10" max="500" step="10" value="120"></label><label>第二块 token 数：<b id="tokens-value"></b><input id="tokens" type="range" min="1" max="16" value="4"></label><div id="sim-output" class="sim-output" aria-live="polite"></div></div><p>热路径缓存 GaugeVec handle，使用局部 Histogram、达到阈值后 flush。Drop 再 flush 剩余观测，记录有效 OSL 与 span 摘要；从未输出的失败请求不强行记零长度 Histogram，避免污染均值。</p><details class="source" id="src-collectordrop"><summary><b>源码 · flush、输出长度与 span 摘要</b><small>lib/llm/src/http/service/metrics.rs:2674–2725</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/http/service/metrics.rs#L2674-L2725" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2674</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>2675</i>        if let Some(histogram) = &amp;self.inter_token_latency {</span>
+<span class="line"><i>2676</i>            histogram.flush();</span>
+<span class="line"><i>2677</i>        }</span>
+<span class="line"><i>2678</i></span>
+<span class="line"><i>2679</i>        if !self.detokenize_latency_total.is_zero() &amp;&amp; self.detokenize_count_total &gt; 0 {</span>
+<span class="line"><i>2680</i>            let avg_detokenize_latency_ms = (self.detokenize_latency_total.as_secs_f64() * 1000.0)</span>
+<span class="line"><i>2681</i>                / self.detokenize_count_total as f64;</span>
+<span class="line"><i>2682</i>            self.metrics</span>
+<span class="line"><i>2683</i>                .tokenizer_latency</span>
+<span class="line"><i>2684</i>                .with_label_values(&amp;[frontend_service::operation::DETOKENIZE])</span>
+<span class="line"><i>2685</i>                .observe(avg_detokenize_latency_ms);</span>
+<span class="line"><i>2686</i>        }</span>
+<span class="line"><i>2687</i></span>
+<span class="line"><i>2688</i>        // Publish final OSL when the collector is dropped, but only for</span>
+<span class="line"><i>2689</i>        // requests that actually produced output tokens. Recording zero for</span>
+<span class="line"><i>2690</i>        // failed/cancelled requests would corrupt histogram averages (sum/count)</span>
+<span class="line"><i>2691</i>        // and percentiles. Failures are already tracked by requests_total with</span>
+<span class="line"><i>2692</i>        // status and error_type labels.</span>
+<span class="line"><i>2693</i>        if self.osl &gt; 0 {</span>
+<span class="line"><i>2694</i>            self.metrics</span>
+<span class="line"><i>2695</i>                .output_sequence_length</span>
+<span class="line"><i>2696</i>                .with_label_values(&amp;[&amp;self.model])</span>
+<span class="line"><i>2697</i>                .observe(self.osl as f64);</span>
+<span class="line"><i>2698</i>        }</span>
+<span class="line"><i>2699</i></span>
+<span class="line"><i>2700</i>        // Record request summary on the enclosing span.</span>
+<span class="line"><i>2701</i>        // InflightGuard::Drop and on_response logs will inherit these.</span>
+<span class="line"><i>2702</i>        let span = tracing::Span::current();</span>
+<span class="line"><i>2703</i>        span.record(&quot;input_tokens&quot;, self.isl as u32);</span>
+<span class="line"><i>2704</i>        span.record(&quot;output_tokens&quot;, self.osl as u32);</span>
+<span class="line"><i>2705</i>        // Only record once observed, so requests that never carried a metrics</span>
+<span class="line"><i>2706</i>        // annotation (e.g. errored before the first chunk) don&#x27;t stamp a false zero.</span>
+<span class="line"><i>2707</i>        if self.multimodal_counts_observed {</span>
+<span class="line"><i>2708</i>            span.record(&quot;image_count&quot;, self.image_count_val as u32);</span>
+<span class="line"><i>2709</i>            span.record(&quot;video_count&quot;, self.video_count_val as u32);</span>
+<span class="line"><i>2710</i>            span.record(&quot;audio_count&quot;, self.audio_count_val as u32);</span>
+<span class="line"><i>2711</i>        }</span>
+<span class="line"><i>2712</i>        if let Some(ttft_ms) = self.ttft_ms {</span>
+<span class="line"><i>2713</i>            span.record(&quot;ttft_ms&quot;, format!(&quot;{:.2}&quot;, ttft_ms).as_str());</span>
+<span class="line"><i>2714</i>        }</span>
+<span class="line"><i>2715</i>        if self.itl_count &gt; 0 {</span>
+<span class="line"><i>2716</i>            let avg_ms = (self.itl_sum_secs / self.itl_count as f64) * 1000.0;</span>
+<span class="line"><i>2717</i>            span.record(&quot;avg_itl_ms&quot;, format!(&quot;{:.2}&quot;, avg_ms).as_str());</span>
+<span class="line"><i>2718</i>        }</span>
+<span class="line"><i>2719</i>        if let Some(worker_id) = self.prefill_worker_id {</span>
+<span class="line"><i>2720</i>            span.record(&quot;prefill_worker_id&quot;, worker_id);</span>
+<span class="line"><i>2721</i>        }</span>
+<span class="line"><i>2722</i>        if let Some(worker_id) = self.decode_worker_id {</span>
+<span class="line"><i>2723</i>            span.record(&quot;decode_worker_id&quot;, worker_id);</span>
+<span class="line"><i>2724</i>        }</span>
+<span class="line"><i>2725</i>    }</span></code></pre></details><details class="exercise"><summary>阅读检查 · 第二块间隔 120ms、含 4 token，记录什么？</summary><p>4 个 0.03 秒 ITL 观测值；无法据此还原引擎内部四个 token 的真实生成时刻。</p></details></section><section id="tracing" class="lesson"><div class="sectionhead"><h2>07 / Trace Context 与结构化日志</h2><label class="done"><input type="checkbox" data-read="tracing"> 已读</label></div><div class="flow"><div><b>01</b>HTTP 提取上游 Context</div><div><b>02</b>请求 span / 内部 request_id</div><div><b>03</b>Header 注入上下文</div><div><b>04</b>接收组件子 span 与关联日志</div></div><details class="source" id="src-rootspan"><summary><b>源码 · HTTP span 和父上下文</b><small>lib/runtime/src/logging.rs:623–665</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/logging.rs#L623-L665" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>623</i>pub fn make_inference_request_span&lt;B&gt;(req: &amp;Request&lt;B&gt;) -&gt; Span {</span>
+<span class="line"><i>624</i>    let method = req.method();</span>
+<span class="line"><i>625</i>    let uri = req.uri();</span>
+<span class="line"><i>626</i>    let version = format!(&quot;{:?}&quot;, req.version());</span>
+<span class="line"><i>627</i>    let (trace_parent, otel_context) = extract_trace_parent(req.headers());</span>
+<span class="line"><i>628</i></span>
+<span class="line"><i>629</i>    // Ensure every inference request has a request_id on the span.</span>
+<span class="line"><i>630</i>    // This is the single source of truth — workers and get_or_create_request_id</span>
+<span class="line"><i>631</i>    // read it back via DistributedTraceIdLayer.</span>
+<span class="line"><i>632</i>    let request_id = trace_parent</span>
+<span class="line"><i>633</i>        .request_id</span>
+<span class="line"><i>634</i>        .unwrap_or_else(|| Uuid::new_v4().to_string());</span>
+<span class="line"><i>635</i></span>
+<span class="line"><i>636</i>    let span = tracing::info_span!(</span>
+<span class="line"><i>637</i>            target: &quot;request_span&quot;,</span>
+<span class="line"><i>638</i>        &quot;http-request&quot;,</span>
+<span class="line"><i>639</i>        method = %method,</span>
+<span class="line"><i>640</i>        uri = %uri,</span>
+<span class="line"><i>641</i>        version = %version,</span>
+<span class="line"><i>642</i>        trace_id = trace_parent.trace_id,</span>
+<span class="line"><i>643</i>        parent_id = trace_parent.parent_id,</span>
+<span class="line"><i>644</i>        trace_flags = trace_parent.trace_flags,</span>
+<span class="line"><i>645</i>        x_request_id = trace_parent.x_request_id,</span>
+<span class="line"><i>646</i>        request_id = %request_id,</span>
+<span class="line"><i>647</i>        model = tracing::field::Empty,</span>
+<span class="line"><i>648</i>        &quot;request.outcome&quot; = tracing::field::Empty,</span>
+<span class="line"><i>649</i>        input_tokens = tracing::field::Empty,</span>
+<span class="line"><i>650</i>        output_tokens = tracing::field::Empty,</span>
+<span class="line"><i>651</i>        image_count = tracing::field::Empty,</span>
+<span class="line"><i>652</i>        video_count = tracing::field::Empty,</span>
+<span class="line"><i>653</i>        audio_count = tracing::field::Empty,</span>
+<span class="line"><i>654</i>        ttft_ms = tracing::field::Empty,</span>
+<span class="line"><i>655</i>        avg_itl_ms = tracing::field::Empty,</span>
+<span class="line"><i>656</i>        prefill_worker_id = tracing::field::Empty,</span>
+<span class="line"><i>657</i>        decode_worker_id = tracing::field::Empty,</span>
+<span class="line"><i>658</i>    );</span>
+<span class="line"><i>659</i></span>
+<span class="line"><i>660</i>    if let Some(context) = otel_context {</span>
+<span class="line"><i>661</i>        let _ = span.set_parent(context);</span>
+<span class="line"><i>662</i>    }</span>
+<span class="line"><i>663</i></span>
+<span class="line"><i>664</i>    span</span>
+<span class="line"><i>665</i>}</span></code></pre></details><details class="source" id="src-inject"><summary><b>源码 · 传输 Header 注入</b><small>lib/runtime/src/logging.rs:852–873</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/logging.rs#L852-L873" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>852</i>pub fn inject_trace_headers_into_map(headers: &amp;mut std::collections::HashMap&lt;String, String&gt;) {</span>
+<span class="line"><i>853</i>    if let Some(trace_context) = get_distributed_tracing_context() {</span>
+<span class="line"><i>854</i>        // Inject W3C traceparent header</span>
+<span class="line"><i>855</i>        headers.insert(</span>
+<span class="line"><i>856</i>            &quot;traceparent&quot;.to_string(),</span>
+<span class="line"><i>857</i>            trace_context.create_traceparent(),</span>
+<span class="line"><i>858</i>        );</span>
+<span class="line"><i>859</i></span>
+<span class="line"><i>860</i>        // Inject optional tracestate</span>
+<span class="line"><i>861</i>        if let Some(tracestate) = trace_context.tracestate {</span>
+<span class="line"><i>862</i>            headers.insert(&quot;tracestate&quot;.to_string(), tracestate);</span>
+<span class="line"><i>863</i>        }</span>
+<span class="line"><i>864</i></span>
+<span class="line"><i>865</i>        // Inject custom request IDs</span>
+<span class="line"><i>866</i>        if let Some(x_request_id) = trace_context.x_request_id {</span>
+<span class="line"><i>867</i>            headers.insert(&quot;x-request-id&quot;.to_string(), x_request_id);</span>
+<span class="line"><i>868</i>        }</span>
+<span class="line"><i>869</i>        if let Some(request_id) = trace_context.request_id {</span>
+<span class="line"><i>870</i>            headers.insert(&quot;request-id&quot;.to_string(), request_id);</span>
+<span class="line"><i>871</i>        }</span>
+<span class="line"><i>872</i>    }</span>
+<span class="line"><i>873</i>}</span></code></pre></details><p>区分业务 x-request-id、内部 request_id 和分布式 trace_id。内部 ID 缺失时会生成 UUID；x-request-id 是可选的上游关联字段。上下文传播与远程导出是两回事。</p><details class="source" id="src-logging"><summary><b>源码 · subscriber 与 OTel 装配</b><small>lib/runtime/src/logging.rs:1243–1386</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/logging.rs#L1243-L1386" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1243</i>fn setup_logging() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {</span>
+<span class="line"><i>1244</i>    let fmt_filter_layer = filters(load_config());</span>
+<span class="line"><i>1245</i>    let trace_filter_layer = filters(load_config());</span>
+<span class="line"><i>1246</i>    let otel_filter_layer = otel_filters(load_config(), lifecycle_tracing_enabled());</span>
+<span class="line"><i>1247</i>    let otel_logs_filter_layer = filters(load_config());</span>
+<span class="line"><i>1248</i>    let console_format = console_log_format();</span>
+<span class="line"><i>1249</i>    let legacy_jsonl_enabled = legacy_jsonl_logging_enabled();</span>
+<span class="line"><i>1250</i>    let otlp_enabled = otlp_exporter_enabled();</span>
+<span class="line"><i>1251</i>    // Keep the legacy JSONL switch as a trace-context signal even when the new</span>
+<span class="line"><i>1252</i>    // setting overrides console presentation. Older deployments rely on it for</span>
+<span class="line"><i>1253</i>    // downstream trace propagation without OTLP export.</span>
+<span class="line"><i>1254</i>    let trace_context_enabled =</span>
+<span class="line"><i>1255</i>        otlp_enabled || legacy_jsonl_enabled || console_format == ConsoleLogFormat::Jsonl;</span>
+<span class="line"><i>1256</i>    let span_events = if trace_context_enabled {</span>
+<span class="line"><i>1257</i>        span_events_for_logging()</span>
+<span class="line"><i>1258</i>    } else {</span>
+<span class="line"><i>1259</i>        FmtSpan::NONE</span>
+<span class="line"><i>1260</i>    };</span>
+<span class="line"><i>1261</i></span>
+<span class="line"><i>1262</i>    if trace_context_enabled {</span>
+<span class="line"><i>1263</i>        let service_name = get_service_name();</span>
+<span class="line"><i>1264</i>        let sample_ratio = trace_sample_ratio_from_env();</span>
+<span class="line"><i>1265</i></span>
+<span class="line"><i>1266</i>        // Build tracer and logger providers - with or without OTLP export</span>
+<span class="line"><i>1267</i>        let (tracer_provider, logger_provider_opt, endpoint_opt) = if otlp_enabled {</span>
+<span class="line"><i>1268</i>            // Building the OTLP exporters spawns a background flush task, so it needs a</span>
+<span class="line"><i>1269</i>            // live, persistent reactor</span>
+<span class="line"><i>1270</i>            let otel_handle = otel_runtime_handle()?;</span>
+<span class="line"><i>1271</i>            let _otel_reactor_guard = otel_handle.enter();</span>
+<span class="line"><i>1272</i>            let protocol = otlp_protocol_from_env();</span>
+<span class="line"><i>1273</i>            let traces_protocol = resolve_signal_otlp_protocol(</span>
+<span class="line"><i>1274</i>                protocol,</span>
+<span class="line"><i>1275</i>                std::env::var(env_logging::otlp::OTEL_EXPORTER_OTLP_TRACES_PROTOCOL)</span>
+<span class="line"><i>1276</i>                    .ok()</span>
+<span class="line"><i>1277</i>                    .as_deref(),</span>
+<span class="line"><i>1278</i>                env_logging::otlp::OTEL_EXPORTER_OTLP_TRACES_PROTOCOL,</span>
+<span class="line"><i>1279</i>            );</span>
+<span class="line"><i>1280</i>            let logs_protocol = resolve_signal_otlp_protocol(</span>
+<span class="line"><i>1281</i>                protocol,</span>
+<span class="line"><i>1282</i>                std::env::var(env_logging::otlp::OTEL_EXPORTER_OTLP_LOGS_PROTOCOL)</span>
+<span class="line"><i>1283</i>                    .ok()</span>
+<span class="line"><i>1284</i>                    .as_deref(),</span>
+<span class="line"><i>1285</i>                env_logging::otlp::OTEL_EXPORTER_OTLP_LOGS_PROTOCOL,</span>
+<span class="line"><i>1286</i>            );</span>
+<span class="line"><i>1287</i>            let generic_endpoint =</span>
+<span class="line"><i>1288</i>                std::env::var(env_logging::otlp::OTEL_EXPORTER_OTLP_ENDPOINT).ok();</span>
+<span class="line"><i>1289</i>            let traces_endpoint_env =</span>
+<span class="line"><i>1290</i>                std::env::var(env_logging::otlp::OTEL_EXPORTER_OTLP_TRACES_ENDPOINT).ok();</span>
+<span class="line"><i>1291</i>            let logs_endpoint_env =</span>
+<span class="line"><i>1292</i>                std::env::var(env_logging::otlp::OTEL_EXPORTER_OTLP_LOGS_ENDPOINT).ok();</span>
+<span class="line"><i>1293</i>            let traces_endpoint = resolve_otlp_endpoint(</span>
+<span class="line"><i>1294</i>                traces_protocol,</span>
+<span class="line"><i>1295</i>                traces_endpoint_env,</span>
+<span class="line"><i>1296</i>                generic_endpoint.clone(),</span>
+<span class="line"><i>1297</i>                &quot;/v1/traces&quot;,</span>
+<span class="line"><i>1298</i>            );</span>
+<span class="line"><i>1299</i>            let logs_endpoint = resolve_otlp_endpoint(</span>
+<span class="line"><i>1300</i>                logs_protocol,</span>
+<span class="line"><i>1301</i>                logs_endpoint_env,</span>
+<span class="line"><i>1302</i>                generic_endpoint,</span>
+<span class="line"><i>1303</i>                &quot;/v1/logs&quot;,</span>
+<span class="line"><i>1304</i>            );</span>
+<span class="line"><i>1305</i></span>
+<span class="line"><i>1306</i>            let resource = opentelemetry_sdk::Resource::builder_empty()</span>
+<span class="line"><i>1307</i>                .with_service_name(service_name.clone())</span>
+<span class="line"><i>1308</i>                .build();</span>
+<span class="line"><i>1309</i></span>
+<span class="line"><i>1310</i>            let span_exporter = build_span_exporter(traces_protocol, &amp;traces_endpoint)?;</span>
+<span class="line"><i>1311</i></span>
+<span class="line"><i>1312</i>            let mut tracer_provider_builder =</span>
+<span class="line"><i>1313</i>                opentelemetry_sdk::trace::SdkTracerProvider::builder()</span>
+<span class="line"><i>1314</i>                    .with_batch_exporter(span_exporter)</span>
+<span class="line"><i>1315</i>                    .with_resource(resource.clone());</span>
+<span class="line"><i>1316</i>            if let Some(sample_ratio) = sample_ratio {</span>
+<span class="line"><i>1317</i>                tracer_provider_builder = tracer_provider_builder.with_sampler(</span>
+<span class="line"><i>1318</i>                    Sampler::ParentBased(Box::new(Sampler::TraceIdRatioBased(sample_ratio))),</span>
+<span class="line"><i>1319</i>                );</span>
+<span class="line"><i>1320</i>            }</span>
+<span class="line"><i>1321</i>            let tracer_provider = tracer_provider_builder.build();</span>
+<span class="line"><i>1322</i></span>
+<span class="line"><i>1323</i>            let log_exporter = build_log_exporter(logs_protocol, &amp;logs_endpoint)?;</span>
+<span class="line"><i>1324</i></span>
+<span class="line"><i>1325</i>            let logger_provider = SdkLoggerProvider::builder()</span>
+<span class="line"><i>1326</i>                .with_batch_exporter(log_exporter)</span>
+<span class="line"><i>1327</i>                .with_resource(resource)</span>
+<span class="line"><i>1328</i>                .build();</span>
+<span class="line"><i>1329</i></span>
+<span class="line"><i>1330</i>            (</span>
+<span class="line"><i>1331</i>                tracer_provider,</span>
+<span class="line"><i>1332</i>                Some(logger_provider),</span>
+<span class="line"><i>1333</i>                Some((traces_protocol, traces_endpoint)),</span>
+<span class="line"><i>1334</i>            )</span>
+<span class="line"><i>1335</i>        } else {</span>
+<span class="line"><i>1336</i>            // No export - traces generated locally only (for logging/trace IDs)</span>
+<span class="line"><i>1337</i>            let mut provider_builder = opentelemetry_sdk::trace::SdkTracerProvider::builder()</span>
+<span class="line"><i>1338</i>                .with_resource(</span>
+<span class="line"><i>1339</i>                    opentelemetry_sdk::Resource::builder_empty()</span>
+<span class="line"><i>1340</i>                        .with_service_name(service_name.clone())</span>
+<span class="line"><i>1341</i>                        .build(),</span>
+<span class="line"><i>1342</i>                );</span>
+<span class="line"><i>1343</i>            if let Some(sample_ratio) = sample_ratio {</span>
+<span class="line"><i>1344</i>                provider_builder = provider_builder.with_sampler(Sampler::ParentBased(Box::new(</span>
+<span class="line"><i>1345</i>                    Sampler::TraceIdRatioBased(sample_ratio),</span>
+<span class="line"><i>1346</i>                )));</span>
+<span class="line"><i>1347</i>            }</span>
+<span class="line"><i>1348</i>            let provider = provider_builder.build();</span>
+<span class="line"><i>1349</i></span>
+<span class="line"><i>1350</i>            (provider, None, None)</span>
+<span class="line"><i>1351</i>        };</span>
+<span class="line"><i>1352</i></span>
+<span class="line"><i>1353</i>        // Register the provider globally so direct OTel API users</span>
+<span class="line"><i>1354</i>        // (`opentelemetry::global::tracer(...)`) hit the same exporter as</span>
+<span class="line"><i>1355</i>        // the tracing-opentelemetry bridge below. Without this, ad-hoc</span>
+<span class="line"><i>1356</i>        // OTel spans created via `global::tracer()` go to the default</span>
+<span class="line"><i>1357</i>        // no-op provider and are silently dropped.</span>
+<span class="line"><i>1358</i>        // Cheap — `SdkTracerProvider` is Arc-shared internally.</span>
+<span class="line"><i>1359</i>        opentelemetry::global::set_tracer_provider(tracer_provider.clone());</span>
+<span class="line"><i>1360</i></span>
+<span class="line"><i>1361</i>        let tracer = tracer_provider.tracer(service_name.to_string());</span>
+<span class="line"><i>1362</i>        let otel_logs_layer = logger_provider_opt</span>
+<span class="line"><i>1363</i>            .as_ref()</span>
+<span class="line"><i>1364</i>            .map(|lp| OpenTelemetryTracingBridge::new(lp).with_filter(otel_logs_filter_layer));</span>
+<span class="line"><i>1365</i></span>
+<span class="line"><i>1366</i>        let l = console_layer(console_format, span_events, fmt_filter_layer);</span>
+<span class="line"><i>1367</i>        tracing_subscriber::registry()</span>
+<span class="line"><i>1368</i>            .with(</span>
+<span class="line"><i>1369</i>                tracing_opentelemetry::layer()</span>
+<span class="line"><i>1370</i>                    .with_tracer(tracer)</span>
+<span class="line"><i>1371</i>                    .with_filter(otel_filter_layer),</span>
+<span class="line"><i>1372</i>            )</span>
+<span class="line"><i>1373</i>            .with(otel_logs_layer)</span>
+<span class="line"><i>1374</i>            .with(DistributedTraceIdLayer.with_filter(trace_filter_layer))</span>
+<span class="line"><i>1375</i>            .with(l)</span>
+<span class="line"><i>1376</i>            .init();</span>
+<span class="line"><i>1377</i></span>
+<span class="line"><i>1378</i>        log_otel_init_status(&amp;service_name, endpoint_opt, console_format);</span>
+<span class="line"><i>1379</i>    } else {</span>
+<span class="line"><i>1380</i>        let l = console_layer(console_format, span_events, fmt_filter_layer);</span>
+<span class="line"><i>1381</i></span>
+<span class="line"><i>1382</i>        tracing_subscriber::registry().with(l).init();</span>
+<span class="line"><i>1383</i>    }</span>
+<span class="line"><i>1384</i></span>
+<span class="line"><i>1385</i>    Ok(())</span>
+<span class="line"><i>1386</i>}</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>配置</th><th>作用</th></tr></thead><tbody><tr><td>DYN_LOGGING_CONSOLE_FORMAT=jsonl</td><td>控制台结构化；也可建立本地关联上下文</td></tr><tr><td>OTEL_EXPORT_ENABLED=true</td><td>导出 traces 与 runtime logs</td></tr><tr><td>OTEL_TRACES_SAMPLE_RATIO</td><td>配置 ParentBased + TraceIdRatioBased</td></tr><tr><td>OTEL_METRICS_EXPORTER=otlp</td><td>独立 metrics 开关</td></tr></tbody></table></div><p>setup_logging 组合控制台、TraceId、tracing-opentelemetry 和可选日志 bridge。JSONL 不等于远程导出，Dynamo span 正常也不代表引擎内部 span 已启用，需要核对实际后端和依赖。</p><details class="exercise"><summary>阅读检查 · 日志有 trace_id，Trace 存储却查不到？</summary><p>检查是否仅启用 JSONL，再查 OTEL_EXPORT_ENABLED、采样、网络、Collector traces pipeline 和对应 exporter。</p></details></section><section id="capture" class="lesson"><div class="sectionhead"><h2>08 / Request Trace 与 FPM：诊断数据的可靠性</h2><label class="done"><input type="checkbox" data-read="capture"> 已读</label></div><p>Request Trace 为每个 sink 启动独立广播订阅 worker。消费者落后时收到 Lagged，记录丢失条数；关闭时尝试排空接受的记录，再执行 sink.shutdown。它不是无损交付契约。</p><details class="source" id="src-requestsink"><summary><b>源码 · sink fan-out 与关闭</b><small>lib/llm/src/request_trace/sink.rs:496–571</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/request_trace/sink.rs#L496-L571" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>496</i>fn spawn_workers(</span>
+<span class="line"><i>497</i>    sinks: Vec&lt;Arc&lt;dyn RequestTraceSink&gt;&gt;,</span>
+<span class="line"><i>498</i>    shutdown: CancellationToken,</span>
+<span class="line"><i>499</i>) -&gt; SinkWorkers {</span>
+<span class="line"><i>500</i>    let sink_count = sinks.len();</span>
+<span class="line"><i>501</i>    // The workers are process-wide, so they cannot hang off the runtime of</span>
+<span class="line"><i>502</i>    // whichever input happened to initialize tracing first. The mocker gives</span>
+<span class="line"><i>503</i>    // each of its workers its own runtime, and one of those ending — cleanly or</span>
+<span class="line"><i>504</i>    // not — would otherwise cancel the shared sinks while the other inputs are</span>
+<span class="line"><i>505</i>    // still publishing into them. When an input is registered, teardown belongs</span>
+<span class="line"><i>506</i>    // to `ActiveInput`: the last one out cancels these workers whether it</span>
+<span class="line"><i>507</i>    // returns, is cancelled, or panics.</span>
+<span class="line"><i>508</i>    let token = CancellationToken::new();</span>
+<span class="line"><i>509</i>    if ACTIVE_INPUTS.load(Ordering::Acquire) == 0 {</span>
+<span class="line"><i>510</i>        // Started outside any input, so the caller&#x27;s token is the only teardown</span>
+<span class="line"><i>511</i>        // signal there is and the workers follow it as before.</span>
+<span class="line"><i>512</i>        let linked = token.clone();</span>
+<span class="line"><i>513</i>        tokio::spawn(async move {</span>
+<span class="line"><i>514</i>            shutdown.cancelled().await;</span>
+<span class="line"><i>515</i>            linked.cancel();</span>
+<span class="line"><i>516</i>        });</span>
+<span class="line"><i>517</i>    }</span>
+<span class="line"><i>518</i>    let mut handles = Vec::with_capacity(sink_count);</span>
+<span class="line"><i>519</i>    for sink in &amp;sinks {</span>
+<span class="line"><i>520</i>        let sink = sink.clone();</span>
+<span class="line"><i>521</i>        let name = sink.name();</span>
+<span class="line"><i>522</i>        let mut receiver: broadcast::Receiver&lt;RequestTraceRecord&gt; = super::subscribe();</span>
+<span class="line"><i>523</i>        let worker_shutdown = token.clone();</span>
+<span class="line"><i>524</i>        handles.push(tokio::spawn(async move {</span>
+<span class="line"><i>525</i>            loop {</span>
+<span class="line"><i>526</i>                tokio::select! {</span>
+<span class="line"><i>527</i>                    biased;</span>
+<span class="line"><i>528</i>                    _ = worker_shutdown.cancelled() =&gt; {</span>
+<span class="line"><i>529</i>                        loop {</span>
+<span class="line"><i>530</i>                            match receiver.try_recv() {</span>
+<span class="line"><i>531</i>                                Ok(record) =&gt; sink.emit(&amp;record).await,</span>
+<span class="line"><i>532</i>                                Err(broadcast::error::TryRecvError::Lagged(count)) =&gt; tracing::warn!(</span>
+<span class="line"><i>533</i>                                    sink = name,</span>
+<span class="line"><i>534</i>                                    dropped = count,</span>
+<span class="line"><i>535</i>                                    &quot;request trace bus lagged during shutdown; dropped records&quot;</span>
+<span class="line"><i>536</i>                                ),</span>
+<span class="line"><i>537</i>                                Err(</span>
+<span class="line"><i>538</i>                                    broadcast::error::TryRecvError::Empty</span>
+<span class="line"><i>539</i>                                    | broadcast::error::TryRecvError::Closed</span>
+<span class="line"><i>540</i>                                ) =&gt; break,</span>
+<span class="line"><i>541</i>                            }</span>
+<span class="line"><i>542</i>                        }</span>
+<span class="line"><i>543</i>                        break;</span>
+<span class="line"><i>544</i>                    }</span>
+<span class="line"><i>545</i>                    message = receiver.recv() =&gt; {</span>
+<span class="line"><i>546</i>                        match message {</span>
+<span class="line"><i>547</i>                            Ok(record) =&gt; sink.emit(&amp;record).await,</span>
+<span class="line"><i>548</i>                            Err(broadcast::error::RecvError::Lagged(count)) =&gt; tracing::warn!(</span>
+<span class="line"><i>549</i>                                sink = name,</span>
+<span class="line"><i>550</i>                                dropped = count,</span>
+<span class="line"><i>551</i>                                &quot;request trace bus lagged; dropped records&quot;</span>
+<span class="line"><i>552</i>                            ),</span>
+<span class="line"><i>553</i>                            Err(broadcast::error::RecvError::Closed) =&gt; break,</span>
+<span class="line"><i>554</i>                        }</span>
+<span class="line"><i>555</i>                    }</span>
+<span class="line"><i>556</i>                }</span>
+<span class="line"><i>557</i>            }</span>
+<span class="line"><i>558</i>            sink.shutdown().await;</span>
+<span class="line"><i>559</i>        }));</span>
+<span class="line"><i>560</i>    }</span>
+<span class="line"><i>561</i></span>
+<span class="line"><i>562</i>    if sink_count == 0 {</span>
+<span class="line"><i>563</i>        tracing::warn!(&quot;request trace is enabled but no valid request trace sinks were configured&quot;);</span>
+<span class="line"><i>564</i>    }</span>
+<span class="line"><i>565</i>    tracing::info!(sinks = sink_count, &quot;Request trace sinks ready&quot;);</span>
+<span class="line"><i>566</i>    SinkWorkers {</span>
+<span class="line"><i>567</i>        token,</span>
+<span class="line"><i>568</i>        handles,</span>
+<span class="line"><i>569</i>        sinks,</span>
+<span class="line"><i>570</i>    }</span>
+<span class="line"><i>571</i>}</span></code></pre></details><p>FPM publish_payload 使用非阻塞广播；sampled 按生产者键保留最新状态并定期 flush，full 使用另一消费路径。持久化只是事件发布的附加诊断分支。</p><details class="source" id="src-fpm"><summary><b>源码 · FPM 非阻塞发布</b><small>lib/llm/src/fpm_trace/mod.rs:137–164</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/fpm_trace/mod.rs#L137-L164" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>137</i>    /// Try to enqueue one finalized FPM msgpack payload for persistence.</span>
+<span class="line"><i>138</i>    ///</span>
+<span class="line"><i>139</i>    /// This never waits. A bounded broadcast queue intentionally retains the</span>
+<span class="line"><i>140</i>    /// newest records under load; the sink reports overwritten-record counts.</span>
+<span class="line"><i>141</i>    /// `false` means shutdown had already stopped accepting trace records.</span>
+<span class="line"><i>142</i>    pub(crate) fn publish_payload(&amp;self, payload: Bytes) -&gt; bool {</span>
+<span class="line"><i>143</i>        if !self.inner.begin_publish() {</span>
+<span class="line"><i>144</i>            return false;</span>
+<span class="line"><i>145</i>        }</span>
+<span class="line"><i>146</i>        let observed_at_unix_ms = SystemTime::now()</span>
+<span class="line"><i>147</i>            .duration_since(UNIX_EPOCH)</span>
+<span class="line"><i>148</i>            .map(|duration| duration.as_millis() as u64)</span>
+<span class="line"><i>149</i>            .unwrap_or_default();</span>
+<span class="line"><i>150</i>        let sent = self</span>
+<span class="line"><i>151</i>            .inner</span>
+<span class="line"><i>152</i>            .sender</span>
+<span class="line"><i>153</i>            .send(FpmTraceEvent {</span>
+<span class="line"><i>154</i>                observed_at_unix_ms,</span>
+<span class="line"><i>155</i>                payload,</span>
+<span class="line"><i>156</i>                source: self.source.clone(),</span>
+<span class="line"><i>157</i>            })</span>
+<span class="line"><i>158</i>            .is_ok();</span>
+<span class="line"><i>159</i>        self.inner.finish_publish();</span>
+<span class="line"><i>160</i>        if !sent {</span>
+<span class="line"><i>161</i>            self.inner.record_dropped(1);</span>
+<span class="line"><i>162</i>        }</span>
+<span class="line"><i>163</i>        sent</span>
+<span class="line"><i>164</i>    }</span></code></pre></details><details class="source" id="src-fpmsampled"><summary><b>源码 · sampled 消费</b><small>lib/llm/src/fpm_trace/sink.rs:401–459</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/llm/src/fpm_trace/sink.rs#L401-L459" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>401</i>async fn run_sampled(</span>
+<span class="line"><i>402</i>    mut receiver: broadcast::Receiver&lt;FpmTraceEvent&gt;,</span>
+<span class="line"><i>403</i>    writer: JsonlGzipWriter&lt;FpmTraceRecord&gt;,</span>
+<span class="line"><i>404</i>    owner: Arc&lt;FpmTraceInner&gt;,</span>
+<span class="line"><i>405</i>    sample_interval_ms: u64,</span>
+<span class="line"><i>406</i>) {</span>
+<span class="line"><i>407</i>    let interval = Duration::from_millis(sample_interval_ms.max(1));</span>
+<span class="line"><i>408</i>    let mut flush_tick = tokio::time::interval_at(tokio::time::Instant::now() + interval, interval);</span>
+<span class="line"><i>409</i>    flush_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);</span>
+<span class="line"><i>410</i>    let mut latest = BTreeMap::new();</span>
+<span class="line"><i>411</i>    let mut last_emitted = BTreeMap::new();</span>
+<span class="line"><i>412</i></span>
+<span class="line"><i>413</i>    loop {</span>
+<span class="line"><i>414</i>        tokio::select! {</span>
+<span class="line"><i>415</i>            biased;</span>
+<span class="line"><i>416</i>            _ = owner.shutdown.cancelled() =&gt; {</span>
+<span class="line"><i>417</i>                owner.stop_accepting().await;</span>
+<span class="line"><i>418</i>                loop {</span>
+<span class="line"><i>419</i>                    match receiver.try_recv() {</span>
+<span class="line"><i>420</i>                        Ok(event) =&gt; retain_latest(&amp;mut latest, &amp;last_emitted, event),</span>
+<span class="line"><i>421</i>                        Err(broadcast::error::TryRecvError::Lagged(dropped)) =&gt; {</span>
+<span class="line"><i>422</i>                            report_lag(&amp;owner, dropped, true);</span>
+<span class="line"><i>423</i>                        }</span>
+<span class="line"><i>424</i>                        Err(</span>
+<span class="line"><i>425</i>                            broadcast::error::TryRecvError::Empty</span>
+<span class="line"><i>426</i>                            | broadcast::error::TryRecvError::Closed</span>
+<span class="line"><i>427</i>                        ) =&gt; break,</span>
+<span class="line"><i>428</i>                    }</span>
+<span class="line"><i>429</i>                }</span>
+<span class="line"><i>430</i>                flush_latest(&amp;writer, &amp;mut latest, &amp;mut last_emitted).await;</span>
+<span class="line"><i>431</i>                if let Err(error) = writer.close().await {</span>
+<span class="line"><i>432</i>                    tracing::warn!(%error, &quot;FPM trace writer failed to close cleanly&quot;);</span>
+<span class="line"><i>433</i>                }</span>
+<span class="line"><i>434</i>                report_drop_summary(&amp;owner);</span>
+<span class="line"><i>435</i>                return;</span>
+<span class="line"><i>436</i>            }</span>
+<span class="line"><i>437</i>            _ = flush_tick.tick() =&gt; {</span>
+<span class="line"><i>438</i>                flush_latest(&amp;writer, &amp;mut latest, &amp;mut last_emitted).await;</span>
+<span class="line"><i>439</i>            }</span>
+<span class="line"><i>440</i>            message = receiver.recv() =&gt; {</span>
+<span class="line"><i>441</i>                match message {</span>
+<span class="line"><i>442</i>                    Ok(event) =&gt; retain_latest(&amp;mut latest, &amp;last_emitted, event),</span>
+<span class="line"><i>443</i>                    Err(broadcast::error::RecvError::Lagged(dropped)) =&gt; {</span>
+<span class="line"><i>444</i>                        report_lag(&amp;owner, dropped, false);</span>
+<span class="line"><i>445</i>                    }</span>
+<span class="line"><i>446</i>                    Err(broadcast::error::RecvError::Closed) =&gt; {</span>
+<span class="line"><i>447</i>                        owner.stop_accepting().await;</span>
+<span class="line"><i>448</i>                        flush_latest(&amp;writer, &amp;mut latest, &amp;mut last_emitted).await;</span>
+<span class="line"><i>449</i>                        if let Err(error) = writer.close().await {</span>
+<span class="line"><i>450</i>                            tracing::warn!(%error, &quot;FPM trace writer failed to close cleanly&quot;);</span>
+<span class="line"><i>451</i>                        }</span>
+<span class="line"><i>452</i>                        report_drop_summary(&amp;owner);</span>
+<span class="line"><i>453</i>                        return;</span>
+<span class="line"><i>454</i>                    }</span>
+<span class="line"><i>455</i>                }</span>
+<span class="line"><i>456</i>            }</span>
+<span class="line"><i>457</i>        }</span>
+<span class="line"><i>458</i>    }</span>
+<span class="line"><i>459</i>}</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>类型</th><th>记录语义</th><th>边界</th></tr></thead><tbody><tr><td>分布式 span</td><td>组件操作与父子关系</td><td>不保证每请求、每迭代都覆盖</td></tr><tr><td>Request Trace</td><td>选定请求、路由、工具事件和可选 payload</td><td>存在消费者滞后和记录丢失</td></tr><tr><td>FPM sampled</td><td>各键最近变化后的状态</td><td>不保留全部中间迭代</td></tr><tr><td>FPM full</td><td>消费者尝试保留接受的 payload</td><td>仍受生产队列容量限制</td></tr></tbody></table></div><details class="exercise"><summary>阅读检查 · 诊断文件能直接当唯一计费账本吗？</summary><p>不能假设无损；需另行设计完整性、持久化确认、幂等和对账。</p></details></section><section id="health" class="lesson"><div class="sectionhead"><h2>09 / Health：状态查询和主动推理分开读</h2><label class="done"><input type="checkbox" data-read="health"> 已读</label></div><p>普通 LLM Worker 的主动 canary 经本地注册 Endpoint 发出最小推理请求，等待首响应。首响应无错记 ready；空流、首响应错误、生成失败或超时记 notready。后续流由另一任务继续消费。</p><details class="source" id="src-canary"><summary><b>源码 · 首响应判定与状态更新</b><small>lib/runtime/src/health_check.rs:201–296</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/lib/runtime/src/health_check.rs#L201-L296" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>201</i>    async fn send_health_check_request(</span>
+<span class="line"><i>202</i>        &amp;self,</span>
+<span class="line"><i>203</i>        endpoint_subject: &amp;str,</span>
+<span class="line"><i>204</i>        payload: &amp;serde_json::Value,</span>
+<span class="line"><i>205</i>    ) -&gt; anyhow::Result&lt;()&gt; {</span>
+<span class="line"><i>206</i>        debug!(</span>
+<span class="line"><i>207</i>            &quot;Sending health check to {} via local registry&quot;,</span>
+<span class="line"><i>208</i>            endpoint_subject</span>
+<span class="line"><i>209</i>        );</span>
+<span class="line"><i>210</i></span>
+<span class="line"><i>211</i>        let engine = self</span>
+<span class="line"><i>212</i>            .drt</span>
+<span class="line"><i>213</i>            .local_endpoint_registry()</span>
+<span class="line"><i>214</i>            .get(endpoint_subject)</span>
+<span class="line"><i>215</i>            .ok_or_else(|| {</span>
+<span class="line"><i>216</i>                anyhow::anyhow!(</span>
+<span class="line"><i>217</i>                    &quot;Endpoint &#x27;{}&#x27; not found in local registry, engine may still be initializing&quot;,</span>
+<span class="line"><i>218</i>                    endpoint_subject</span>
+<span class="line"><i>219</i>                )</span>
+<span class="line"><i>220</i>            })?;</span>
+<span class="line"><i>221</i></span>
+<span class="line"><i>222</i>        // Clone what we need for the spawned task</span>
+<span class="line"><i>223</i>        let system_health = self.drt.system_health().clone();</span>
+<span class="line"><i>224</i>        let endpoint_subject_owned = endpoint_subject.to_string();</span>
+<span class="line"><i>225</i>        let payload = payload.clone();</span>
+<span class="line"><i>226</i>        let timeout = self.config.request_timeout;</span>
+<span class="line"><i>227</i></span>
+<span class="line"><i>228</i>        // Spawn task to send health check and wait for response</span>
+<span class="line"><i>229</i>        tokio::spawn(async move {</span>
+<span class="line"><i>230</i>            let result = tokio::time::timeout(timeout, async {</span>
+<span class="line"><i>231</i>                let request = SingleIn::new(payload);</span>
+<span class="line"><i>232</i>                match engine.generate(request).await {</span>
+<span class="line"><i>233</i>                    Ok(mut response_stream) =&gt; {</span>
+<span class="line"><i>234</i>                        // Get the first response to verify endpoint is alive.</span>
+<span class="line"><i>235</i>                        // Check for errors</span>
+<span class="line"><i>236</i>                        let is_healthy = if let Some(response) = response_stream.next().await {</span>
+<span class="line"><i>237</i>                            if let Some(error) = response.err() {</span>
+<span class="line"><i>238</i>                                warn!(</span>
+<span class="line"><i>239</i>                                    &quot;Health check error response from {}: {:?}&quot;,</span>
+<span class="line"><i>240</i>                                    endpoint_subject_owned, error</span>
+<span class="line"><i>241</i>                                );</span>
+<span class="line"><i>242</i>                                false</span>
+<span class="line"><i>243</i>                            } else {</span>
+<span class="line"><i>244</i>                                debug!(&quot;Health check successful for {}&quot;, endpoint_subject_owned);</span>
+<span class="line"><i>245</i>                                true</span>
+<span class="line"><i>246</i>                            }</span>
+<span class="line"><i>247</i>                        } else {</span>
+<span class="line"><i>248</i>                            warn!(</span>
+<span class="line"><i>249</i>                                &quot;Health check got no response from {}&quot;,</span>
+<span class="line"><i>250</i>                                endpoint_subject_owned</span>
+<span class="line"><i>251</i>                            );</span>
+<span class="line"><i>252</i>                            false</span>
+<span class="line"><i>253</i>                        };</span>
+<span class="line"><i>254</i></span>
+<span class="line"><i>255</i>                        tokio::spawn(async move {</span>
+<span class="line"><i>256</i>                            // We need to consume the rest of the stream to avoid warnings on the frontend.</span>
+<span class="line"><i>257</i>                            response_stream.for_each(|_| async {}).await;</span>
+<span class="line"><i>258</i>                        });</span>
+<span class="line"><i>259</i></span>
+<span class="line"><i>260</i>                        // Update health status based on response</span>
+<span class="line"><i>261</i>                        system_health.lock().set_endpoint_health_status(</span>
+<span class="line"><i>262</i>                            &amp;endpoint_subject_owned,</span>
+<span class="line"><i>263</i>                            if is_healthy {</span>
+<span class="line"><i>264</i>                                HealthStatus::Ready</span>
+<span class="line"><i>265</i>                            } else {</span>
+<span class="line"><i>266</i>                                HealthStatus::NotReady</span>
+<span class="line"><i>267</i>                            },</span>
+<span class="line"><i>268</i>                        );</span>
+<span class="line"><i>269</i>                    }</span>
+<span class="line"><i>270</i>                    Err(e) =&gt; {</span>
+<span class="line"><i>271</i>                        error!(</span>
+<span class="line"><i>272</i>                            &quot;Health check request failed for {}: {}&quot;,</span>
+<span class="line"><i>273</i>                            endpoint_subject_owned, e</span>
+<span class="line"><i>274</i>                        );</span>
+<span class="line"><i>275</i>                        system_health.lock().set_endpoint_health_status(</span>
+<span class="line"><i>276</i>                            &amp;endpoint_subject_owned,</span>
+<span class="line"><i>277</i>                            HealthStatus::NotReady,</span>
+<span class="line"><i>278</i>                        );</span>
+<span class="line"><i>279</i>                    }</span>
+<span class="line"><i>280</i>                }</span>
+<span class="line"><i>281</i>            })</span>
+<span class="line"><i>282</i>            .await;</span>
+<span class="line"><i>283</i></span>
+<span class="line"><i>284</i>            // Handle timeout</span>
+<span class="line"><i>285</i>            if result.is_err() {</span>
+<span class="line"><i>286</i>                warn!(&quot;Health check timeout for {}&quot;, endpoint_subject_owned);</span>
+<span class="line"><i>287</i>                system_health</span>
+<span class="line"><i>288</i>                    .lock()</span>
+<span class="line"><i>289</i>                    .set_endpoint_health_status(&amp;endpoint_subject_owned, HealthStatus::NotReady);</span>
+<span class="line"><i>290</i>            }</span>
+<span class="line"><i>291</i></span>
+<span class="line"><i>292</i>            debug!(&quot;Health check completed for {}&quot;, endpoint_subject_owned);</span>
+<span class="line"><i>293</i>        });</span>
+<span class="line"><i>294</i></span>
+<span class="line"><i>295</i>        Ok(())</span>
+<span class="line"><i>296</i>    }</span></code></pre></details><aside class="note ">当前 Worker /live 与 /health 使用相同系统状态语义；Frontend 的存活、就绪和模型 readiness 不同。主动 canary 默认关闭，多模态/Omni 路径需独立检查。</aside><p>canary 不证明外部网关可达、全部输出完成或内容语义正确。服务入口的真实推理验收仍有必要。</p><details class="exercise"><summary>阅读检查 · 首响应成功证明完整服务正常吗？</summary><p>只证明指定本地 Endpoint 探测获得无错首响应。网关、HTTP 投影、完整输出和客户端接收另行验证。</p></details></section><section id="kubernetes" class="lesson"><div class="sectionhead"><h2>10 / Kubernetes 与 Planner：接到平台</h2><label class="done"><input type="checkbox" data-read="kubernetes"> 已读</label></div><p>Helm 负责生成 PodMonitor。命名端口、组件标签和 metrics-enabled 标签决定匹配目标。Monitor 存在、Prometheus 发现和业务序列存在是三个不同条件。</p><details class="source" id="src-podmonitor"><summary><b>源码 · 生成条件、标签与端口选择</b><small>deploy/helm/charts/platform/components/operator/templates/prometheus.yaml:15–88</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/deploy/helm/charts/platform/components/operator/templates/prometheus.yaml#L15-L88" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>15</i># Tri-state for PodMonitor creation (dynamo.metrics.podMonitors.enabled):</span>
+<span class="line"><i>16</i>#   null  = auto-detect via .Capabilities (works with helm install/upgrade)</span>
+<span class="line"><i>17</i>#   true  = always create (use with helm template / GitOps)</span>
+<span class="line"><i>18</i>#   false = never create (opt-out even if prometheus-operator is installed)</span>
+<span class="line"><i>19</i>{{- $podMonitorsEnabled := false }}</span>
+<span class="line"><i>20</i>{{- if kindIs &quot;invalid&quot; .Values.dynamo.metrics.podMonitors.enabled }}</span>
+<span class="line"><i>21</i>  {{- $podMonitorsEnabled = (.Capabilities.APIVersions.Has &quot;monitoring.coreos.com/v1&quot;) }}</span>
+<span class="line"><i>22</i>{{- else }}</span>
+<span class="line"><i>23</i>  {{- $podMonitorsEnabled = .Values.dynamo.metrics.podMonitors.enabled }}</span>
+<span class="line"><i>24</i>{{- end }}</span>
+<span class="line"><i>25</i>{{- if $podMonitorsEnabled }}</span>
+<span class="line"><i>26</i>apiVersion: monitoring.coreos.com/v1</span>
+<span class="line"><i>27</i>kind: PodMonitor</span>
+<span class="line"><i>28</i>metadata:</span>
+<span class="line"><i>29</i>  name: dynamo-frontend</span>
+<span class="line"><i>30</i>  {{- with .Values.dynamo.metrics.podMonitors.labels }}</span>
+<span class="line"><i>31</i>  labels:</span>
+<span class="line"><i>32</i>    {{- toYaml . | nindent 4 }}</span>
+<span class="line"><i>33</i>  {{- end }}</span>
+<span class="line"><i>34</i>spec:</span>
+<span class="line"><i>35</i>  {{- if .Values.namespaceRestriction.enabled }}</span>
+<span class="line"><i>36</i>  namespaceSelector:</span>
+<span class="line"><i>37</i>    matchNames:</span>
+<span class="line"><i>38</i>    - {{ .Release.Namespace }}</span>
+<span class="line"><i>39</i>  {{- else }}</span>
+<span class="line"><i>40</i>  namespaceSelector:</span>
+<span class="line"><i>41</i>    any: true</span>
+<span class="line"><i>42</i>  {{- end }}</span>
+<span class="line"><i>43</i>  podMetricsEndpoints:</span>
+<span class="line"><i>44</i>  - interval: 5s</span>
+<span class="line"><i>45</i>    path: {{ .Values.dynamo.metrics.podMonitors.frontendPath | default &quot;/metrics&quot; }}</span>
+<span class="line"><i>46</i>    port: http</span>
+<span class="line"><i>47</i>    # honorLabels ensures dynamo_namespace and other labels set by the dynamo</span>
+<span class="line"><i>48</i>    # runtime (including router metrics embedded in the frontend) are preserved.</span>
+<span class="line"><i>49</i>    honorLabels: true</span>
+<span class="line"><i>50</i>    relabelings:</span>
+<span class="line"><i>51</i>    - action: replace</span>
+<span class="line"><i>52</i>      sourceLabels:</span>
+<span class="line"><i>53</i>      - __meta_kubernetes_pod_label_nvidia_com_dynamo_namespace</span>
+<span class="line"><i>54</i>      targetLabel: dynamo_namespace</span>
+<span class="line"><i>55</i>  selector:</span>
+<span class="line"><i>56</i>    matchLabels:</span>
+<span class="line"><i>57</i>      nvidia.com/dynamo-component-type: frontend</span>
+<span class="line"><i>58</i>      nvidia.com/metrics-enabled: &quot;true&quot;</span>
+<span class="line"><i>59</i>---</span>
+<span class="line"><i>60</i>apiVersion: monitoring.coreos.com/v1</span>
+<span class="line"><i>61</i>kind: PodMonitor</span>
+<span class="line"><i>62</i>metadata:</span>
+<span class="line"><i>63</i>  name: dynamo-worker</span>
+<span class="line"><i>64</i>  {{- with .Values.dynamo.metrics.podMonitors.labels }}</span>
+<span class="line"><i>65</i>  labels:</span>
+<span class="line"><i>66</i>    {{- toYaml . | nindent 4 }}</span>
+<span class="line"><i>67</i>  {{- end }}</span>
+<span class="line"><i>68</i>spec:</span>
+<span class="line"><i>69</i>  {{- if .Values.namespaceRestriction.enabled }}</span>
+<span class="line"><i>70</i>  namespaceSelector:</span>
+<span class="line"><i>71</i>    matchNames:</span>
+<span class="line"><i>72</i>    - {{ .Release.Namespace }}</span>
+<span class="line"><i>73</i>  {{- else }}</span>
+<span class="line"><i>74</i>  namespaceSelector:</span>
+<span class="line"><i>75</i>    any: true</span>
+<span class="line"><i>76</i>  {{- end }}</span>
+<span class="line"><i>77</i>  podMetricsEndpoints:</span>
+<span class="line"><i>78</i>  - interval: 5s</span>
+<span class="line"><i>79</i>    path: /metrics</span>
+<span class="line"><i>80</i>    port: system</span>
+<span class="line"><i>81</i>    relabelings:</span>
+<span class="line"><i>82</i>    - action: replace</span>
+<span class="line"><i>83</i>      sourceLabels:</span>
+<span class="line"><i>84</i>      - __meta_kubernetes_pod_label_nvidia_com_dynamo_component_type</span>
+<span class="line"><i>85</i>      targetLabel: dynamo_component_type</span>
+<span class="line"><i>86</i>  # Intra-pod GMS shadow-failover packs two engines into one pod, so each engine&#x27;s</span>
+<span class="line"><i>87</i>  # system port is renamed system-&lt;engineID&gt; (system-0, system-1) to avoid a clash</span>
+<span class="line"><i>88</i>  # (see deploy/operator/internal/dynamo/failover.go). The default `system` endpoint</span></code></pre></details><details class="source" id="src-servicemonitor"><summary><b>源码 · Operator HTTPS 抓取</b><small>deploy/helm/charts/platform/components/operator/templates/operator-servicemonitor.yaml:15–49</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/deploy/helm/charts/platform/components/operator/templates/operator-servicemonitor.yaml#L15-L49" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>15</i># Tri-state for ServiceMonitor creation (metricsService.enabled):</span>
+<span class="line"><i>16</i>#   null  = auto-detect via .Capabilities (works with helm install/upgrade)</span>
+<span class="line"><i>17</i>#   true  = always create (use with helm template / GitOps)</span>
+<span class="line"><i>18</i>#   false = never create (opt-out even if prometheus-operator is installed)</span>
+<span class="line"><i>19</i>{{- $serviceMonitorEnabled := false }}</span>
+<span class="line"><i>20</i>{{- if kindIs &quot;invalid&quot; .Values.metricsService.enabled }}</span>
+<span class="line"><i>21</i>  {{- $serviceMonitorEnabled = (.Capabilities.APIVersions.Has &quot;monitoring.coreos.com/v1&quot;) }}</span>
+<span class="line"><i>22</i>{{- else }}</span>
+<span class="line"><i>23</i>  {{- $serviceMonitorEnabled = .Values.metricsService.enabled }}</span>
+<span class="line"><i>24</i>{{- end }}</span>
+<span class="line"><i>25</i>{{- if $serviceMonitorEnabled }}</span>
+<span class="line"><i>26</i>apiVersion: monitoring.coreos.com/v1</span>
+<span class="line"><i>27</i>kind: ServiceMonitor</span>
+<span class="line"><i>28</i>metadata:</span>
+<span class="line"><i>29</i>  name: {{ include &quot;dynamo-operator.fullname&quot; . }}-operator</span>
+<span class="line"><i>30</i>  namespace: {{ .Release.Namespace }}</span>
+<span class="line"><i>31</i>  labels:</span>
+<span class="line"><i>32</i>    {{- with .Values.metricsService.labels }}</span>
+<span class="line"><i>33</i>    {{- toYaml . | nindent 4 }}</span>
+<span class="line"><i>34</i>    {{- end }}</span>
+<span class="line"><i>35</i>    {{- include &quot;dynamo-operator.labels&quot; . | nindent 4 }}</span>
+<span class="line"><i>36</i>spec:</span>
+<span class="line"><i>37</i>  selector:</span>
+<span class="line"><i>38</i>    matchLabels:</span>
+<span class="line"><i>39</i>      control-plane: controller-manager</span>
+<span class="line"><i>40</i>      {{- include &quot;dynamo-operator.selectorLabels&quot; . | nindent 6 }}</span>
+<span class="line"><i>41</i>  endpoints:</span>
+<span class="line"><i>42</i>  - port: metrics</span>
+<span class="line"><i>43</i>    scheme: https</span>
+<span class="line"><i>44</i>    path: /metrics</span>
+<span class="line"><i>45</i>    interval: 15s</span>
+<span class="line"><i>46</i>    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token</span>
+<span class="line"><i>47</i>    tlsConfig:</span>
+<span class="line"><i>48</i>      insecureSkipVerify: true</span>
+<span class="line"><i>49</i>{{- end }}</span></code></pre></details><details class="source" id="src-operator"><summary><b>源码 · 控制面指标</b><small>deploy/operator/internal/observability/metrics.go:35–115</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/deploy/operator/internal/observability/metrics.go#L35-L115" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>35</i>		prometheus.GaugeOpts{</span>
+<span class="line"><i>36</i>			Namespace: metricsNamespace,</span>
+<span class="line"><i>37</i>			Name:      &quot;resources_total&quot;,</span>
+<span class="line"><i>38</i>			Help:      &quot;Total number of resources by type and status&quot;,</span>
+<span class="line"><i>39</i>		},</span>
+<span class="line"><i>40</i>		[]string{&quot;resource_type&quot;, &quot;namespace&quot;, &quot;status&quot;},</span>
+<span class="line"><i>41</i>	)</span>
+<span class="line"><i>42</i></span>
+<span class="line"><i>43</i>	// Webhook metrics</span>
+<span class="line"><i>44</i>	webhookDuration = prometheus.NewHistogramVec(</span>
+<span class="line"><i>45</i>		prometheus.HistogramOpts{</span>
+<span class="line"><i>46</i>			Namespace: metricsNamespace,</span>
+<span class="line"><i>47</i>			Name:      &quot;webhook_duration_seconds&quot;,</span>
+<span class="line"><i>48</i>			Help:      &quot;Duration of webhook validation in seconds&quot;,</span>
+<span class="line"><i>49</i>			Buckets:   []float64{.001, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5},</span>
+<span class="line"><i>50</i>		},</span>
+<span class="line"><i>51</i>		[]string{&quot;resource_type&quot;, &quot;operation&quot;},</span>
+<span class="line"><i>52</i>	)</span>
+<span class="line"><i>53</i></span>
+<span class="line"><i>54</i>	webhookRequestsTotal = prometheus.NewCounterVec(</span>
+<span class="line"><i>55</i>		prometheus.CounterOpts{</span>
+<span class="line"><i>56</i>			Namespace: metricsNamespace,</span>
+<span class="line"><i>57</i>			Name:      &quot;webhook_requests_total&quot;,</span>
+<span class="line"><i>58</i>			Help:      &quot;Total number of webhook admission requests&quot;,</span>
+<span class="line"><i>59</i>		},</span>
+<span class="line"><i>60</i>		[]string{&quot;resource_type&quot;, &quot;operation&quot;, &quot;result&quot;},</span>
+<span class="line"><i>61</i>	)</span>
+<span class="line"><i>62</i></span>
+<span class="line"><i>63</i>	webhookDenialsTotal = prometheus.NewCounterVec(</span>
+<span class="line"><i>64</i>		prometheus.CounterOpts{</span>
+<span class="line"><i>65</i>			Namespace: metricsNamespace,</span>
+<span class="line"><i>66</i>			Name:      &quot;webhook_denials_total&quot;,</span>
+<span class="line"><i>67</i>			Help:      &quot;Total number of webhook admission denials&quot;,</span>
+<span class="line"><i>68</i>		},</span>
+<span class="line"><i>69</i>		[]string{&quot;resource_type&quot;, &quot;operation&quot;, &quot;reason&quot;},</span>
+<span class="line"><i>70</i>	)</span>
+<span class="line"><i>71</i>)</span>
+<span class="line"><i>72</i></span>
+<span class="line"><i>73</i>// InitMetrics registers all custom metrics with the controller-runtime metrics registry</span>
+<span class="line"><i>74</i>func InitMetrics() {</span>
+<span class="line"><i>75</i>	ctrlmetrics.Registry.MustRegister(</span>
+<span class="line"><i>76</i>		resourcesTotal,</span>
+<span class="line"><i>77</i>		webhookDuration,</span>
+<span class="line"><i>78</i>		webhookRequestsTotal,</span>
+<span class="line"><i>79</i>		webhookDenialsTotal,</span>
+<span class="line"><i>80</i>	)</span>
+<span class="line"><i>81</i>}</span>
+<span class="line"><i>82</i></span>
+<span class="line"><i>83</i>// RecordWebhookAdmission records metrics for a webhook admission request</span>
+<span class="line"><i>84</i>func RecordWebhookAdmission(resourceType, operation string, allowed bool, duration time.Duration) {</span>
+<span class="line"><i>85</i>	webhookDuration.WithLabelValues(resourceType, operation).Observe(duration.Seconds())</span>
+<span class="line"><i>86</i></span>
+<span class="line"><i>87</i>	result := &quot;allowed&quot;</span>
+<span class="line"><i>88</i>	if !allowed {</span>
+<span class="line"><i>89</i>		result = &quot;denied&quot;</span>
+<span class="line"><i>90</i>	}</span>
+<span class="line"><i>91</i>	webhookRequestsTotal.WithLabelValues(resourceType, operation, result).Inc()</span>
+<span class="line"><i>92</i>}</span>
+<span class="line"><i>93</i></span>
+<span class="line"><i>94</i>// RecordWebhookDenial records a webhook denial with a categorized reason</span>
+<span class="line"><i>95</i>func RecordWebhookDenial(resourceType, operation string, err error) {</span>
+<span class="line"><i>96</i>	reason := categorizeError(err)</span>
+<span class="line"><i>97</i>	webhookDenialsTotal.WithLabelValues(resourceType, operation, reason).Inc()</span>
+<span class="line"><i>98</i>}</span>
+<span class="line"><i>99</i></span>
+<span class="line"><i>100</i>// UpdateResourceCount updates the gauge for a specific resource type and status</span>
+<span class="line"><i>101</i>func UpdateResourceCount(resourceType, namespace, status string, count float64) {</span>
+<span class="line"><i>102</i>	resourcesTotal.WithLabelValues(resourceType, namespace, status).Set(count)</span>
+<span class="line"><i>103</i>}</span>
+<span class="line"><i>104</i></span>
+<span class="line"><i>105</i>// categorizeError categorizes Kubernetes errors for better metrics granularity</span>
+<span class="line"><i>106</i>func categorizeError(err error) string {</span>
+<span class="line"><i>107</i>	if err == nil {</span>
+<span class="line"><i>108</i>		return &quot;none&quot;</span>
+<span class="line"><i>109</i>	}</span>
+<span class="line"><i>110</i></span>
+<span class="line"><i>111</i>	switch {</span>
+<span class="line"><i>112</i>	case k8serrors.IsNotFound(err):</span>
+<span class="line"><i>113</i>		return &quot;not_found&quot;</span>
+<span class="line"><i>114</i>	case k8serrors.IsAlreadyExists(err):</span>
+<span class="line"><i>115</i>		return &quot;already_exists&quot;</span></code></pre></details><p>Operator 用 controller-runtime Registry 注册自己的控制面指标，与 Worker Registry 分开。Planner 还会读取指标，因此采集数据缺失可能影响运行控制。</p><details class="source" id="src-planner"><summary><b>源码 · Planner 查询 ITL / TTFT</b><small>components/src/dynamo/planner/monitoring/traffic_metrics.py:249–277</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/components/src/dynamo/planner/monitoring/traffic_metrics.py#L249-L277" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>249</i>    def get_avg_inter_token_latency(self, interval: str, model_name: str):</span>
+<span class="line"><i>250</i>        if self.metrics_source == &quot;router&quot;:</span>
+<span class="line"><i>251</i>            return self._get_average_metric(</span>
+<span class="line"><i>252</i>                f&quot;{prometheus_names.name_prefix.COMPONENT}_{prometheus_names.router.INTER_TOKEN_LATENCY_SECONDS}&quot;,</span>
+<span class="line"><i>253</i>                interval,</span>
+<span class="line"><i>254</i>                &quot;avg inter token latency&quot;,</span>
+<span class="line"><i>255</i>            )</span>
+<span class="line"><i>256</i>        return self._get_average_metric(</span>
+<span class="line"><i>257</i>            prometheus_names.frontend_service.INTER_TOKEN_LATENCY_SECONDS,</span>
+<span class="line"><i>258</i>            interval,</span>
+<span class="line"><i>259</i>            &quot;avg inter token latency&quot;,</span>
+<span class="line"><i>260</i>            model_name,</span>
+<span class="line"><i>261</i>        )</span>
+<span class="line"><i>262</i></span>
+<span class="line"><i>263</i>    def get_avg_time_to_first_token(self, interval: str, model_name: str):</span>
+<span class="line"><i>264</i>        if self.metrics_source == &quot;router&quot;:</span>
+<span class="line"><i>265</i>            return self._get_average_metric(</span>
+<span class="line"><i>266</i>                f&quot;{prometheus_names.name_prefix.COMPONENT}_{prometheus_names.router.TIME_TO_FIRST_TOKEN_SECONDS}&quot;,</span>
+<span class="line"><i>267</i>                interval,</span>
+<span class="line"><i>268</i>                &quot;avg time to first token&quot;,</span>
+<span class="line"><i>269</i>            )</span>
+<span class="line"><i>270</i>        return self._get_average_metric(</span>
+<span class="line"><i>271</i>            prometheus_names.frontend_service.TIME_TO_FIRST_TOKEN_SECONDS,</span>
+<span class="line"><i>272</i>            interval,</span>
+<span class="line"><i>273</i>            &quot;avg time to first token&quot;,</span>
+<span class="line"><i>274</i>            model_name,</span>
+<span class="line"><i>275</i>        )</span>
+<span class="line"><i>276</i></span>
+<span class="line"><i>277</i>    def get_avg_request_duration(self, interval: str, model_name: str):</span></code></pre></details><details class="source" id="src-otelcollector"><summary><b>源码 · Collector 示例 pipeline</b><small>dev/observability/otel-collector.yaml:1–35</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/2f296b59274867529ea8deef994e6954520024b6/dev/observability/otel-collector.yaml#L1-L35" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1</i># SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION &amp; AFFILIATES. All rights reserved.</span>
+<span class="line"><i>2</i># SPDX-License-Identifier: Apache-2.0</span>
+<span class="line"><i>3</i></span>
+<span class="line"><i>4</i># OpenTelemetry Collector configuration</span>
+<span class="line"><i>5</i># Receives OTLP signals and routes traces to Tempo, logs to Loki.</span>
+<span class="line"><i>6</i></span>
+<span class="line"><i>7</i>receivers:</span>
+<span class="line"><i>8</i>  otlp:</span>
+<span class="line"><i>9</i>    protocols:</span>
+<span class="line"><i>10</i>      grpc:</span>
+<span class="line"><i>11</i>        endpoint: 0.0.0.0:4317</span>
+<span class="line"><i>12</i>      http:</span>
+<span class="line"><i>13</i>        endpoint: 0.0.0.0:4318</span>
+<span class="line"><i>14</i></span>
+<span class="line"><i>15</i>exporters:</span>
+<span class="line"><i>16</i>  otlp/tempo:</span>
+<span class="line"><i>17</i>    endpoint: tempo:4317</span>
+<span class="line"><i>18</i>    tls:</span>
+<span class="line"><i>19</i>      insecure: true</span>
+<span class="line"><i>20</i>  otlphttp/loki:</span>
+<span class="line"><i>21</i>    endpoint: http://loki:3100/otlp</span>
+<span class="line"><i>22</i></span>
+<span class="line"><i>23</i>processors:</span>
+<span class="line"><i>24</i>  batch: {}</span>
+<span class="line"><i>25</i></span>
+<span class="line"><i>26</i>service:</span>
+<span class="line"><i>27</i>  pipelines:</span>
+<span class="line"><i>28</i>    traces:</span>
+<span class="line"><i>29</i>      receivers: [otlp]</span>
+<span class="line"><i>30</i>      processors: [batch]</span>
+<span class="line"><i>31</i>      exporters: [otlp/tempo]</span>
+<span class="line"><i>32</i>    logs:</span>
+<span class="line"><i>33</i>      receivers: [otlp]</span>
+<span class="line"><i>34</i>      processors: [batch]</span>
+<span class="line"><i>35</i>      exporters: [otlphttp/loki]</span></code></pre></details><aside class="note warn">该示例只有 traces/logs pipeline。启用 OTLP metrics 时还要增加 metrics pipeline 与 exporter；不能只改 Worker 环境变量。</aside><div class="tablewrap"><table><thead><tr><th>接入检查</th><th>对应动作</th></tr></thead><tbody><tr><td>监控资源生成</td><td>podMonitors.enabled：null 自动检测；GitOps 离线渲染显式确认</td></tr><tr><td>资源发现</td><td>核对 Monitor / namespace selector 与权限</td></tr><tr><td>端点可达</td><td>核对命名端口、路径、网络；Operator HTTPS 与 Token</td></tr><tr><td>业务序列</td><td>发送匹配流量，检查引擎开关和回调错误</td></tr><tr><td>标签治理</td><td>区分 dynamo_namespace 与 namespace，补齐部署身份</td></tr><tr><td>重复统计</td><td>避免同目标重复抓取或拉取/推送混合求和</td></tr></tbody></table></div></section><section id="practice" class="lesson"><div class="sectionhead"><h2>11 / 跟读与验证计划</h2><label class="done"><input type="checkbox" data-read="practice"> 已读</label></div><p>下列实验是阅读后的验证计划，尚未在本环境执行推理或故障注入。已有部署才可使用对应检查命令。</p><div class="tablewrap"><table><thead><tr><th>实验</th><th>动作</th><th>观察</th></tr></thead><tbody><tr><td>首次序列</td><td>空闲抓取 → 发匹配请求 → 再抓取</td><td>区分空 family、未创建 series 和采集失败</td></tr><tr><td>计时窗口</td><td>跟踪入口在哪里创建 Guard / Collector</td><td>标出 tokenization / route / dispatch 是否包含</td></tr><tr><td>多 token 块</td><td>用本页滑块演算，再读 observe_response</td><td>区分折算 ITL 和逐 token 时间戳</td></tr><tr><td>Collector 断连</td><td>隔离环境阻断 OTLP 后恢复</td><td>看连接、导出错误与恢复，不假设持久化补传</td></tr><tr><td>回调失败</td><td>测试里抛异常或返回错误类型</td><td>验证 HTTP 成功但部分指标缺失</td></tr><tr><td>慢消费者</td><td>隔离测试制造诊断消费者滞后</td><td>看 Lagged / dropped，核对非阻塞边界</td></tr></tbody></table></div><pre><code># 替换为已有部署的地址和 namespace；这些命令只读
+curl -fsS http://&lt;frontend-host&gt;:8000/metrics
+curl -fsS http://&lt;worker-host&gt;:9090/metrics
+kubectl get podmonitor,servicemonitor -n &lt;namespace&gt;
+
+# 示例 PromQL：须补充部署筛选，先合并 bucket 再计算分位数
+histogram_quantile(0.95,
+  sum by (le, model) (
+    rate(dynamo_frontend_time_to_first_token_seconds_bucket[5m])
+  )
+)</code></pre><h3>已有测试的阅读入口</h3><p>Frontend metrics.rs：test_active_requests_tracks_inflight_guard、frontend_request_metrics_ignore_updates_after_guard_finishes。FPM sink.rs：sampled_mode_keeps_latest_event_per_worker_and_rank。先读断言再读状态变更；本页未声称已运行这些测试。</p><aside class="note ">源码推断：GIL 回调、编码、标签数量与全量诊断有开销；具体吞吐影响必须实测。存在 spawn_blocking 不等于没有成本。</aside><details class="exercise"><summary>阅读检查 · 目标 UP 但引擎指标缺失，排查顺序？</summary><p>匹配流量 → 引擎 metrics 开关 → multiprocess Registry → 回调注册 → PyO3 错误日志 → 前缀过滤 → 平台查询标签。</p></details></section><section id="references" class="lesson"><div class="sectionhead"><h2>12 / 参考、版本差异与下一步</h2><label class="done"><input type="checkbox" data-read="references"> 已读</label></div><p>官方 dev 文档用于语义核对，内容会继续更新，源码结论以本页固定提交为准。</p><ul><li><a href="https://docs.nvidia.com/dynamo/dev/reference/observability/metrics-catalog">Metrics Catalog</a></li><li><a href="https://docs.nvidia.com/dynamo/dev/reference/observability/otlp-metrics-export">OTLP Metrics Export</a></li><li><a href="https://docs.nvidia.com/dynamo/dev/reference/observability/health-checks">Health Check Reference</a></li><li><a href="https://docs.nvidia.com/dynamo/dev/reference/observability/request-traces">Request Trace Reference</a></li><li><a href="source-manifest.json">本地源码证据清单</a></li></ul><p>差异记录：metrics 配置只接受 gRPC，但当前 Runtime 调用方会记录解析错误并跳过 exporter，不应解释为进程必然退出。Worker Registry 和 Frontend 本地 Registry 也必须区分：某指标出现在一个出口不足以证明另一个出口覆盖它。</p><p>下一步在确定优先后端后，沿 Frontend → Runtime → Router → 引擎补齐各入口的 Collector 创建时刻、上下文传播和异常释放。</p><p><a href="index.html#outline">返回系统大纲参与讨论 →</a></p></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 2f296b59274867529ea8deef994e6954520024b6。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

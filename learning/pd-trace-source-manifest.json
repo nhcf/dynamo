@@ -1,0 +1,256 @@
+{
+  "revision": "2f296b59274867529ea8deef994e6954520024b6",
+  "analysis_date": "2026-10-29",
+  "scope": "Request plane trace propagation and reviewed storage/event/NIXL boundaries",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "pd-root",
+      "path": "lib/runtime/src/logging.rs",
+      "start": 623,
+      "end": 665,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "91ada36b1a7472e781620f4e99ee7ea8f2c1af0fb105e510f8292274ee010648"
+    },
+    {
+      "id": "pd-inject",
+      "path": "lib/runtime/src/logging.rs",
+      "start": 852,
+      "end": 873,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "91ada36b1a7472e781620f4e99ee7ea8f2c1af0fb105e510f8292274ee010648"
+    },
+    {
+      "id": "pd-dispatch",
+      "path": "lib/runtime/src/pipeline/network/egress/addressed_router.rs",
+      "start": 1045,
+      "end": 1073,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "ff7386e9d152d6cec1f90712866f08e1290bb87bd7821de28f1e74455e7d771b"
+    },
+    {
+      "id": "pd-ingress",
+      "path": "lib/runtime/src/pipeline/network/ingress/shared_tcp_endpoint.rs",
+      "start": 286,
+      "end": 337,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "975ef76da70cfa4de9f1a968bcaeb2db477d88043a0b12116852417ba8e903a7"
+    },
+    {
+      "id": "pd-lifecycle",
+      "path": "lib/runtime/src/telemetry.rs",
+      "start": 122,
+      "end": 147,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "61cce285cf5cf616b24e7eb5bcac61d17a922427e4221df696d1ff9e15bfbc13"
+    },
+    {
+      "id": "pd-autospan",
+      "path": "lib/backend-common/src/adapter.rs",
+      "start": 227,
+      "end": 307,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "7a0bb657693f89cf92ddc2d1e82b6f838f005255e28a25b2097e24de80f89eaa"
+    },
+    {
+      "id": "pd-handoff",
+      "path": "lib/llm/src/kv_router/prefill_router/mod.rs",
+      "start": 127,
+      "end": 157,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "2f29105fa79b6e7a108c6b43e4a4c2bedf7e50b10cbaca27b098eec32a9958af"
+    },
+    {
+      "id": "pd-spawn",
+      "path": "lib/llm/src/kv_router/prefill_router/handoff.rs",
+      "start": 50,
+      "end": 61,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "22672b4dcd56a0e7792d2707bc023c1099d275a7b88862e600509f0e1a4fd949"
+    },
+    {
+      "id": "pd-context",
+      "path": "lib/bindings/python/rust/context.rs",
+      "start": 432,
+      "end": 462,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "2468665304c0d541fbbf0bec39d81b2354548136bbd3192a0fa534567753d5b6"
+    },
+    {
+      "id": "pd-vllmcontext",
+      "path": "components/src/dynamo/vllm/handlers.py",
+      "start": 4138,
+      "end": 4153,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "bc4135da6eaf66df4cb7cf084d6c81622185f26a7ec9caeacdf1249f1be5cb61"
+    },
+    {
+      "id": "pd-vllmcall",
+      "path": "components/src/dynamo/vllm/handlers.py",
+      "start": 3527,
+      "end": 3539,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "bc4135da6eaf66df4cb7cf084d6c81622185f26a7ec9caeacdf1249f1be5cb61"
+    },
+    {
+      "id": "pd-sglang",
+      "path": "components/src/dynamo/sglang/request_handlers/llm/decode_handler.py",
+      "start": 642,
+      "end": 660,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "e17b4cd97223731c7b739b9db1926754629fe4c1855a11621457a73c72af8594"
+    },
+    {
+      "id": "pd-trtllm",
+      "path": "components/src/dynamo/trtllm/request_handlers/handler_base.py",
+      "start": 1318,
+      "end": 1337,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "30fc99c726670b9986294f661fceaff3862b9590597ef3bf6b335fd2a6460638"
+    },
+    {
+      "id": "pd-envelope",
+      "path": "lib/runtime/src/transports/event_plane/traits.rs",
+      "start": 12,
+      "end": 25,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "923611abce2bed194dea64c9a4bbaffe70edf891587e9704ab53b146e7993f8e"
+    },
+    {
+      "id": "pd-publisher",
+      "path": "lib/runtime/src/transports/event_plane/mod.rs",
+      "start": 662,
+      "end": 683,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "dcd6137a776855a98819ca84a4faf29f5d87ce98ca0fab1568eb70d6f51bda49"
+    },
+    {
+      "id": "pd-nats",
+      "path": "lib/runtime/src/transports/event_plane/nats_transport.rs",
+      "start": 36,
+      "end": 65,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "22eddc542c4de4d9bee3136621f61762b411b4297fe4a2b95bc6eed6076a5866"
+    },
+    {
+      "id": "pd-publish",
+      "path": "lib/runtime/src/distributed.rs",
+      "start": 727,
+      "end": 738,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "ceaebb950eb2c6f47a984a44992098d0eb69aa8fdcff91b09fc45468ffe8e89d"
+    },
+    {
+      "id": "pd-zmq",
+      "path": "lib/runtime/src/transports/event_plane/zmq_transport.rs",
+      "start": 280,
+      "end": 301,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "85f039dd8b38a5f3a8c046dfea1ffc9916c368cc66ce4242ee4c384807bc578e"
+    },
+    {
+      "id": "pd-kv",
+      "path": "lib/kv-router/src/protocols.rs",
+      "start": 1314,
+      "end": 1323,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "7c4f6bf04e40c3133a7a41e939c298b730ec156118088e1d79ba44198ade1307"
+    },
+    {
+      "id": "pd-sequence",
+      "path": "lib/kv-router/src/protocols.rs",
+      "start": 1250,
+      "end": 1259,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "7c4f6bf04e40c3133a7a41e939c298b730ec156118088e1d79ba44198ade1307"
+    },
+    {
+      "id": "pd-sched",
+      "path": "lib/llm/src/block_manager/connector/scheduler.rs",
+      "start": 39,
+      "end": 80,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "93161d7f4b80793713957a9a50071c1d3350e355e593e53a1ce645b0cd288da9"
+    },
+    {
+      "id": "pd-request",
+      "path": "lib/llm/src/block_manager/connector/protocol.rs",
+      "start": 93,
+      "end": 113,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "053c66931d43e34a1c9bf943288997cfcb2bbc312c4bcfe65724b61c8450386c"
+    },
+    {
+      "id": "pd-timing",
+      "path": "lib/kvbm-engine/src/offload/batch.rs",
+      "start": 24,
+      "end": 60,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "8cc6461e99f52defdb7e3a026de67a27937ed53b0d006007df8e9438b463d287"
+    },
+    {
+      "id": "pd-nixl",
+      "path": "lib/kvbm-physical/src/transfer/executor/nixl.rs",
+      "start": 350,
+      "end": 380,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "ee98407b1b1586080eb184d7c1651928c00a864960e0a2e193944582cc891b26"
+    },
+    {
+      "id": "pd-xferctx",
+      "path": "lib/kvbm-physical/src/transfer/context.rs",
+      "start": 210,
+      "end": 237,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "dc4851c1e8b4f811fa438ffeb803ec6367cd14475bdd51b8b1b33d3a8a35fcc3"
+    },
+    {
+      "id": "pd-complete",
+      "path": "lib/kvbm-physical/src/transfer/notifications/nixl_events.rs",
+      "start": 152,
+      "end": 192,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "7c8d881aff56515620924989d02de8b4b057cbabf7a77766971edbf2c92ef1b6"
+    },
+    {
+      "id": "pd-nop",
+      "path": "components/src/dynamo/vllm/nixl_telemetry.py",
+      "start": 18,
+      "end": 40,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "c63e52d81c0bf992e78a9e9985843cb9a9e2c3e61d6b0bd27da02f746095d632"
+    },
+    {
+      "id": "pd-enabled",
+      "path": "lib/runtime/src/telemetry.rs",
+      "start": 450,
+      "end": 452,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "61cce285cf5cf616b24e7eb5bcac61d17a922427e4221df696d1ff9e15bfbc13"
+    },
+    {
+      "id": "pd-filters",
+      "path": "lib/runtime/src/logging.rs",
+      "start": 1533,
+      "end": 1543,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "91ada36b1a7472e781620f4e99ee7ea8f2c1af0fb105e510f8292274ee010648"
+    },
+    {
+      "id": "pd-extension",
+      "path": "components/src/dynamo/common/backend/telemetry.py",
+      "start": 39,
+      "end": 85,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "46fc0e3fc8c045af8f3be940369a6b40a3a5109bbd02ad0b4e9f10d517d2b08d"
+    },
+    {
+      "id": "pd-child",
+      "path": "lib/bindings/python/rust/context.rs",
+      "start": 392,
+      "end": 430,
+      "revision": "2f296b59274867529ea8deef994e6954520024b6",
+      "sha256": "2468665304c0d541fbbf0bec39d81b2354548136bbd3192a0fa534567753d5b6"
+    }
+  ]
+}
