@@ -1,0 +1,26 @@
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    User["User / GitOps"] --> Admission["Admission"]
+    Admission --> API["Kubernetes API"]
+    API --> DGD["DGD controller"]
+    DGD --> Provider["One selected workload program"]
+    Provider --> Component["Component path: DCD"]
+    Provider --> External["Grove / DisaggregatedSet native resources"]
+    Component --> Workload["Deployment / LWS"]
+    External --> Pods
+    Workload --> Pods["Frontend / Prefill / Decode"]
+    Pods -. "status / readiness" .-> API
+    API --> DGDR["DGDR controller"]
+    DGDR --> Profiler["Profiler Job"]
+    Profiler --> Output["Status file / output ConfigMap"]
+    Output --> DGDR
+    DGDR --> DGD
+    Pods -. "metrics / FPM" .-> Planner["Planner"]
+    Planner --> Scale["DGDSA scale or direct DGD patch"]
+    Scale --> API
+    Pods --> Metadata["WorkerMetadata"]
+    Pods --> Ready["EndpointSlice / Pod readiness"]
+    Metadata --> Discovery["Runtime discovery join + query"]
+    Ready --> Discovery
+    Discovery -. "membership" .-> Pods
+    DGD -. "metrics / status / events / logs" .-> Observe["Prometheus / logs / Kubernetes diagnostics"]

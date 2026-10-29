@@ -1,0 +1,200 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "从逻辑块状态、分层驻留、onboard/offload 和物理传输，追到 KVBM 指标与 GPU Memory Service 的发布边界。",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "kv-cache-1",
+      "path": "lib/kvbm-logical/src/blocks/mutable.rs",
+      "start": 72,
+      "end": 119,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "eb8f6b3a19d0e10047f67c861cf73e42cb218dc505ec43f8fbe8bf128b304df2"
+    },
+    {
+      "id": "kv-cache-2",
+      "path": "lib/kvbm-logical/src/blocks/immutable.rs",
+      "start": 117,
+      "end": 136,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "ae0c8a1def42a42f70faaae2262a4d4886255d88dd992eb0da84fb32a01baa8d"
+    },
+    {
+      "id": "kv-cache-3",
+      "path": "lib/kvbm-logical/src/blocks/immutable.rs",
+      "start": 271,
+      "end": 277,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "ae0c8a1def42a42f70faaae2262a4d4886255d88dd992eb0da84fb32a01baa8d"
+    },
+    {
+      "id": "kv-cache-4",
+      "path": "lib/kvbm-logical/src/manager/mod.rs",
+      "start": 56,
+      "end": 74,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "12f9b6740125a37df7426c92779bbd134001997a4a9479cf1eda768c2212ff9e"
+    },
+    {
+      "id": "kv-cache-5",
+      "path": "lib/kvbm-logical/src/manager/mod.rs",
+      "start": 93,
+      "end": 124,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "12f9b6740125a37df7426c92779bbd134001997a4a9479cf1eda768c2212ff9e"
+    },
+    {
+      "id": "kv-cache-6",
+      "path": "lib/kvbm-logical/src/manager/mod.rs",
+      "start": 126,
+      "end": 168,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "12f9b6740125a37df7426c92779bbd134001997a4a9479cf1eda768c2212ff9e"
+    },
+    {
+      "id": "kv-cache-7",
+      "path": "lib/kvbm-engine/src/leader/instance.rs",
+      "start": 1117,
+      "end": 1180,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "ebe44aa15f8cbdbb93f303d4e822940b99f32b2ca72523eadc5e107588f511d3"
+    },
+    {
+      "id": "kv-cache-8",
+      "path": "lib/kvbm-engine/src/leader/session/messages.rs",
+      "start": 15,
+      "end": 65,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "0e7353dde3f2720d1691093a2ff41bb858aea0323d9d232816d9ffbea3a75b94"
+    },
+    {
+      "id": "kv-cache-9",
+      "path": "lib/kvbm-physical/src/manager/mod.rs",
+      "start": 227,
+      "end": 270,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "be7946b7c98e4c5d1a0e71baf67fb05c5f65506b45c03c91f32cb0862eba791b"
+    },
+    {
+      "id": "kv-cache-10",
+      "path": "lib/kvbm-engine/src/offload/engine.rs",
+      "start": 120,
+      "end": 147,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "ac37682051233815a36e863337f18a068ae1b30ebfba8bad0bdee35f2b4011f8"
+    },
+    {
+      "id": "kv-cache-11",
+      "path": "lib/kvbm-engine/src/offload/pipeline.rs",
+      "start": 1170,
+      "end": 1227,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c46b35dfa679ffbff860c10148d75b16f2abd9c82eb019bd8d686bc0826c27f8"
+    },
+    {
+      "id": "kv-cache-12",
+      "path": "lib/kvbm-engine/src/offload/pipeline.rs",
+      "start": 1410,
+      "end": 1465,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c46b35dfa679ffbff860c10148d75b16f2abd9c82eb019bd8d686bc0826c27f8"
+    },
+    {
+      "id": "kv-cache-13",
+      "path": "lib/kvbm-engine/src/offload/pipeline.rs",
+      "start": 1247,
+      "end": 1309,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c46b35dfa679ffbff860c10148d75b16f2abd9c82eb019bd8d686bc0826c27f8"
+    },
+    {
+      "id": "kv-cache-14",
+      "path": "lib/kvbm-engine/src/offload/pipeline.rs",
+      "start": 1520,
+      "end": 1588,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c46b35dfa679ffbff860c10148d75b16f2abd9c82eb019bd8d686bc0826c27f8"
+    },
+    {
+      "id": "kv-cache-15",
+      "path": "lib/kvbm-engine/src/offload/pipeline.rs",
+      "start": 1588,
+      "end": 1650,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c46b35dfa679ffbff860c10148d75b16f2abd9c82eb019bd8d686bc0826c27f8"
+    },
+    {
+      "id": "kv-cache-16",
+      "path": "lib/kvbm-logical/src/metrics/pool_metrics.rs",
+      "start": 5,
+      "end": 45,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "fb5011aedbf30df0e653a91589d7485020e65f3d86c7b046fe1a2a2a4bb99841"
+    },
+    {
+      "id": "kv-cache-17",
+      "path": "lib/kvbm-logical/src/metrics/collector.rs",
+      "start": 180,
+      "end": 222,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "9eebbd71a1b3b3b3650987639d518a0337af6e80433b46990c6507c68fb73cc5"
+    },
+    {
+      "id": "kv-cache-18",
+      "path": "lib/kvbm-logical/src/metrics/collector.rs",
+      "start": 16,
+      "end": 80,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "9eebbd71a1b3b3b3650987639d518a0337af6e80433b46990c6507c68fb73cc5"
+    },
+    {
+      "id": "kv-cache-19",
+      "path": "lib/kvbm-logical/src/metrics/stats.rs",
+      "start": 99,
+      "end": 153,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "01ade44f4b3973ac9093f6283cfd8dbadbf7fe5bfb8a6fa751fa134374617158"
+    },
+    {
+      "id": "kv-cache-20",
+      "path": "lib/gpu_memory_service/server/allocations.py",
+      "start": 89,
+      "end": 131,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "65d71d84a5c331437ecb3d169c8b0d7ae7a6f869f73e8aee0835ffae34f4c403"
+    },
+    {
+      "id": "kv-cache-21",
+      "path": "lib/gpu_memory_service/server/allocations.py",
+      "start": 131,
+      "end": 171,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "65d71d84a5c331437ecb3d169c8b0d7ae7a6f869f73e8aee0835ffae34f4c403"
+    },
+    {
+      "id": "kv-cache-22",
+      "path": "lib/gpu_memory_service/client/memory_manager.py",
+      "start": 333,
+      "end": 383,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "eadc4e6c49296225c7ab81cbef2e79f8ebe9afbf6f84ff78f450aee902cc8f7d"
+    },
+    {
+      "id": "kv-cache-23",
+      "path": "lib/gpu_memory_service/failover_lock/failover_metrics.py",
+      "start": 27,
+      "end": 78,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "d3b28d52d3838727d2e77a37e9faa293766a7f7f29727c13abe78f1ec81b2dd5"
+    },
+    {
+      "id": "kv-cache-24",
+      "path": "lib/gpu_memory_service/failover_lock/failover_metrics.py",
+      "start": 176,
+      "end": 205,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "d3b28d52d3838727d2e77a37e9faa293766a7f7f29727c13abe78f1ec81b2dd5"
+    }
+  ]
+}

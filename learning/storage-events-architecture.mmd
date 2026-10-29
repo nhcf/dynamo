@@ -1,0 +1,25 @@
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    Engine["Inference engine KV cache / connector"] --> GPU["G1 GPU"]
+    GPU <-->|"optional offload / onboard"| Host["G2 pinned host"]
+    Host <-->|"optional staging"| Disk["G3 disk"]
+    Host <-->|"optional object IO"| Object["G4 object storage"]
+    Remote["Remote G2"] <-->|"NIXL transfer"| Host
+    Logical["kvbm-logical: registry / pools / guards"] --> Coordination["kvbm-engine: leader / sessions / offload"]
+    Coordination --> Physical["kvbm-physical: layouts / transfer strategies / completion"]
+    Physical --> GPU
+    Physical --> Host
+    Physical --> Disk
+    Logical -. "Create / Remove" .-> KEvents["KVBM EventsManager"]
+    Engine -. "native KV events" .-> Native["Engine ZMQ stream"]
+    KEvents -. "optional" .-> Consolidator["Consolidator: canonical hash / residency references"]
+    Native -. "optional" .-> Consolidator
+    Native --> Relay["KV event publisher / normalizer / local admission"]
+    Consolidator --> Relay
+    Relay --> Plane["Runtime Event Plane: ZMQ or NATS"]
+    Plane --> Index["Router residency index"]
+    Index -. "routing hint, not KV bytes" .-> Engine
+    Logical -. "atomics" .-> Metrics["MetricsAggregator / target Registry"]
+    Relay -. "relay counters" .-> DRT["DRT Registry"]
+    Physical -. "pending/status logs" .-> Logs["Logs / telemetry"]
+    Coordination -. "batch timing logs" .-> Logs

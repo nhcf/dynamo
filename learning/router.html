@@ -1,0 +1,950 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>KV-aware Router 与调度 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#router-scope">01 / 阅读范围与证据版本</a><a href="#router-architecture">02 / 选择器、调度器与派发宿主不是一层</a><a href="#router-request">03 / 一次查找包含哪些路由输入</a><a href="#router-index">04 / 缓存索引保存可复用前缀，不保存 KV 张量</a><a href="#router-selection">05 / 选择服务把查询与预留分开</a><a href="#router-plugin">06 / 公开策略 API：Filter → Scorers → Picker</a><a href="#router-cache-credit">07 / 默认成本：本地、Host、Disk 与 shared credit</a><a href="#router-load-cost">08 / 默认成本：Prefill 与 Decode 的角色差异</a><a href="#router-picker">09 / 最低成本与温度采样：相同输入也未必同实例</a><a href="#router-queue">10 / 调度：class 间 DRR，class 内优先级与排序</a><a href="#router-admission">11 / 最终选点后，才预留与回复</a><a href="#router-preview">12 / preview 不是免费保留的最终位置</a><a href="#router-sequence">13 / 本地权威写模型与可延迟的读投影</a><a href="#router-overhead">14 / 观测源码：路由耗时来自明确的区间差</a><a href="#router-attribution">15 / 观测源码：估计命中、选中命中和真实复用分开</a><a href="#router-practice">16 / 排障与扩展的最短路径</a><a href="#router-diagram">17 / 架构分层图与交叉阅读</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 9734418e5</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>KV-aware Router 与调度</h1><p class="lede">沿缓存索引、候选资格、默认插件评分、队列准入、生命周期负载与观测归因解释一次 Worker 选择。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 9734418e5</span><span class="pill ">系统源码专题 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="router-scope" class="lesson"><div class="sectionhead"><h2>01 / 阅读范围与证据版本</h2><label class="done"><input type="checkbox" data-read="router-scope"> 已读</label></div><p>沿缓存索引、候选资格、默认插件评分、队列准入、生命周期负载与观测归因解释一次 Worker 选择。</p><aside class="note ">源码固定于 9734418e5bc71027e6bd04a09314bf1765208c72（workspace 1.7.0），与 PD / 可靠性等新专题使用同一代码基线。本文分析实现和配置边界，未运行推理、性能实验或集群修改。历史部署与旧版章节须按版本对照。</aside></section><section id="router-architecture" class="lesson"><div class="sectionhead"><h2>02 / 选择器、调度器与派发宿主不是一层</h2><label class="done"><input type="checkbox" data-read="router-architecture"> 已读</label></div><div class="flow"><div><b>01</b>发现并接纳 workers</div><div><b>02</b>hash / prefix lookup</div><div><b>03</b>过滤候选与计算成本</div><div><b>04</b>policy class / queue / admission</div><div><b>05</b>容量预留与 RoutePlan</div><div><b>06</b>派发 / token / cleanup</div></div><div class="tablewrap"><table><thead><tr><th>模块</th><th>职责</th></tr></thead><tbody><tr><td>lib/kv-router</td><td>可独立复用的索引、选择服务、调度与序列状态</td></tr><tr><td>lib/router-plugins</td><td>通过公开策略 API 实现默认与可选 filter/scorer/picker</td></tr><tr><td>lib/llm KvRouter</td><td>将 token、LoRA、cache namespace、业务路由约束送入 selection</td></tr><tr><td>RoutingHost</td><td>管理派发、上下文、生命周期、预留/释放与路由结果记录</td></tr></tbody></table></div><p>standalone selection/indexer/slot-tracker 不依赖 Dynamo Runtime。Router 可以内嵌 Frontend 或以服务形式使用，不能把一个函数返回 worker 等同于已经派发 engine 请求。</p></section><section id="router-request" class="lesson"><div class="sectionhead"><h2>03 / 一次查找包含哪些路由输入</h2><label class="done"><input type="checkbox" data-read="router-request"> 已读</label></div><details class="source" id="src-router-1"><summary><b>源码 · PromptView、约束与不同 admission 模式</b><small>lib/llm/src/kv_router.rs:1304–1365</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router.rs#L1304-L1365" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1304</i>    async fn find_best_match_details_with_policy_class_inner(</span>
+<span class="line"><i>1305</i>        &amp;self,</span>
+<span class="line"><i>1306</i>        context_id: Option&lt;&amp;str&gt;,</span>
+<span class="line"><i>1307</i>        tokens: &amp;[u32],</span>
+<span class="line"><i>1308</i>        block_mm_infos: Option&lt;&amp;[Option&lt;BlockExtraInfo&gt;]&gt;,</span>
+<span class="line"><i>1309</i>        router_config_override: Option&lt;&amp;RouterConfigOverride&gt;,</span>
+<span class="line"><i>1310</i>        update_states: bool,</span>
+<span class="line"><i>1311</i>        return_routing_hashes: bool,</span>
+<span class="line"><i>1312</i>        lora_name: Option&lt;String&gt;,</span>
+<span class="line"><i>1313</i>        cache_namespace: Option&lt;String&gt;,</span>
+<span class="line"><i>1314</i>        priority_jump: f64,</span>
+<span class="line"><i>1315</i>        strict_priority: u32,</span>
+<span class="line"><i>1316</i>        policy_class: Option&lt;String&gt;,</span>
+<span class="line"><i>1317</i>        session_context: Option&lt;dynamo_kv_router::SessionContext&gt;,</span>
+<span class="line"><i>1318</i>        expected_output_tokens: Option&lt;u32&gt;,</span>
+<span class="line"><i>1319</i>        affinity_target: Option&lt;dynamo_kv_router::protocols::WorkerAffinityTarget&gt;,</span>
+<span class="line"><i>1320</i>        pinned_worker: Option&lt;WorkerWithDpRank&gt;,</span>
+<span class="line"><i>1321</i>        allowed_worker_ids: Option&lt;HashSet&lt;WorkerId&gt;&gt;,</span>
+<span class="line"><i>1322</i>        routing_constraints: RoutingConstraints,</span>
+<span class="line"><i>1323</i>        admission: FindBestMatchAdmission,</span>
+<span class="line"><i>1324</i>    ) -&gt; anyhow::Result&lt;AdmittedFindBestMatchOutcome&gt; {</span>
+<span class="line"><i>1325</i>        let start = Instant::now();</span>
+<span class="line"><i>1326</i>        if update_states &amp;&amp; context_id.is_none() {</span>
+<span class="line"><i>1327</i>            anyhow::bail!(&quot;context_id must be provided if update_states is true&quot;);</span>
+<span class="line"><i>1328</i>        }</span>
+<span class="line"><i>1329</i>        let is_admitted_routing = matches!(admission, FindBestMatchAdmission::WithAdmission);</span>
+<span class="line"><i>1330</i>        let session_index_context = if is_admitted_routing {</span>
+<span class="line"><i>1331</i>            self.session_prefix_index</span>
+<span class="line"><i>1332</i>                .as_ref()</span>
+<span class="line"><i>1333</i>                .and(session_context.as_ref())</span>
+<span class="line"><i>1334</i>                .map(|session| session.session_id().to_owned())</span>
+<span class="line"><i>1335</i>        } else {</span>
+<span class="line"><i>1336</i>            None</span>
+<span class="line"><i>1337</i>        };</span>
+<span class="line"><i>1338</i>        let core_admission = match admission {</span>
+<span class="line"><i>1339</i>            FindBestMatchAdmission::WithAdmission if update_states =&gt; SelectionAdmission::Lease {</span>
+<span class="line"><i>1340</i>                request_id: context_id.expect(&quot;validated above&quot;).to_string(),</span>
+<span class="line"><i>1341</i>            },</span>
+<span class="line"><i>1342</i>            FindBestMatchAdmission::WithAdmission =&gt; SelectionAdmission::Query {</span>
+<span class="line"><i>1343</i>                request_id: context_id.map(str::to_string),</span>
+<span class="line"><i>1344</i>            },</span>
+<span class="line"><i>1345</i>            FindBestMatchAdmission::WithoutAdmission =&gt; SelectionAdmission::Advisory {</span>
+<span class="line"><i>1346</i>                request_id: context_id.map(str::to_string),</span>
+<span class="line"><i>1347</i>            },</span>
+<span class="line"><i>1348</i>        };</span>
+<span class="line"><i>1349</i>        let SelectionRun {</span>
+<span class="line"><i>1350</i>            result: outcome,</span>
+<span class="line"><i>1351</i>            lookup,</span>
+<span class="line"><i>1352</i>        } = self</span>
+<span class="line"><i>1353</i>            .selection</span>
+<span class="line"><i>1354</i>            .run_selection(SelectionOperation {</span>
+<span class="line"><i>1355</i>                key: self.selection.partition_key().clone(),</span>
+<span class="line"><i>1356</i>                prompt: PromptView {</span>
+<span class="line"><i>1357</i>                    token_ids: Some(tokens),</span>
+<span class="line"><i>1358</i>                    mm_routing_info: None,</span>
+<span class="line"><i>1359</i>                    block_mm_infos,</span>
+<span class="line"><i>1360</i>                    block_hashes: None,</span>
+<span class="line"><i>1361</i>                    sequence_hashes: None,</span>
+<span class="line"><i>1362</i>                    isl_tokens: None,</span>
+<span class="line"><i>1363</i>                    lora_name: lora_name.as_deref(),</span>
+<span class="line"><i>1364</i>                    cache_namespace: cache_namespace.as_deref(),</span>
+<span class="line"><i>1365</i>                    is_eagle: Some(self.is_eagle),</span></code></pre></details><p>token_ids、block_mm_infos、LoRA、cache_namespace、session、pin/allowed workers、topology、priority class 与 expected_output_tokens 共同构成输入。文本相同不保证可共享 KV：hash 域、模型、adapter、MM 与隔离参数都要一致。查询预览、准入查询和有 lease 的真实请求不是同一种副作用。</p></section><section id="router-index" class="lesson"><div class="sectionhead"><h2>04 / 缓存索引保存可复用前缀，不保存 KV 张量</h2><label class="done"><input type="checkbox" data-read="router-index"> 已读</label></div><details class="source" id="src-router-2"><summary><b>源码 · 查找、事件应用和 worker/rank reset barrier</b><small>lib/kv-router/src/indexer/traits.rs:90–134</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/indexer/traits.rs#L90-L134" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>90</i>    /// ### Returns</span>
+<span class="line"><i>91</i>    ///</span>
+<span class="line"><i>92</i>    /// An `OverlapScores` representing the match scores.</span>
+<span class="line"><i>93</i>    async fn find_matches_for_request(</span>
+<span class="line"><i>94</i>        &amp;self,</span>
+<span class="line"><i>95</i>        tokens: &amp;[u32],</span>
+<span class="line"><i>96</i>        lora_name: Option&lt;&amp;str&gt;,</span>
+<span class="line"><i>97</i>        cache_namespace: Option&lt;&amp;str&gt;,</span>
+<span class="line"><i>98</i>        is_eagle: Option&lt;bool&gt;,</span>
+<span class="line"><i>99</i>    ) -&gt; Result&lt;OverlapScores, KvRouterError&gt;;</span>
+<span class="line"><i>100</i></span>
+<span class="line"><i>101</i>    /// Apply a `RouterEvent` to the KV store.</span>
+<span class="line"><i>102</i>    ///</span>
+<span class="line"><i>103</i>    /// ### Arguments</span>
+<span class="line"><i>104</i>    ///</span>
+<span class="line"><i>105</i>    /// * `event` - The `RouterEvent` to apply.</span>
+<span class="line"><i>106</i>    async fn apply_event(&amp;self, event: RouterEvent);</span>
+<span class="line"><i>107</i></span>
+<span class="line"><i>108</i>    /// Remove a worker&#x27;s entries from the trie.</span>
+<span class="line"><i>109</i>    ///</span>
+<span class="line"><i>110</i>    /// ### Arguments</span>
+<span class="line"><i>111</i>    ///</span>
+<span class="line"><i>112</i>    /// * `worker` - The worker to remove from the trie.</span>
+<span class="line"><i>113</i>    async fn remove_worker(&amp;self, worker: WorkerId);</span>
+<span class="line"><i>114</i></span>
+<span class="line"><i>115</i>    /// Remove a single dp_rank for a worker from the trie.</span>
+<span class="line"><i>116</i>    ///</span>
+<span class="line"><i>117</i>    /// Default implementation falls back to removing the entire worker.</span>
+<span class="line"><i>118</i>    /// Indexers that track dp_rank-level granularity should override this.</span>
+<span class="line"><i>119</i>    async fn remove_worker_dp_rank(&amp;self, worker: WorkerId, _dp_rank: DpRank) {</span>
+<span class="line"><i>120</i>        self.remove_worker(worker).await;</span>
+<span class="line"><i>121</i>    }</span>
+<span class="line"><i>122</i></span>
+<span class="line"><i>123</i>    /// Remove one logical worker rank and return only after the reset is visible.</span>
+<span class="line"><i>124</i>    ///</span>
+<span class="line"><i>125</i>    /// This is a cold-path lifecycle barrier. Implementations must order the</span>
+<span class="line"><i>126</i>    /// reset after mutations already accepted for the worker and acknowledge it</span>
+<span class="line"><i>127</i>    /// only after those entries can no longer be returned by reads.</span>
+<span class="line"><i>128</i>    async fn reset_worker_dp_rank_and_wait(</span>
+<span class="line"><i>129</i>        &amp;self,</span>
+<span class="line"><i>130</i>        _worker: WorkerId,</span>
+<span class="line"><i>131</i>        _dp_rank: DpRank,</span>
+<span class="line"><i>132</i>    ) -&gt; Result&lt;(), KvRouterError&gt; {</span>
+<span class="line"><i>133</i>        Err(KvRouterError::Unsupported(</span>
+<span class="line"><i>134</i>            &quot;acknowledged worker-rank reset is not supported&quot;.to_string(),</span></code></pre></details><p>引擎 KV events 更新索引，prefix lookup 得到 per-worker 可复用块/层级信息。索引结构可选并发 radix、分片或近似方案，不能把所有实现都假设成相同精度/一致性。worker 移除或 rank 重置需要让旧状态不再可读；事件迟到与丢失可导致估计偏差。数据转移仍由 engine/connector 完成，见 Storage &amp; Events。</p></section><section id="router-selection" class="lesson"><div class="sectionhead"><h2>05 / 选择服务把查询与预留分开</h2><label class="done"><input type="checkbox" data-read="router-selection"> 已读</label></div><details class="source" id="src-router-3"><summary><b>源码 · 策略 class 与只读选择入口</b><small>lib/kv-router/src/services/selection/core/run.rs:71–110</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/services/selection/core/run.rs#L71-L110" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>71</i>    pub async fn select_with_policy_class(</span>
+<span class="line"><i>72</i>        &amp;self,</span>
+<span class="line"><i>73</i>        mut req: SelectRequest,</span>
+<span class="line"><i>74</i>        policy_class: Option&lt;String&gt;,</span>
+<span class="line"><i>75</i>    ) -&gt; Result&lt;SelectResponse, SelectionError&gt; {</span>
+<span class="line"><i>76</i>        let session_context = req.take_session_context();</span>
+<span class="line"><i>77</i>        let is_steerable = req.affinity_target.is_none() &amp;&amp; req.pinned_worker.is_none();</span>
+<span class="line"><i>78</i>        let session = session_binding(session_context.as_ref(), is_steerable, false);</span>
+<span class="line"><i>79</i>        let admission = if req.advisory {</span>
+<span class="line"><i>80</i>            SelectionAdmission::Advisory {</span>
+<span class="line"><i>81</i>                request_id: req.selection_id.clone(),</span>
+<span class="line"><i>82</i>            }</span>
+<span class="line"><i>83</i>        } else {</span>
+<span class="line"><i>84</i>            SelectionAdmission::Query {</span>
+<span class="line"><i>85</i>                request_id: req.selection_id.clone(),</span>
+<span class="line"><i>86</i>            }</span>
+<span class="line"><i>87</i>        };</span>
+<span class="line"><i>88</i>        let (selected, endpoint) = self</span>
+<span class="line"><i>89</i>            .select_or_reject(SelectionOperation {</span>
+<span class="line"><i>90</i>                key: RoutingPartitionId::new(req.model_name, req.routing_group),</span>
+<span class="line"><i>91</i>                prompt: req.prompt.view(),</span>
+<span class="line"><i>92</i>                router_config_override: req.router_config_override,</span>
+<span class="line"><i>93</i>                expected_output_tokens: req.expected_output_tokens,</span>
+<span class="line"><i>94</i>                priority_jump: req.priority_jump.unwrap_or_default(),</span>
+<span class="line"><i>95</i>                strict_priority: req.strict_priority.unwrap_or(0),</span>
+<span class="line"><i>96</i>                policy_class,</span>
+<span class="line"><i>97</i>                session_context,</span>
+<span class="line"><i>98</i>                session,</span>
+<span class="line"><i>99</i>                affinity_target: req.affinity_target,</span>
+<span class="line"><i>100</i>                pinned_worker: req.pinned_worker,</span>
+<span class="line"><i>101</i>                allowed_worker_ids: req.allowed_worker_ids,</span>
+<span class="line"><i>102</i>                routing_constraints: req.routing_constraints,</span>
+<span class="line"><i>103</i>                admission,</span>
+<span class="line"><i>104</i>                track_active_blocks: true,</span>
+<span class="line"><i>105</i>                return_routing_hashes: false,</span>
+<span class="line"><i>106</i>                replay_id: req.selection_id.clone(),</span>
+<span class="line"><i>107</i>            })</span>
+<span class="line"><i>108</i>            .await?;</span>
+<span class="line"><i>109</i>        Ok(self.select_response(selected, endpoint, req.selection_id))</span>
+<span class="line"><i>110</i>    }</span></code></pre></details><details class="source" id="src-router-4"><summary><b>源码 · 选择并预留的入口</b><small>lib/kv-router/src/services/selection/core/run.rs:119–154</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/services/selection/core/run.rs#L119-L154" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>119</i>    pub async fn select_and_reserve_with_policy_class(</span>
+<span class="line"><i>120</i>        &amp;self,</span>
+<span class="line"><i>121</i>        mut req: SelectAndReserveRequest,</span>
+<span class="line"><i>122</i>        policy_class: Option&lt;String&gt;,</span>
+<span class="line"><i>123</i>    ) -&gt; Result&lt;SelectResponse, SelectionError&gt; {</span>
+<span class="line"><i>124</i>        let session_context = req.take_session_context();</span>
+<span class="line"><i>125</i>        let selection_id = req</span>
+<span class="line"><i>126</i>            .selection_id</span>
+<span class="line"><i>127</i>            .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());</span>
+<span class="line"><i>128</i>        let is_steerable = req.affinity_target.is_none() &amp;&amp; req.pinned_worker.is_none();</span>
+<span class="line"><i>129</i>        let session = session_binding(session_context.as_ref(), is_steerable, true);</span>
+<span class="line"><i>130</i>        let (selected, endpoint) = self</span>
+<span class="line"><i>131</i>            .select_or_reject(SelectionOperation {</span>
+<span class="line"><i>132</i>                key: RoutingPartitionId::new(req.model_name, req.routing_group),</span>
+<span class="line"><i>133</i>                prompt: req.prompt.view(),</span>
+<span class="line"><i>134</i>                router_config_override: req.router_config_override,</span>
+<span class="line"><i>135</i>                expected_output_tokens: req.expected_output_tokens,</span>
+<span class="line"><i>136</i>                priority_jump: req.priority_jump.unwrap_or_default(),</span>
+<span class="line"><i>137</i>                strict_priority: req.strict_priority.unwrap_or(0),</span>
+<span class="line"><i>138</i>                policy_class,</span>
+<span class="line"><i>139</i>                session_context,</span>
+<span class="line"><i>140</i>                session,</span>
+<span class="line"><i>141</i>                affinity_target: req.affinity_target,</span>
+<span class="line"><i>142</i>                pinned_worker: req.pinned_worker,</span>
+<span class="line"><i>143</i>                allowed_worker_ids: req.allowed_worker_ids,</span>
+<span class="line"><i>144</i>                routing_constraints: req.routing_constraints,</span>
+<span class="line"><i>145</i>                admission: SelectionAdmission::Book {</span>
+<span class="line"><i>146</i>                    selection_id: selection_id.clone(),</span>
+<span class="line"><i>147</i>                },</span>
+<span class="line"><i>148</i>                track_active_blocks: true,</span>
+<span class="line"><i>149</i>                return_routing_hashes: false,</span>
+<span class="line"><i>150</i>                replay_id: None,</span>
+<span class="line"><i>151</i>            })</span>
+<span class="line"><i>152</i>            .await?;</span>
+<span class="line"><i>153</i>        Ok(self.select_response(selected, endpoint, Some(selection_id)))</span>
+<span class="line"><i>154</i>    }</span></code></pre></details><details class="source" id="src-router-5"><summary><b>源码 · 结果映射、booking 与 queue rejection</b><small>lib/llm/src/kv_router/routing_host/kv_selection.rs:109–162</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/routing_host/kv_selection.rs#L109-L162" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>109</i>    async fn select_best_match(&amp;self, args: BestMatchArgs&lt;&#x27;_&gt;) -&gt; Result&lt;SelectionOutcome, Error&gt; {</span>
+<span class="line"><i>110</i>        let admitted = self</span>
+<span class="line"><i>111</i>            .kv_router()</span>
+<span class="line"><i>112</i>            .find_best_match_details_with_policy_class_inner(</span>
+<span class="line"><i>113</i>                Some(args.context_id),</span>
+<span class="line"><i>114</i>                args.routing_parts.token_ids,</span>
+<span class="line"><i>115</i>                args.routing_parts.block_mm_infos,</span>
+<span class="line"><i>116</i>                args.router_config_override,</span>
+<span class="line"><i>117</i>                args.update_states,</span>
+<span class="line"><i>118</i>                args.return_routing_hashes,</span>
+<span class="line"><i>119</i>                args.lora_name,</span>
+<span class="line"><i>120</i>                args.cache_namespace,</span>
+<span class="line"><i>121</i>                args.priority_jump,</span>
+<span class="line"><i>122</i>                args.strict_priority,</span>
+<span class="line"><i>123</i>                args.policy_class,</span>
+<span class="line"><i>124</i>                args.session_context,</span>
+<span class="line"><i>125</i>                args.expected_output_tokens,</span>
+<span class="line"><i>126</i>                args.affinity_target,</span>
+<span class="line"><i>127</i>                args.pinned_worker,</span>
+<span class="line"><i>128</i>                args.allowed_worker_ids,</span>
+<span class="line"><i>129</i>                args.routing_constraints,</span>
+<span class="line"><i>130</i>                args.admission,</span>
+<span class="line"><i>131</i>            )</span>
+<span class="line"><i>132</i>            .await?;</span>
+<span class="line"><i>133</i>        match admitted.outcome {</span>
+<span class="line"><i>134</i>            FindBestMatchOutcome::Routed {</span>
+<span class="line"><i>135</i>                worker,</span>
+<span class="line"><i>136</i>                overlap_blocks,</span>
+<span class="line"><i>137</i>                effective_overlap_blocks,</span>
+<span class="line"><i>138</i>                cached_tokens,</span>
+<span class="line"><i>139</i>                selected_raw_cached_tokens,</span>
+<span class="line"><i>140</i>                max_raw_cached_tokens,</span>
+<span class="line"><i>141</i>                potential_decode_blocks,</span>
+<span class="line"><i>142</i>                routing_hashes,</span>
+<span class="line"><i>143</i>                kv_hint,</span>
+<span class="line"><i>144</i>            } =&gt; Ok(SelectionOutcome::Routed(WorkerSelection {</span>
+<span class="line"><i>145</i>                worker,</span>
+<span class="line"><i>146</i>                booking: admitted.booking,</span>
+<span class="line"><i>147</i>                overlap_amount: overlap_blocks,</span>
+<span class="line"><i>148</i>                effective_overlap_blocks,</span>
+<span class="line"><i>149</i>                cached_tokens,</span>
+<span class="line"><i>150</i>                selected_raw_cached_tokens,</span>
+<span class="line"><i>151</i>                max_raw_cached_tokens,</span>
+<span class="line"><i>152</i>                potential_decode_blocks,</span>
+<span class="line"><i>153</i>                selected_worker_load: admitted.advisory_load,</span>
+<span class="line"><i>154</i>                routing_hashes,</span>
+<span class="line"><i>155</i>                kv_hint,</span>
+<span class="line"><i>156</i>                request_lifecycle: None,</span>
+<span class="line"><i>157</i>            })),</span>
+<span class="line"><i>158</i>            FindBestMatchOutcome::QueueRejected { rejection } =&gt; {</span>
+<span class="line"><i>159</i>                Ok(SelectionOutcome::QueueRejected(rejection))</span>
+<span class="line"><i>160</i>            }</span>
+<span class="line"><i>161</i>        }</span>
+<span class="line"><i>162</i>    }</span></code></pre></details><p>host 控制 worker 资格、admission、accounting 与返回结果合法性，插件只在可见候选上运行。NoEndpoints、全部被过滤、容量不足、队列拒绝有不同故障含义，不应笼统称为 KV miss。</p></section><section id="router-plugin" class="lesson"><div class="sectionhead"><h2>06 / 公开策略 API：Filter → Scorers → Picker</h2><label class="done"><input type="checkbox" data-read="router-plugin"> 已读</label></div><details class="source" id="src-router-6"><summary><b>源码 · 输入组声明、有限成本与 picker 行号</b><small>lib/kv-router/src/plugins/worker_selection.rs:45–98</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/plugins/worker_selection.rs#L45-L98" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>45</i>pub trait WorkerScorer: Send {</span>
+<span class="line"><i>46</i>    /// Declare the worker-signal groups needed by this scorer.</span>
+<span class="line"><i>47</i>    fn required_worker_inputs(&amp;self) -&gt; WorkerInputs {</span>
+<span class="line"><i>48</i>        WorkerInputs::NONE</span>
+<span class="line"><i>49</i>    }</span>
+<span class="line"><i>50</i></span>
+<span class="line"><i>51</i>    /// Score every candidate that survived host eligibility and policy filters in one call.</span>
+<span class="line"><i>52</i>    /// The borrowed snapshot and its row order remain fixed for this selection. Each scorer</span>
+<span class="line"><i>53</i>    /// can access only its own declared optional inputs, even when other components request more. Empty candidate</span>
+<span class="line"><i>54</i>    /// sets skip scoring. Scorers run in declaration order; an error stops before picking.</span>
+<span class="line"><i>55</i>    ///</span>
+<span class="line"><i>56</i>    /// `costs` has the same length as `candidates` and is initialized to NaN before each call.</span>
+<span class="line"><i>57</i>    /// Write one finite, lower-is-better contribution to every slot. The host validates and adds</span>
+<span class="line"><i>58</i>    /// each contribution to that row&#x27;s total. The candidate view and cost slice may not be retained after this call.</span>
+<span class="line"><i>59</i>    fn score(</span>
+<span class="line"><i>60</i>        &amp;mut self,</span>
+<span class="line"><i>61</i>        context: &amp;WorkerSelectionContext&lt;&#x27;_&gt;,</span>
+<span class="line"><i>62</i>        candidates: WorkerCandidates&lt;&#x27;_&gt;,</span>
+<span class="line"><i>63</i>        costs: &amp;mut [f64],</span>
+<span class="line"><i>64</i>    ) -&gt; Result&lt;(), WorkerSelectionPolicyError&gt;;</span>
+<span class="line"><i>65</i>}</span>
+<span class="line"><i>66</i></span>
+<span class="line"><i>67</i>/// Filters run in declaration order for each candidate. Callback order across different</span>
+<span class="line"><i>68</i>/// candidates and scorers is unspecified; implementations must not depend on filters and scorers</span>
+<span class="line"><i>69</i>/// being interleaved.</span>
+<span class="line"><i>70</i>pub trait WorkerFilter: Send {</span>
+<span class="line"><i>71</i>    /// Declare the worker-signal groups needed by this filter.</span>
+<span class="line"><i>72</i>    fn required_worker_inputs(&amp;self) -&gt; WorkerInputs {</span>
+<span class="line"><i>73</i>        WorkerInputs::NONE</span>
+<span class="line"><i>74</i>    }</span>
+<span class="line"><i>75</i></span>
+<span class="line"><i>76</i>    /// Return `true` to keep an eligible worker in the policy candidate set.</span>
+<span class="line"><i>77</i>    fn keep(</span>
+<span class="line"><i>78</i>        &amp;mut self,</span>
+<span class="line"><i>79</i>        context: &amp;WorkerSelectionContext&lt;&#x27;_&gt;,</span>
+<span class="line"><i>80</i>        candidate: WorkerCandidate&lt;&#x27;_&gt;,</span>
+<span class="line"><i>81</i>    ) -&gt; Result&lt;bool, WorkerSelectionPolicyError&gt;;</span>
+<span class="line"><i>82</i>}</span>
+<span class="line"><i>83</i></span>
+<span class="line"><i>84</i>/// Selects one row after all filters and scorers run.</span>
+<span class="line"><i>85</i>pub trait WorkerPicker: Send {</span>
+<span class="line"><i>86</i>    /// Declare the optional worker-signal columns needed by this picker.</span>
+<span class="line"><i>87</i>    fn required_worker_inputs(&amp;self) -&gt; WorkerInputs {</span>
+<span class="line"><i>88</i>        WorkerInputs::NONE</span>
+<span class="line"><i>89</i>    }</span>
+<span class="line"><i>90</i></span>
+<span class="line"><i>91</i>    /// Return one row index from the host-owned eligible candidate table. Row order is</span>
+<span class="line"><i>92</i>    /// unspecified; inspect candidate data instead of relying on a stable position.</span>
+<span class="line"><i>93</i>    fn pick(</span>
+<span class="line"><i>94</i>        &amp;mut self,</span>
+<span class="line"><i>95</i>        context: &amp;WorkerSelectionContext&lt;&#x27;_&gt;,</span>
+<span class="line"><i>96</i>        input: WorkerInputView&lt;&#x27;_&gt;,</span>
+<span class="line"><i>97</i>    ) -&gt; Result&lt;usize, WorkerSelectionPolicyError&gt;;</span>
+<span class="line"><i>98</i>}</span></code></pre></details><p>Filter 决定保留候选；多个 Scorer 为每一行提供有限且越低越好的成本贡献，host 汇总并验证；Picker 返回候选行号，不能任意注入一个 worker。每个插件只看到自己声明的 WorkerInputs，保持取样一致并避免不需要的计算。策略应无容量预留或队列写入副作用。</p><aside class="note ">scheduling/selector/reference.rs 是测试/基准对照实现；本章默认成本取自 builtin 插件，不把 reference 当生产唯一主路径。</aside></section><section id="router-cache-credit" class="lesson"><div class="sectionhead"><h2>07 / 默认成本：本地、Host、Disk 与 shared credit</h2><label class="done"><input type="checkbox" data-read="router-cache-credit"> 已读</label></div><details class="source" id="src-router-7"><summary><b>源码 · 一次选择准备请求公共项与 load floor</b><small>lib/router-plugins/builtin/src/default/scorer.rs:109–139</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/router-plugins/builtin/src/default/scorer.rs#L109-L139" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>109</i>    fn prepare(</span>
+<span class="line"><i>110</i>        &amp;mut self,</span>
+<span class="line"><i>111</i>        context: &amp;WorkerSelectionContext&lt;&#x27;_&gt;,</span>
+<span class="line"><i>112</i>        candidates: WorkerCandidates&lt;&#x27;_&gt;,</span>
+<span class="line"><i>113</i>    ) -&gt; Result&lt;(), WorkerSelectionPolicyError&gt; {</span>
+<span class="line"><i>114</i>        self.prepared = PreparedRequest {</span>
+<span class="line"><i>115</i>            min_prefill: 0,</span>
+<span class="line"><i>116</i>            block_size: IntegerDivisor::new(u64::from(context.block_size())),</span>
+<span class="line"><i>117</i>            // An empty prompt (e.g. embeddings-only input) has no overlap to decay;</span>
+<span class="line"><i>118</i>            // clamp so a worker at the load floor does not compute 0/0.</span>
+<span class="line"><i>119</i>            request_blocks: IntegerDivisor::new(context.request_blocks().max(1)),</span>
+<span class="line"><i>120</i>            overlap_credit: self.overlap_score_credit,</span>
+<span class="line"><i>121</i>            needs_decay: context.tracks_prefill_tokens() &amp;&amp; self.overlap_score_credit_decay &gt; 0.0,</span>
+<span class="line"><i>122</i>            needs_decode_subtraction: self.is_decode &amp;&amp; !context.tracks_prefill_tokens(),</span>
+<span class="line"><i>123</i>            has_kv_transfer: SHARED_CREDIT</span>
+<span class="line"><i>124</i>                &amp;&amp; candidates</span>
+<span class="line"><i>125</i>                    .get(0)</span>
+<span class="line"><i>126</i>                    .is_some_and(|candidate| candidate.kv_transfer().is_some()),</span>
+<span class="line"><i>127</i>        };</span>
+<span class="line"><i>128</i>        if self.prepared.needs_decay {</span>
+<span class="line"><i>129</i>            let mut minimum = usize::MAX;</span>
+<span class="line"><i>130</i>            for candidate in candidates.iter() {</span>
+<span class="line"><i>131</i>                let load = candidate</span>
+<span class="line"><i>132</i>                    .load()</span>
+<span class="line"><i>133</i>                    .ok_or_else(|| WorkerSelectionPolicyError::failed(&quot;load input unavailable&quot;))?;</span>
+<span class="line"><i>134</i>                minimum = minimum.min(load.active_prefill_tokens());</span>
+<span class="line"><i>135</i>            }</span>
+<span class="line"><i>136</i>            self.prepared.min_prefill = minimum;</span>
+<span class="line"><i>137</i>        }</span>
+<span class="line"><i>138</i>        Ok(())</span>
+<span class="line"><i>139</i>    }</span></code></pre></details><details class="source" id="src-router-8"><summary><b>源码 · 分层缓存 credit、可 fetch 前缀和衰减</b><small>lib/router-plugins/builtin/src/default/scorer.rs:141–195</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/router-plugins/builtin/src/default/scorer.rs#L141-L195" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>141</i>    fn score_worker(</span>
+<span class="line"><i>142</i>        &amp;mut self,</span>
+<span class="line"><i>143</i>        context: &amp;WorkerSelectionContext&lt;&#x27;_&gt;,</span>
+<span class="line"><i>144</i>        candidate: WorkerCandidate&lt;&#x27;_&gt;,</span>
+<span class="line"><i>145</i>    ) -&gt; Result&lt;f64, WorkerSelectionPolicyError&gt; {</span>
+<span class="line"><i>146</i>        let load = candidate</span>
+<span class="line"><i>147</i>            .load()</span>
+<span class="line"><i>148</i>            .ok_or_else(|| WorkerSelectionPolicyError::failed(&quot;load input unavailable&quot;))?;</span>
+<span class="line"><i>149</i>        let (cached_tokens, credit) = if let Some(cache) = candidate.cache() {</span>
+<span class="line"><i>150</i>            let (estimated_overlap, cached_tokens) = cache.accounting_cache_estimate();</span>
+<span class="line"><i>151</i>            let device = if cache.has_tier_matches() {</span>
+<span class="line"><i>152</i>                cache.device_overlap_blocks()</span>
+<span class="line"><i>153</i>            } else {</span>
+<span class="line"><i>154</i>                estimated_overlap</span>
+<span class="line"><i>155</i>            };</span>
+<span class="line"><i>156</i>            let shared_credit = if SHARED_CREDIT {</span>
+<span class="line"><i>157</i>                let shared = cache</span>
+<span class="line"><i>158</i>                    .shared_hits()</span>
+<span class="line"><i>159</i>                    .map_or(0, |hits| hits.hits_beyond(device.round().max(0.0) as u32));</span>
+<span class="line"><i>160</i>                // Blocks a KV fetch would add beyond everything this worker holds.</span>
+<span class="line"><i>161</i>                let fetchable = if self.prepared.has_kv_transfer {</span>
+<span class="line"><i>162</i>                    candidate</span>
+<span class="line"><i>163</i>                        .kv_transfer()</span>
+<span class="line"><i>164</i>                        .and_then(|transfer| transfer.source_prefix_blocks())</span>
+<span class="line"><i>165</i>                        .map_or(0.0, |source| {</span>
+<span class="line"><i>166</i>                            let local = cache.device_overlap_blocks()</span>
+<span class="line"><i>167</i>                                + cache.host_overlap_blocks()</span>
+<span class="line"><i>168</i>                                + cache.disk_overlap_blocks();</span>
+<span class="line"><i>169</i>                            (f64::from(source) - local).max(0.0)</span>
+<span class="line"><i>170</i>                        })</span>
+<span class="line"><i>171</i>                } else {</span>
+<span class="line"><i>172</i>                    0.0</span>
+<span class="line"><i>173</i>                };</span>
+<span class="line"><i>174</i>                self.shared_cache_multiplier * (shared as f64 + fetchable)</span>
+<span class="line"><i>175</i>            } else {</span>
+<span class="line"><i>176</i>                // Preserve signed zero when the configured weight is -0.0.</span>
+<span class="line"><i>177</i>                self.shared_cache_multiplier</span>
+<span class="line"><i>178</i>            };</span>
+<span class="line"><i>179</i>            let decay = if self.prepared.needs_decay {</span>
+<span class="line"><i>180</i>                let excess = self.prepared.block_size.divide(</span>
+<span class="line"><i>181</i>                    load.active_prefill_tokens()</span>
+<span class="line"><i>182</i>                        .saturating_sub(self.prepared.min_prefill) as f64,</span>
+<span class="line"><i>183</i>                );</span>
+<span class="line"><i>184</i>                1.0 / (1.0</span>
+<span class="line"><i>185</i>                    + self.overlap_score_credit_decay * self.prepared.request_blocks.divide(excess))</span>
+<span class="line"><i>186</i>            } else {</span>
+<span class="line"><i>187</i>                1.0</span>
+<span class="line"><i>188</i>            };</span>
+<span class="line"><i>189</i>            let credit = self.prepared.overlap_credit * decay * device</span>
+<span class="line"><i>190</i>                + self.host_cache_hit_weight * cache.host_overlap_blocks()</span>
+<span class="line"><i>191</i>                + self.disk_cache_hit_weight * cache.disk_overlap_blocks()</span>
+<span class="line"><i>192</i>                + shared_credit;</span>
+<span class="line"><i>193</i>            (cached_tokens, credit)</span>
+<span class="line"><i>194</i>        } else {</span>
+<span class="line"><i>195</i>            (0, 0.0)</span></code></pre></details><p>device overlap、host/disk overlap 与 shared/fetchable 前缀分别加权。shared fetch credit 只统计超出本地各层已有前缀的部分，不能直接把所有 cache hits 相加。开启负载相关衰减后，相对最轻 Prefill 负载越高，device overlap 的 credit 可降低；这是成本启发式，不是直接预测毫秒。</p></section><section id="router-load-cost" class="lesson"><div class="sectionhead"><h2>08 / 默认成本：Prefill 与 Decode 的角色差异</h2><label class="done"><input type="checkbox" data-read="router-load-cost"> 已读</label></div><details class="source" id="src-router-9"><summary><b>源码 · 角色化成本、taint 乘子与输入组按需请求</b><small>lib/router-plugins/builtin/src/default/scorer.rs:195–237</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/router-plugins/builtin/src/default/scorer.rs#L195-L237" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>195</i>            (0, 0.0)</span>
+<span class="line"><i>196</i>        };</span>
+<span class="line"><i>197</i>        let request_cost = if REQUEST_COST {</span>
+<span class="line"><i>198</i>            self.decode_active_request_weight * load.active_requests() as f64</span>
+<span class="line"><i>199</i>        } else {</span>
+<span class="line"><i>200</i>            self.decode_active_request_weight</span>
+<span class="line"><i>201</i>        };</span>
+<span class="line"><i>202</i>        let logit = if self.prepared.needs_decode_subtraction {</span>
+<span class="line"><i>203</i>            (load.decode_cost_blocks() - credit).max(0.0) + request_cost</span>
+<span class="line"><i>204</i>        } else {</span>
+<span class="line"><i>205</i>            let raw_tokens = if !context.tracks_prefill_tokens() {</span>
+<span class="line"><i>206</i>                0</span>
+<span class="line"><i>207</i>            } else if load.is_available() {</span>
+<span class="line"><i>208</i>                let uncached = context.prompt_tokens().saturating_sub(cached_tokens);</span>
+<span class="line"><i>209</i>                (load.active_prefill_tokens() + uncached).saturating_add(cached_tokens)</span>
+<span class="line"><i>210</i>            } else {</span>
+<span class="line"><i>211</i>                context.prompt_tokens()</span>
+<span class="line"><i>212</i>            };</span>
+<span class="line"><i>213</i>            let prefill = (self.prepared.block_size.divide(raw_tokens as f64) - credit).max(0.0);</span>
+<span class="line"><i>214</i>            self.prefill_load_scale * prefill + load.decode_cost_blocks() + request_cost</span>
+<span class="line"><i>215</i>        };</span>
+<span class="line"><i>216</i>        let cost = logit * candidate.preferred_taint_multiplier().unwrap_or(1.0);</span>
+<span class="line"><i>217</i>        Ok(cost)</span>
+<span class="line"><i>218</i>    }</span>
+<span class="line"><i>219</i>}</span>
+<span class="line"><i>220</i></span>
+<span class="line"><i>221</i>impl&lt;const REQUEST_COST: bool, const SHARED_CREDIT: bool&gt; WorkerScorer</span>
+<span class="line"><i>222</i>    for DefaultScorer&lt;REQUEST_COST, SHARED_CREDIT&gt;</span>
+<span class="line"><i>223</i>{</span>
+<span class="line"><i>224</i>    fn required_worker_inputs(&amp;self) -&gt; WorkerInputs {</span>
+<span class="line"><i>225</i>        let inputs = WorkerInputs::LOAD | WorkerInputs::PREFERRED_TAINT;</span>
+<span class="line"><i>226</i>        if SHARED_CREDIT {</span>
+<span class="line"><i>227</i>            // The host builds fetch sources per selection only for policies that ask.</span>
+<span class="line"><i>228</i>            inputs | WorkerInputs::CACHE | WorkerInputs::KV_TRANSFER</span>
+<span class="line"><i>229</i>        } else if self.overlap_score_credit != 0.0</span>
+<span class="line"><i>230</i>            || self.host_cache_hit_weight != 0.0</span>
+<span class="line"><i>231</i>            || self.disk_cache_hit_weight != 0.0</span>
+<span class="line"><i>232</i>        {</span>
+<span class="line"><i>233</i>            inputs | WorkerInputs::CACHE</span>
+<span class="line"><i>234</i>        } else {</span>
+<span class="line"><i>235</i>            inputs</span>
+<span class="line"><i>236</i>        }</span>
+<span class="line"><i>237</i>    }</span></code></pre></details><p>一般路径将 Prefill token 工作量换算成块，减 credit 后钳到非负，再叠加 Decode 块成本与可选 active-request 项。decode-only 且不跟踪 Prefill 时使用另一条减法路径。preferred taint multiplier 最后作用于成本。阈值和权重改变的是路由偏好，不能单独推导为真实 worker TTFT。</p></section><section id="router-picker" class="lesson"><div class="sectionhead"><h2>09 / 最低成本与温度采样：相同输入也未必同实例</h2><label class="done"><input type="checkbox" data-read="router-picker"> 已读</label></div><details class="source" id="src-router-10"><summary><b>源码 · 零温随机破平与 softmax 分支</b><small>lib/router-plugins/builtin/src/default/picker.rs:82–125</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/router-plugins/builtin/src/default/picker.rs#L82-L125" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>82</i>    fn pick(</span>
+<span class="line"><i>83</i>        &amp;mut self,</span>
+<span class="line"><i>84</i>        context: &amp;WorkerSelectionContext&lt;&#x27;_&gt;,</span>
+<span class="line"><i>85</i>        input: WorkerInputView&lt;&#x27;_&gt;,</span>
+<span class="line"><i>86</i>    ) -&gt; Result&lt;usize, WorkerSelectionPolicyError&gt; {</span>
+<span class="line"><i>87</i>        let candidates = input.candidates();</span>
+<span class="line"><i>88</i>        if candidates.is_empty() {</span>
+<span class="line"><i>89</i>            return Err(WorkerSelectionPolicyError::failed(&quot;no eligible worker&quot;));</span>
+<span class="line"><i>90</i>        }</span>
+<span class="line"><i>91</i>        if context.pinned_worker().is_some() {</span>
+<span class="line"><i>92</i>            return Ok(0);</span>
+<span class="line"><i>93</i>        }</span>
+<span class="line"><i>94</i>        if self.temperature == 0.0 &amp;&amp; self.rng.is_none() {</span>
+<span class="line"><i>95</i>            let mut best_row = 0;</span>
+<span class="line"><i>96</i>            let mut best_cost = f64::INFINITY;</span>
+<span class="line"><i>97</i>            let mut ties = 0;</span>
+<span class="line"><i>98</i>            for (row, candidate) in candidates.iter().enumerate() {</span>
+<span class="line"><i>99</i>                let cost = candidate.cost();</span>
+<span class="line"><i>100</i>                if cost &lt; best_cost {</span>
+<span class="line"><i>101</i>                    best_row = row;</span>
+<span class="line"><i>102</i>                    best_cost = cost;</span>
+<span class="line"><i>103</i>                    ties = 1;</span>
+<span class="line"><i>104</i>                } else if cost == best_cost {</span>
+<span class="line"><i>105</i>                    ties += 1;</span>
+<span class="line"><i>106</i>                    if fastrand::usize(0..ties) == 0 {</span>
+<span class="line"><i>107</i>                        best_row = row;</span>
+<span class="line"><i>108</i>                    }</span>
+<span class="line"><i>109</i>                }</span>
+<span class="line"><i>110</i>            }</span>
+<span class="line"><i>111</i>            return Ok(best_row);</span>
+<span class="line"><i>112</i>        }</span>
+<span class="line"><i>113</i>        let Some(rng) = &amp;self.rng else {</span>
+<span class="line"><i>114</i>            return Ok(softmax_sample_index(</span>
+<span class="line"><i>115</i>                candidates,</span>
+<span class="line"><i>116</i>                |candidate| candidate.cost(),</span>
+<span class="line"><i>117</i>                self.temperature,</span>
+<span class="line"><i>118</i>                fastrand::f64(),</span>
+<span class="line"><i>119</i>                &amp;mut self.probabilities,</span>
+<span class="line"><i>120</i>            ));</span>
+<span class="line"><i>121</i>        };</span>
+<span class="line"><i>122</i>        self.entries.clear();</span>
+<span class="line"><i>123</i>        self.entries.extend(</span>
+<span class="line"><i>124</i>            candidates</span>
+<span class="line"><i>125</i>                .iter()</span></code></pre></details><details class="source" id="src-router-11"><summary><b>源码 · 确定性 replay 规范排序与 seeded RNG</b><small>lib/router-plugins/builtin/src/default/picker.rs:126–162</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/router-plugins/builtin/src/default/picker.rs#L126-L162" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>126</i>                .enumerate()</span>
+<span class="line"><i>127</i>                .map(|(row, candidate)| (row, candidate.cost())),</span>
+<span class="line"><i>128</i>        );</span>
+<span class="line"><i>129</i>        // Canonical order is required only for deterministic replay, never for production ties.</span>
+<span class="line"><i>130</i>        self.entries.sort_unstable_by_key(|(row, _)| {</span>
+<span class="line"><i>131</i>            let worker = candidates[*row].worker();</span>
+<span class="line"><i>132</i>            (worker.worker_id, worker.dp_rank)</span>
+<span class="line"><i>133</i>        });</span>
+<span class="line"><i>134</i>        let mut rng = rng.lock();</span>
+<span class="line"><i>135</i>        let selected = if self.temperature == 0.0 {</span>
+<span class="line"><i>136</i>            let mut best = 0;</span>
+<span class="line"><i>137</i>            let mut best_cost = f64::INFINITY;</span>
+<span class="line"><i>138</i>            let mut ties = 0;</span>
+<span class="line"><i>139</i>            for (index, (_, cost)) in self.entries.iter().enumerate() {</span>
+<span class="line"><i>140</i>                if *cost &lt; best_cost {</span>
+<span class="line"><i>141</i>                    best = index;</span>
+<span class="line"><i>142</i>                    best_cost = *cost;</span>
+<span class="line"><i>143</i>                    ties = 1;</span>
+<span class="line"><i>144</i>                } else if *cost == best_cost {</span>
+<span class="line"><i>145</i>                    ties += 1;</span>
+<span class="line"><i>146</i>                    if rng.usize(0..ties) == 0 {</span>
+<span class="line"><i>147</i>                        best = index;</span>
+<span class="line"><i>148</i>                    }</span>
+<span class="line"><i>149</i>                }</span>
+<span class="line"><i>150</i>            }</span>
+<span class="line"><i>151</i>            best</span>
+<span class="line"><i>152</i>        } else {</span>
+<span class="line"><i>153</i>            softmax_sample_index(</span>
+<span class="line"><i>154</i>                &amp;self.entries,</span>
+<span class="line"><i>155</i>                |(_, cost)| *cost,</span>
+<span class="line"><i>156</i>                self.temperature,</span>
+<span class="line"><i>157</i>                rng.f64(),</span>
+<span class="line"><i>158</i>                &amp;mut self.probabilities,</span>
+<span class="line"><i>159</i>            )</span>
+<span class="line"><i>160</i>        };</span>
+<span class="line"><i>161</i>        Ok(self.entries[selected].0)</span>
+<span class="line"><i>162</i>    }</span></code></pre></details><p>temperature=0 的生产路径对同成本候选随机破平，并非固定取最小 worker ID；非零温使用 softmax。确定性 replay 才做 canonical worker/rank 排序并使用共享 seed。比较新策略前要区分生产随机性和 replay 的可重复性。</p></section><section id="router-queue" class="lesson"><div class="sectionhead"><h2>10 / 调度：class 间 DRR，class 内优先级与排序</h2><label class="done"><input type="checkbox" data-read="router-queue"> 已读</label></div><details class="source" id="src-router-12"><summary><b>源码 · 按 class deficit / quantum 选择 dispatchable 项</b><small>lib/kv-router/src/scheduling/policy_queue.rs:779–828</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/scheduling/policy_queue.rs#L779-L828" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>779</i>    pub fn pop_next(</span>
+<span class="line"><i>780</i>        &amp;mut self,</span>
+<span class="line"><i>781</i>        mut is_dispatchable: impl FnMut(usize, &amp;PolicyClassConfig, &amp;T) -&gt; bool,</span>
+<span class="line"><i>782</i>    ) -&gt; Option&lt;PolicyQueueEntry&lt;T&gt;&gt; {</span>
+<span class="line"><i>783</i>        if self.pending_count == 0 {</span>
+<span class="line"><i>784</i>            self.carry_class = None;</span>
+<span class="line"><i>785</i>            return None;</span>
+<span class="line"><i>786</i>        }</span>
+<span class="line"><i>787</i></span>
+<span class="line"><i>788</i>        let class_count = self.classes.len();</span>
+<span class="line"><i>789</i>        self.candidates.fill(None);</span>
+<span class="line"><i>790</i>        let carried_class = self.carry_class.take();</span>
+<span class="line"><i>791</i>        if let Some(class_index) = carried_class {</span>
+<span class="line"><i>792</i>            let class = &amp;mut self.classes[class_index];</span>
+<span class="line"><i>793</i>            let candidate = class.next_dispatchable(class_index, &amp;mut is_dispatchable);</span>
+<span class="line"><i>794</i>            if let Some(candidate) = candidate</span>
+<span class="line"><i>795</i>                &amp;&amp; candidate.cost &lt;= class.deficit</span>
+<span class="line"><i>796</i>            {</span>
+<span class="line"><i>797</i>                return Some(self.pop_candidate(class_index, candidate));</span>
+<span class="line"><i>798</i>            }</span>
+<span class="line"><i>799</i>            self.candidates[class_index] = candidate;</span>
+<span class="line"><i>800</i>            if class.ready_is_empty() {</span>
+<span class="line"><i>801</i>                class.deficit = 0;</span>
+<span class="line"><i>802</i>            }</span>
+<span class="line"><i>803</i>        }</span>
+<span class="line"><i>804</i></span>
+<span class="line"><i>805</i>        for offset in 0..class_count {</span>
+<span class="line"><i>806</i>            // Rotate the starting point across calls so class vector order</span>
+<span class="line"><i>807</i>            // cannot become a permanent scheduling preference.</span>
+<span class="line"><i>808</i>            let class_index = (self.round_cursor + offset) % class_count;</span>
+<span class="line"><i>809</i>            let class = &amp;mut self.classes[class_index];</span>
+<span class="line"><i>810</i>            let candidate = if carried_class == Some(class_index) {</span>
+<span class="line"><i>811</i>                self.candidates[class_index]</span>
+<span class="line"><i>812</i>            } else {</span>
+<span class="line"><i>813</i>                class.next_dispatchable(class_index, &amp;mut is_dispatchable)</span>
+<span class="line"><i>814</i>            };</span>
+<span class="line"><i>815</i>            let Some(candidate) = candidate else {</span>
+<span class="line"><i>816</i>                if class.ready_is_empty() {</span>
+<span class="line"><i>817</i>                    class.deficit = 0;</span>
+<span class="line"><i>818</i>                }</span>
+<span class="line"><i>819</i>                continue;</span>
+<span class="line"><i>820</i>            };</span>
+<span class="line"><i>821</i>            self.candidates[class_index] = Some(candidate);</span>
+<span class="line"><i>822</i>            if candidate.cost &lt;= class.deficit {</span>
+<span class="line"><i>823</i>                // Quantum is granted per ring round, not per request. Spend</span>
+<span class="line"><i>824</i>                // carried credit before granting this class another quantum.</span>
+<span class="line"><i>825</i>                return Some(self.pop_candidate(class_index, candidate));</span>
+<span class="line"><i>826</i>            }</span>
+<span class="line"><i>827</i>            class.deficit = class.deficit.saturating_add(class.config.quantum);</span>
+<span class="line"><i>828</i>            if candidate.cost &lt;= class.deficit {</span></code></pre></details><details class="source" id="src-router-13"><summary><b>源码 · WSPT 以有效 Prefill token 为成本估计</b><small>lib/kv-router/src/scheduling/policy.rs:86–114</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/scheduling/policy.rs#L86-L114" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>86</i>/// Weighted Shortest Processing Time (Smith&#x27;s rule):</span>
+<span class="line"><i>87</i>/// policy score = (1 + priority_jump) / new_tokens, where new_tokens estimates the</span>
+<span class="line"><i>88</i>/// actual prefill cost by subtracting the effective KV cache overlap from ISL.</span>
+<span class="line"><i>89</i>/// The complete key is `(strict_priority, policy_score)`.</span>
+<span class="line"><i>90</i>/// Unpinned requests use the best available overlap. Pinned requests use only</span>
+<span class="line"><i>91</i>/// the overlap for their exact target worker so queue ordering matches routing.</span>
+<span class="line"><i>92</i>///</span>
+<span class="line"><i>93</i>/// Optimizes for average TTFT — minimizes total weighted completion time</span>
+<span class="line"><i>94</i>/// (Smith 1956). Short or high-priority requests are scheduled before</span>
+<span class="line"><i>95</i>/// long low-priority ones, reducing mean latency across the batch.</span>
+<span class="line"><i>96</i>pub struct WsptPolicy;</span>
+<span class="line"><i>97</i></span>
+<span class="line"><i>98</i>impl SchedulingPolicy for WsptPolicy {</span>
+<span class="line"><i>99</i>    type Key = (u32, OrderedFloat&lt;f64&gt;);</span>
+<span class="line"><i>100</i></span>
+<span class="line"><i>101</i>    fn enqueue_key&lt;C: WorkerConfigLike&gt;(</span>
+<span class="line"><i>102</i>        &amp;self,</span>
+<span class="line"><i>103</i>        _arrival_offset: Duration,</span>
+<span class="line"><i>104</i>        ctx: SchedulingContext&lt;&#x27;_, C&gt;,</span>
+<span class="line"><i>105</i>    ) -&gt; Self::Key {</span>
+<span class="line"><i>106</i>        let weight = 1.0 + ctx.request().priority_jump.max(0.0);</span>
+<span class="line"><i>107</i>        let new_tokens = ctx.best_effective_prefill_tokens().max(1);</span>
+<span class="line"><i>108</i>        (</span>
+<span class="line"><i>109</i>            ctx.request().strict_priority,</span>
+<span class="line"><i>110</i>            OrderedFloat(weight / new_tokens as f64),</span>
+<span class="line"><i>111</i>        )</span>
+<span class="line"><i>112</i>    }</span>
+<span class="line"><i>113</i>}</span>
+<span class="line"><i>114</i></span></code></pre></details><p>一个 SchedulerQueueActor 拥有 PolicyQueue，后者拥有各 PolicyClassQueue。class 间使用 deficit round robin；class 内可 FCFS、LCFS、WSPT，并结合 strict priority 与 deadline。WSPT 的权重是 1+max(priority_jump,0)，成本是 max(有效新增 Prefill token,1)，并不按原始 ISL 一刀切排序。</p><p>deadline 在同一 strict-priority 层内先按 due 时间处理，过期请求由 actor timer 拒绝；不是等轮到队头才发现超时。队列中的 pinned worker/rank lane 与任意 worker lane 也分别维护可派发 head。</p></section><section id="router-admission" class="lesson"><div class="sectionhead"><h2>11 / 最终选点后，才预留与回复</h2><label class="done"><input type="checkbox" data-read="router-admission"> 已读</label></div><details class="source" id="src-router-14"><summary><b>源码 · 无 worker 与 never-queues class 的直接路径</b><small>lib/kv-router/src/scheduling/queue.rs:1270–1315</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/scheduling/queue.rs#L1270-L1315" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1270</i>            .is_some_and(|due_at| due_at &lt;= decay_now)</span>
+<span class="line"><i>1271</i>        {</span>
+<span class="line"><i>1272</i>            self.reject_due_time_passed(class_index, &amp;mut request);</span>
+<span class="line"><i>1273</i>            return false;</span>
+<span class="line"><i>1274</i>        }</span>
+<span class="line"><i>1275</i>        let snapshot = queue_metadata.snapshot;</span>
+<span class="line"><i>1276</i>        let class = self.profile.class(class_index);</span>
+<span class="line"><i>1277</i>        // With zero discovered workers every per-worker limit scales to zero and</span>
+<span class="line"><i>1278</i>        // `queue_rejection` would reject with `limit: 0`. Admit directly instead</span>
+<span class="line"><i>1279</i>        // so selection reports the real condition, `NoEndpoints`.</span>
+<span class="line"><i>1280</i>        if self.workers_with_configs.borrow().is_empty() {</span>
+<span class="line"><i>1281</i>            return self.admit_one(request, attempt_tx, lifecycle_transfer, decay_now);</span>
+<span class="line"><i>1282</i>        }</span>
+<span class="line"><i>1283</i>        // A class with any zero per-worker limit never queues: keep the direct</span>
+<span class="line"><i>1284</i>        // admission semantics by admitting while a worker has prefill capacity,</span>
+<span class="line"><i>1285</i>        // and otherwise fall through so `queue_rejection` produces the same</span>
+<span class="line"><i>1286</i>        // limit-zero rejection the queued path always has.</span>
+<span class="line"><i>1287</i>        if class.never_queues() {</span>
+<span class="line"><i>1288</i>            let available = self</span>
+<span class="line"><i>1289</i>                .available_worker_provider</span>
+<span class="line"><i>1290</i>                .as_ref()</span>
+<span class="line"><i>1291</i>                .and_then(|provider| provider(&amp;request));</span>
+<span class="line"><i>1292</i>            let should_queue = class.queueing_enabled()</span>
+<span class="line"><i>1293</i>                &amp;&amp; (self.pending.has_backlog(class_index) || {</span>
+<span class="line"><i>1294</i>                    let active_tokens = self.slots.active_tokens(decay_now);</span>
+<span class="line"><i>1295</i>                    let configs = self.workers_with_configs.borrow();</span>
+<span class="line"><i>1296</i>                    Self::all_workers_prefill_busy_with(</span>
+<span class="line"><i>1297</i>                        &amp;active_tokens,</span>
+<span class="line"><i>1298</i>                        &amp;configs,</span>
+<span class="line"><i>1299</i>                        class,</span>
+<span class="line"><i>1300</i>                        request</span>
+<span class="line"><i>1301</i>                            .eligibility()</span>
+<span class="line"><i>1302</i>                            .with_available_workers(available.as_deref()),</span>
+<span class="line"><i>1303</i>                    )</span>
+<span class="line"><i>1304</i>                });</span>
+<span class="line"><i>1305</i>            if !should_queue {</span>
+<span class="line"><i>1306</i>                return self.admit_one(request, attempt_tx, lifecycle_transfer, decay_now);</span>
+<span class="line"><i>1307</i>            }</span>
+<span class="line"><i>1308</i>        }</span>
+<span class="line"><i>1309</i>        tracing::trace!(policy_class = class.name, &quot;ordering request&quot;);</span>
+<span class="line"><i>1310</i>        let priority_jump = request.priority_jump;</span>
+<span class="line"><i>1311</i>        let strict_priority = request.strict_priority;</span>
+<span class="line"><i>1312</i>        let placement = request</span>
+<span class="line"><i>1313</i>            .pinned_worker</span>
+<span class="line"><i>1314</i>            .map_or(WorkerPlacement::Any, WorkerPlacement::Exact);</span>
+<span class="line"><i>1315</i>        let queued = QueuedRequest {</span></code></pre></details><details class="source" id="src-router-15"><summary><b>源码 · 最终 selection → load hint → book_and_respond</b><small>lib/kv-router/src/scheduling/queue.rs:1810–1873</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/scheduling/queue.rs#L1810-L1873" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1810</i>    fn admit_one_projected(</span>
+<span class="line"><i>1811</i>        &amp;self,</span>
+<span class="line"><i>1812</i>        request: &amp;mut SchedulingRequest,</span>
+<span class="line"><i>1813</i>        attempt_tx: Option&lt;oneshot::Sender&lt;AttemptId&gt;&gt;,</span>
+<span class="line"><i>1814</i>        lifecycle_transfer: Option&lt;Arc&lt;AdmissionLifecycleTransfer&gt;&gt;,</span>
+<span class="line"><i>1815</i>    ) -&gt; bool {</span>
+<span class="line"><i>1816</i>        let selected = match self.select_worker_for_request(request, true) {</span>
+<span class="line"><i>1817</i>            Ok(s) =&gt; s,</span>
+<span class="line"><i>1818</i>            Err(e) =&gt; {</span>
+<span class="line"><i>1819</i>                tracing::warn!(&quot;scheduling failed: {e}&quot;);</span>
+<span class="line"><i>1820</i>                request.respond(Err(e));</span>
+<span class="line"><i>1821</i>                return false;</span>
+<span class="line"><i>1822</i>            }</span>
+<span class="line"><i>1823</i>        };</span>
+<span class="line"><i>1824</i></span>
+<span class="line"><i>1825</i>        let response = SchedulingResponse {</span>
+<span class="line"><i>1826</i>            best_worker: selected.selection.worker,</span>
+<span class="line"><i>1827</i>            effective_overlap_blocks: selected.selection.effective_overlap_blocks,</span>
+<span class="line"><i>1828</i>            cached_tokens: selected.selection.cached_tokens,</span>
+<span class="line"><i>1829</i>            max_raw_cached_tokens: selected.selection.max_raw_cached_tokens,</span>
+<span class="line"><i>1830</i>            selected_raw_cached_tokens: selected.selection.selected_raw_cached_tokens,</span>
+<span class="line"><i>1831</i>            selected_worker_tiers: selected.selected_worker_tiers,</span>
+<span class="line"><i>1832</i>            kv_transfer_source: selected.selection.kv_transfer_source,</span>
+<span class="line"><i>1833</i>            kv_transfer_candidates: request.kv_transfer_candidates.take(),</span>
+<span class="line"><i>1834</i>            potential_decode_blocks: selected.selection.potential_decode_blocks,</span>
+<span class="line"><i>1835</i>            selection_trace: selected.selection_trace,</span>
+<span class="line"><i>1836</i>        };</span>
+<span class="line"><i>1837</i>        let non_max_overlap_selection = selected.non_max_overlap_selection;</span>
+<span class="line"><i>1838</i></span>
+<span class="line"><i>1839</i>        if !request.mode.is_tracked() {</span>
+<span class="line"><i>1840</i>            request.respond(Ok(response));</span>
+<span class="line"><i>1841</i>            return false;</span>
+<span class="line"><i>1842</i>        }</span>
+<span class="line"><i>1843</i></span>
+<span class="line"><i>1844</i>        let request_id = request</span>
+<span class="line"><i>1845</i>            .mode</span>
+<span class="line"><i>1846</i>            .tracked_request_id()</span>
+<span class="line"><i>1847</i>            .expect(&quot;tracked mode always has a request ID&quot;)</span>
+<span class="line"><i>1848</i>            .to_string();</span>
+<span class="line"><i>1849</i></span>
+<span class="line"><i>1850</i>        let prefill_load_hint = self.prefill_load_hint_for(</span>
+<span class="line"><i>1851</i>            request.isl_tokens,</span>
+<span class="line"><i>1852</i>            selected.selection.cached_tokens,</span>
+<span class="line"><i>1853</i>            request.track_prefill_tokens,</span>
+<span class="line"><i>1854</i>        );</span>
+<span class="line"><i>1855</i></span>
+<span class="line"><i>1856</i>        let sequence_request = SequenceRequest {</span>
+<span class="line"><i>1857</i>            request_id,</span>
+<span class="line"><i>1858</i>            token_sequence: request.token_seq.take(),</span>
+<span class="line"><i>1859</i>            track_prefill_tokens: request.track_prefill_tokens,</span>
+<span class="line"><i>1860</i>            expected_output_tokens: request.expected_output_tokens,</span>
+<span class="line"><i>1861</i>            prefill_load_hint,</span>
+<span class="line"><i>1862</i>            worker: selected.selection.worker,</span>
+<span class="line"><i>1863</i>            lora_name: request.lora_name.take(),</span>
+<span class="line"><i>1864</i>        };</span>
+<span class="line"><i>1865</i>        self.book_and_respond(</span>
+<span class="line"><i>1866</i>            request,</span>
+<span class="line"><i>1867</i>            attempt_tx,</span>
+<span class="line"><i>1868</i>            lifecycle_transfer,</span>
+<span class="line"><i>1869</i>            sequence_request,</span>
+<span class="line"><i>1870</i>            response,</span>
+<span class="line"><i>1871</i>            non_max_overlap_selection,</span>
+<span class="line"><i>1872</i>        )</span>
+<span class="line"><i>1873</i>    }</span></code></pre></details><p>常规请求在同一 actor turn 进入策略队列并 drain，防止新到请求绕过其他 class 的可派发积压。只有零发现窗口、从不持有排队项的 class 等走特殊直达路径。必须在一次次准入之间看见上次预留后的容量，否则同时选择会过量承诺。</p></section><section id="router-preview" class="lesson"><div class="sectionhead"><h2>12 / preview 不是免费保留的最终位置</h2><label class="done"><input type="checkbox" data-read="router-preview"> 已读</label></div><details class="source" id="src-router-16"><summary><b>源码 · 由 preview 继续准入并保留原 worker 的 RoutePlan</b><small>lib/llm/src/kv_router/routing_host/kv.rs:239–297</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/routing_host/kv.rs#L239-L297" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>239</i>    pub(crate) async fn plan_kv_route_from_preview(</span>
+<span class="line"><i>240</i>        &amp;self,</span>
+<span class="line"><i>241</i>        request: &amp;SingleIn&lt;PreprocessedRequest&gt;,</span>
+<span class="line"><i>242</i>        preview: RoutePreview,</span>
+<span class="line"><i>243</i>    ) -&gt; Result&lt;RoutePlan, Error&gt; {</span>
+<span class="line"><i>244</i>        // Inherited, not restarted: this stage continues the route the preview</span>
+<span class="line"><i>245</i>        // opened.</span>
+<span class="line"><i>246</i>        let budget = preview.budget;</span>
+<span class="line"><i>247</i>        if self.kv_router_if_enabled().is_none() {</span>
+<span class="line"><i>248</i>            return Err(anyhow::anyhow!(&quot;KV route plans require KV routing&quot;));</span>
+<span class="line"><i>249</i>        }</span>
+<span class="line"><i>250</i>        if request.context().id() != preview.request_id {</span>
+<span class="line"><i>251</i>            return Err(anyhow::anyhow!(</span>
+<span class="line"><i>252</i>                &quot;KV route preview belongs to request {}, not {}&quot;,</span>
+<span class="line"><i>253</i>                preview.request_id,</span>
+<span class="line"><i>254</i>                request.context().id(),</span>
+<span class="line"><i>255</i>            ));</span>
+<span class="line"><i>256</i>        }</span>
+<span class="line"><i>257</i></span>
+<span class="line"><i>258</i>        let phase = preview.phase;</span>
+<span class="line"><i>259</i>        let phase_label = phase.to_string();</span>
+<span class="line"><i>260</i>        let route_guard = StageGuard::new(STAGE_ROUTE, &amp;phase_label);</span>
+<span class="line"><i>261</i>        let planned_worker = preview.signals.worker;</span>
+<span class="line"><i>262</i>        let select = || {</span>
+<span class="line"><i>263</i>            self.select_with_session_affinity(request, phase, false, &amp;budget, |target| {</span>
+<span class="line"><i>264</i>                let budget = &amp;budget;</span>
+<span class="line"><i>265</i>                async move {</span>
+<span class="line"><i>266</i>                    self.select_request_outcome(</span>
+<span class="line"><i>267</i>                        request,</span>
+<span class="line"><i>268</i>                        phase,</span>
+<span class="line"><i>269</i>                        false,</span>
+<span class="line"><i>270</i>                        target,</span>
+<span class="line"><i>271</i>                        Some(planned_worker),</span>
+<span class="line"><i>272</i>                        FindBestMatchAdmission::WithAdmission,</span>
+<span class="line"><i>273</i>                        budget,</span>
+<span class="line"><i>274</i>                    )</span>
+<span class="line"><i>275</i>                    .await?</span>
+<span class="line"><i>276</i>                    .into_result()</span>
+<span class="line"><i>277</i>                }</span>
+<span class="line"><i>278</i>            })</span>
+<span class="line"><i>279</i>        };</span>
+<span class="line"><i>280</i>        let (mut selection, affinity) = self</span>
+<span class="line"><i>281</i>            .select_with_request_lifecycle(request, phase, select)</span>
+<span class="line"><i>282</i>            .await?;</span>
+<span class="line"><i>283</i>        let signals = self.route_signals(&amp;selection);</span>
+<span class="line"><i>284</i>        drop(route_guard);</span>
+<span class="line"><i>285</i>        Ok(RoutePlan {</span>
+<span class="line"><i>286</i>            signals,</span>
+<span class="line"><i>287</i>            cleanup: KvRequestCleanup::new(</span>
+<span class="line"><i>288</i>                Arc::clone(self.kv_router()),</span>
+<span class="line"><i>289</i>                request.context().id().to_string(),</span>
+<span class="line"><i>290</i>                selection.worker,</span>
+<span class="line"><i>291</i>                selection.booking.take(),</span>
+<span class="line"><i>292</i>            ),</span>
+<span class="line"><i>293</i>            selection,</span>
+<span class="line"><i>294</i>            affinity,</span>
+<span class="line"><i>295</i>            budget,</span>
+<span class="line"><i>296</i>        })</span>
+<span class="line"><i>297</i>    }</span></code></pre></details><p>条件 PD 会先看 Decode preview，再对同一计划准入；函数核对 request ID、继承 cleanup budget 并把 planned_worker 固定为选择约束。RoutePlan 的 cleanup 接管 booking/lease，不能复制一个选择结果就丢弃所有权或重新挑另一实例。</p></section><section id="router-sequence" class="lesson"><div class="sectionhead"><h2>13 / 本地权威写模型与可延迟的读投影</h2><label class="done"><input type="checkbox" data-read="router-sequence"> 已读</label></div><details class="source" id="src-router-17"><summary><b>源码 · active sequence 添加与重复 add 保护</b><small>lib/kv-router/src/sequences/single.rs:199–230</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/sequences/single.rs#L199-L230" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>199</i>    pub(super) fn add_request_with_prefill_tracking(</span>
+<span class="line"><i>200</i>        &amp;mut self,</span>
+<span class="line"><i>201</i>        request_id: RequestId,</span>
+<span class="line"><i>202</i>        token_sequence: Option&lt;Vec&lt;SequenceHash&gt;&gt;,</span>
+<span class="line"><i>203</i>        expected_output_tokens: Option&lt;u32&gt;,</span>
+<span class="line"><i>204</i>        track_prefill_tokens: bool,</span>
+<span class="line"><i>205</i>        prefill_load_hint: Option&lt;PrefillLoadHint&gt;,</span>
+<span class="line"><i>206</i>        decay_now: Instant,</span>
+<span class="line"><i>207</i>    ) -&gt; SequenceMutationOutcome {</span>
+<span class="line"><i>208</i>        if self.requests.contains_key(&amp;request_id) {</span>
+<span class="line"><i>209</i>            tracing::error!(&quot;Request {request_id} is already active. Ignoring duplicate add.&quot;);</span>
+<span class="line"><i>210</i>            return SequenceMutationOutcome::default();</span>
+<span class="line"><i>211</i>        }</span>
+<span class="line"><i>212</i></span>
+<span class="line"><i>213</i>        let mut outcome = self.force_expiry();</span>
+<span class="line"><i>214</i>        let started_at = Instant::now();</span>
+<span class="line"><i>215</i></span>
+<span class="line"><i>216</i>        let prompt_hashes = token_sequence.unwrap_or_default();</span>
+<span class="line"><i>217</i>        let (blocks, first_new_prompt_idx) = self.blocks.acquire_prompt(&amp;prompt_hashes);</span>
+<span class="line"><i>218</i></span>
+<span class="line"><i>219</i>        if let Some(first_new_prompt_idx) = first_new_prompt_idx {</span>
+<span class="line"><i>220</i>            #[cfg(any(test, debug_assertions))]</span>
+<span class="line"><i>221</i>            debug_assert!(</span>
+<span class="line"><i>222</i>                prompt_hashes[first_new_prompt_idx..]</span>
+<span class="line"><i>223</i>                    .iter()</span>
+<span class="line"><i>224</i>                    .all(|hash| self.blocks.contains_block(hash))</span>
+<span class="line"><i>225</i>            );</span>
+<span class="line"><i>226</i>            outcome</span>
+<span class="line"><i>227</i>                .membership_delta</span>
+<span class="line"><i>228</i>                .push_store(prompt_hashes, first_new_prompt_idx);</span>
+<span class="line"><i>229</i>        }</span>
+<span class="line"><i>230</i></span></code></pre></details><details class="source" id="src-router-18"><summary><b>源码 · Prefill 完成的幂等阶段迁移</b><small>lib/kv-router/src/sequences/single.rs:262–281</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/sequences/single.rs#L262-L281" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>262</i>    pub(super) fn mark_prefill_completed(</span>
+<span class="line"><i>263</i>        &amp;mut self,</span>
+<span class="line"><i>264</i>        request_id: &amp;RequestId,</span>
+<span class="line"><i>265</i>        decay_now: Instant,</span>
+<span class="line"><i>266</i>    ) -&gt; PrefillCompletion {</span>
+<span class="line"><i>267</i>        let Some(request_state) = self.requests.get_mut(request_id) else {</span>
+<span class="line"><i>268</i>            return PrefillCompletion::Unchanged;</span>
+<span class="line"><i>269</i>        };</span>
+<span class="line"><i>270</i>        if std::mem::replace(&amp;mut request_state.prefill_completed, true) {</span>
+<span class="line"><i>271</i>            return PrefillCompletion::Unchanged;</span>
+<span class="line"><i>272</i>        }</span>
+<span class="line"><i>273</i>        self.prefill_requests -= 1;</span>
+<span class="line"><i>274</i>        let completion = if self.prefill.remove(request_id, decay_now).is_some() {</span>
+<span class="line"><i>275</i>            PrefillCompletion::LoadReleased</span>
+<span class="line"><i>276</i>        } else {</span>
+<span class="line"><i>277</i>            PrefillCompletion::PhaseChanged</span>
+<span class="line"><i>278</i>        };</span>
+<span class="line"><i>279</i>        self.validate_state();</span>
+<span class="line"><i>280</i>        completion</span>
+<span class="line"><i>281</i>    }</span></code></pre></details><details class="source" id="src-router-19"><summary><b>源码 · PromptRegistry 派生 worker load</b><small>lib/kv-router/src/sequences/prompt_registry.rs:304–345</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/sequences/prompt_registry.rs#L304-L345" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>304</i>    pub(super) fn project_worker_loads_into(</span>
+<span class="line"><i>305</i>        &amp;self,</span>
+<span class="line"><i>306</i>        token_sequence: Option&lt;&amp;[SequenceHash]&gt;,</span>
+<span class="line"><i>307</i>        decay_now: Instant,</span>
+<span class="line"><i>308</i>        projections: &amp;mut FxHashMap&lt;WorkerWithDpRank, WorkerLoadProjection&gt;,</span>
+<span class="line"><i>309</i>    ) {</span>
+<span class="line"><i>310</i>        let query_len = token_sequence.map_or(0, |query| query.len());</span>
+<span class="line"><i>311</i>        let matched_depth = self.membership.compute_overlap_depths(token_sequence);</span>
+<span class="line"><i>312</i>        let loads = self.loads.read();</span>
+<span class="line"><i>313</i>        let project = |worker: WorkerWithDpRank, load: WorkerLoadSnapshot| {</span>
+<span class="line"><i>314</i>            let overlap_depth = matched_depth.get(&amp;worker).copied().unwrap_or(0);</span>
+<span class="line"><i>315</i>            WorkerLoadProjection {</span>
+<span class="line"><i>316</i>                active_prefill_tokens: load.active_tokens(decay_now),</span>
+<span class="line"><i>317</i>                active_decode_blocks: load.active_blocks,</span>
+<span class="line"><i>318</i>                active_requests: load.active_requests,</span>
+<span class="line"><i>319</i>                additional_active_blocks: query_len.saturating_sub(overlap_depth),</span>
+<span class="line"><i>320</i>            }</span>
+<span class="line"><i>321</i>        };</span>
+<span class="line"><i>322</i></span>
+<span class="line"><i>323</i>        // A reused map usually still holds the previous request&#x27;s projection over the same</span>
+<span class="line"><i>324</i>        // workers. Overwriting values in place avoids re-inserting every worker; any key-set</span>
+<span class="line"><i>325</i>        // mismatch falls back to a rebuild. Equal lengths plus every worker found means the</span>
+<span class="line"><i>326</i>        // key sets are equal because worker keys are unique.</span>
+<span class="line"><i>327</i>        if projections.len() == loads.len()</span>
+<span class="line"><i>328</i>            &amp;&amp; loads.iter().all(|(worker, load)| {</span>
+<span class="line"><i>329</i>                projections</span>
+<span class="line"><i>330</i>                    .get_mut(&amp;worker)</span>
+<span class="line"><i>331</i>                    .map(|projection| *projection = project(worker, load))</span>
+<span class="line"><i>332</i>                    .is_some()</span>
+<span class="line"><i>333</i>            })</span>
+<span class="line"><i>334</i>        {</span>
+<span class="line"><i>335</i>            return;</span>
+<span class="line"><i>336</i>        }</span>
+<span class="line"><i>337</i></span>
+<span class="line"><i>338</i>        projections.clear();</span>
+<span class="line"><i>339</i>        projections.reserve(loads.len());</span>
+<span class="line"><i>340</i>        projections.extend(</span>
+<span class="line"><i>341</i>            loads</span>
+<span class="line"><i>342</i>                .iter()</span>
+<span class="line"><i>343</i>                .map(|(worker, load)| (worker, project(worker, load))),</span>
+<span class="line"><i>344</i>        );</span>
+<span class="line"><i>345</i>    }</span></code></pre></details><p>本地 owning frontend 的 ActiveSequences 是写模型；PromptRegistry 提供可延迟的派生读模型，避免热路径全局锁。peer replica lifecycle 是 best-effort advisory，不保证严格全序；Free 先于 Add 会短暂遗留 stale state，expiry 负责最终收敛。输出块变化是高频本地状态，不能假定每个块都跨 frontend 广播。</p></section><section id="router-overhead" class="lesson"><div class="sectionhead"><h2>14 / 观测源码：路由耗时来自明确的区间差</h2><label class="done"><input type="checkbox" data-read="router-overhead"> 已读</label></div><details class="source" id="src-router-20"><summary><b>源码 · hash、seq hash、indexer、shared query 与 scheduling 的计时</b><small>lib/llm/src/kv_router/metrics.rs:970–996</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/metrics.rs#L970-L996" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>970</i>    pub fn observe(</span>
+<span class="line"><i>971</i>        &amp;self,</span>
+<span class="line"><i>972</i>        hash_elapsed: Duration,</span>
+<span class="line"><i>973</i>        seq_hash_elapsed: Duration,</span>
+<span class="line"><i>974</i>        indexer_duration: Duration,</span>
+<span class="line"><i>975</i>        shared_cache_duration: Option&lt;Duration&gt;,</span>
+<span class="line"><i>976</i>        find_matches_elapsed: Duration,</span>
+<span class="line"><i>977</i>        total_elapsed: Duration,</span>
+<span class="line"><i>978</i>    ) {</span>
+<span class="line"><i>979</i>        self.block_hashing</span>
+<span class="line"><i>980</i>            .observe(hash_elapsed.as_secs_f64() * 1000.0);</span>
+<span class="line"><i>981</i>        self.seq_hashing</span>
+<span class="line"><i>982</i>            .observe(seq_hash_elapsed.saturating_sub(hash_elapsed).as_secs_f64() * 1000.0);</span>
+<span class="line"><i>983</i>        self.indexer_find_matches</span>
+<span class="line"><i>984</i>            .observe(indexer_duration.as_secs_f64() * 1000.0);</span>
+<span class="line"><i>985</i>        if let Some(sc_duration) = shared_cache_duration {</span>
+<span class="line"><i>986</i>            self.shared_cache_query</span>
+<span class="line"><i>987</i>                .observe(sc_duration.as_secs_f64() * 1000.0);</span>
+<span class="line"><i>988</i>        }</span>
+<span class="line"><i>989</i>        self.scheduling.observe(</span>
+<span class="line"><i>990</i>            total_elapsed</span>
+<span class="line"><i>991</i>                .saturating_sub(find_matches_elapsed)</span>
+<span class="line"><i>992</i>                .as_secs_f64()</span>
+<span class="line"><i>993</i>                * 1000.0,</span>
+<span class="line"><i>994</i>        );</span>
+<span class="line"><i>995</i>        self.total.observe(total_elapsed.as_secs_f64() * 1000.0);</span>
+<span class="line"><i>996</i>    }</span></code></pre></details><details class="source" id="src-router-21"><summary><b>源码 · 仅 admitted selections 记录此处路由观测</b><small>lib/llm/src/kv_router.rs:1480–1515</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router.rs#L1480-L1515" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1480</i>            routing_hashes.map(RoutingDecisionHashes::from_local_hashes)</span>
+<span class="line"><i>1481</i>        } else {</span>
+<span class="line"><i>1482</i>            None</span>
+<span class="line"><i>1483</i>        };</span>
+<span class="line"><i>1484</i>        let overlap_blocks = response.effective_overlap_blocks.round() as u32;</span>
+<span class="line"><i>1485</i></span>
+<span class="line"><i>1486</i>        // Routing metrics stay scoped to requests admitted by this call.</span>
+<span class="line"><i>1487</i>        if is_admitted_routing {</span>
+<span class="line"><i>1488</i>            let total_elapsed = start.elapsed();</span>
+<span class="line"><i>1489</i>            if let (Some(lookup), Some(m)) = (lookup, metrics::RoutingOverheadMetrics::get()) {</span>
+<span class="line"><i>1490</i>                let hash_elapsed = lookup.block_hashing;</span>
+<span class="line"><i>1491</i>                let seq_hash_elapsed = hash_elapsed + lookup.seq_hashing;</span>
+<span class="line"><i>1492</i>                let find_matches_elapsed = seq_hash_elapsed + lookup.lookups;</span>
+<span class="line"><i>1493</i>                m.observe(</span>
+<span class="line"><i>1494</i>                    hash_elapsed,</span>
+<span class="line"><i>1495</i>                    seq_hash_elapsed,</span>
+<span class="line"><i>1496</i>                    lookup.indexer,</span>
+<span class="line"><i>1497</i>                    lookup.shared_cache,</span>
+<span class="line"><i>1498</i>                    find_matches_elapsed,</span>
+<span class="line"><i>1499</i>                    total_elapsed,</span>
+<span class="line"><i>1500</i>                );</span>
+<span class="line"><i>1501</i>            }</span>
+<span class="line"><i>1502</i>            if let (Some(hits), Some(m)) = (shared_cache_hits, metrics::RouterRequestMetrics::get())</span>
+<span class="line"><i>1503</i>            {</span>
+<span class="line"><i>1504</i>                let num_blocks = isl_tokens / self.block_size as usize;</span>
+<span class="line"><i>1505</i>                if num_blocks &gt; 0 {</span>
+<span class="line"><i>1506</i>                    m.shared_cache_hit_rate</span>
+<span class="line"><i>1507</i>                        .observe(hits.total_hits as f64 / num_blocks as f64);</span>
+<span class="line"><i>1508</i>                }</span>
+<span class="line"><i>1509</i>                m.shared_cache_beyond_blocks</span>
+<span class="line"><i>1510</i>                    .observe(hits.hits_beyond(overlap_blocks) as f64);</span>
+<span class="line"><i>1511</i>            }</span>
+<span class="line"><i>1512</i>        }</span>
+<span class="line"><i>1513</i></span>
+<span class="line"><i>1514</i>        // Advisory selections carry no booking or hint and always a load</span>
+<span class="line"><i>1515</i>        // snapshot; admitted ones the reverse (`SelectionCore::select_or_reject`).</span></code></pre></details><p>这些 Histogram 在 observe 时转为毫秒。seq_hash 用累计差减去 block_hash，scheduling 用 total 减去 find_matches；缺失 shared query 不会记录该项。它们是实现边界的耗时，不能直接等于排队时长或 engine 执行时间；advisory preview 也不应被当作真实派发样本。</p></section><section id="router-attribution" class="lesson"><div class="sectionhead"><h2>15 / 观测源码：估计命中、选中命中和真实复用分开</h2><label class="done"><input type="checkbox" data-read="router-attribution"> 已读</label></div><details class="source" id="src-router-22"><summary><b>源码 · 放弃最大 overlap 与 best/selected/reused token 系列</b><small>lib/llm/src/kv_router/metrics.rs:1250–1278</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/metrics.rs#L1250-L1278" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1250</i>    pub fn observe_non_max_overlap_selection(&amp;self, worker_type: &amp;str, overlap_blocks_lost: f64) {</span>
+<span class="line"><i>1251</i>        debug_assert!(overlap_blocks_lost &gt; 0.0);</span>
+<span class="line"><i>1252</i>        self.non_max_overlap_selections_total</span>
+<span class="line"><i>1253</i>            .with_label_values(&amp;[worker_type])</span>
+<span class="line"><i>1254</i>            .inc();</span>
+<span class="line"><i>1255</i>        self.overlap_blocks_lost</span>
+<span class="line"><i>1256</i>            .with_label_values(&amp;[worker_type])</span>
+<span class="line"><i>1257</i>            .observe(overlap_blocks_lost);</span>
+<span class="line"><i>1258</i>    }</span>
+<span class="line"><i>1259</i></span>
+<span class="line"><i>1260</i>    /// Record the router&#x27;s estimates for one tracked attempt at selection time and</span>
+<span class="line"><i>1261</i>    /// return its worker-reuse counter, already exported at zero for backends that</span>
+<span class="line"><i>1262</i>    /// never report.</span>
+<span class="line"><i>1263</i>    pub fn observe_kv_route_estimate(</span>
+<span class="line"><i>1264</i>        &amp;self,</span>
+<span class="line"><i>1265</i>        phase: RequestPhase,</span>
+<span class="line"><i>1266</i>        model: &amp;str,</span>
+<span class="line"><i>1267</i>        best_tokens: u64,</span>
+<span class="line"><i>1268</i>        selected_tokens: u64,</span>
+<span class="line"><i>1269</i>    ) -&gt; IntCounter {</span>
+<span class="line"><i>1270</i>        let labels = &amp;[phase.as_str(), model];</span>
+<span class="line"><i>1271</i>        self.kv_best_eligible_cached_prefix_tokens</span>
+<span class="line"><i>1272</i>            .with_label_values(labels)</span>
+<span class="line"><i>1273</i>            .inc_by(best_tokens);</span>
+<span class="line"><i>1274</i>        self.kv_selected_cached_prefix_tokens</span>
+<span class="line"><i>1275</i>            .with_label_values(labels)</span>
+<span class="line"><i>1276</i>            .inc_by(selected_tokens);</span>
+<span class="line"><i>1277</i>        self.kv_worker_reused_tokens.with_label_values(labels)</span>
+<span class="line"><i>1278</i>    }</span></code></pre></details><details class="source" id="src-router-23"><summary><b>源码 · worker/rank/phase 的路由器负载 gauges</b><small>lib/llm/src/kv_router/metrics.rs:654–673</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/metrics.rs#L654-L673" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>654</i>    pub fn observe(&amp;self, worker_id: u64, dp_rank: u32, worker_type: &amp;str, load: LocalWorkerLoad) {</span>
+<span class="line"><i>655</i>        let worker_id = worker_id.to_string();</span>
+<span class="line"><i>656</i>        let dp_rank = dp_rank.to_string();</span>
+<span class="line"><i>657</i>        let labels = [worker_id.as_str(), dp_rank.as_str(), worker_type];</span>
+<span class="line"><i>658</i>        self.active_decode_blocks</span>
+<span class="line"><i>659</i>            .with_label_values(&amp;labels)</span>
+<span class="line"><i>660</i>            .set(load.active_blocks as i64);</span>
+<span class="line"><i>661</i>        self.active_prefill_tokens</span>
+<span class="line"><i>662</i>            .with_label_values(&amp;labels)</span>
+<span class="line"><i>663</i>            .set(load.active_tokens as i64);</span>
+<span class="line"><i>664</i>        let decode_requests = load.active_requests.saturating_sub(load.prefill_requests);</span>
+<span class="line"><i>665</i>        for (phase, count) in [</span>
+<span class="line"><i>666</i>            (REQUEST_PHASE_PREFILL, load.prefill_requests),</span>
+<span class="line"><i>667</i>            (REQUEST_PHASE_DECODE, decode_requests),</span>
+<span class="line"><i>668</i>        ] {</span>
+<span class="line"><i>669</i>            self.active_requests</span>
+<span class="line"><i>670</i>                .with_label_values(&amp;[worker_id.as_str(), dp_rank.as_str(), worker_type, phase])</span>
+<span class="line"><i>671</i>                .set(count as i64);</span>
+<span class="line"><i>672</i>        }</span>
+<span class="line"><i>673</i>    }</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>信号</th><th>能解释什么</th><th>不能解释什么</th></tr></thead><tbody><tr><td>best eligible / selected prefix</td><td>可行候选中估计缓存机会与最终选择</td><td>不是引擎实际重用量</td></tr><tr><td>worker reused tokens</td><td>backend 回报的真实复用（是否回报依能力）</td><td>无回报的零值不能证无复用</td></tr><tr><td>non-max-overlap selections</td><td>选择为负载或约束牺牲缓存的频度</td><td>不能直接判为错误路由</td></tr><tr><td>active_prefill_tokens / decode_blocks</td><td>router 记账与 worker/rank 维度</td><td>不是 nvidia-smi 的显存量或引擎队列原样镜像</td></tr></tbody></table></div></section><section id="router-practice" class="lesson"><div class="sectionhead"><h2>16 / 排障与扩展的最短路径</h2><label class="done"><input type="checkbox" data-read="router-practice"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>症状</th><th>顺序检查</th></tr></thead><tbody><tr><td>没有实例</td><td>Discovery → WorkerSet admission → 资格/LoRA/topology/pin → endpoint</td></tr><tr><td>命中高却不选</td><td>tier credit → load cost → busy/capacity → policy score → picker</td></tr><tr><td>队列迟迟不动</td><td>class 配额/排序/deadline → pinned lane → 容量释放/actor update</td></tr><tr><td>负载偏差</td><td>本地 lifecycle → replica 延迟/丢失 → PromptRegistry → expiry</td></tr><tr><td>扩展策略</td><td>只请求所需输入、保持无副作用，验证 finite costs / picker row 与代表性基准</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>同版本官方仓库文档</th><th>阅读用途</th></tr></thead><tbody><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/docs/fern/pages/developer-guide/knowledge-base/modular-components/router/custom-worker-selection.mdx">Custom Worker Selection</a></td><td>公开 filter/scorer/picker API</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/sequences/README.md">Active sequence ownership</a></td><td>写模型与派生读边界</td></tr></tbody></table></div><p>本章未运行路由回归或性能基准。进一步阅读<a href="pd-serving.html">PD</a>、<a href="kv-cache.html">KV 内存管理</a>和<a href="validation.html">验证与回放</a>。</p></section><section id="router-diagram" class="lesson"><div class="sectionhead"><h2>17 / 架构分层图与交叉阅读</h2><label class="done"><input type="checkbox" data-read="router-diagram"> 已读</label></div><div class="diagram"><div class="lane"><b>状态输入</b><span>KV events → prefix index；lifecycle → ActiveSequences → PromptRegistry</span></div><div class="lane"><b>策略</b><span>eligible candidates → filters → finite scorer costs → picker row</span></div><div class="lane"><b>准入</b><span>policy class / DRR / queue → final select → capacity booking</span></div><div class="lane"><b>实际派发</b><span>RoutingHost / RoutePlan → backend；response / Drop → cleanup</span></div></div><p><a href="router-architecture.mmd">Mermaid 图源</a>按职责分泳道；泳道之间不暗示已经实现自动接线。离线 HTML 无外部渲染依赖。<a href="system-map.html">系统地图</a> / <a href="index.html">全部章节</a>。</p></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 9734418e5bc71027e6bd04a09314bf1765208c72。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

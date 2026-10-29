@@ -1,0 +1,24 @@
+%% SPDX-License-Identifier: Apache-2.0
+sequenceDiagram
+    participant U as User or Planner
+    participant A as Kubernetes API
+    participant C as DGD Controller
+    participant P as Selected Program
+    participant W as Child / Provider Controllers
+    participant E as Event Recorder
+    U->>A: Update desired state
+    A-->>C: Watch event queues object key
+    C->>A: Read latest desired/observed state
+    C->>P: Reconcile complete DGD
+    P->>A: Reconcile required workload resources
+    A-->>W: Child resource changes
+    P-->>C: Complete status + pending events + result/error
+    C->>A: Status().Update
+    alt Status write succeeds
+        C->>E: Emit queued status-transition events
+    else Status write fails
+        C-->>C: Return error, do not emit queued events
+    end
+    W->>A: Update workload readiness/status
+    A-->>C: New watch trigger
+    Note over C,W: Reconcile duration is not model startup duration

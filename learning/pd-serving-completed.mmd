@@ -1,0 +1,21 @@
+%% SPDX-License-Identifier: Apache-2.0
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant R as Frontend / PrefillRouter
+    participant P as Prefill backend / engine
+    participant D as Decode backend / engine
+    C->>R: Logical generation request
+    R->>P: Prefill request (internal token limit)
+    P->>P: Compute context KV
+    P-->>R: Prefill result + handoff parameters
+    R->>R: Drain tail and propagate any error
+    alt Prefill already terminal
+        R-->>C: Terminal output (no Decode dispatch)
+    else Nonterminal handoff
+        R->>D: prefill_result + worker link; restore max_tokens
+        D->>P: Connector-specific KV coordination / transfer
+        Note over P,D: KV tensors bypass Frontend
+        D-->>R: Generated tokens / terminal
+        R-->>C: Streamed output
+    end

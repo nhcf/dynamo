@@ -10,6 +10,18 @@ const expected = {
   "observability.html": 32,
   "planner.html": 45,
   "pd-trace.html": 31,
+  "control-plane.html": 37,
+  "storage-events.html": 45,
+  "reliability.html": 50,
+  "pd-serving.html": 44,
+  "frontend.html": 18,
+  "runtime.html": 23,
+  "router.html": 23,
+  "backends.html": 19,
+  "kv-cache.html": 24,
+  "global-routing.html": 24,
+  "validation.html": 18,
+  "system-map.html": 11,
 }[page];
 if (!expected) throw Error("Unsupported tutorial page: " + page);
 const out = dirname(fileURLToPath(import.meta.url)),

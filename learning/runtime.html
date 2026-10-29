@@ -1,0 +1,1014 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>Runtime 与通信：身份、发现、传输和生命周期 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#runtime-scope">01 / 阅读范围与证据版本</a><a href="#runtime-architecture">02 / 本地执行器与分布式能力分层</a><a href="#runtime-identity">03 / namespace / component / endpoint / instance</a><a href="#runtime-planes">04 / 四种职责：Discovery、Request、Response、Event</a><a href="#runtime-codec">05 / 传输模式与 payload 编码是两个配置</a><a href="#runtime-startup">06 / 初始化：依赖可用后才监听</a><a href="#runtime-endpoint-start">07 / endpoint 注册：metrics、handler、health、server、discovery</a><a href="#runtime-discovery">08 / 统一 Discovery trait 与业务准入边界</a><a href="#runtime-envelope">09 / 请求信封：控制与业务 payload 分离</a><a href="#runtime-context">10 / Context 保存身份、元数据和本地共享状态</a><a href="#runtime-tcp-observe">11 / TCP 入口：收到请求后的网络估计与 server span</a><a href="#runtime-route-trace">12 / 重试 attempt 的 Trace 与 worker 归因</a><a href="#runtime-python">13 / Python 绑定：generator、push egress 与 trace headers</a><a href="#runtime-registry">14 / Metrics 层级如何进入一次 scrape</a><a href="#runtime-shutdown">15 / 撤销发现、停止请求服务与生命周期所有权</a><a href="#runtime-practice">16 / 接入工作与诊断顺序</a><a href="#runtime-diagram">17 / 架构分层图与交叉阅读</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 9734418e5</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>Runtime 与通信：身份、发现、传输和生命周期</h1><p class="lede">拆解 Runtime / DistributedRuntime、endpoint 注册、请求与响应传输、Context、Python 绑定及观测传播。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 9734418e5</span><span class="pill ">系统源码专题 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="runtime-scope" class="lesson"><div class="sectionhead"><h2>01 / 阅读范围与证据版本</h2><label class="done"><input type="checkbox" data-read="runtime-scope"> 已读</label></div><p>拆解 Runtime / DistributedRuntime、endpoint 注册、请求与响应传输、Context、Python 绑定及观测传播。</p><aside class="note ">源码固定于 9734418e5bc71027e6bd04a09314bf1765208c72（workspace 1.7.0），与 PD / 可靠性等新专题使用同一代码基线。本文分析实现和配置边界，未运行推理、性能实验或集群修改。历史部署与旧版章节须按版本对照。</aside></section><section id="runtime-architecture" class="lesson"><div class="sectionhead"><h2>02 / 本地执行器与分布式能力分层</h2><label class="done"><input type="checkbox" data-read="runtime-architecture"> 已读</label></div><details class="source" id="src-runtime-1"><summary><b>源码 · 本地 Runtime 的执行器、取消与后台能力</b><small>lib/runtime/src/runtime.rs:72–130</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/runtime.rs#L72-L130" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>72</i>pub struct Runtime {</span>
+<span class="line"><i>73</i>    id: Arc&lt;String&gt;,</span>
+<span class="line"><i>74</i>    primary: RuntimeType,</span>
+<span class="line"><i>75</i>    secondary: RuntimeType,</span>
+<span class="line"><i>76</i>    cancellation_token: CancellationToken,</span>
+<span class="line"><i>77</i>    endpoint_shutdown_token: CancellationToken,</span>
+<span class="line"><i>78</i>    shutdown_started: CancellationToken,</span>
+<span class="line"><i>79</i>    graceful_shutdown_tracker: Arc&lt;GracefulShutdownTracker&gt;,</span>
+<span class="line"><i>80</i>    velo_response_service: Arc&lt;crate::pipeline::network::velo_response::RuntimeService&gt;,</span>
+<span class="line"><i>81</i>    compute_pool: Option&lt;Arc&lt;compute::ComputePool&gt;&gt;,</span>
+<span class="line"><i>82</i>    block_in_place_permits: Option&lt;Arc&lt;tokio::sync::Semaphore&gt;&gt;,</span>
+<span class="line"><i>83</i>}</span>
+<span class="line"><i>84</i></span>
+<span class="line"><i>85</i>impl Runtime {</span>
+<span class="line"><i>86</i>    fn new(runtime: RuntimeType, secondary: Option&lt;RuntimeType&gt;) -&gt; anyhow::Result&lt;Runtime&gt; {</span>
+<span class="line"><i>87</i>        // Initialise NVTX toggle once from environment (no-op when feature is off)</span>
+<span class="line"><i>88</i>        crate::nvtx::init();</span>
+<span class="line"><i>89</i></span>
+<span class="line"><i>90</i>        // worker id</span>
+<span class="line"><i>91</i>        let id = Arc::new(uuid::Uuid::new_v4().to_string());</span>
+<span class="line"><i>92</i></span>
+<span class="line"><i>93</i>        // create a cancellation token</span>
+<span class="line"><i>94</i>        let cancellation_token = CancellationToken::new();</span>
+<span class="line"><i>95</i></span>
+<span class="line"><i>96</i>        // create endpoint shutdown token as a child of the main token</span>
+<span class="line"><i>97</i>        let endpoint_shutdown_token = cancellation_token.child_token();</span>
+<span class="line"><i>98</i>        let shutdown_started = endpoint_shutdown_token.child_token();</span>
+<span class="line"><i>99</i></span>
+<span class="line"><i>100</i>        // secondary runtime for background ectd/nats tasks</span>
+<span class="line"><i>101</i>        let secondary = match secondary {</span>
+<span class="line"><i>102</i>            Some(secondary) =&gt; secondary,</span>
+<span class="line"><i>103</i>            None =&gt; {</span>
+<span class="line"><i>104</i>                tracing::debug!(&quot;Created secondary runtime with single thread&quot;);</span>
+<span class="line"><i>105</i>                RuntimeType::Shared(Arc::new(ManuallyDrop::new(</span>
+<span class="line"><i>106</i>                    RuntimeConfig::single_threaded().create_runtime()?,</span>
+<span class="line"><i>107</i>                )))</span>
+<span class="line"><i>108</i>            }</span>
+<span class="line"><i>109</i>        };</span>
+<span class="line"><i>110</i></span>
+<span class="line"><i>111</i>        // Initialize compute pool with default config</span>
+<span class="line"><i>112</i>        // This will be properly configured when created from RuntimeConfig</span>
+<span class="line"><i>113</i>        let compute_pool = None;</span>
+<span class="line"><i>114</i>        let block_in_place_permits = None;</span>
+<span class="line"><i>115</i></span>
+<span class="line"><i>116</i>        let velo_response_service =</span>
+<span class="line"><i>117</i>            Arc::new(crate::pipeline::network::velo_response::RuntimeService::new(runtime.clone()));</span>
+<span class="line"><i>118</i>        Ok(Runtime {</span>
+<span class="line"><i>119</i>            id,</span>
+<span class="line"><i>120</i>            primary: runtime,</span>
+<span class="line"><i>121</i>            secondary,</span>
+<span class="line"><i>122</i>            cancellation_token,</span>
+<span class="line"><i>123</i>            endpoint_shutdown_token,</span>
+<span class="line"><i>124</i>            shutdown_started,</span>
+<span class="line"><i>125</i>            graceful_shutdown_tracker: Arc::new(GracefulShutdownTracker::new()),</span>
+<span class="line"><i>126</i>            velo_response_service,</span>
+<span class="line"><i>127</i>            compute_pool,</span>
+<span class="line"><i>128</i>            block_in_place_permits,</span>
+<span class="line"><i>129</i>        })</span>
+<span class="line"><i>130</i>    }</span></code></pre></details><details class="source" id="src-runtime-2"><summary><b>源码 · DistributedRuntime 聚合 discovery、transport 与 metrics</b><small>lib/runtime/src/distributed.rs:139–188</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/distributed.rs#L139-L188" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>139</i>pub struct DistributedRuntime {</span>
+<span class="line"><i>140</i>    // local runtime</span>
+<span class="line"><i>141</i>    runtime: Runtime,</span>
+<span class="line"><i>142</i></span>
+<span class="line"><i>143</i>    nats_client: Option&lt;transports::nats::Client&gt;,</span>
+<span class="line"><i>144</i>    network_manager: Arc&lt;NetworkManager&gt;,</span>
+<span class="line"><i>145</i>    tcp_server: Arc&lt;OnceCell&lt;Arc&lt;transports::tcp::server::TcpStreamServer&gt;&gt;&gt;,</span>
+<span class="line"><i>146</i>    quic_response_server:</span>
+<span class="line"><i>147</i>        Arc&lt;OnceCell&lt;Arc&lt;crate::pipeline::network::quic_response::QuicResponseServer&gt;&gt;&gt;,</span>
+<span class="line"><i>148</i>    system_status_server: Arc&lt;OnceLock&lt;Arc&lt;system_status_server::SystemStatusServerInfo&gt;&gt;&gt;,</span>
+<span class="line"><i>149</i>    request_plane: RequestPlaneMode,</span>
+<span class="line"><i>150</i>    response_plane: ResponsePlaneMode,</span>
+<span class="line"><i>151</i></span>
+<span class="line"><i>152</i>    // Service discovery client</span>
+<span class="line"><i>153</i>    discovery_client: Arc&lt;dyn discovery::Discovery&gt;,</span>
+<span class="line"><i>154</i>    endpoint_registrations: Arc&lt;EndpointRegistrationManager&gt;,</span>
+<span class="line"><i>155</i></span>
+<span class="line"><i>156</i>    // Discovery metadata (only used for Kubernetes backend)</span>
+<span class="line"><i>157</i>    // Shared with system status server to expose via /metadata endpoint</span>
+<span class="line"><i>158</i>    discovery_metadata: Option&lt;Arc&lt;tokio::sync::RwLock&lt;discovery::DiscoveryMetadata&gt;&gt;&gt;,</span>
+<span class="line"><i>159</i></span>
+<span class="line"><i>160</i>    // local registry for components</span>
+<span class="line"><i>161</i>    // the registry allows us to use share runtime resources across instances of the same component object.</span>
+<span class="line"><i>162</i>    // take for example two instances of a client to the same remote component. The registry allows us to use</span>
+<span class="line"><i>163</i>    // a single endpoint watcher for both clients, this keeps the number background tasking watching specific</span>
+<span class="line"><i>164</i>    // paths in etcd to a minimum.</span>
+<span class="line"><i>165</i>    component_registry: component::Registry,</span>
+<span class="line"><i>166</i></span>
+<span class="line"><i>167</i>    endpoint_discovery_sources: Arc&lt;tokio::sync::Mutex&lt;EndpointDiscoverySourceMap&gt;&gt;,</span>
+<span class="line"><i>168</i>    routing_occupancy_states: Arc&lt;tokio::sync::Mutex&lt;RoutingOccupancyMap&gt;&gt;,</span>
+<span class="line"><i>169</i></span>
+<span class="line"><i>170</i>    // Health Status</span>
+<span class="line"><i>171</i>    system_health: Arc&lt;parking_lot::Mutex&lt;SystemHealth&gt;&gt;,</span>
+<span class="line"><i>172</i></span>
+<span class="line"><i>173</i>    // Local endpoint registry for in-process calls</span>
+<span class="line"><i>174</i>    local_endpoint_registry: crate::local_endpoint_registry::LocalEndpointRegistry,</span>
+<span class="line"><i>175</i></span>
+<span class="line"><i>176</i>    // This hierarchy&#x27;s own metrics registry</span>
+<span class="line"><i>177</i>    metrics_registry: MetricsRegistry,</span>
+<span class="line"><i>178</i></span>
+<span class="line"><i>179</i>    // Registry for /engine/* route callbacks</span>
+<span class="line"><i>180</i>    engine_routes: crate::engine_routes::EngineRouteRegistry,</span>
+<span class="line"><i>181</i></span>
+<span class="line"><i>182</i>    // Backs `/v1/metadata/{model_slug}/{model_suffix}/{filename}`.</span>
+<span class="line"><i>183</i>    metadata_artifacts: crate::metadata_registry::MetadataArtifactRegistry,</span>
+<span class="line"><i>184</i></span>
+<span class="line"><i>185</i>    // Resolved event transport kind — set once at construction time from</span>
+<span class="line"><i>186</i>    // DYN_EVENT_PLANE + discovery backend; returned by default_event_transport_kind().</span>
+<span class="line"><i>187</i>    event_transport_kind: crate::discovery::EventTransportKind,</span>
+<span class="line"><i>188</i>}</span></code></pre></details><p>Runtime 提供本地执行环境、后台执行器、任务和关闭；DistributedRuntime 增加成员发现、网络服务、组件注册、metrics、system health 与引擎控制路由。Python asyncio、Tokio 与推理引擎各有并发模型，不能用同一个线程池模型解释所有等待。</p></section><section id="runtime-identity" class="lesson"><div class="sectionhead"><h2>03 / namespace / component / endpoint / instance</h2><label class="done"><input type="checkbox" data-read="runtime-identity"> 已读</label></div><details class="source" id="src-runtime-3"><summary><b>源码 · Instance 描述可路由服务与 codec 能力</b><small>lib/runtime/src/component.rs:105–137</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/component.rs#L105-L137" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>105</i>#[derive(Clone)]</span>
+<span class="line"><i>106</i>pub struct Registry {</span>
+<span class="line"><i>107</i>    pub(crate) inner: Arc&lt;tokio::sync::Mutex&lt;RegistryInner&gt;&gt;,</span>
+<span class="line"><i>108</i>}</span>
+<span class="line"><i>109</i></span>
+<span class="line"><i>110</i>#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]</span>
+<span class="line"><i>111</i>pub struct Instance {</span>
+<span class="line"><i>112</i>    pub component: String,</span>
+<span class="line"><i>113</i>    pub endpoint: String,</span>
+<span class="line"><i>114</i>    pub namespace: String,</span>
+<span class="line"><i>115</i>    pub instance_id: u64,</span>
+<span class="line"><i>116</i>    pub transport: TransportType,</span>
+<span class="line"><i>117</i>    #[serde(default, skip_serializing_if = &quot;Option::is_none&quot;)]</span>
+<span class="line"><i>118</i>    pub device_type: Option&lt;DeviceType&gt;,</span>
+<span class="line"><i>119</i>    /// Payload codec accepted by this worker&#x27;s request-plane endpoint.</span>
+<span class="line"><i>120</i>    /// Missing metadata identifies a legacy JSON-only worker.</span>
+<span class="line"><i>121</i>    #[serde(default, skip_serializing_if = &quot;Option::is_none&quot;)]</span>
+<span class="line"><i>122</i>    pub request_plane_codec: Option&lt;RequestPlanePayloadCodec&gt;,</span>
+<span class="line"><i>123</i>}</span>
+<span class="line"><i>124</i></span>
+<span class="line"><i>125</i>impl Instance {</span>
+<span class="line"><i>126</i>    pub fn id(&amp;self) -&gt; u64 {</span>
+<span class="line"><i>127</i>        self.instance_id</span>
+<span class="line"><i>128</i>    }</span>
+<span class="line"><i>129</i></span>
+<span class="line"><i>130</i>    pub fn endpoint_id(&amp;self) -&gt; EndpointId {</span>
+<span class="line"><i>131</i>        EndpointId {</span>
+<span class="line"><i>132</i>            namespace: self.namespace.clone(),</span>
+<span class="line"><i>133</i>            component: self.component.clone(),</span>
+<span class="line"><i>134</i>            name: self.endpoint.clone(),</span>
+<span class="line"><i>135</i>        }</span>
+<span class="line"><i>136</i>    }</span>
+<span class="line"><i>137</i></span></code></pre></details><details class="source" id="src-runtime-4"><summary><b>源码 · Endpoint 持有组件、标签与自身 registry</b><small>lib/runtime/src/component.rs:364–379</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/component.rs#L364-L379" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>364</i>pub struct Endpoint {</span>
+<span class="line"><i>365</i>    component: Component,</span>
+<span class="line"><i>366</i></span>
+<span class="line"><i>367</i>    // todo - restrict alphabet</span>
+<span class="line"><i>368</i>    /// Endpoint name</span>
+<span class="line"><i>369</i>    name: String,</span>
+<span class="line"><i>370</i></span>
+<span class="line"><i>371</i>    /// Additional labels for metrics</span>
+<span class="line"><i>372</i>    labels: Vec&lt;(String, String)&gt;,</span>
+<span class="line"><i>373</i></span>
+<span class="line"><i>374</i>    /// This hierarchy&#x27;s own metrics registry</span>
+<span class="line"><i>375</i>    metrics_registry: crate::MetricsRegistry,</span>
+<span class="line"><i>376</i></span>
+<span class="line"><i>377</i>    /// Topology role shared by all clones of this endpoint.</span>
+<span class="line"><i>378</i>    lifecycle_operation_role: Arc&lt;OnceLock&lt;crate::telemetry::LifecycleOperationRole&gt;&gt;,</span>
+<span class="line"><i>379</i>}</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>标识</th><th>含义</th><th>边界</th></tr></thead><tbody><tr><td>namespace</td><td>逻辑部署/命名空间作用域</td><td>不自动等于 Kubernetes namespace</td></tr><tr><td>component</td><td>逻辑组件分组</td><td>可以有多个进程实例</td></tr><tr><td>endpoint</td><td>可调用的命名服务入口</td><td>不必等于 HTTP path</td></tr><tr><td>instance_id</td><td>一次 worker 注册身份</td><td>不是 Pod 名、DP rank 或 Trace ID</td></tr><tr><td>transport / codec</td><td>地址与 wire 能力</td><td>能发现不代表网络可达、模型可准入</td></tr></tbody></table></div></section><section id="runtime-planes" class="lesson"><div class="sectionhead"><h2>04 / 四种职责：Discovery、Request、Response、Event</h2><label class="done"><input type="checkbox" data-read="runtime-planes"> 已读</label></div><details class="source" id="src-runtime-5"><summary><b>源码 · 显式 overrides、backend 选择与 NATS 依赖</b><small>lib/runtime/src/distributed.rs:1053–1117</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/distributed.rs#L1053-L1117" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1053</i>    pub fn from_settings_with_overrides(</span>
+<span class="line"><i>1054</i>        discovery_backend: Option&lt;&amp;str&gt;,</span>
+<span class="line"><i>1055</i>        request_plane: Option&lt;&amp;str&gt;,</span>
+<span class="line"><i>1056</i>        event_plane: Option&lt;&amp;str&gt;,</span>
+<span class="line"><i>1057</i>    ) -&gt; Result&lt;DistributedConfig&gt; {</span>
+<span class="line"><i>1058</i>        let request_plane = match request_plane {</span>
+<span class="line"><i>1059</i>            Some(value) =&gt; value.parse()?,</span>
+<span class="line"><i>1060</i>            None =&gt; RequestPlaneMode::from_env()?,</span>
+<span class="line"><i>1061</i>        };</span>
+<span class="line"><i>1062</i></span>
+<span class="line"><i>1063</i>        // Determine the discovery backend first — we need it to compute the NATS default below.</span>
+<span class="line"><i>1064</i>        // Valid values for DYN_DISCOVERY_BACKEND: &quot;kubernetes&quot;, &quot;etcd&quot; (default), &quot;file&quot;, &quot;mem&quot;</span>
+<span class="line"><i>1065</i>        let backend_str = discovery_backend</span>
+<span class="line"><i>1066</i>            .map(str::to_owned)</span>
+<span class="line"><i>1067</i>            .or_else(|| std::env::var(&quot;DYN_DISCOVERY_BACKEND&quot;).ok())</span>
+<span class="line"><i>1068</i>            .unwrap_or_else(|| &quot;etcd&quot;.to_string());</span>
+<span class="line"><i>1069</i></span>
+<span class="line"><i>1070</i>        let discovery_backend = match backend_str.as_str() {</span>
+<span class="line"><i>1071</i>            &quot;kubernetes&quot; =&gt; {</span>
+<span class="line"><i>1072</i>                tracing::info!(&quot;Using Kubernetes discovery backend&quot;);</span>
+<span class="line"><i>1073</i>                DiscoveryBackend::Kubernetes</span>
+<span class="line"><i>1074</i>            }</span>
+<span class="line"><i>1075</i>            other =&gt; {</span>
+<span class="line"><i>1076</i>                let selector: kv::Selector = other.parse().map_err(|_| {</span>
+<span class="line"><i>1077</i>                    anyhow::anyhow!(</span>
+<span class="line"><i>1078</i>                        &quot;Unknown DYN_DISCOVERY_BACKEND value: &#x27;{other}&#x27;. \</span>
+<span class="line"><i>1079</i>                         Valid options: kubernetes, etcd, file, mem&quot;</span>
+<span class="line"><i>1080</i>                    )</span>
+<span class="line"><i>1081</i>                })?;</span>
+<span class="line"><i>1082</i>                DiscoveryBackend::KvStore(selector)</span>
+<span class="line"><i>1083</i>            }</span>
+<span class="line"><i>1084</i>        };</span>
+<span class="line"><i>1085</i></span>
+<span class="line"><i>1086</i>        // Resolve event transport kind once — the single source of truth used both to</span>
+<span class="line"><i>1087</i>        // decide whether to open a NATS connection and to answer</span>
+<span class="line"><i>1088</i>        // `DistributedRuntime::default_event_transport_kind()` later.</span>
+<span class="line"><i>1089</i>        let event_transport_kind = match event_plane {</span>
+<span class="line"><i>1090</i>            Some(&quot;nats&quot;) =&gt; crate::discovery::EventTransportKind::Nats,</span>
+<span class="line"><i>1091</i>            Some(&quot;zmq&quot; | &quot;&quot;) =&gt; crate::discovery::EventTransportKind::Zmq,</span>
+<span class="line"><i>1092</i>            Some(other) =&gt; {</span>
+<span class="line"><i>1093</i>                anyhow::bail!(&quot;Invalid event plane &#x27;{other}&#x27;. Valid options are: &#x27;nats&#x27;, &#x27;zmq&#x27;&quot;)</span>
+<span class="line"><i>1094</i>            }</span>
+<span class="line"><i>1095</i>            None =&gt; discovery_backend.resolve_event_transport_kind()?,</span>
+<span class="line"><i>1096</i>        };</span>
+<span class="line"><i>1097</i></span>
+<span class="line"><i>1098</i>        // Connect to NATS only when a plane uses it. NATS_SERVER alone says where NATS is, not</span>
+<span class="line"><i>1099</i>        // that this process needs it: the operator sets it in every pod when NATS is installed.</span>
+<span class="line"><i>1100</i>        let nats_enabled = request_plane.is_nats()</span>
+<span class="line"><i>1101</i>            || matches!(</span>
+<span class="line"><i>1102</i>                event_transport_kind,</span>
+<span class="line"><i>1103</i>                crate::discovery::EventTransportKind::Nats</span>
+<span class="line"><i>1104</i>            );</span>
+<span class="line"><i>1105</i></span>
+<span class="line"><i>1106</i>        Ok(DistributedConfig {</span>
+<span class="line"><i>1107</i>            discovery_backend,</span>
+<span class="line"><i>1108</i>            nats_config: if nats_enabled {</span>
+<span class="line"><i>1109</i>                Some(nats::ClientOptions::default())</span>
+<span class="line"><i>1110</i>            } else {</span>
+<span class="line"><i>1111</i>                None</span>
+<span class="line"><i>1112</i>            },</span>
+<span class="line"><i>1113</i>            request_plane,</span>
+<span class="line"><i>1114</i>            response_plane: None,</span>
+<span class="line"><i>1115</i>            event_transport_kind,</span>
+<span class="line"><i>1116</i>        })</span>
+<span class="line"><i>1117</i>    }</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>平面</th><th>当前实现选择</th><th>传递内容</th></tr></thead><tbody><tr><td>Discovery</td><td>Kubernetes / etcd / file / mem</td><td>endpoint、model、event source 等注册记录</td></tr><tr><td>Request</td><td>TCP（默认） / NATS</td><td>请求 payload、控制与 response connection 元数据</td></tr><tr><td>Response</td><td>TCP / QUIC / Velo</td><td>响应 stream 与控制交互，须按双方配置兼容</td></tr><tr><td>Event</td><td>ZMQ / NATS</td><td>topic 的状态事件，不是 KV 张量数据</td></tr></tbody></table></div><p>仅存在 NATS_SERVER 不会强制进程建立 NATS 连接；只有选中的请求面/事件面需要它才连接。Discovery 与事件面默认值有解析关系，不能把任一个环境变量当所有平面的统一开关。</p></section><section id="runtime-codec" class="lesson"><div class="sectionhead"><h2>05 / 传输模式与 payload 编码是两个配置</h2><label class="done"><input type="checkbox" data-read="runtime-codec"> 已读</label></div><details class="source" id="src-runtime-6"><summary><b>源码 · RequestPlaneMode 默认 TCP</b><small>lib/runtime/src/distributed.rs:1170–1200</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/distributed.rs#L1170-L1200" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1170</i>#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]</span>
+<span class="line"><i>1171</i>pub enum RequestPlaneMode {</span>
+<span class="line"><i>1172</i>    /// Use NATS for request plane</span>
+<span class="line"><i>1173</i>    Nats,</span>
+<span class="line"><i>1174</i>    /// Use raw TCP for request plane with msgpack support</span>
+<span class="line"><i>1175</i>    #[default]</span>
+<span class="line"><i>1176</i>    Tcp,</span>
+<span class="line"><i>1177</i>}</span>
+<span class="line"><i>1178</i></span>
+<span class="line"><i>1179</i>impl fmt::Display for RequestPlaneMode {</span>
+<span class="line"><i>1180</i>    fn fmt(&amp;self, f: &amp;mut fmt::Formatter&lt;&#x27;_&gt;) -&gt; fmt::Result {</span>
+<span class="line"><i>1181</i>        match self {</span>
+<span class="line"><i>1182</i>            Self::Nats =&gt; write!(f, &quot;nats&quot;),</span>
+<span class="line"><i>1183</i>            Self::Tcp =&gt; write!(f, &quot;tcp&quot;),</span>
+<span class="line"><i>1184</i>        }</span>
+<span class="line"><i>1185</i>    }</span>
+<span class="line"><i>1186</i>}</span>
+<span class="line"><i>1187</i></span>
+<span class="line"><i>1188</i>impl std::str::FromStr for RequestPlaneMode {</span>
+<span class="line"><i>1189</i>    type Err = anyhow::Error;</span>
+<span class="line"><i>1190</i></span>
+<span class="line"><i>1191</i>    fn from_str(s: &amp;str) -&gt; std::result::Result&lt;Self, Self::Err&gt; {</span>
+<span class="line"><i>1192</i>        match s.to_lowercase().as_str() {</span>
+<span class="line"><i>1193</i>            &quot;nats&quot; =&gt; Ok(Self::Nats),</span>
+<span class="line"><i>1194</i>            &quot;tcp&quot; =&gt; Ok(Self::Tcp),</span>
+<span class="line"><i>1195</i>            _ =&gt; Err(anyhow::anyhow!(</span>
+<span class="line"><i>1196</i>                &quot;Invalid request plane mode: &#x27;{}&#x27;. Valid options are: &#x27;nats&#x27;, &#x27;tcp&#x27;&quot;,</span>
+<span class="line"><i>1197</i>                s</span>
+<span class="line"><i>1198</i>            )),</span>
+<span class="line"><i>1199</i>        }</span>
+<span class="line"><i>1200</i>    }</span></code></pre></details><details class="source" id="src-runtime-7"><summary><b>源码 · 进程级 ResponsePlaneMode</b><small>lib/runtime/src/pipeline/network.rs:58–90</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/network.rs#L58-L90" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>58</i>/// Process-wide response transport. Frontends and workers must use the same mode.</span>
+<span class="line"><i>59</i>#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]</span>
+<span class="line"><i>60</i>pub enum ResponsePlaneMode {</span>
+<span class="line"><i>61</i>    #[default]</span>
+<span class="line"><i>62</i>    Tcp,</span>
+<span class="line"><i>63</i>    Quic,</span>
+<span class="line"><i>64</i>    Velo,</span>
+<span class="line"><i>65</i>}</span>
+<span class="line"><i>66</i></span>
+<span class="line"><i>67</i>impl ResponsePlaneMode {</span>
+<span class="line"><i>68</i>    pub fn configured() -&gt; Result&lt;Self&gt; {</span>
+<span class="line"><i>69</i>        if let Some(mode) = RESPONSE_PLANE_MODE.get() {</span>
+<span class="line"><i>70</i>            return Ok(*mode);</span>
+<span class="line"><i>71</i>        }</span>
+<span class="line"><i>72</i>        let value =</span>
+<span class="line"><i>73</i>            std::env::var(crate::config::environment_names::response_plane::DYN_RESPONSE_PLANE)</span>
+<span class="line"><i>74</i>                .ok();</span>
+<span class="line"><i>75</i>        let mode = Self::from_config_value(value.as_deref())?;</span>
+<span class="line"><i>76</i>        Ok(*RESPONSE_PLANE_MODE.get_or_init(|| mode))</span>
+<span class="line"><i>77</i>    }</span>
+<span class="line"><i>78</i></span>
+<span class="line"><i>79</i>    fn from_config_value(value: Option&lt;&amp;str&gt;) -&gt; Result&lt;Self&gt; {</span>
+<span class="line"><i>80</i>        match value {</span>
+<span class="line"><i>81</i>            None | Some(&quot;tcp&quot;) =&gt; Ok(Self::Tcp),</span>
+<span class="line"><i>82</i>            Some(&quot;quic&quot;) =&gt; Ok(Self::Quic),</span>
+<span class="line"><i>83</i>            Some(&quot;velo&quot;) =&gt; Ok(Self::Velo),</span>
+<span class="line"><i>84</i>            Some(other) =&gt; anyhow::bail!(</span>
+<span class="line"><i>85</i>                &quot;invalid {} value &#x27;{other}&#x27;; expected &#x27;tcp&#x27;, &#x27;quic&#x27;, or &#x27;velo&#x27;&quot;,</span>
+<span class="line"><i>86</i>                crate::config::environment_names::response_plane::DYN_RESPONSE_PLANE</span>
+<span class="line"><i>87</i>            ),</span>
+<span class="line"><i>88</i>        }</span>
+<span class="line"><i>89</i>    }</span>
+<span class="line"><i>90</i></span></code></pre></details><details class="source" id="src-runtime-8"><summary><b>源码 · serde legacy JSON 与当前 msgpack 配置默认</b><small>lib/runtime/src/pipeline/network.rs:117–153</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/network.rs#L117-L153" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>117</i>#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]</span>
+<span class="line"><i>118</i>#[serde(rename_all = &quot;snake_case&quot;)]</span>
+<span class="line"><i>119</i>pub enum RequestPlanePayloadCodec {</span>
+<span class="line"><i>120</i>    /// The serde default deliberately remains JSON for wire compatibility with</span>
+<span class="line"><i>121</i>    /// control messages produced before the payload codec field existed.</span>
+<span class="line"><i>122</i>    #[default]</span>
+<span class="line"><i>123</i>    Json,</span>
+<span class="line"><i>124</i>    Msgpack,</span>
+<span class="line"><i>125</i>}</span>
+<span class="line"><i>126</i></span>
+<span class="line"><i>127</i>impl RequestPlanePayloadCodec {</span>
+<span class="line"><i>128</i>    pub fn configured() -&gt; Self {</span>
+<span class="line"><i>129</i>        *REQUEST_PLANE_PAYLOAD_CODEC.get_or_init(Self::from_env)</span>
+<span class="line"><i>130</i>    }</span>
+<span class="line"><i>131</i></span>
+<span class="line"><i>132</i>    fn from_env() -&gt; Self {</span>
+<span class="line"><i>133</i>        let value =</span>
+<span class="line"><i>134</i>            std::env::var(crate::config::environment_names::request_plane::DYN_REQUEST_PLANE_CODEC)</span>
+<span class="line"><i>135</i>                .ok();</span>
+<span class="line"><i>136</i>        Self::from_config_value(value.as_deref())</span>
+<span class="line"><i>137</i>    }</span>
+<span class="line"><i>138</i></span>
+<span class="line"><i>139</i>    fn from_config_value(value: Option&lt;&amp;str&gt;) -&gt; Self {</span>
+<span class="line"><i>140</i>        match value {</span>
+<span class="line"><i>141</i>            None | Some(&quot;&quot;) | Some(&quot;msgpack&quot;) =&gt; Self::Msgpack,</span>
+<span class="line"><i>142</i>            Some(&quot;json&quot;) =&gt; Self::Json,</span>
+<span class="line"><i>143</i>            Some(other) =&gt; {</span>
+<span class="line"><i>144</i>                tracing::warn!(</span>
+<span class="line"><i>145</i>                    env_var =</span>
+<span class="line"><i>146</i>                        crate::config::environment_names::request_plane::DYN_REQUEST_PLANE_CODEC,</span>
+<span class="line"><i>147</i>                    value = other,</span>
+<span class="line"><i>148</i>                    &quot;invalid request plane payload codec, defaulting to msgpack&quot;</span>
+<span class="line"><i>149</i>                );</span>
+<span class="line"><i>150</i>                Self::Msgpack</span>
+<span class="line"><i>151</i>            }</span>
+<span class="line"><i>152</i>        }</span>
+<span class="line"><i>153</i>    }</span></code></pre></details><p>当前配置默认 payload codec 为 msgpack，而旧 wire 缺失字段的 serde 默认仍为 JSON；两种 default 面向不同边界。Instance 的缺失 codec 表示 legacy JSON-only 能力，选路/发送需按能力兼容。响应模式独立选择并在进程内缓存，不是每请求随意混用。</p></section><section id="runtime-startup" class="lesson"><div class="sectionhead"><h2>06 / 初始化：依赖可用后才监听</h2><label class="done"><input type="checkbox" data-read="runtime-startup"> 已读</label></div><details class="source" id="src-runtime-9"><summary><b>源码 · 初始化取消与 discovery / NATS 依赖</b><small>lib/runtime/src/distributed.rs:215–266</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/distributed.rs#L215-L266" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>215</i>    pub async fn new(runtime: Runtime, config: DistributedConfig) -&gt; Result&lt;Self&gt; {</span>
+<span class="line"><i>216</i>        Self::new_with_probe_policy(</span>
+<span class="line"><i>217</i>            runtime,</span>
+<span class="line"><i>218</i>            config,</span>
+<span class="line"><i>219</i>            system_status_server::SystemProbePolicy::Worker,</span>
+<span class="line"><i>220</i>        )</span>
+<span class="line"><i>221</i>        .await</span>
+<span class="line"><i>222</i>    }</span>
+<span class="line"><i>223</i></span>
+<span class="line"><i>224</i>    /// Initialize runtime dependencies, then bind HTTP with the selected probe policy.</span>
+<span class="line"><i>225</i>    /// Shutdown cancels pending initialization; no listener exists until it completes.</span>
+<span class="line"><i>226</i>    pub async fn new_with_probe_policy(</span>
+<span class="line"><i>227</i>        runtime: Runtime,</span>
+<span class="line"><i>228</i>        config: DistributedConfig,</span>
+<span class="line"><i>229</i>        policy: system_status_server::SystemProbePolicy,</span>
+<span class="line"><i>230</i>    ) -&gt; Result&lt;Self&gt; {</span>
+<span class="line"><i>231</i>        let shutdown = runtime.shutdown_started_token();</span>
+<span class="line"><i>232</i>        tokio::select! {</span>
+<span class="line"><i>233</i>            biased;</span>
+<span class="line"><i>234</i>            _ = shutdown.cancelled() =&gt; anyhow::bail!(&quot;runtime shut down during initialization&quot;),</span>
+<span class="line"><i>235</i>            result = Self::build(runtime, config, policy) =&gt; result,</span>
+<span class="line"><i>236</i>        }</span>
+<span class="line"><i>237</i>    }</span>
+<span class="line"><i>238</i></span>
+<span class="line"><i>239</i>    async fn build(</span>
+<span class="line"><i>240</i>        runtime: Runtime,</span>
+<span class="line"><i>241</i>        config: DistributedConfig,</span>
+<span class="line"><i>242</i>        policy: system_status_server::SystemProbePolicy,</span>
+<span class="line"><i>243</i>    ) -&gt; Result&lt;Self&gt; {</span>
+<span class="line"><i>244</i>        let (discovery_backend, nats_config, request_plane, response_plane, event_transport_kind) =</span>
+<span class="line"><i>245</i>            config.dissolve();</span>
+<span class="line"><i>246</i>        let response_plane = match response_plane {</span>
+<span class="line"><i>247</i>            Some(mode) =&gt; mode,</span>
+<span class="line"><i>248</i>            None =&gt; ResponsePlaneMode::configured()?,</span>
+<span class="line"><i>249</i>        };</span>
+<span class="line"><i>250</i></span>
+<span class="line"><i>251</i>        let config = crate::config::RuntimeConfig::from_settings()?;</span>
+<span class="line"><i>252</i>        let nats_client = match nats_config {</span>
+<span class="line"><i>253</i>            Some(nc) =&gt; Some(</span>
+<span class="line"><i>254</i>                nc.connect_with_cancellation(runtime.primary_token())</span>
+<span class="line"><i>255</i>                    .await?,</span>
+<span class="line"><i>256</i>            ),</span>
+<span class="line"><i>257</i>            None =&gt; None,</span>
+<span class="line"><i>258</i>        };</span>
+<span class="line"><i>259</i></span>
+<span class="line"><i>260</i>        // Initialize discovery client based on backend configuration</span>
+<span class="line"><i>261</i>        let (discovery_client, discovery_metadata) = match discovery_backend {</span>
+<span class="line"><i>262</i>            DiscoveryBackend::Kubernetes =&gt; {</span>
+<span class="line"><i>263</i>                tracing::info!(&quot;Initializing Kubernetes discovery backend&quot;);</span>
+<span class="line"><i>264</i>                let metadata = Arc::new(tokio::sync::RwLock::new(</span>
+<span class="line"><i>265</i>                    crate::discovery::DiscoveryMetadata::new(),</span>
+<span class="line"><i>266</i>                ));</span></code></pre></details><p>构建 DistributedRuntime 可能连接外部服务；new_with_probe_policy 在初始化期间监听 shutdown，尚未完成时没有 HTTP listener。启动失败、readiness 失败和请求失败应分别诊断，不能在无监听时只调查应用路由。</p></section><section id="runtime-endpoint-start" class="lesson"><div class="sectionhead"><h2>07 / endpoint 注册：metrics、handler、health、server、discovery</h2><label class="done"><input type="checkbox" data-read="runtime-endpoint-start"> 已读</label></div><details class="source" id="src-runtime-10"><summary><b>源码 · bind_endpoint、metrics 与请求服务准备</b><small>lib/runtime/src/component/endpoint.rs:134–166</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/component/endpoint.rs#L134-L166" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>134</i>    pub async fn start_with_registration(self) -&gt; Result&lt;StartedEndpoint&gt; {</span>
+<span class="line"><i>135</i>        let (endpoint, handler, metrics_labels, graceful_shutdown, health_check_payload) =</span>
+<span class="line"><i>136</i>            self.build_internal()?.dissolve();</span>
+<span class="line"><i>137</i>        let connection_id = endpoint.drt().connection_id();</span>
+<span class="line"><i>138</i>        let endpoint_id = endpoint.id();</span>
+<span class="line"><i>139</i></span>
+<span class="line"><i>140</i>        tracing::debug!(&quot;Starting endpoint: {endpoint_id}&quot;);</span>
+<span class="line"><i>141</i></span>
+<span class="line"><i>142</i>        let metrics_labels: Option&lt;Vec&lt;(&amp;str, &amp;str)&gt;&gt; = metrics_labels</span>
+<span class="line"><i>143</i>            .as_ref()</span>
+<span class="line"><i>144</i>            .map(|v| v.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect());</span>
+<span class="line"><i>145</i>        handler.bind_endpoint(&amp;endpoint);</span>
+<span class="line"><i>146</i>        // Add metrics to the handler. The endpoint provides additional information to the handler.</span>
+<span class="line"><i>147</i>        handler.add_metrics(&amp;endpoint, metrics_labels.as_deref())?;</span>
+<span class="line"><i>148</i></span>
+<span class="line"><i>149</i>        // This creates a child token of the runtime&#x27;s endpoint_shutdown_token. That token is</span>
+<span class="line"><i>150</i>        // cancelled first as part of graceful shutdown. See Runtime::shutdown.</span>
+<span class="line"><i>151</i>        let endpoint_shutdown_token = endpoint.drt().child_token();</span>
+<span class="line"><i>152</i></span>
+<span class="line"><i>153</i>        let system_health = endpoint.drt().system_health();</span>
+<span class="line"><i>154</i></span>
+<span class="line"><i>155</i>        // Create clones for the async closure</span>
+<span class="line"><i>156</i>        let namespace_name_for_task = endpoint_id.namespace.clone();</span>
+<span class="line"><i>157</i>        let component_name_for_task = endpoint_id.component.clone();</span>
+<span class="line"><i>158</i>        let endpoint_name_for_task = endpoint_id.name.clone();</span>
+<span class="line"><i>159</i></span>
+<span class="line"><i>160</i>        // Get the unified request plane server</span>
+<span class="line"><i>161</i>        let server = endpoint.drt().request_plane_server().await?;</span>
+<span class="line"><i>162</i>        let transport = build_transport_type(&amp;endpoint, &amp;endpoint_id, connection_id).await?;</span>
+<span class="line"><i>163</i></span>
+<span class="line"><i>164</i>        // Register health check target in SystemHealth if provided</span>
+<span class="line"><i>165</i>        if let Some(health_check_payload) = &amp;health_check_payload {</span>
+<span class="line"><i>166</i>            if system_health.lock().health_check_enabled()</span></code></pre></details><details class="source" id="src-runtime-11"><summary><b>源码 · canary 约束、local registry 与 server 注册</b><small>lib/runtime/src/component/endpoint.rs:167–218</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/component/endpoint.rs#L167-L218" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>167</i>                &amp;&amp; endpoint</span>
+<span class="line"><i>168</i>                    .drt()</span>
+<span class="line"><i>169</i>                    .local_endpoint_registry()</span>
+<span class="line"><i>170</i>                    .get(&amp;endpoint.name)</span>
+<span class="line"><i>171</i>                    .is_none()</span>
+<span class="line"><i>172</i>            {</span>
+<span class="line"><i>173</i>                anyhow::bail!(</span>
+<span class="line"><i>174</i>                    &quot;Endpoint &#x27;{}&#x27; has a health_check_payload and canary is enabled, \</span>
+<span class="line"><i>175</i>                     but no local engine is registered. Call .register_local_engine() \</span>
+<span class="line"><i>176</i>                     before .start() so the canary health check can function.&quot;,</span>
+<span class="line"><i>177</i>                    endpoint.name</span>
+<span class="line"><i>178</i>                );</span>
+<span class="line"><i>179</i>            }</span>
+<span class="line"><i>180</i></span>
+<span class="line"><i>181</i>            let instance = Instance {</span>
+<span class="line"><i>182</i>                component: endpoint_id.component.clone(),</span>
+<span class="line"><i>183</i>                endpoint: endpoint_id.name.clone(),</span>
+<span class="line"><i>184</i>                namespace: endpoint_id.namespace.clone(),</span>
+<span class="line"><i>185</i>                instance_id: connection_id,</span>
+<span class="line"><i>186</i>                transport: transport.clone(),</span>
+<span class="line"><i>187</i>                device_type: endpoint_device_type(),</span>
+<span class="line"><i>188</i>                request_plane_codec: Some(RequestPlanePayloadCodec::configured()),</span>
+<span class="line"><i>189</i>            };</span>
+<span class="line"><i>190</i>            tracing::debug!(endpoint_name = %endpoint.name, &quot;Registering endpoint health check target&quot;);</span>
+<span class="line"><i>191</i>            let guard = system_health.lock();</span>
+<span class="line"><i>192</i>            guard.register_health_check_target(</span>
+<span class="line"><i>193</i>                &amp;endpoint.name,</span>
+<span class="line"><i>194</i>                instance,</span>
+<span class="line"><i>195</i>                health_check_payload.clone(),</span>
+<span class="line"><i>196</i>            );</span>
+<span class="line"><i>197</i>            if let Some(notifier) = guard.get_endpoint_health_check_notifier(&amp;endpoint.name) {</span>
+<span class="line"><i>198</i>                handler.set_endpoint_health_check_notifier(notifier)?;</span>
+<span class="line"><i>199</i>            }</span>
+<span class="line"><i>200</i>        }</span>
+<span class="line"><i>201</i></span>
+<span class="line"><i>202</i>        tracing::debug!(</span>
+<span class="line"><i>203</i>            endpoint = %endpoint_name_for_task,</span>
+<span class="line"><i>204</i>            transport = server.transport_name(),</span>
+<span class="line"><i>205</i>            &quot;Registering endpoint with request plane server&quot;</span>
+<span class="line"><i>206</i>        );</span>
+<span class="line"><i>207</i></span>
+<span class="line"><i>208</i>        // Register endpoint with the server (unified interface)</span>
+<span class="line"><i>209</i>        server</span>
+<span class="line"><i>210</i>            .register_endpoint(</span>
+<span class="line"><i>211</i>                endpoint_name_for_task.clone(),</span>
+<span class="line"><i>212</i>                handler,</span>
+<span class="line"><i>213</i>                connection_id,</span>
+<span class="line"><i>214</i>                namespace_name_for_task.clone(),</span>
+<span class="line"><i>215</i>                component_name_for_task.clone(),</span>
+<span class="line"><i>216</i>                system_health.clone(),</span>
+<span class="line"><i>217</i>            )</span>
+<span class="line"><i>218</i>            .await?;</span></code></pre></details><p>handler 要绑定 endpoint 并添加 metrics，随后准备请求服务和健康检查。canary 需要 local engine，缺失时启动失败；网络 handler 与进程内健康检查入口属于两扇门。把 endpoint 发布到发现面只是启动链中的一步，不能替代 engine-ready 或 model-serving-ready。</p></section><section id="runtime-discovery" class="lesson"><div class="sectionhead"><h2>08 / 统一 Discovery trait 与业务准入边界</h2><label class="done"><input type="checkbox" data-read="runtime-discovery"> 已读</label></div><details class="source" id="src-runtime-12"><summary><b>源码 · 连接探测、身份与模型注册冲突检查</b><small>lib/runtime/src/discovery/mod.rs:1567–1613</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/discovery/mod.rs#L1567-L1613" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1567</i>pub trait Discovery: Send + Sync {</span>
+<span class="line"><i>1568</i>    /// Probe required discovery connectivity without registering a worker.</span>
+<span class="line"><i>1569</i>    /// In-process implementations have no remote dependency. Remote backends</span>
+<span class="line"><i>1570</i>    /// override this with a read against their authoritative store.</span>
+<span class="line"><i>1571</i>    async fn check_connection(&amp;self) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>1572</i>        Ok(())</span>
+<span class="line"><i>1573</i>    }</span>
+<span class="line"><i>1574</i></span>
+<span class="line"><i>1575</i>    /// Returns a unique identifier for this worker (e.g lease id if using etcd or generated id for memory store)</span>
+<span class="line"><i>1576</i>    /// Endpoint and model objects created by this worker use this ID. Event</span>
+<span class="line"><i>1577</i>    /// channels and sources use a publisher-level ID because a worker can own</span>
+<span class="line"><i>1578</i>    /// more than one publisher for the same topic.</span>
+<span class="line"><i>1579</i>    fn instance_id(&amp;self) -&gt; u64;</span>
+<span class="line"><i>1580</i></span>
+<span class="line"><i>1581</i>    /// Registers an object in the discovery plane with the instance id</span>
+<span class="line"><i>1582</i>    async fn register(&amp;self, spec: DiscoverySpec) -&gt; Result&lt;DiscoveryInstance&gt; {</span>
+<span class="line"><i>1583</i>        let (namespace, component, endpoint, requested_identity) = match &amp;spec {</span>
+<span class="line"><i>1584</i>            DiscoverySpec::Model {</span>
+<span class="line"><i>1585</i>                namespace,</span>
+<span class="line"><i>1586</i>                component,</span>
+<span class="line"><i>1587</i>                endpoint,</span>
+<span class="line"><i>1588</i>                card_json,</span>
+<span class="line"><i>1589</i>                model_suffix,</span>
+<span class="line"><i>1590</i>                ..</span>
+<span class="line"><i>1591</i>            } =&gt; (</span>
+<span class="line"><i>1592</i>                namespace.clone(),</span>
+<span class="line"><i>1593</i>                component.clone(),</span>
+<span class="line"><i>1594</i>                endpoint.clone(),</span>
+<span class="line"><i>1595</i>                extract_model_registration_identity(card_json, model_suffix.as_deref())?,</span>
+<span class="line"><i>1596</i>            ),</span>
+<span class="line"><i>1597</i>            _ =&gt; return self.register_internal(spec).await,</span>
+<span class="line"><i>1598</i>        };</span>
+<span class="line"><i>1599</i></span>
+<span class="line"><i>1600</i>        let query = DiscoveryQuery::EndpointModels {</span>
+<span class="line"><i>1601</i>            namespace: namespace.clone(),</span>
+<span class="line"><i>1602</i>            component: component.clone(),</span>
+<span class="line"><i>1603</i>            endpoint: endpoint.clone(),</span>
+<span class="line"><i>1604</i>        };</span>
+<span class="line"><i>1605</i></span>
+<span class="line"><i>1606</i>        if let Some(conflicting_name) =</span>
+<span class="line"><i>1607</i>            find_conflicting_model_name(&amp;self.list(query.clone()).await?, &amp;requested_identity)?</span>
+<span class="line"><i>1608</i>        {</span>
+<span class="line"><i>1609</i>            let requested_name = &amp;requested_identity.display_name;</span>
+<span class="line"><i>1610</i>            anyhow::bail!(</span>
+<span class="line"><i>1611</i>                &quot;Cannot register model &#x27;{requested_name}&#x27; on endpoint &#x27;{namespace}/{component}/{endpoint}&#x27;: a different model &#x27;{conflicting_name}&#x27; is already registered there&quot;</span>
+<span class="line"><i>1612</i>            );</span>
+<span class="line"><i>1613</i>        }</span></code></pre></details><p>Discovery 抽象提供注册/列举/监听/撤销；runtime 层的 model 名冲突检查与 LLM 层 WorkerSet checksum 准入是两道不同保护。注册检查不等价于集群共识；业务侧还要过滤被接纳 worker，处理增删、重连和延迟构建结果。</p></section><section id="runtime-envelope" class="lesson"><div class="sectionhead"><h2>09 / 请求信封：控制与业务 payload 分离</h2><label class="done"><input type="checkbox" data-read="runtime-envelope"> 已读</label></div><details class="source" id="src-runtime-13"><summary><b>源码 · RequestControlMessage 与 two-part envelope</b><small>lib/runtime/src/pipeline/network/egress/addressed_router.rs:414–470</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/network/egress/addressed_router.rs#L414-L470" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>414</i>fn build_request_envelope&lt;T&gt;(</span>
+<span class="line"><i>415</i>    context: &amp;context::Context&lt;()&gt;,</span>
+<span class="line"><i>416</i>    recv_conn_info: ConnectionInfo,</span>
+<span class="line"><i>417</i>    send_conn_info: Option&lt;ConnectionInfo&gt;,</span>
+<span class="line"><i>418</i>    request: Option&lt;&amp;T&gt;,</span>
+<span class="line"><i>419</i>    payload_codec: RequestPlanePayloadCodec,</span>
+<span class="line"><i>420</i>) -&gt; Result&lt;bytes::Bytes, Error&gt;</span>
+<span class="line"><i>421</i>where</span>
+<span class="line"><i>422</i>    T: serde::Serialize,</span>
+<span class="line"><i>423</i>{</span>
+<span class="line"><i>424</i>    let request_id = context.id();</span>
+<span class="line"><i>425</i>    let request_type = if send_conn_info.is_some() {</span>
+<span class="line"><i>426</i>        RequestType::ManyIn</span>
+<span class="line"><i>427</i>    } else {</span>
+<span class="line"><i>428</i>        RequestType::SingleIn</span>
+<span class="line"><i>429</i>    };</span>
+<span class="line"><i>430</i>    let control_message = RequestControlMessage {</span>
+<span class="line"><i>431</i>        id: request_id.to_string(),</span>
+<span class="line"><i>432</i>        request_type,</span>
+<span class="line"><i>433</i>        response_type: ResponseType::ManyOut,</span>
+<span class="line"><i>434</i>        payload_codec,</span>
+<span class="line"><i>435</i>        connection_info: recv_conn_info,</span>
+<span class="line"><i>436</i>        metadata: context.metadata().clone(),</span>
+<span class="line"><i>437</i>        frontend_send_ts_ns: None,</span>
+<span class="line"><i>438</i>        request_stream_connection_info: send_conn_info,</span>
+<span class="line"><i>439</i>    };</span>
+<span class="line"><i>440</i></span>
+<span class="line"><i>441</i>    let ctrl = serialize_control_message(&amp;control_message)?;</span>
+<span class="line"><i>442</i>    let data: Option&lt;Vec&lt;u8&gt;&gt; = match request {</span>
+<span class="line"><i>443</i>        Some(req) =&gt; Some(payload_codec.encode(req)?),</span>
+<span class="line"><i>444</i>        None =&gt; None,</span>
+<span class="line"><i>445</i>    };</span>
+<span class="line"><i>446</i></span>
+<span class="line"><i>447</i>    let msg = match data {</span>
+<span class="line"><i>448</i>        Some(d) =&gt; {</span>
+<span class="line"><i>449</i>            tracing::trace!(</span>
+<span class="line"><i>450</i>                request_id,</span>
+<span class="line"><i>451</i>                &quot;packaging two-part message; ctrl: {} bytes, data: {} bytes&quot;,</span>
+<span class="line"><i>452</i>                ctrl.len(),</span>
+<span class="line"><i>453</i>                d.len(),</span>
+<span class="line"><i>454</i>            );</span>
+<span class="line"><i>455</i>            TwoPartMessage::from_parts(ctrl.into(), d.into())</span>
+<span class="line"><i>456</i>        }</span>
+<span class="line"><i>457</i>        None =&gt; {</span>
+<span class="line"><i>458</i>            tracing::trace!(</span>
+<span class="line"><i>459</i>                request_id,</span>
+<span class="line"><i>460</i>                &quot;packaging bidirectional header-only envelope; ctrl: {} bytes&quot;,</span>
+<span class="line"><i>461</i>                ctrl.len(),</span>
+<span class="line"><i>462</i>            );</span>
+<span class="line"><i>463</i>            TwoPartMessage::from_header(ctrl.into())</span>
+<span class="line"><i>464</i>        }</span>
+<span class="line"><i>465</i>    };</span>
+<span class="line"><i>466</i></span>
+<span class="line"><i>467</i>    let codec = TwoPartCodec::default();</span>
+<span class="line"><i>468</i>    let buffer = codec.encode_message(msg)?;</span>
+<span class="line"><i>469</i>    Ok(buffer)</span>
+<span class="line"><i>470</i>}</span></code></pre></details><p>控制头包含 request ID、请求/响应类型、codec、connection info 和 metadata；payload 用 codec 单独编码。metadata 能跨进程，Context registry 中任意 Arc 对象不能因此自动序列化。ManyIn 的额外输入流连接和 ManyOut 响应流也需要区分。</p></section><section id="runtime-context" class="lesson"><div class="sectionhead"><h2>10 / Context 保存身份、元数据和本地共享状态</h2><label class="done"><input type="checkbox" data-read="runtime-context"> 已读</label></div><details class="source" id="src-runtime-14"><summary><b>源码 · Context 与 with_id_and_metadata 的独立 controller</b><small>lib/runtime/src/pipeline/context.rs:14–64</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/context.rs#L14-L64" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>14</i>pub struct Context&lt;T: Data&gt; {</span>
+<span class="line"><i>15</i>    current: T,</span>
+<span class="line"><i>16</i>    controller: Arc&lt;Controller&gt;, //todo: hold this as an arc</span>
+<span class="line"><i>17</i>    registry: Registry,</span>
+<span class="line"><i>18</i>    stages: Vec&lt;String&gt;,</span>
+<span class="line"><i>19</i>    metadata: BTreeMap&lt;String, String&gt;,</span>
+<span class="line"><i>20</i>}</span>
+<span class="line"><i>21</i></span>
+<span class="line"><i>22</i>impl&lt;T: Send + Sync + &#x27;static&gt; Context&lt;T&gt; {</span>
+<span class="line"><i>23</i>    // Create a new context with initial data</span>
+<span class="line"><i>24</i>    pub fn new(current: T) -&gt; Self {</span>
+<span class="line"><i>25</i>        Context {</span>
+<span class="line"><i>26</i>            current,</span>
+<span class="line"><i>27</i>            controller: Arc::new(Controller::default()),</span>
+<span class="line"><i>28</i>            registry: Registry::new(),</span>
+<span class="line"><i>29</i>            stages: Vec::new(),</span>
+<span class="line"><i>30</i>            metadata: BTreeMap::new(),</span>
+<span class="line"><i>31</i>        }</span>
+<span class="line"><i>32</i>    }</span>
+<span class="line"><i>33</i></span>
+<span class="line"><i>34</i>    pub fn rejoin&lt;U: Send + Sync + &#x27;static&gt;(current: T, context: Context&lt;U&gt;) -&gt; Self {</span>
+<span class="line"><i>35</i>        Context {</span>
+<span class="line"><i>36</i>            current,</span>
+<span class="line"><i>37</i>            controller: context.controller,</span>
+<span class="line"><i>38</i>            registry: context.registry,</span>
+<span class="line"><i>39</i>            stages: context.stages,</span>
+<span class="line"><i>40</i>            metadata: context.metadata,</span>
+<span class="line"><i>41</i>        }</span>
+<span class="line"><i>42</i>    }</span>
+<span class="line"><i>43</i></span>
+<span class="line"><i>44</i>    pub fn with_controller(current: T, controller: Controller) -&gt; Self {</span>
+<span class="line"><i>45</i>        Context {</span>
+<span class="line"><i>46</i>            current,</span>
+<span class="line"><i>47</i>            controller: Arc::new(controller),</span>
+<span class="line"><i>48</i>            registry: Registry::new(),</span>
+<span class="line"><i>49</i>            stages: Vec::new(),</span>
+<span class="line"><i>50</i>            metadata: BTreeMap::new(),</span>
+<span class="line"><i>51</i>        }</span>
+<span class="line"><i>52</i>    }</span>
+<span class="line"><i>53</i></span>
+<span class="line"><i>54</i>    pub fn with_id_and_metadata(</span>
+<span class="line"><i>55</i>        current: T,</span>
+<span class="line"><i>56</i>        id: String,</span>
+<span class="line"><i>57</i>        metadata: BTreeMap&lt;String, String&gt;,</span>
+<span class="line"><i>58</i>    ) -&gt; Self {</span>
+<span class="line"><i>59</i>        Context {</span>
+<span class="line"><i>60</i>            current,</span>
+<span class="line"><i>61</i>            controller: Arc::new(Controller::new(id)),</span>
+<span class="line"><i>62</i>            registry: Registry::new(),</span>
+<span class="line"><i>63</i>            stages: Vec::new(),</span>
+<span class="line"><i>64</i>            metadata,</span></code></pre></details><details class="source" id="src-runtime-15"><summary><b>源码 · Stop/Kill 向 linked children 传播</b><small>lib/runtime/src/pipeline/context.rs:440–489</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/context.rs#L440-L489" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>440</i>        }</span>
+<span class="line"><i>441</i>    }</span>
+<span class="line"><i>442</i></span>
+<span class="line"><i>443</i>    fn stop_generating(&amp;self) {</span>
+<span class="line"><i>444</i>        // Clone child Arcs to avoid deadlock if parent is accidentally linked under child</span>
+<span class="line"><i>445</i>        let children = self</span>
+<span class="line"><i>446</i>            .child_context</span>
+<span class="line"><i>447</i>            .lock()</span>
+<span class="line"><i>448</i>            .expect(&quot;Failed to lock child context&quot;)</span>
+<span class="line"><i>449</i>            .iter()</span>
+<span class="line"><i>450</i>            .cloned()</span>
+<span class="line"><i>451</i>            .collect::&lt;Vec&lt;_&gt;&gt;();</span>
+<span class="line"><i>452</i>        for child in children {</span>
+<span class="line"><i>453</i>            child.stop_generating();</span>
+<span class="line"><i>454</i>        }</span>
+<span class="line"><i>455</i></span>
+<span class="line"><i>456</i>        let _ = self.tx.send(State::Stopped);</span>
+<span class="line"><i>457</i>    }</span>
+<span class="line"><i>458</i></span>
+<span class="line"><i>459</i>    fn stop(&amp;self) {</span>
+<span class="line"><i>460</i>        // Clone child Arcs to avoid deadlock if parent is accidentally linked under child</span>
+<span class="line"><i>461</i>        let children = self</span>
+<span class="line"><i>462</i>            .child_context</span>
+<span class="line"><i>463</i>            .lock()</span>
+<span class="line"><i>464</i>            .expect(&quot;Failed to lock child context&quot;)</span>
+<span class="line"><i>465</i>            .iter()</span>
+<span class="line"><i>466</i>            .cloned()</span>
+<span class="line"><i>467</i>            .collect::&lt;Vec&lt;_&gt;&gt;();</span>
+<span class="line"><i>468</i>        for child in children {</span>
+<span class="line"><i>469</i>            child.stop();</span>
+<span class="line"><i>470</i>        }</span>
+<span class="line"><i>471</i></span>
+<span class="line"><i>472</i>        let _ = self.tx.send(State::Stopped);</span>
+<span class="line"><i>473</i>    }</span>
+<span class="line"><i>474</i></span>
+<span class="line"><i>475</i>    fn kill(&amp;self) {</span>
+<span class="line"><i>476</i>        // Clone child Arcs to avoid deadlock if parent is accidentally linked under child</span>
+<span class="line"><i>477</i>        let children = self</span>
+<span class="line"><i>478</i>            .child_context</span>
+<span class="line"><i>479</i>            .lock()</span>
+<span class="line"><i>480</i>            .expect(&quot;Failed to lock child context&quot;)</span>
+<span class="line"><i>481</i>            .iter()</span>
+<span class="line"><i>482</i>            .cloned()</span>
+<span class="line"><i>483</i>            .collect::&lt;Vec&lt;_&gt;&gt;();</span>
+<span class="line"><i>484</i>        for child in children {</span>
+<span class="line"><i>485</i>            child.kill();</span>
+<span class="line"><i>486</i>        }</span>
+<span class="line"><i>487</i></span>
+<span class="line"><i>488</i>        let _ = self.tx.send(State::Killed);</span>
+<span class="line"><i>489</i>    }</span></code></pre></details><p>map/rejoin 保留共享请求上下文，而 with_id_and_metadata 新建 controller；同 Request ID 不代表共享取消控制器。Stop/Kill 发出状态信号，由下游任务和 adapter 响应；不能承诺 signal 发出时引擎立即停止。PD 为完成 staged KV 清理会刻意使用独立 Prefill context。</p></section><section id="runtime-tcp-observe" class="lesson"><div class="sectionhead"><h2>11 / TCP 入口：收到请求后的网络估计与 server span</h2><label class="done"><input type="checkbox" data-read="runtime-tcp-observe"> 已读</label></div><details class="source" id="src-runtime-16"><summary><b>源码 · 网络 transit 估计、handle_payload span 与 in-flight 收口</b><small>lib/runtime/src/pipeline/network/ingress/shared_tcp_endpoint.rs:286–337</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/network/ingress/shared_tcp_endpoint.rs#L286-L337" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>286</i>    async fn handle_work_item(work_item: WorkItem) {</span>
+<span class="line"><i>287</i>        tracing::trace!(</span>
+<span class="line"><i>288</i>            instance_id = work_item.instance_id,</span>
+<span class="line"><i>289</i>            &quot;TCP worker processing request&quot;</span>
+<span class="line"><i>290</i>        );</span>
+<span class="line"><i>291</i></span>
+<span class="line"><i>292</i>        // Compute network transit time from the transport header stamped right</span>
+<span class="line"><i>293</i>        // before the TCP write on the frontend side.</span>
+<span class="line"><i>294</i>        if let Some(t1_str) = work_item.headers.get(&quot;x-frontend-send-ts-ns&quot;)</span>
+<span class="line"><i>295</i>            &amp;&amp; let Ok(t1_ns) = t1_str.parse::&lt;u64&gt;()</span>
+<span class="line"><i>296</i>        {</span>
+<span class="line"><i>297</i>            let t2_ns = std::time::SystemTime::now()</span>
+<span class="line"><i>298</i>                .duration_since(std::time::UNIX_EPOCH)</span>
+<span class="line"><i>299</i>                .unwrap_or_default()</span>
+<span class="line"><i>300</i>                .as_nanos() as u64;</span>
+<span class="line"><i>301</i>            let transit_ns = t2_ns.saturating_sub(t1_ns);</span>
+<span class="line"><i>302</i>            crate::metrics::work_handler_perf::WORK_HANDLER_NETWORK_TRANSIT_SECONDS</span>
+<span class="line"><i>303</i>                .observe(transit_ns as f64 / 1_000_000_000.0);</span>
+<span class="line"><i>304</i>        }</span>
+<span class="line"><i>305</i></span>
+<span class="line"><i>306</i>        // Create span with trace context from headers</span>
+<span class="line"><i>307</i>        let span = crate::logging::make_handle_payload_span_from_tcp_headers(</span>
+<span class="line"><i>308</i>            &amp;work_item.headers,</span>
+<span class="line"><i>309</i>            &amp;work_item.component_name,</span>
+<span class="line"><i>310</i>            &amp;work_item.endpoint_name,</span>
+<span class="line"><i>311</i>            &amp;work_item.namespace,</span>
+<span class="line"><i>312</i>            work_item.instance_id,</span>
+<span class="line"><i>313</i>        );</span>
+<span class="line"><i>314</i></span>
+<span class="line"><i>315</i>        let request_id = work_item</span>
+<span class="line"><i>316</i>            .headers</span>
+<span class="line"><i>317</i>            .get(&quot;request-id&quot;)</span>
+<span class="line"><i>318</i>            .or_else(|| work_item.headers.get(&quot;x-dynamo-request-id&quot;))</span>
+<span class="line"><i>319</i>            .cloned();</span>
+<span class="line"><i>320</i></span>
+<span class="line"><i>321</i>        let result = work_item</span>
+<span class="line"><i>322</i>            .service_handler</span>
+<span class="line"><i>323</i>            .handle_payload(work_item.payload, request_id)</span>
+<span class="line"><i>324</i>            .instrument(span)</span>
+<span class="line"><i>325</i>            .await;</span>
+<span class="line"><i>326</i></span>
+<span class="line"><i>327</i>        if let Err(e) = result {</span>
+<span class="line"><i>328</i>            tracing::warn!(</span>
+<span class="line"><i>329</i>                instance_id = work_item.instance_id,</span>
+<span class="line"><i>330</i>                error = %e,</span>
+<span class="line"><i>331</i>                &quot;TCP worker failed to handle request&quot;</span>
+<span class="line"><i>332</i>            );</span>
+<span class="line"><i>333</i>        }</span>
+<span class="line"><i>334</i></span>
+<span class="line"><i>335</i>        work_item.inflight.fetch_sub(1, Ordering::SeqCst);</span>
+<span class="line"><i>336</i>        work_item.notify.notify_one();</span>
+<span class="line"><i>337</i>    }</span></code></pre></details><details class="source" id="src-runtime-17"><summary><b>源码 · traceparent 提取与设置 OpenTelemetry parent</b><small>lib/runtime/src/logging.rs:765–813</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/logging.rs#L765-L813" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>765</i>pub fn make_handle_payload_span_from_tcp_headers(</span>
+<span class="line"><i>766</i>    headers: &amp;std::collections::HashMap&lt;String, String&gt;,</span>
+<span class="line"><i>767</i>    component: &amp;str,</span>
+<span class="line"><i>768</i>    endpoint: &amp;str,</span>
+<span class="line"><i>769</i>    namespace: &amp;str,</span>
+<span class="line"><i>770</i>    instance_id: u64,</span>
+<span class="line"><i>771</i>) -&gt; Span {</span>
+<span class="line"><i>772</i>    let (trace_parent, otel_context) = extract_trace_parent(headers);</span>
+<span class="line"><i>773</i></span>
+<span class="line"><i>774</i>    if let (Some(trace_id), Some(parent_id)) = (</span>
+<span class="line"><i>775</i>        trace_parent.trace_id.as_ref(),</span>
+<span class="line"><i>776</i>        trace_parent.parent_id.as_ref(),</span>
+<span class="line"><i>777</i>    ) {</span>
+<span class="line"><i>778</i>        let span = tracing::info_span!(</span>
+<span class="line"><i>779</i>            target: &quot;request_span&quot;,</span>
+<span class="line"><i>780</i>            &quot;handle_payload&quot;,</span>
+<span class="line"><i>781</i>            otel.kind = &quot;server&quot;,</span>
+<span class="line"><i>782</i>            trace_id = trace_id.as_str(),</span>
+<span class="line"><i>783</i>            parent_id = parent_id.as_str(),</span>
+<span class="line"><i>784</i>            trace_flags = trace_parent.trace_flags,</span>
+<span class="line"><i>785</i>            x_request_id = trace_parent.x_request_id,</span>
+<span class="line"><i>786</i>            request_id = trace_parent.request_id,</span>
+<span class="line"><i>787</i>            tracestate = trace_parent.tracestate,</span>
+<span class="line"><i>788</i>            component = component,</span>
+<span class="line"><i>789</i>            endpoint = endpoint,</span>
+<span class="line"><i>790</i>            namespace = namespace,</span>
+<span class="line"><i>791</i>            instance_id = instance_id,</span>
+<span class="line"><i>792</i>        );</span>
+<span class="line"><i>793</i></span>
+<span class="line"><i>794</i>        if let Some(context) = otel_context {</span>
+<span class="line"><i>795</i>            let _ = span.set_parent(context);</span>
+<span class="line"><i>796</i>        }</span>
+<span class="line"><i>797</i>        span</span>
+<span class="line"><i>798</i>    } else {</span>
+<span class="line"><i>799</i>        tracing::info_span!(</span>
+<span class="line"><i>800</i>            target: &quot;request_span&quot;,</span>
+<span class="line"><i>801</i>            &quot;handle_payload&quot;,</span>
+<span class="line"><i>802</i>            otel.kind = &quot;server&quot;,</span>
+<span class="line"><i>803</i>            trace_flags = trace_parent.trace_flags,</span>
+<span class="line"><i>804</i>            x_request_id = trace_parent.x_request_id,</span>
+<span class="line"><i>805</i>            request_id = trace_parent.request_id,</span>
+<span class="line"><i>806</i>            tracestate = trace_parent.tracestate,</span>
+<span class="line"><i>807</i>            component = component,</span>
+<span class="line"><i>808</i>            endpoint = endpoint,</span>
+<span class="line"><i>809</i>            namespace = namespace,</span>
+<span class="line"><i>810</i>            instance_id = instance_id,</span>
+<span class="line"><i>811</i>        )</span>
+<span class="line"><i>812</i>    }</span>
+<span class="line"><i>813</i>}</span></code></pre></details><p>WORK_HANDLER_NETWORK_TRANSIT_SECONDS 用跨机器 SystemTime 时间戳差估计，饱和减法只能避免负值，不能解决时钟偏移；还包含实际取样边界之间的等待。不能用它当纯网卡线速延迟。收到 headers 后显式提取 parent 并 instrument handler，串联依赖两端传播、采样和 exporter。</p></section><section id="runtime-route-trace" class="lesson"><div class="sectionhead"><h2>12 / 重试 attempt 的 Trace 与 worker 归因</h2><label class="done"><input type="checkbox" data-read="runtime-route-trace"> 已读</label></div><details class="source" id="src-runtime-18"><summary><b>源码 · RouteTraceContext 的 attempt、from-worker 与 selected-worker</b><small>lib/runtime/src/pipeline/network/egress/route_span.rs:20–81</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/network/egress/route_span.rs#L20-L81" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>20</i>const ROUTE_TRACE_CONTEXT_KEY: &amp;str = &quot;dynamo.route_trace_context&quot;;</span>
+<span class="line"><i>21</i></span>
+<span class="line"><i>22</i>/// Retry metadata shared between the migration layer and the selected router.</span>
+<span class="line"><i>23</i>///</span>
+<span class="line"><i>24</i>/// The router fills in `selected_worker_id` once routing completes. The migration</span>
+<span class="line"><i>25</i>/// layer retains the same `Arc`, allowing the next attempt to attribute a</span>
+<span class="line"><i>26</i>/// disconnect to the worker selected for the previous attempt.</span>
+<span class="line"><i>27</i>#[derive(Debug)]</span>
+<span class="line"><i>28</i>pub struct RouteTraceContext {</span>
+<span class="line"><i>29</i>    attempt: u32,</span>
+<span class="line"><i>30</i>    migration_reason: Option&lt;ErrorType&gt;,</span>
+<span class="line"><i>31</i>    from_worker_id: Option&lt;u64&gt;,</span>
+<span class="line"><i>32</i>    tokens_completed: usize,</span>
+<span class="line"><i>33</i>    selected_worker_id: AtomicU64,</span>
+<span class="line"><i>34</i>    has_selected_worker_id: AtomicBool,</span>
+<span class="line"><i>35</i>}</span>
+<span class="line"><i>36</i></span>
+<span class="line"><i>37</i>impl RouteTraceContext {</span>
+<span class="line"><i>38</i>    pub fn new(</span>
+<span class="line"><i>39</i>        attempt: u32,</span>
+<span class="line"><i>40</i>        migration_reason: Option&lt;ErrorType&gt;,</span>
+<span class="line"><i>41</i>        from_worker_id: Option&lt;u64&gt;,</span>
+<span class="line"><i>42</i>        tokens_completed: usize,</span>
+<span class="line"><i>43</i>    ) -&gt; Self {</span>
+<span class="line"><i>44</i>        Self {</span>
+<span class="line"><i>45</i>            attempt,</span>
+<span class="line"><i>46</i>            migration_reason,</span>
+<span class="line"><i>47</i>            from_worker_id,</span>
+<span class="line"><i>48</i>            tokens_completed,</span>
+<span class="line"><i>49</i>            selected_worker_id: AtomicU64::new(0),</span>
+<span class="line"><i>50</i>            has_selected_worker_id: AtomicBool::new(false),</span>
+<span class="line"><i>51</i>        }</span>
+<span class="line"><i>52</i>    }</span>
+<span class="line"><i>53</i></span>
+<span class="line"><i>54</i>    pub fn attempt(&amp;self) -&gt; u32 {</span>
+<span class="line"><i>55</i>        self.attempt</span>
+<span class="line"><i>56</i>    }</span>
+<span class="line"><i>57</i></span>
+<span class="line"><i>58</i>    pub fn migration_reason(&amp;self) -&gt; Option&lt;ErrorType&gt; {</span>
+<span class="line"><i>59</i>        self.migration_reason</span>
+<span class="line"><i>60</i>    }</span>
+<span class="line"><i>61</i></span>
+<span class="line"><i>62</i>    pub fn from_worker_id(&amp;self) -&gt; Option&lt;u64&gt; {</span>
+<span class="line"><i>63</i>        self.from_worker_id</span>
+<span class="line"><i>64</i>    }</span>
+<span class="line"><i>65</i></span>
+<span class="line"><i>66</i>    pub fn tokens_completed(&amp;self) -&gt; usize {</span>
+<span class="line"><i>67</i>        self.tokens_completed</span>
+<span class="line"><i>68</i>    }</span>
+<span class="line"><i>69</i></span>
+<span class="line"><i>70</i>    pub fn is_retry(&amp;self) -&gt; bool {</span>
+<span class="line"><i>71</i>        self.attempt &gt; 0</span>
+<span class="line"><i>72</i>    }</span>
+<span class="line"><i>73</i></span>
+<span class="line"><i>74</i>    pub fn set_selected_worker_id(&amp;self, worker_id: u64) {</span>
+<span class="line"><i>75</i>        self.selected_worker_id.store(worker_id, Ordering::Relaxed);</span>
+<span class="line"><i>76</i>        self.has_selected_worker_id.store(true, Ordering::Release);</span>
+<span class="line"><i>77</i>    }</span>
+<span class="line"><i>78</i></span>
+<span class="line"><i>79</i>    pub fn selected_worker_id(&amp;self) -&gt; Option&lt;u64&gt; {</span>
+<span class="line"><i>80</i>        self.has_selected_worker_id</span>
+<span class="line"><i>81</i>            .load(Ordering::Acquire)</span></code></pre></details><p>每次路由尝试记录 attempt、迁移原因、此前 worker 和已完成 token，选路后才补 selected_worker_id。一次用户请求可能对应多次 worker 尝试；HTTP requests、Router attempts、engine requests 的计数分母不同。日志有 ID 不自动意味着所有 span 是同一 Trace。</p></section><section id="runtime-python" class="lesson"><div class="sectionhead"><h2>13 / Python 绑定：generator、push egress 与 trace headers</h2><label class="done"><input type="checkbox" data-read="runtime-python"> 已读</label></div><details class="source" id="src-runtime-19"><summary><b>源码 · serve_endpoint 按 response_sender 签名选择 push / pull</b><small>lib/bindings/python/rust/lib.rs:1710–1765</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/bindings/python/rust/lib.rs#L1710-L1765" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1710</i>    fn serve_endpoint&lt;&#x27;p&gt;(</span>
+<span class="line"><i>1711</i>        &amp;self,</span>
+<span class="line"><i>1712</i>        py: Python&lt;&#x27;p&gt;,</span>
+<span class="line"><i>1713</i>        generator: PyObject,</span>
+<span class="line"><i>1714</i>        graceful_shutdown: Option&lt;bool&gt;,</span>
+<span class="line"><i>1715</i>        metrics_labels: Option&lt;Vec&lt;(String, String)&gt;&gt;,</span>
+<span class="line"><i>1716</i>        health_check_payload: Option&lt;&amp;Bound&lt;&#x27;p, PyDict&gt;&gt;,</span>
+<span class="line"><i>1717</i>    ) -&gt; PyResult&lt;Bound&lt;&#x27;p, PyAny&gt;&gt; {</span>
+<span class="line"><i>1718</i>        // The network engines read the role per request, so one recorded later</span>
+<span class="line"><i>1719</i>        // by `register_model` takes effect from then on, through the gate of</span>
+<span class="line"><i>1720</i>        // the worker this endpoint serves for.</span>
+<span class="line"><i>1721</i>        let backend_role = engine::BackendRole::of(&amp;self.inner);</span>
+<span class="line"><i>1722</i>        let admission = engine::EndpointAdmission::new(</span>
+<span class="line"><i>1723</i>            self.admission_gate.clone(),</span>
+<span class="line"><i>1724</i>            self.inner.component().clone(),</span>
+<span class="line"><i>1725</i>        );</span>
+<span class="line"><i>1726</i></span>
+<span class="line"><i>1727</i>        // Push egress: the handler pushes each response into a Rust channel via</span>
+<span class="line"><i>1728</i>        // its `response_sender` argument, instead of Rust pulling `__anext__`</span>
+<span class="line"><i>1729</i>        // off its generator on a tokio thread once per response. Selected per</span>
+<span class="line"><i>1730</i>        // handler, purely by signature -- a handler must declare a</span>
+<span class="line"><i>1731</i>        // `response_sender` parameter, which in practice means the TRT-LLM</span>
+<span class="line"><i>1732</i>        // workers&#x27; `@push_egress_capable` decorator. NOT `context`, which every</span>
+<span class="line"><i>1733</i>        // handler accepts and would therefore make this check always true,</span>
+<span class="line"><i>1734</i>        // rendering the pull path unreachable. Anything else stays on pull.</span>
+<span class="line"><i>1735</i>        let use_push_egress = push_egress::handler_supports_push(&amp;generator);</span>
+<span class="line"><i>1736</i></span>
+<span class="line"><i>1737</i>        // An endpoint has two doors, and this branch answers for both: the</span>
+<span class="line"><i>1738</i>        // ingress that serves network requests, and the engine registered in</span>
+<span class="line"><i>1739</i>        // the local (in-process) registry.</span>
+<span class="line"><i>1740</i>        //</span>
+<span class="line"><i>1741</i>        // Push endpoints need BOTH. The local registry — used by in-process</span>
+<span class="line"><i>1742</i>        // callers and by the canary health check</span>
+<span class="line"><i>1743</i>        // (`lib/runtime/src/health_check.rs`) — takes a `SingleIn`/`ManyOut`</span>
+<span class="line"><i>1744</i>        // engine, which has nowhere to put a per-request sender. A pull engine</span>
+<span class="line"><i>1745</i>        // over the SAME handler supplies one: called without a</span>
+<span class="line"><i>1746</i>        // `response_sender`, `@push_egress_capable` hands back the handler&#x27;s</span>
+<span class="line"><i>1747</i>        // own async generator, so that door is ordinary pull egress.</span>
+<span class="line"><i>1748</i>        // Registering it also keeps the endpoint in</span>
+<span class="line"><i>1749</i>        // `SystemHealth::health_check_targets` — without which health status</span>
+<span class="line"><i>1750</i>        // ignores endpoint readiness entirely and falls through to the</span>
+<span class="line"><i>1751</i>        // process-wide `system_health`, a permanent 503 for a worker that never</span>
+<span class="line"><i>1752</i>        // sets it (see `system_health.rs` tests).</span>
+<span class="line"><i>1753</i>        //</span>
+<span class="line"><i>1754</i>        // Both outcomes are logged: push mode is chosen by signature</span>
+<span class="line"><i>1755</i>        // inspection, which can silently answer &quot;no&quot;, and without the pull line</span>
+<span class="line"><i>1756</i>        // the only symptom would be the absence of the push line.</span>
+<span class="line"><i>1757</i>        let endpoint_name = self.inner.name().to_string();</span>
+<span class="line"><i>1758</i>        let (ingress, local_engine): (</span>
+<span class="line"><i>1759</i>            Arc&lt;dyn rs::pipeline::network::PushWorkHandler&gt;,</span>
+<span class="line"><i>1760</i>            Option&lt;Arc&lt;engine::PythonAsyncEngine&gt;&gt;,</span>
+<span class="line"><i>1761</i>        ) = if use_push_egress {</span>
+<span class="line"><i>1762</i>            tracing::info!(endpoint = %endpoint_name, &quot;serving endpoint with push egress&quot;);</span>
+<span class="line"><i>1763</i>            // Same handler object, two engines: a refcount bump, not a copy.</span>
+<span class="line"><i>1764</i>            let local = Arc::new(engine::PythonAsyncEngine::new(</span>
+<span class="line"><i>1765</i>                generator.clone_ref(py),</span></code></pre></details><details class="source" id="src-runtime-20"><summary><b>源码 · Context.trace_headers 暴露 W3C 与关联 ID</b><small>lib/bindings/python/rust/context.rs:447–462</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/bindings/python/rust/context.rs#L447-L462" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>447</i>    fn trace_headers(&amp;self) -&gt; Option&lt;HashMap&lt;String, String&gt;&gt; {</span>
+<span class="line"><i>448</i>        let mut headers = HashMap::new();</span>
+<span class="line"><i>449</i>        headers.insert(&quot;traceparent&quot;.to_string(), self.format_traceparent()?);</span>
+<span class="line"><i>450</i>        if let Some(tc) = self.trace_context.as_ref() {</span>
+<span class="line"><i>451</i>            if let Some(ts) = &amp;tc.tracestate {</span>
+<span class="line"><i>452</i>                headers.insert(&quot;tracestate&quot;.to_string(), ts.clone());</span>
+<span class="line"><i>453</i>            }</span>
+<span class="line"><i>454</i>            if let Some(id) = &amp;tc.x_request_id {</span>
+<span class="line"><i>455</i>                headers.insert(&quot;x-request-id&quot;.to_string(), id.clone());</span>
+<span class="line"><i>456</i>            }</span>
+<span class="line"><i>457</i>            if let Some(id) = &amp;tc.request_id {</span>
+<span class="line"><i>458</i>                headers.insert(&quot;request-id&quot;.to_string(), id.clone());</span>
+<span class="line"><i>459</i>            }</span>
+<span class="line"><i>460</i>        }</span>
+<span class="line"><i>461</i>        Some(headers)</span>
+<span class="line"><i>462</i>    }</span></code></pre></details><p>push 模式减少逐项从 Tokio 拉 Python __anext__ 的交互；它仍需要同一个 handler 的 pull local engine 供进程内调用/canary 使用。模式由 response_sender 能力声明而非普通 context 参数判定。引擎调用必须显式消费 trace_headers，并启用其自身 tracing 才能继续串联。</p></section><section id="runtime-registry" class="lesson"><div class="sectionhead"><h2>14 / Metrics 层级如何进入一次 scrape</h2><label class="done"><input type="checkbox" data-read="runtime-registry"> 已读</label></div><details class="source" id="src-runtime-21"><summary><b>源码 · MetricsHierarchy、父级与 connection ID</b><small>lib/runtime/src/metrics.rs:694–731</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/metrics.rs#L694-L731" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>694</i>pub trait MetricsHierarchy: Send + Sync {</span>
+<span class="line"><i>695</i>    // ========================================================================</span>
+<span class="line"><i>696</i>    // Required methods - must be implemented by all types</span>
+<span class="line"><i>697</i>    // ========================================================================</span>
+<span class="line"><i>698</i></span>
+<span class="line"><i>699</i>    /// Get the name of this hierarchy (without any hierarchy prefix)</span>
+<span class="line"><i>700</i>    fn basename(&amp;self) -&gt; String;</span>
+<span class="line"><i>701</i></span>
+<span class="line"><i>702</i>    /// Get the parent hierarchies as actual objects (not strings)</span>
+<span class="line"><i>703</i>    /// Returns a vector of hierarchy references, ordered from root to immediate parent.</span>
+<span class="line"><i>704</i>    /// For example, an Endpoint would return [DRT, Namespace, Component].</span>
+<span class="line"><i>705</i>    fn parent_hierarchies(&amp;self) -&gt; Vec&lt;&amp;dyn MetricsHierarchy&gt;;</span>
+<span class="line"><i>706</i></span>
+<span class="line"><i>707</i>    /// Get a reference to this hierarchy&#x27;s metrics registry</span>
+<span class="line"><i>708</i>    fn get_metrics_registry(&amp;self) -&gt; &amp;MetricsRegistry;</span>
+<span class="line"><i>709</i></span>
+<span class="line"><i>710</i>    // ========================================================================</span>
+<span class="line"><i>711</i>    // Provided methods - have default implementations</span>
+<span class="line"><i>712</i>    // ========================================================================</span>
+<span class="line"><i>713</i></span>
+<span class="line"><i>714</i>    /// Get the connection ID (discovery instance ID) for this hierarchy level.</span>
+<span class="line"><i>715</i>    ///</span>
+<span class="line"><i>716</i>    /// Returns `Some(id)` when the hierarchy has access to the DistributedRuntime</span>
+<span class="line"><i>717</i>    /// (e.g. Namespace, Component, Endpoint). Used by `create_metric()` to auto-inject</span>
+<span class="line"><i>718</i>    /// the `worker_id` label. Returns `None` by default.</span>
+<span class="line"><i>719</i>    fn connection_id(&amp;self) -&gt; Option&lt;u64&gt; {</span>
+<span class="line"><i>720</i>        None</span>
+<span class="line"><i>721</i>    }</span>
+<span class="line"><i>722</i></span>
+<span class="line"><i>723</i>    /// Access the metrics interface for this hierarchy</span>
+<span class="line"><i>724</i>    /// This is a provided method that works for any type implementing MetricsHierarchy</span>
+<span class="line"><i>725</i>    fn metrics(&amp;self) -&gt; Metrics&lt;&amp;Self&gt;</span>
+<span class="line"><i>726</i>    where</span>
+<span class="line"><i>727</i>        Self: Sized,</span>
+<span class="line"><i>728</i>    {</span>
+<span class="line"><i>729</i>        Metrics::new(self)</span>
+<span class="line"><i>730</i>    }</span>
+<span class="line"><i>731</i>}</span></code></pre></details><details class="source" id="src-runtime-22"><summary><b>源码 · 子 registry 注册与递归去重</b><small>lib/runtime/src/metrics.rs:875–910</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/metrics.rs#L875-L910" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>875</i>    pub fn add_child_registry(&amp;self, child: &amp;MetricsRegistry) {</span>
+<span class="line"><i>876</i>        let child_ptr = Arc::as_ptr(&amp;child.prometheus_registry);</span>
+<span class="line"><i>877</i>        let mut guard = self.child_registries.write().unwrap();</span>
+<span class="line"><i>878</i>        if guard</span>
+<span class="line"><i>879</i>            .iter()</span>
+<span class="line"><i>880</i>            .any(|r| Arc::as_ptr(&amp;r.prometheus_registry) == child_ptr)</span>
+<span class="line"><i>881</i>        {</span>
+<span class="line"><i>882</i>            return;</span>
+<span class="line"><i>883</i>        }</span>
+<span class="line"><i>884</i>        guard.push(child.clone());</span>
+<span class="line"><i>885</i>    }</span>
+<span class="line"><i>886</i></span>
+<span class="line"><i>887</i>    fn registries_for_combined_scrape(&amp;self) -&gt; Vec&lt;MetricsRegistry&gt; {</span>
+<span class="line"><i>888</i>        // Traverse child registries recursively so `prometheus_expfmt()` on any hierarchy</span>
+<span class="line"><i>889</i>        // (DRT/namespace/component/endpoint) includes metrics from its descendants.</span>
+<span class="line"><i>890</i>        //</span>
+<span class="line"><i>891</i>        // Dedup by underlying Prometheus registry pointer so multiple paths (e.g. also registering</span>
+<span class="line"><i>892</i>        // directly on the root) won&#x27;t duplicate output.</span>
+<span class="line"><i>893</i>        fn visit(</span>
+<span class="line"><i>894</i>            registry: &amp;MetricsRegistry,</span>
+<span class="line"><i>895</i>            out: &amp;mut Vec&lt;MetricsRegistry&gt;,</span>
+<span class="line"><i>896</i>            seen: &amp;mut HashSet&lt;*const std::sync::RwLock&lt;prometheus::Registry&gt;&gt;,</span>
+<span class="line"><i>897</i>        ) {</span>
+<span class="line"><i>898</i>            let ptr = Arc::as_ptr(&amp;registry.prometheus_registry);</span>
+<span class="line"><i>899</i>            if !seen.insert(ptr) {</span>
+<span class="line"><i>900</i>                return;</span>
+<span class="line"><i>901</i>            }</span>
+<span class="line"><i>902</i></span>
+<span class="line"><i>903</i>            out.push(registry.clone());</span>
+<span class="line"><i>904</i></span>
+<span class="line"><i>905</i>            let children: Vec&lt;MetricsRegistry&gt; = registry</span>
+<span class="line"><i>906</i>                .child_registries</span>
+<span class="line"><i>907</i>                .read()</span>
+<span class="line"><i>908</i>                .unwrap()</span>
+<span class="line"><i>909</i>                .iter()</span>
+<span class="line"><i>910</i>                .cloned()</span></code></pre></details><p>DRT → namespace → component → endpoint 构成 registry 层级；统一抓取递归汇总子 registry，并按底层 registry 指针去重。connection_id 可自动注入 worker_id 标签。创建成功、实际更新、纳入汇总与端口可抓取必须逐段检查；foreign engine 的文本指标还需要桥接。</p></section><section id="runtime-shutdown" class="lesson"><div class="sectionhead"><h2>15 / 撤销发现、停止请求服务与生命周期所有权</h2><label class="done"><input type="checkbox" data-read="runtime-shutdown"> 已读</label></div><details class="source" id="src-runtime-23"><summary><b>源码 · 取消后的发现撤销与 endpoint unregister</b><small>lib/runtime/src/component/endpoint.rs:270–313</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/component/endpoint.rs#L270-L313" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>270</i></span>
+<span class="line"><i>271</i>        // Create cleanup task that unregisters on cancellation.</span>
+<span class="line"><i>272</i>        let endpoint_name_for_cleanup = endpoint_name_for_task;</span>
+<span class="line"><i>273</i>        let server_for_cleanup = server;</span>
+<span class="line"><i>274</i>        let cancel_token_for_cleanup = endpoint_shutdown_token.clone();</span>
+<span class="line"><i>275</i>        let discovery_for_cleanup = discovery;</span>
+<span class="line"><i>276</i></span>
+<span class="line"><i>277</i>        let task: tokio::task::JoinHandle&lt;anyhow::Result&lt;()&gt;&gt; = tokio::spawn(async move {</span>
+<span class="line"><i>278</i>            cancel_token_for_cleanup.cancelled().await;</span>
+<span class="line"><i>279</i></span>
+<span class="line"><i>280</i>            if let Err(error) = discovery_for_cleanup.unregister(discovery_instance).await {</span>
+<span class="line"><i>281</i>                tracing::warn!(%error, &quot;Failed to unregister endpoint from discovery&quot;);</span>
+<span class="line"><i>282</i>            }</span>
+<span class="line"><i>283</i></span>
+<span class="line"><i>284</i>            tracing::debug!(</span>
+<span class="line"><i>285</i>                endpoint = %endpoint_name_for_cleanup,</span>
+<span class="line"><i>286</i>                &quot;Unregistering endpoint from request plane server&quot;</span>
+<span class="line"><i>287</i>            );</span>
+<span class="line"><i>288</i></span>
+<span class="line"><i>289</i>            if let Err(e) = server_for_cleanup</span>
+<span class="line"><i>290</i>                .unregister_endpoint_instance(&amp;endpoint_id, connection_id)</span>
+<span class="line"><i>291</i>                .await</span>
+<span class="line"><i>292</i>            {</span>
+<span class="line"><i>293</i>                tracing::warn!(</span>
+<span class="line"><i>294</i>                    endpoint = %endpoint_name_for_cleanup,</span>
+<span class="line"><i>295</i>                    error = %e,</span>
+<span class="line"><i>296</i>                    &quot;Failed to unregister endpoint&quot;</span>
+<span class="line"><i>297</i>                );</span>
+<span class="line"><i>298</i>            }</span>
+<span class="line"><i>299</i></span>
+<span class="line"><i>300</i>            if let Some(tracker) = tracker_clone {</span>
+<span class="line"><i>301</i>                tracing::debug!(&quot;Unregister endpoint from graceful shutdown tracker&quot;);</span>
+<span class="line"><i>302</i>                tracker.unregister_endpoint();</span>
+<span class="line"><i>303</i>            }</span>
+<span class="line"><i>304</i></span>
+<span class="line"><i>305</i>            anyhow::Ok(())</span>
+<span class="line"><i>306</i>        });</span>
+<span class="line"><i>307</i></span>
+<span class="line"><i>308</i>        Ok(StartedEndpoint {</span>
+<span class="line"><i>309</i>            instance,</span>
+<span class="line"><i>310</i>            shutdown_token: endpoint_shutdown_token,</span>
+<span class="line"><i>311</i>            task,</span>
+<span class="line"><i>312</i>        })</span>
+<span class="line"><i>313</i>    }</span></code></pre></details><p>关闭先阻止新流量，再等待已在途请求与后台清理。撤销发现有传播延迟；对端旧连接仍可能在途。Stop、Task Drop、endpoint unregister 与 engine.cleanup 有不同 owner，SIGKILL 不会执行这些正常路径。完整 drain/cleanup 预算见<a href='reliability.html'>可靠性专题</a>。</p></section><section id="runtime-practice" class="lesson"><div class="sectionhead"><h2>16 / 接入工作与诊断顺序</h2><label class="done"><input type="checkbox" data-read="runtime-practice"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>问题</th><th>优先证据</th></tr></thead><tbody><tr><td>初始化卡住</td><td>选中的 discovery / NATS 依赖、TLS、地址、初始化日志</td></tr><tr><td>能发现但调用失败</td><td>admitted worker、instance transport、codec、请求与响应面双向可达</td></tr><tr><td>Trace 中间断开</td><td>headers → metadata → receiver parent → Python headers → engine exporter</td></tr><tr><td>指标未出现</td><td>创建点、更新点、registry 层级、foreign bridge、抓取端口</td></tr><tr><td>断连后占用未回收</td><td>context signal、在途流、PD staged KV、清理预算与进程退出</td></tr></tbody></table></div><p>事件封装与数据面边界见<a href="storage-events.html">Storage &amp; Events</a>，不要把 Event Plane 当可靠消息队列或自动完整 Trace。本文未做网络回归或真实连通性测试。</p></section><section id="runtime-diagram" class="lesson"><div class="sectionhead"><h2>17 / 架构分层图与交叉阅读</h2><label class="done"><input type="checkbox" data-read="runtime-diagram"> 已读</label></div><div class="diagram"><div class="lane"><b>控制身份</b><span>DistributedRuntime → namespace → component → endpoint / instance</span></div><div class="lane"><b>注册</b><span>handler / metrics / health → request server → Discovery</span></div><div class="lane"><b>调用</b><span>Context → control + payload → transport → receiver span → response stream</span></div><div class="lane"><b>终止</b><span>Stop / Kill → consumer reaction；endpoint withdraw / drain → unregister</span></div></div><p><a href="runtime-architecture.mmd">Mermaid 图源</a>按职责分泳道；泳道之间不暗示已经实现自动接线。离线 HTML 无外部渲染依赖。<a href="system-map.html">系统地图</a> / <a href="index.html">全部章节</a>。</p></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 9734418e5bc71027e6bd04a09314bf1765208c72。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

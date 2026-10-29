@@ -1,0 +1,23 @@
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    Client["Client"] --> HTTP["HTTP handler / preflight"]
+    HTTP --> Admission["Routing / backend admission"]
+    Admission --> Engine["Backend setup / engine stream"]
+    Engine --> Stream["SSE response body"]
+    Stream --> Terminal["Success / semantic failure / cancellation"]
+    Terminal --> Release["HTTP, routing and engine resource owners release"]
+    Client -. "disconnect" .-> Drop["Handler or body Drop guard"]
+    Drop --> Context["Context Stop / Kill + linked attempts"]
+    Context --> Cancel["TCP control / backend cancellation monitor"]
+    Cancel --> Abort["Engine abort + stream resource cleanup"]
+    Context --> KV{"Decode with staged KV?"}
+    KV -->|"yes"| Cleanup["Bounded dispatch to original decode worker for KV cleanup"]
+    KV -->|"no"| Abandon["Cancel ordinary dispatch"]
+    Engine -. "typed worker failure" .-> Retry{"Eligible reason, request and budget?"}
+    Retry -->|"yes"| Replay["Replay tokens / decoder state; next attempt"]
+    Replay --> Admission
+    Retry -->|"no"| Terminal
+    Shutdown["SIGTERM"] --> Withdraw["Withdraw discovery / grace"]
+    Withdraw --> Drain["Backend-specific drain / cleanup"]
+    Drain --> Exit["Runtime / process exit"]
+    HardKill["SIGKILL / OOM / node loss"] -. "no guaranteed Drop or finally" .-> Recovery["External detection / expiry / recovery"]

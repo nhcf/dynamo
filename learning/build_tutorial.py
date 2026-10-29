@@ -89,7 +89,7 @@ if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEac
 
 def page(title, subtitle, body, nav, draft=False):
     links = "".join(f'<a href="#{id}">{name}</a>' for id, name in nav)
-    return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>{title} · Dynamo 源码解读</title><style>{STYLE}</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 系统地图与讨论大纲</a><a href="observability.html">01 · 可观测性源码</a><a href="planner.html">08 · Planner 源码</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录">{links}</nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 {PIN[:9]}</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>{title}</h1><p class="lede">{subtitle}</p><div class="meta"><span class="pill">2026-10-28</span><span class="pill">commit {PIN[:9]}</span><span class="pill {"draft" if draft else ""}">{"大纲讨论稿 v0.1" if draft else "首个源码专题 v0.1"}</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p>{body}<footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 {PIN}。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>{JS}</script></body></html>"""
+    return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>{title} · Dynamo 源码解读</title><style>{STYLE}</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录">{links}</nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 {PIN[:9]}</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>{title}</h1><p class="lede">{subtitle}</p><div class="meta"><span class="pill">2026-10-28</span><span class="pill">commit {PIN[:9]}</span><span class="pill {"draft" if draft else ""}">{"大纲讨论稿 v0.1" if draft else "首个源码专题 v0.1"}</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p>{body}<footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 {PIN}。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>{JS}</script></body></html>"""
 
 
 mods = [
@@ -173,8 +173,8 @@ mods = [
     (
         "11",
         "多集群与全局路由",
-        "全局发现、视图同步、全局前端/路由与策略边界。",
-        "lib/global-*；components/src/dynamo/{global_router,global_planner,kv_dc_relay}",
+        "分层选池、Pool Relay 事实、全局视图、容量仲裁与 Rust 占位模块边界。",
+        "components/src/dynamo/{global_router,global_planner,pool_relay}；lib/llm/src/pool_relay；lib/global-{discovery-client,view-receiver}",
         "区分单部署路由状态和跨域容量视图。",
     ),
     (
@@ -188,9 +188,9 @@ mods = [
 index = section(
     "scope",
     "先约定阅读边界",
-    "<p>本版交付系统框架大纲和第一个深入专题。其他模块是待讨论的阅读路线，尚未逐模块完成源码解读。默认面向有 Python / Kubernetes 经验、希望理解 Rust 核心并能参与接入和排障的工程师。</p>"
+    "<p>系统地图 00–12 的全部模块现已提供教程：架构与核心流程配合固定版本源码，观测相关路径追到产生、更新与导出。另保留 PD Trace、Storage &amp; Events 及集群实战专题。已展开表示有专题分析，不代表逐文件全量审计或所有能力均已运行验证。默认面向有 Python / Kubernetes 经验、希望理解 Rust 核心并能参与接入和排障的工程师。</p>"
     + note(
-        "建议一起确定三点：更偏 Rust 二次开发还是平台接入；优先 vLLM、SGLang 还是 TensorRT-LLM；Sidecar 和全局路由放主线还是后续专题。"
+        "建议先读 00 系统地图与 01 可观测性，再沿 02–07 请求与数据路径阅读，最后连到 08–12 容量、控制、可靠性与验证。不同版本的章节以各自页头和源码清单为准。"
     ),
 )
 index += section(
@@ -201,13 +201,25 @@ index += section(
 )
 cards = ""
 for n, t, d, p, o in mods:
-    link = (
-        '<a href="observability.html">进入源码专题 →</a>'
-        if n == "01"
-        else ('<a href="planner.html">进入 Planner 源码 →</a>' if n == "08" else "")
-    )
-    cards += f'<article class="card"><span class="num">MODULE {n} · {"已展开" if n in ("01", "08") else "阅读大纲"}</span><h3>{t}</h3><p>{d}</p><p><b>源码范围</b><br><code>{p}</code></p><p><b>学习产出</b><br>{o}</p>{link}</article>'
-index += section("outline", "建议模块大纲 · 供讨论", '<div class="cards">' + cards + "</div>")
+    link = {
+        "00": '<a href="system-map.html">进入源码专题 →</a>',
+        "02": '<a href="frontend.html">进入源码专题 →</a>',
+        "03": '<a href="runtime.html">进入源码专题 →</a>',
+        "04": '<a href="router.html">进入源码专题 →</a>',
+        "05": '<a href="backends.html">进入源码专题 →</a>',
+        "07": '<a href="kv-cache.html">进入源码专题 →</a>',
+        "11": '<a href="global-routing.html">进入源码专题 →</a>',
+        "12": '<a href="validation.html">进入源码专题 →</a>',
+        "01": '<a href="observability.html">进入源码专题 →</a>',
+        "06": '<a href="pd-serving.html">进入 PD 分离源码 →</a>',
+        "08": '<a href="planner.html">进入 Planner 源码 →</a>',
+        "09": '<a href="control-plane.html">进入控制面专题 →</a>',
+        "10": '<a href="reliability.html">进入可靠性与流式生命周期 →</a>',
+    }.get(n, "")
+    cards += f'<article class="card"><span class="num">MODULE {n} · 已展开</span><h3>{t}</h3><p>{d}</p><p><b>源码范围</b><br><code>{p}</code></p><p><b>学习产出</b><br>{o}</p>{link}</article>'
+index += section(
+    "outline", "00–12 模块导航 · 全部已展开", '<div class="cards">' + cards + "</div>"
+)
 index += section(
     "route",
     "阅读顺序与记录模板",
@@ -570,14 +582,34 @@ index += section(
     '<p>已展开 Prometheus 查询、FPM 事件与 rank 完整性、性能模型、预测与扩缩容，以及 Planner 自身指标的来源、单位和失效边界。</p><p><a href="planner.html">进入 Planner 源码解读 →</a></p>',
 )
 index += section(
+    "pd-serving-topic",
+    "Prefill / Decode 分离源码专题",
+    '<p>分析 PrefillRouter 激活、Completed / Bootstrap 两种交接、三种引擎协议、条件 PD、取消清理和阶段指标；结合 ACK 混合拓扑列出验证路径。</p><p><a href="pd-serving.html">进入 PD 分离专题 →</a></p>',
+)
+index += section(
     "pd-trace-topic",
     "专题 / PD 模式的全链路 Trace",
     '<p>已核对 Request Plane 的上下文传播、Prefill/Decode 前驱 Link，以及通用 Event Plane、KV 存储和 NIXL 的边界。请求主链可串联，但不能把整个数据面视为已开箱即用全覆盖。</p><p><a href="pd-trace.html">查看 PD Trace 能力与源码证据 →</a></p>',
 )
+index += section(
+    "control-plane-topic",
+    "专题 / 控制面架构与可观测源码",
+    '<p>沿部署、容量、成员三条闭环，分析 Operator、Admission、DGD/DCD、DGDR/Profiler、DGDSA、模型管理和 Discovery。可观测部分追到指标定义、记录调用、状态持久化和采集出口。</p><p><a href="control-plane.html">进入控制面专题 →</a></p>',
+)
+index += section(
+    "storage-events-topic",
+    "专题 / Storage &amp; Events 架构与可观测源码",
+    '<p>区分新旧 KVBM、分层存储与物理传输、NIXL 遥测、KV 事件聚合、Event Plane 和 Router 指标；沿注册、计数、时序与失败边界追到源码。</p><p><a href="storage-events.html">进入 Storage &amp; Events 专题 →</a></p>',
+)
+index += section(
+    "reliability-topic",
+    "专题 / 可靠性与流式生命周期",
+    '<p>追踪 HTTP/SSE、准入、取消信号、PD 清理、超时、迁移重放、资源释放和优雅退出；逐层解释指标终态与保证边界。</p><p><a href="reliability.html">进入可靠性专题 →</a></p>',
+)
 (OUT / "index.html").write_text(
     page(
         "Dynamo 源码阅读路线",
-        "先建立系统地图，再沿请求和观测数据流深入实现。当前交付：模块大纲讨论稿 + 可观测性源码专题。",
+        "00–12 模块均已展开；从架构与请求路径，进入数据、观测、控制反馈和可重复验证。",
         index,
         [
             ("scope", "阅读边界"),
@@ -588,10 +620,14 @@ index += section(
             ("deployment", "实战部署分析"),
             ("target-cluster", "完整部署目标"),
             ("planner-topic", "Planner 专题"),
+            ("pd-serving-topic", "Prefill / Decode 分离"),
             ("pd-trace-topic", "PD Trace 专题"),
+            ("control-plane-topic", "控制面专题"),
+            ("storage-events-topic", "Storage & Events"),
+            ("reliability-topic", "可靠性与流式生命周期"),
         ],
-        True,
-    )
+        False,
+    ).replace("首个源码专题 v0.1", "全模块导航 v1.0")
 )
 (OUT / "observability.html").write_text(
     page(

@@ -1,0 +1,787 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>引擎适配与 Rust Sidecar · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#backends-scope">01 / 阅读范围与证据版本</a><a href="#backends-architecture">02 / 三种形态，复用职责而非强行等同实现</a><a href="#backends-traits">03 / LLMEngine 与 RawEngine 的模态边界</a><a href="#backends-lifecycle">04 / Worker 持有完整生命周期</a><a href="#backends-terminal">05 / 流式输出与错误契约</a><a href="#backends-cancel">06 / 取消监控与 RAII 各负责什么</a><a href="#backends-trace">07 / engine.generate span：链接与字段按观察时点填写</a><a href="#backends-python-protocol">08 / 既有三种 Python backend 的职责</a><a href="#backends-sidecar-vllm">09 / vLLM Sidecar：native proto 能力影响字段接受</a><a href="#backends-sidecar-sg">10 / SGLang Sidecar：默认 gRPC 与特定 native HTTP 分支</a><a href="#backends-trt-load">11 / TensorRT-LLM Sidecar：负载采集也有 freshness</a><a href="#backends-metrics-contract">12 / 观测契约：foreign 指标、component snapshot、lifecycle 三条线</a><a href="#backends-bridge">13 / Python registry 桥接：文本与 typed 两个回调</a><a href="#backends-snapshot">14 / SnapshotPublisher：自然生产者更新与缺失值</a><a href="#backends-integration">15 / 接入一个引擎需要完成的工作</a><a href="#backends-diagram">16 / 架构分层图与交叉阅读</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 9734418e5</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>引擎适配与 Rust Sidecar</h1><p class="lede">区分既有 Python backend、共享 Backend SDK 与原生引擎 Sidecar；深入流式契约、生命周期和指标桥接。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 9734418e5</span><span class="pill ">系统源码专题 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="backends-scope" class="lesson"><div class="sectionhead"><h2>01 / 阅读范围与证据版本</h2><label class="done"><input type="checkbox" data-read="backends-scope"> 已读</label></div><p>区分既有 Python backend、共享 Backend SDK 与原生引擎 Sidecar；深入流式契约、生命周期和指标桥接。</p><aside class="note ">源码固定于 9734418e5bc71027e6bd04a09314bf1765208c72（workspace 1.7.0），与 PD / 可靠性等新专题使用同一代码基线。本文分析实现和配置边界，未运行推理、性能实验或集群修改。历史部署与旧版章节须按版本对照。</aside></section><section id="backends-architecture" class="lesson"><div class="sectionhead"><h2>02 / 三种形态，复用职责而非强行等同实现</h2><label class="done"><input type="checkbox" data-read="backends-architecture"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>形态</th><th>请求路径</th><th>主要 owner</th></tr></thead><tbody><tr><td>既有 Python 后端</td><td>Runtime Python endpoint → request handler → engine Python API</td><td>各 backend 的 main / worker_factory / init_llm / handlers</td></tr><tr><td>common/backend SDK</td><td>Python BaseEngine → PyO3 → Rust Worker / EngineAdapter</td><td>Worker 负责统一生命周期，Engine 负责引擎行为</td></tr><tr><td>Rust Sidecar</td><td>Dynamo planes → Rust Worker / adapter → native gRPC（特定路径也可 HTTP）→ engine</td><td>Sidecar 转换契约，引擎独立启动/运行</td></tr></tbody></table></div><p>common/backend 是与旧入口并行的路径，不能称整个 Python 适配已统一迁移。Sidecar 在该版本文档中标为 Experimental；支持矩阵和 native proto 能力须逐后端/版本核对。Dynamo 在引擎之上编排，不接管其 CUDA kernel、attention 或内部调度器。</p></section><section id="backends-traits" class="lesson"><div class="sectionhead"><h2>03 / LLMEngine 与 RawEngine 的模态边界</h2><label class="done"><input type="checkbox" data-read="backends-traits"> 已读</label></div><details class="source" id="src-backends-1"><summary><b>源码 · LLMEngine start 与 token stream 契约</b><small>lib/backend-common/src/engine.rs:196–250</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/engine.rs#L196-L250" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>196</i>pub trait LLMEngine: Send + Sync + &#x27;static {</span>
+<span class="line"><i>197</i>    /// Start the engine and return registration metadata.</span>
+<span class="line"><i>198</i>    ///</span>
+<span class="line"><i>199</i>    /// After this returns, the engine MUST be ready to accept `generate()`</span>
+<span class="line"><i>200</i>    /// calls. `Worker` will register the model and begin serving immediately.</span>
+<span class="line"><i>201</i>    /// Use interior mutability for any state allocated here.</span>
+<span class="line"><i>202</i>    ///</span>
+<span class="line"><i>203</i>    /// `worker_id` is an opaque, runtime-allocated unique identifier for</span>
+<span class="line"><i>204</i>    /// this worker. It is stable from `start()` onward for the worker&#x27;s</span>
+<span class="line"><i>205</i>    /// lifetime and unique across replicas in the cluster. Engines that</span>
+<span class="line"><i>206</i>    /// need a per-worker key for cluster-wide bookkeeping should derive it</span>
+<span class="line"><i>207</i>    /// from this value rather than hashing host/pid or asking operators for a</span>
+<span class="line"><i>208</i>    /// CLI override. The internal mechanism (discovery instance ID) is not</span>
+<span class="line"><i>209</i>    /// part of the contract — engines should treat it as opaque.</span>
+<span class="line"><i>210</i>    ///</span>
+<span class="line"><i>211</i>    /// `start()` is async and may take minutes for real backends (e.g.</span>
+<span class="line"><i>212</i>    /// compiling a model graph on an accelerator). Emit</span>
+<span class="line"><i>213</i>    /// `tracing::info!` checkpoints so operators see progress — this</span>
+<span class="line"><i>214</i>    /// call is otherwise a silent window between process launch and</span>
+<span class="line"><i>215</i>    /// endpoint serving.</span>
+<span class="line"><i>216</i>    async fn start(&amp;self, worker_id: u64) -&gt; Result&lt;EngineConfig, DynamoError&gt;;</span>
+<span class="line"><i>217</i></span>
+<span class="line"><i>218</i>    /// Yield streaming response chunks for a single request.</span>
+<span class="line"><i>219</i>    ///</span>
+<span class="line"><i>220</i>    /// Called concurrently for multiple in-flight requests. The returned</span>
+<span class="line"><i>221</i>    /// stream MUST poll `ctx.is_stopped()` between yields; on cancellation,</span>
+<span class="line"><i>222</i>    /// emit a terminal `Ok(chunk)` with `FinishReason::Cancelled`.</span>
+<span class="line"><i>223</i>    ///</span>
+<span class="line"><i>224</i>    /// Stream item: `Result&lt;LLMEngineOutput, DynamoError&gt;`.</span>
+<span class="line"><i>225</i>    ///   * `Ok(chunk)` carries normal output. Exactly one terminal `Ok`</span>
+<span class="line"><i>226</i>    ///     chunk (one with `finish_reason` set) must be the last item</span>
+<span class="line"><i>227</i>    ///     yielded, and no items may follow it.</span>
+<span class="line"><i>228</i>    ///   * `Err(dynamo_err)` carries a typed mid-stream failure (e.g.</span>
+<span class="line"><i>229</i>    ///     `BackendError::InvalidArgument`). It is itself terminal — the</span>
+<span class="line"><i>230</i>    ///     framework forwards it as `Annotated::error` and stops polling</span>
+<span class="line"><i>231</i>    ///     the stream. Use this instead of yielding an `Ok` chunk with</span>
+<span class="line"><i>232</i>    ///     `FinishReason::Error` when you want the typed `BackendError`</span>
+<span class="line"><i>233</i>    ///     variant preserved end-to-end.</span>
+<span class="line"><i>234</i>    ///</span>
+<span class="line"><i>235</i>    /// `completion_usage` on the terminal is optional but recommended —</span>
+<span class="line"><i>236</i>    /// the frontend aggregates it when present. In debug builds, the</span>
+<span class="line"><i>237</i>    /// framework wraps the stream in a validator that panics on contract</span>
+<span class="line"><i>238</i>    /// violations.</span>
+<span class="line"><i>239</i>    ///</span>
+<span class="line"><i>240</i>    /// The returned stream is `&#x27;static`: clone or move any state from</span>
+<span class="line"><i>241</i>    /// `&amp;self` or `request` into the stream body before constructing it.</span>
+<span class="line"><i>242</i>    /// Use [`chunk::token`] for non-terminal chunks and</span>
+<span class="line"><i>243</i>    /// [`LLMEngineOutput::cancelled`] / `::stop` / `::length` / `::error`</span>
+<span class="line"><i>244</i>    /// for terminal chunks (combine with [`LLMEngineOutputExt`] for</span>
+<span class="line"><i>245</i>    /// fluent field setting).</span>
+<span class="line"><i>246</i>    async fn generate(</span>
+<span class="line"><i>247</i>        &amp;self,</span>
+<span class="line"><i>248</i>        request: PreprocessedRequest,</span>
+<span class="line"><i>249</i>        ctx: GenerateContext,</span>
+<span class="line"><i>250</i>    ) -&gt; Result&lt;BoxStream&lt;&#x27;static, Result&lt;LLMEngineOutput, DynamoError&gt;&gt;, DynamoError&gt;;</span></code></pre></details><details class="source" id="src-backends-2"><summary><b>源码 · RawEngine 使用 JSON 请求/响应而非 token pipeline</b><small>lib/backend-common/src/engine.rs:439–487</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/engine.rs#L439-L487" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>439</i>pub trait RawEngine: Send + Sync + &#x27;static {</span>
+<span class="line"><i>440</i>    /// Start the engine and return registration metadata. See</span>
+<span class="line"><i>441</i>    /// [`LLMEngine::start`] — same contract. Media engines typically leave</span>
+<span class="line"><i>442</i>    /// the KV-related `EngineConfig` fields unset.</span>
+<span class="line"><i>443</i>    async fn start(&amp;self, worker_id: u64) -&gt; Result&lt;EngineConfig, DynamoError&gt;;</span>
+<span class="line"><i>444</i></span>
+<span class="line"><i>445</i>    /// Yield response object(s) for a single media-generation request.</span>
+<span class="line"><i>446</i>    ///</span>
+<span class="line"><i>447</i>    /// `request` is the raw OpenAI-shaped request body. Yield the response</span>
+<span class="line"><i>448</i>    /// body as JSON: exactly one (terminal) object for non-streaming</span>
+<span class="line"><i>449</i>    /// modalities, or intermediate progress objects ending with a terminal</span>
+<span class="line"><i>450</i>    /// one for streaming modalities (e.g. video progress).</span>
+<span class="line"><i>451</i>    ///</span>
+<span class="line"><i>452</i>    /// As with [`LLMEngine::generate`], poll `ctx.is_stopped()` between</span>
+<span class="line"><i>453</i>    /// yields and stop promptly on cancellation. A mid-stream `Err` is</span>
+<span class="line"><i>454</i>    /// terminal and forwarded as `Annotated::error`.</span>
+<span class="line"><i>455</i>    async fn generate(</span>
+<span class="line"><i>456</i>        &amp;self,</span>
+<span class="line"><i>457</i>        request: serde_json::Value,</span>
+<span class="line"><i>458</i>        ctx: GenerateContext,</span>
+<span class="line"><i>459</i>    ) -&gt; Result&lt;BoxStream&lt;&#x27;static, Result&lt;serde_json::Value, DynamoError&gt;&gt;, DynamoError&gt;;</span>
+<span class="line"><i>460</i></span>
+<span class="line"><i>461</i>    /// Abort an in-flight request (optional, default no-op). See</span>
+<span class="line"><i>462</i>    /// [`LLMEngine::abort`].</span>
+<span class="line"><i>463</i>    async fn abort(&amp;self, _ctx: Arc&lt;dyn AsyncEngineContext&gt;) {}</span>
+<span class="line"><i>464</i></span>
+<span class="line"><i>465</i>    /// See [`LLMEngine::is_quiescent`]. Raw engines are aggregated, so the</span>
+<span class="line"><i>466</i>    /// `Worker` never polls this; the default suffices.</span>
+<span class="line"><i>467</i>    async fn is_quiescent(&amp;self) -&gt; Result&lt;Option&lt;bool&gt;, DynamoError&gt; {</span>
+<span class="line"><i>468</i>        Ok(None)</span>
+<span class="line"><i>469</i>    }</span>
+<span class="line"><i>470</i></span>
+<span class="line"><i>471</i>    /// Release all engine resources. Called exactly once; must be null-safe</span>
+<span class="line"><i>472</i>    /// against partial state and idempotent. See [`LLMEngine::cleanup`].</span>
+<span class="line"><i>473</i>    async fn cleanup(&amp;self) -&gt; Result&lt;(), DynamoError&gt;;</span>
+<span class="line"><i>474</i></span>
+<span class="line"><i>475</i>    /// Wire up Prometheus surfaces (optional, default empty). See</span>
+<span class="line"><i>476</i>    /// [`LLMEngine::setup_metrics`]. Media engines that expose per-rank</span>
+<span class="line"><i>477</i>    /// gauges use the same `MetricsBindings` handoff.</span>
+<span class="line"><i>478</i>    async fn setup_metrics(&amp;self, _ctx: MetricsCtx&lt;&#x27;_&gt;) -&gt; Result&lt;MetricsBindings, DynamoError&gt; {</span>
+<span class="line"><i>479</i>        Ok(MetricsBindings::default())</span>
+<span class="line"><i>480</i>    }</span>
+<span class="line"><i>481</i></span>
+<span class="line"><i>482</i>    /// Canary payload for the runtime&#x27;s `HealthCheckManager` (optional,</span>
+<span class="line"><i>483</i>    /// default `None`). See [`LLMEngine::health_check_payload`].</span>
+<span class="line"><i>484</i>    async fn health_check_payload(&amp;self) -&gt; Result&lt;Option&lt;serde_json::Value&gt;, DynamoError&gt; {</span>
+<span class="line"><i>485</i>        Ok(None)</span>
+<span class="line"><i>486</i>    }</span>
+<span class="line"><i>487</i>}</span></code></pre></details><p>LLMEngine 接收 PreprocessedRequest，返回 LLMEngineOutput；RawEngine 接收/返回 JSON，对图像/音视频生成不强塞 tokenizer、detokenizer 与 KV 语义。WorkerConfig.model_input 与 endpoint type 要匹配所选路径。新模态扩展不能仅靠把 JSON 塞进 token_ids。</p></section><section id="backends-lifecycle" class="lesson"><div class="sectionhead"><h2>04 / Worker 持有完整生命周期</h2><label class="done"><input type="checkbox" data-read="backends-lifecycle"> 已读</label></div><div class="flow"><div><b>01</b>构造 / from_args</div><div><b>02</b>engine.start</div><div><b>03</b>metadata / metrics / 注册</div><div><b>04</b>generate / abort</div><div><b>05</b>停止新请求 / grace / Prefill drain</div><div><b>06</b>cleanup</div></div><details class="source" id="src-backends-3"><summary><b>源码 · Python Worker 映射配置到 Rust Runtime/Worker</b><small>components/src/dynamo/common/backend/worker.py:220–260</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/common/backend/worker.py#L220-L260" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>220</i>    async def run(self) -&gt; None:</span>
+<span class="line"><i>221</i>        configure_dynamo_logging()</span>
+<span class="line"><i>222</i></span>
+<span class="line"><i>223</i>        if self.config.use_kv_events:</span>
+<span class="line"><i>224</i>            # The runtime auto-detects NATS now; the field is preserved on</span>
+<span class="line"><i>225</i>            # the dataclass for source-compat with existing callers but no</span>
+<span class="line"><i>226</i>            # longer plumbed anywhere. Surface the silent-drop loudly so</span>
+<span class="line"><i>227</i>            # operators don&#x27;t assume their setting took effect.</span>
+<span class="line"><i>228</i>            warnings.warn(</span>
+<span class="line"><i>229</i>                &quot;WorkerConfig.use_kv_events is deprecated and ignored. NATS &quot;</span>
+<span class="line"><i>230</i>                &quot;enablement is determined automatically from the event-plane &quot;</span>
+<span class="line"><i>231</i>                &quot;configuration; remove this argument.&quot;,</span>
+<span class="line"><i>232</i>                DeprecationWarning,</span>
+<span class="line"><i>233</i>                stacklevel=2,</span>
+<span class="line"><i>234</i>            )</span>
+<span class="line"><i>235</i></span>
+<span class="line"><i>236</i>        if self.config.response_plane not in {&quot;tcp&quot;, &quot;quic&quot;, &quot;velo&quot;}:</span>
+<span class="line"><i>237</i>            raise ValueError(&quot;response_plane must be &#x27;tcp&#x27;, &#x27;quic&#x27;, or &#x27;velo&#x27;&quot;)</span>
+<span class="line"><i>238</i>        os.environ[&quot;DYN_RESPONSE_PLANE&quot;] = self.config.response_plane</span>
+<span class="line"><i>239</i></span>
+<span class="line"><i>240</i>        runtime_cfg = _backend.RuntimeConfig(</span>
+<span class="line"><i>241</i>            discovery_backend=self.config.discovery_backend,</span>
+<span class="line"><i>242</i>            request_plane=self.config.request_plane,</span>
+<span class="line"><i>243</i>            event_plane=self.config.event_plane,</span>
+<span class="line"><i>244</i>        )</span>
+<span class="line"><i>245</i>        worker_cfg = _backend.WorkerConfig(</span>
+<span class="line"><i>246</i>            namespace=self.config.namespace,</span>
+<span class="line"><i>247</i>            component=self.config.component,</span>
+<span class="line"><i>248</i>            endpoint=self.config.endpoint,</span>
+<span class="line"><i>249</i>            kv_state_endpoint=self.config.kv_state_endpoint,</span>
+<span class="line"><i>250</i>            model_name=self.config.model_name,</span>
+<span class="line"><i>251</i>            served_model_name=self.config.served_model_name,</span>
+<span class="line"><i>252</i>            model_input=self.config.model_input,</span>
+<span class="line"><i>253</i>            endpoint_types=self.config.endpoint_types,</span>
+<span class="line"><i>254</i>            custom_jinja_template=self.config.custom_jinja_template,</span>
+<span class="line"><i>255</i>            tool_call_parser=self.config.tool_call_parser,</span>
+<span class="line"><i>256</i>            reasoning_parser=self.config.reasoning_parser,</span>
+<span class="line"><i>257</i>            default_thinking_mode=self.config.default_thinking_mode,</span>
+<span class="line"><i>258</i>            exclude_tools_when_tool_choice_none=(</span>
+<span class="line"><i>259</i>                self.config.exclude_tools_when_tool_choice_none</span>
+<span class="line"><i>260</i>            ),</span></code></pre></details><p>from_args 是工厂，构造不等于 engine ready。start 成功后应能生成，Worker 才注册模型。shutdown 在 start 调用前、调用中、成功后有不同清理路径：partial-start cleanup 必须 null-safe；构造阶段自己持有的资源仍需 Drop/析构负责。</p></section><section id="backends-terminal" class="lesson"><div class="sectionhead"><h2>05 / 流式输出与错误契约</h2><label class="done"><input type="checkbox" data-read="backends-terminal"> 已读</label></div><details class="source" id="src-backends-4"><summary><b>源码 · terminal、typed error 与 usage</b><small>lib/backend-common/src/engine.rs:218–250</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/engine.rs#L218-L250" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>218</i>    /// Yield streaming response chunks for a single request.</span>
+<span class="line"><i>219</i>    ///</span>
+<span class="line"><i>220</i>    /// Called concurrently for multiple in-flight requests. The returned</span>
+<span class="line"><i>221</i>    /// stream MUST poll `ctx.is_stopped()` between yields; on cancellation,</span>
+<span class="line"><i>222</i>    /// emit a terminal `Ok(chunk)` with `FinishReason::Cancelled`.</span>
+<span class="line"><i>223</i>    ///</span>
+<span class="line"><i>224</i>    /// Stream item: `Result&lt;LLMEngineOutput, DynamoError&gt;`.</span>
+<span class="line"><i>225</i>    ///   * `Ok(chunk)` carries normal output. Exactly one terminal `Ok`</span>
+<span class="line"><i>226</i>    ///     chunk (one with `finish_reason` set) must be the last item</span>
+<span class="line"><i>227</i>    ///     yielded, and no items may follow it.</span>
+<span class="line"><i>228</i>    ///   * `Err(dynamo_err)` carries a typed mid-stream failure (e.g.</span>
+<span class="line"><i>229</i>    ///     `BackendError::InvalidArgument`). It is itself terminal — the</span>
+<span class="line"><i>230</i>    ///     framework forwards it as `Annotated::error` and stops polling</span>
+<span class="line"><i>231</i>    ///     the stream. Use this instead of yielding an `Ok` chunk with</span>
+<span class="line"><i>232</i>    ///     `FinishReason::Error` when you want the typed `BackendError`</span>
+<span class="line"><i>233</i>    ///     variant preserved end-to-end.</span>
+<span class="line"><i>234</i>    ///</span>
+<span class="line"><i>235</i>    /// `completion_usage` on the terminal is optional but recommended —</span>
+<span class="line"><i>236</i>    /// the frontend aggregates it when present. In debug builds, the</span>
+<span class="line"><i>237</i>    /// framework wraps the stream in a validator that panics on contract</span>
+<span class="line"><i>238</i>    /// violations.</span>
+<span class="line"><i>239</i>    ///</span>
+<span class="line"><i>240</i>    /// The returned stream is `&#x27;static`: clone or move any state from</span>
+<span class="line"><i>241</i>    /// `&amp;self` or `request` into the stream body before constructing it.</span>
+<span class="line"><i>242</i>    /// Use [`chunk::token`] for non-terminal chunks and</span>
+<span class="line"><i>243</i>    /// [`LLMEngineOutput::cancelled`] / `::stop` / `::length` / `::error`</span>
+<span class="line"><i>244</i>    /// for terminal chunks (combine with [`LLMEngineOutputExt`] for</span>
+<span class="line"><i>245</i>    /// fluent field setting).</span>
+<span class="line"><i>246</i>    async fn generate(</span>
+<span class="line"><i>247</i>        &amp;self,</span>
+<span class="line"><i>248</i>        request: PreprocessedRequest,</span>
+<span class="line"><i>249</i>        ctx: GenerateContext,</span>
+<span class="line"><i>250</i>    ) -&gt; Result&lt;BoxStream&lt;&#x27;static, Result&lt;LLMEngineOutput, DynamoError&gt;&gt;, DynamoError&gt;;</span></code></pre></details><p>正常 chunk 无 finish_reason，最后一项是带 finish_reason 的 Ok 或 typed Err，终态后不能再有数据。Err 保留 DynamoError/BackendError 分类，比把所有错误拼成普通字符串更可诊断。debug validator 会抓终态后继续输出，但不强制每次提前结束都存在 terminal；conformance kit 才覆盖缺失终态场景。</p></section><section id="backends-cancel" class="lesson"><div class="sectionhead"><h2>06 / 取消监控与 RAII 各负责什么</h2><label class="done"><input type="checkbox" data-read="backends-cancel"> 已读</label></div><details class="source" id="src-backends-5"><summary><b>源码 · abort、Prefill is_quiescent 与 cleanup 语义</b><small>lib/backend-common/src/engine.rs:252–304</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/engine.rs#L252-L304" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>252</i>    /// Abort an in-flight request (optional, default no-op).</span>
+<span class="line"><i>253</i>    ///</span>
+<span class="line"><i>254</i>    /// Called by the framework only when `ctx.stopped()` or `ctx.killed()`</span>
+<span class="line"><i>255</i>    /// fires — i.e. when the client or operator explicitly cancels. It is</span>
+<span class="line"><i>256</i>    /// NOT called when the response stream is simply dropped (e.g. TCP</span>
+<span class="line"><i>257</i>    /// reset, consumer-side timeout without cancellation).</span>
+<span class="line"><i>258</i>    ///</span>
+<span class="line"><i>259</i>    /// For cleanup that must happen on ANY drop path (releasing an</span>
+<span class="line"><i>260</i>    /// accelerator slot, freeing a request handle), put the release logic</span>
+<span class="line"><i>261</i>    /// inside the `generate` stream body using RAII — a guard whose</span>
+<span class="line"><i>262</i>    /// `Drop` runs when the stream is dropped, however that happens. Use</span>
+<span class="line"><i>263</i>    /// `abort` only for out-of-band notifications (e.g. telling a remote</span>
+<span class="line"><i>264</i>    /// scheduler to cancel compute early).</span>
+<span class="line"><i>265</i>    async fn abort(&amp;self, _ctx: Arc&lt;dyn AsyncEngineContext&gt;) {}</span>
+<span class="line"><i>266</i></span>
+<span class="line"><i>267</i>    /// Whether in-flight KV transfers are done, so `cleanup` may release GPU</span>
+<span class="line"><i>268</i>    /// memory. The `Worker` polls this on prefill workers between the grace</span>
+<span class="line"><i>269</i>    /// period and [`cleanup`](LLMEngine::cleanup):</span>
+<span class="line"><i>270</i>    ///</span>
+<span class="line"><i>271</i>    /// - `Ok(Some(true))`  — quiescent; exit the drain loop now.</span>
+<span class="line"><i>272</i>    /// - `Ok(Some(false))` — busy; poll again next tick.</span>
+<span class="line"><i>273</i>    /// - `Ok(None)`        — no introspection (default); poll until the drain</span>
+<span class="line"><i>274</i>    ///   budget expires, then cleanup. Never frees KV early.</span>
+<span class="line"><i>275</i>    /// - `Err(_)`          — logged and treated as `Ok(None)`.</span>
+<span class="line"><i>276</i>    ///</span>
+<span class="line"><i>277</i>    /// Aggregated/decode workers are never polled. Override only if the engine</span>
+<span class="line"><i>278</i>    /// can observe transfer completion (e.g. a connector or scheduler).</span>
+<span class="line"><i>279</i>    async fn is_quiescent(&amp;self) -&gt; Result&lt;Option&lt;bool&gt;, DynamoError&gt; {</span>
+<span class="line"><i>280</i>        Ok(None)</span>
+<span class="line"><i>281</i>    }</span>
+<span class="line"><i>282</i></span>
+<span class="line"><i>283</i>    /// Release all engine resources. Called exactly once.</span>
+<span class="line"><i>284</i>    ///</span>
+<span class="line"><i>285</i>    /// `Worker` guarantees:</span>
+<span class="line"><i>286</i>    ///</span>
+<span class="line"><i>287</i>    /// * `cleanup` runs after [`start`](LLMEngine::start) succeeded</span>
+<span class="line"><i>288</i>    ///   *and* on shutdown — the common case.</span>
+<span class="line"><i>289</i>    /// * `cleanup` also runs after `start` raised, on the partial</span>
+<span class="line"><i>290</i>    ///   state the engine may have allocated before failing (inner</span>
+<span class="line"><i>291</i>    ///   LLM handle, sockets, background tasks). Implementations</span>
+<span class="line"><i>292</i>    ///   **must** be null-safe: guard each resource with an `is</span>
+<span class="line"><i>293</i>    ///   None` / `Option::is_some` check so a partially constructed</span>
+<span class="line"><i>294</i>    ///   engine can be released without panic.</span>
+<span class="line"><i>295</i>    /// * `cleanup` is **not** called when `start` was never invoked</span>
+<span class="line"><i>296</i>    ///   (pre-start shutdown via SIGTERM during distributed runtime</span>
+<span class="line"><i>297</i>    ///   construction). Engines whose constructors allocate</span>
+<span class="line"><i>298</i>    ///   resources must release them via `Drop` rather than rely on</span>
+<span class="line"><i>299</i>    ///   `cleanup`.</span>
+<span class="line"><i>300</i>    ///</span>
+<span class="line"><i>301</i>    /// `cleanup` must also be idempotent: a second call after a</span>
+<span class="line"><i>302</i>    /// successful first call must return `Ok(())` without re-entering</span>
+<span class="line"><i>303</i>    /// teardown (NCCL groups and similar fail noisily on double-free).</span>
+<span class="line"><i>304</i>    async fn cleanup(&amp;self) -&gt; Result&lt;(), DynamoError&gt;;</span></code></pre></details><details class="source" id="src-backends-6"><summary><b>源码 · Stop/Kill monitor、首 token barrier 与 abort timeout</b><small>lib/backend-common/src/adapter.rs:350–411</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/adapter.rs#L350-L411" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>350</i></span>
+<span class="line"><i>351</i>        let (drop_tx, mut drop_rx) = oneshot::channel();</span>
+<span class="line"><i>352</i>        let abort_engine = self.engine.clone();</span>
+<span class="line"><i>353</i>        let abort_ctx = ctx.clone();</span>
+<span class="line"><i>354</i>        tokio::spawn(async move {</span>
+<span class="line"><i>355</i>            let mut dropped_stream = None;</span>
+<span class="line"><i>356</i>            // Stream teardown may race with cancellation.</span>
+<span class="line"><i>357</i>            let cancelled = tokio::select! {</span>
+<span class="line"><i>358</i>                _ = abort_ctx.stopped() =&gt; {</span>
+<span class="line"><i>359</i>                    tracing::debug!(request_id = abort_ctx.id(), &quot;cancellation observed (stopped)&quot;);</span>
+<span class="line"><i>360</i>                    true</span>
+<span class="line"><i>361</i>                }</span>
+<span class="line"><i>362</i>                _ = abort_ctx.killed() =&gt; {</span>
+<span class="line"><i>363</i>                    tracing::debug!(request_id = abort_ctx.id(), &quot;cancellation observed (killed)&quot;);</span>
+<span class="line"><i>364</i>                    true</span>
+<span class="line"><i>365</i>                }</span>
+<span class="line"><i>366</i>                stream = &amp;mut drop_rx =&gt; {</span>
+<span class="line"><i>367</i>                    dropped_stream = Some(stream);</span>
+<span class="line"><i>368</i>                    abort_ctx.is_stopped() || abort_ctx.is_killed()</span>
+<span class="line"><i>369</i>                },</span>
+<span class="line"><i>370</i>            };</span>
+<span class="line"><i>371</i>            if !cancelled {</span>
+<span class="line"><i>372</i>                return;</span>
+<span class="line"><i>373</i>            }</span>
+<span class="line"><i>374</i>            // `biased`: if first-token AND drop both fire in the same cycle,</span>
+<span class="line"><i>375</i>            // prefer first-token — the request reached the abortable state.</span>
+<span class="line"><i>376</i>            // `wait_for` `Err(Closed)` (all senders dropped) means the</span>
+<span class="line"><i>377</i>            // request was torn down before first-token; treat as drop.</span>
+<span class="line"><i>378</i>            if let Some(rx) = &amp;mut ft_rx</span>
+<span class="line"><i>379</i>                &amp;&amp; !*rx.borrow()</span>
+<span class="line"><i>380</i>            {</span>
+<span class="line"><i>381</i>                if dropped_stream.is_some() {</span>
+<span class="line"><i>382</i>                    return;</span>
+<span class="line"><i>383</i>                }</span>
+<span class="line"><i>384</i>                tracing::debug!(</span>
+<span class="line"><i>385</i>                    request_id = abort_ctx.id(),</span>
+<span class="line"><i>386</i>                    &quot;deferring engine.abort() until first-token observed&quot;</span>
+<span class="line"><i>387</i>                );</span>
+<span class="line"><i>388</i>                tokio::select! {</span>
+<span class="line"><i>389</i>                    biased;</span>
+<span class="line"><i>390</i>                    res = rx.wait_for(|v| *v) =&gt; {</span>
+<span class="line"><i>391</i>                        if res.is_err() {</span>
+<span class="line"><i>392</i>                            return;</span>
+<span class="line"><i>393</i>                        }</span>
+<span class="line"><i>394</i>                    }</span>
+<span class="line"><i>395</i>                    _ = &amp;mut drop_rx =&gt; return,</span>
+<span class="line"><i>396</i>                }</span>
+<span class="line"><i>397</i>            }</span>
+<span class="line"><i>398</i>            if tokio::time::timeout(ABORT_TIMEOUT, abort_engine.abort(abort_ctx.clone()))</span>
+<span class="line"><i>399</i>                .await</span>
+<span class="line"><i>400</i>                .is_err()</span>
+<span class="line"><i>401</i>            {</span>
+<span class="line"><i>402</i>                tracing::warn!(</span>
+<span class="line"><i>403</i>                    request_id = abort_ctx.id(),</span>
+<span class="line"><i>404</i>                    timeout_secs = ABORT_TIMEOUT.as_secs(),</span>
+<span class="line"><i>405</i>                    &quot;engine abort timed out; releasing cancelled stream&quot;</span>
+<span class="line"><i>406</i>                );</span>
+<span class="line"><i>407</i>            }</span>
+<span class="line"><i>408</i>            drop((dropped_stream, drop_rx));</span>
+<span class="line"><i>409</i>        });</span>
+<span class="line"><i>410</i></span>
+<span class="line"><i>411</i>        #[cfg(debug_assertions)]</span></code></pre></details><p>框架监听 Stop/Kill 并调用 abort；静默 stream Drop 不保证触发 abort。每请求资源释放要放在 stream 内的 RAII/finally，abort 用于通知外部调度器提前停止。Decode 可等待首 token 的安全点再 abort，以免接收侧还未导入 staged KV 时破坏传输；详见可靠性章节。</p></section><section id="backends-trace" class="lesson"><div class="sectionhead"><h2>07 / engine.generate span：链接与字段按观察时点填写</h2><label class="done"><input type="checkbox" data-read="backends-trace"> 已读</label></div><details class="source" id="src-backends-7"><summary><b>源码 · 引擎 span、role 与 predecessor OTel Link</b><small>lib/backend-common/src/adapter.rs:227–285</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/adapter.rs#L227-L285" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>227</i>    async fn generate(</span>
+<span class="line"><i>228</i>        &amp;self,</span>
+<span class="line"><i>229</i>        input: SingleIn&lt;PreprocessedRequest&gt;,</span>
+<span class="line"><i>230</i>    ) -&gt; Result&lt;ManyOut&lt;Annotated&lt;LLMEngineOutput&gt;&gt;, Error&gt; {</span>
+<span class="line"><i>231</i>        let (request, handle) = input.into_parts();</span>
+<span class="line"><i>232</i>        let ctx: Arc&lt;dyn AsyncEngineContext&gt; = handle.context();</span>
+<span class="line"><i>233</i></span>
+<span class="line"><i>234</i>        // Per-request worker-side span. Nests under `handle_payload` (set up</span>
+<span class="line"><i>235</i>        // by the runtime&#x27;s NATS ingress) so the trace tree has a contiguous</span>
+<span class="line"><i>236</i>        // worker layer. Attributes get filled in across the stream lifecycle:</span>
+<span class="line"><i>237</i>        // - `model`, `input_tokens`, `disagg_role` on entry,</span>
+<span class="line"><i>238</i>        // - `migration_trace_id` / `migration_span_id` on entry when the</span>
+<span class="line"><i>239</i>        //   request carries a predecessor link (prefill→decode handoff or</span>
+<span class="line"><i>240</i>        //   migration retry),</span>
+<span class="line"><i>241</i>        // - `ttft_ms` on first non-empty chunk,</span>
+<span class="line"><i>242</i>        // - `output_tokens`, `finish_reason`, `cancelled`, `itl_*_ms` on</span>
+<span class="line"><i>243</i>        //   terminal.</span>
+<span class="line"><i>244</i>        let span = tracing::info_span!(</span>
+<span class="line"><i>245</i>            target: &quot;request_span&quot;,</span>
+<span class="line"><i>246</i>            &quot;engine.generate&quot;,</span>
+<span class="line"><i>247</i>            model = %request.model,</span>
+<span class="line"><i>248</i>            input_tokens = request.token_ids.len(),</span>
+<span class="line"><i>249</i>            disagg_role = self.mode.as_str(),</span>
+<span class="line"><i>250</i>            migration_trace_id = tracing::field::Empty,</span>
+<span class="line"><i>251</i>            migration_span_id = tracing::field::Empty,</span>
+<span class="line"><i>252</i>            ttft_ms = tracing::field::Empty,</span>
+<span class="line"><i>253</i>            output_tokens = tracing::field::Empty,</span>
+<span class="line"><i>254</i>            finish_reason = tracing::field::Empty,</span>
+<span class="line"><i>255</i>            cancelled = tracing::field::Empty,</span>
+<span class="line"><i>256</i>            error_kind = tracing::field::Empty,</span>
+<span class="line"><i>257</i>            avg_itl_ms = tracing::field::Empty,</span>
+<span class="line"><i>258</i>            itl_p50_ms = tracing::field::Empty,</span>
+<span class="line"><i>259</i>            itl_p99_ms = tracing::field::Empty,</span>
+<span class="line"><i>260</i>            itl_max_ms = tracing::field::Empty,</span>
+<span class="line"><i>261</i>        );</span>
+<span class="line"><i>262</i></span>
+<span class="line"><i>263</i>        // If this request was migrated (either prefill→decode handoff or a</span>
+<span class="line"><i>264</i>        // retry from a previous attempt), attach a real OTel Link from</span>
+<span class="line"><i>265</i>        // engine.generate to the predecessor&#x27;s span. Tempo / Jaeger render</span>
+<span class="line"><i>266</i>        // this as a directional pointer — operators can trace the</span>
+<span class="line"><i>267</i>        // request&#x27;s path through any number of hops without copy-pasting</span>
+<span class="line"><i>268</i>        // span IDs. Attribute fallback (`migration_trace_id` /</span>
+<span class="line"><i>269</i>        // `migration_span_id`) covers JSONL log readers.</span>
+<span class="line"><i>270</i>        if let Some(link) = request.migration_link.as_ref() {</span>
+<span class="line"><i>271</i>            span.record(&quot;migration_trace_id&quot;, link.trace_id.as_str());</span>
+<span class="line"><i>272</i>            span.record(&quot;migration_span_id&quot;, link.span_id.as_str());</span>
+<span class="line"><i>273</i>            if let (Ok(trace_id), Ok(span_id)) = (</span>
+<span class="line"><i>274</i>                TraceId::from_hex(&amp;link.trace_id),</span>
+<span class="line"><i>275</i>                SpanId::from_hex(&amp;link.span_id),</span>
+<span class="line"><i>276</i>            ) {</span>
+<span class="line"><i>277</i>                span.add_link(SpanContext::new(</span>
+<span class="line"><i>278</i>                    trace_id,</span>
+<span class="line"><i>279</i>                    span_id,</span>
+<span class="line"><i>280</i>                    TraceFlags::SAMPLED,</span>
+<span class="line"><i>281</i>                    true, // is_remote</span>
+<span class="line"><i>282</i>                    TraceState::default(),</span>
+<span class="line"><i>283</i>                ));</span>
+<span class="line"><i>284</i>            }</span>
+<span class="line"><i>285</i>        }</span></code></pre></details><p>span 起点记录 model、input tokens、disagg role；首个非空输出填 TTFT，终态汇总 output、finish、cancel 和 ITL。migration_link 形成真实 OTel Link，同时保留 trace/span ID 字段供日志读取。Link 与 parent-child 有不同语义，不能只看 Trace 树缩进判断 PD 已断链；原生 Sidecar 向 engine 的 tracing 还需单独核对。</p></section><section id="backends-python-protocol" class="lesson"><div class="sectionhead"><h2>08 / 既有三种 Python backend 的职责</h2><label class="done"><input type="checkbox" data-read="backends-python-protocol"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>后端</th><th>适配核心</th><th>需逐路径核对</th></tr></thead><tbody><tr><td>SGLang</td><td>Engine.async_generate、Bootstrap、native / standard 请求分支</td><td>external_trace_header、n=1、DP rank、abort / cache-hit trailing metadata</td></tr><tr><td>vLLM</td><td>prompt / sampling 构建、engine.generate 与 KV connector protocol</td><td>kv_transfer_params、多模态、generation defaults、typed errors</td></tr><tr><td>TensorRT-LLM</td><td>LLM generate_async、disaggregated codec 与 push egress 能力</td><td>context_only / generation_only、ctx_request_id、first-token 通知</td></tr></tbody></table></div><p>协议源码已在<a href="pd-serving.html">PD 分离</a>与<a href="reliability.html">可靠性</a>中展开。本章聚焦它们与 SDK/Sidecar 的边界，不把某个 Python handler 的能力直接承诺给 native gRPC 路径。</p></section><section id="backends-sidecar-vllm" class="lesson"><div class="sectionhead"><h2>09 / vLLM Sidecar：native proto 能力影响字段接受</h2><label class="done"><input type="checkbox" data-read="backends-sidecar-vllm"> 已读</label></div><details class="source" id="src-backends-8"><summary><b>源码 · 多模态声明、reasoning 与 proto 版本校验</b><small>lib/sidecar/vllm/src/engine.rs:835–885</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/sidecar/vllm/src/engine.rs#L835-L885" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>835</i>    async fn generate(</span>
+<span class="line"><i>836</i>        &amp;self,</span>
+<span class="line"><i>837</i>        request: dynamo_backend_common::PreprocessedRequest,</span>
+<span class="line"><i>838</i>        ctx: GenerateContext,</span>
+<span class="line"><i>839</i>    ) -&gt; Result&lt;BoxStream&lt;&#x27;static, Result&lt;LLMEngineOutput, DynamoError&gt;&gt;, DynamoError&gt; {</span>
+<span class="line"><i>840</i>        if request_has_multimodal_input(&amp;request) &amp;&amp; !self.model.supports_multimodal {</span>
+<span class="line"><i>841</i>            return Err(client::invalid_argument(format!(</span>
+<span class="line"><i>842</i>                &quot;model `{}` does not advertise multimodal support&quot;,</span>
+<span class="line"><i>843</i>                self.model.served_name</span>
+<span class="line"><i>844</i>            )));</span>
+<span class="line"><i>845</i>        }</span>
+<span class="line"><i>846</i>        let client = self</span>
+<span class="line"><i>847</i>            .client</span>
+<span class="line"><i>848</i>            .get()</span>
+<span class="line"><i>849</i>            .ok_or_else(|| client::engine_shutdown(&quot;vLLM sidecar is not started&quot;))?;</span>
+<span class="line"><i>850</i>        let request_id = ctx.id().to_string();</span>
+<span class="line"><i>851</i>        let mut request = normalize_response_options(request)?;</span>
+<span class="line"><i>852</i>        if !self.model.reports_proto_0_6()</span>
+<span class="line"><i>853</i>            &amp;&amp; consume_reasoning_parser_args(&amp;mut request.extra_args)</span>
+<span class="line"><i>854</i>            &amp;&amp; let Some(parser) = self.model.reasoning_parser()</span>
+<span class="line"><i>855</i>        {</span>
+<span class="line"><i>856</i>            // Without the settings, vLLM&#x27;s parser guesses from the prompt where</span>
+<span class="line"><i>857</i>            // reasoning ends. Nothing reads them when vLLM runs no parser.</span>
+<span class="line"><i>858</i>            return Err(client::invalid_argument(format!(</span>
+<span class="line"><i>859</i>                &quot;vLLM runs reasoning parser `{parser}`, but its gRPC server predates vllm-proto 0.6.0 and cannot receive this request&#x27;s reasoning settings; start vllm-rs with `--reasoning-parser none` or upgrade vLLM&quot;</span>
+<span class="line"><i>860</i>            )));</span>
+<span class="line"><i>861</i>        }</span>
+<span class="line"><i>862</i>        // Fail on the prefill leg too, before it computes KV that decode would</span>
+<span class="line"><i>863</i>        // reject. Encode never samples.</span>
+<span class="line"><i>864</i>        let checks_controls = !self.mode.is_encode();</span>
+<span class="line"><i>865</i>        if checks_controls</span>
+<span class="line"><i>866</i>            &amp;&amp; request.stop_conditions.max_thinking_tokens.is_some()</span>
+<span class="line"><i>867</i>            &amp;&amp; self.model.reports_proto_0_6()</span>
+<span class="line"><i>868</i>            &amp;&amp; self.model.reasoning_parser().is_none()</span>
+<span class="line"><i>869</i>        {</span>
+<span class="line"><i>870</i>            // The native gRPC path skips vLLM&#x27;s frontend check and would</span>
+<span class="line"><i>871</i>            // otherwise ignore the budget.</span>
+<span class="line"><i>872</i>            return Err(client::invalid_argument(</span>
+<span class="line"><i>873</i>                &quot;max_thinking_tokens requires vLLM to run a reasoning parser&quot;,</span>
+<span class="line"><i>874</i>            ));</span>
+<span class="line"><i>875</i>        }</span>
+<span class="line"><i>876</i>        let mut state = ResponseState::new(&amp;request, self.mode);</span>
+<span class="line"><i>877</i>        let data_parallel_rank = data_parallel_rank(&amp;request, self.mode);</span>
+<span class="line"><i>878</i>        let mut proto_request = build_generate_request(request, request_id, self.mode)?;</span>
+<span class="line"><i>879</i>        if checks_controls &amp;&amp; !self.model.reports_proto_0_6() {</span>
+<span class="line"><i>880</i>            require_proto_0_6_controls(&amp;proto_request, self.model.proto_version())?;</span>
+<span class="line"><i>881</i>        }</span>
+<span class="line"><i>882</i>        proto_request.model.clone_from(&amp;self.model.served_name);</span>
+<span class="line"><i>883</i>        if self.model.is_base_model_name(&amp;proto_request.lora_name) {</span>
+<span class="line"><i>884</i>            // Routers may address the base model by name through the adapter field.</span>
+<span class="line"><i>885</i>            proto_request.lora_name.clear();</span></code></pre></details><details class="source" id="src-backends-9"><summary><b>源码 · 原生 Abort 请求</b><small>lib/sidecar/vllm/src/engine.rs:1014–1027</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/sidecar/vllm/src/engine.rs#L1014-L1027" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1014</i>    async fn abort(&amp;self, ctx: Arc&lt;dyn AsyncEngineContext&gt;) {</span>
+<span class="line"><i>1015</i>        let Some(client) = self.client.get() else {</span>
+<span class="line"><i>1016</i>            return;</span>
+<span class="line"><i>1017</i>        };</span>
+<span class="line"><i>1018</i>        if let Err(error) = client.abort(ctx.id().to_string()).await {</span>
+<span class="line"><i>1019</i>            // Escaped: the message embeds the engine&#x27;s gRPC status text, so raw</span>
+<span class="line"><i>1020</i>            // newlines from the peer could forge separate log records.</span>
+<span class="line"><i>1021</i>            tracing::warn!(</span>
+<span class="line"><i>1022</i>                request_id = ctx.id(),</span>
+<span class="line"><i>1023</i>                error = %error.to_string().escape_debug(),</span>
+<span class="line"><i>1024</i>                &quot;vLLM Control.Abort failed&quot;</span>
+<span class="line"><i>1025</i>            );</span>
+<span class="line"><i>1026</i>        }</span>
+<span class="line"><i>1027</i>    }</span></code></pre></details><p>Sidecar 读取 native model/proto 元数据，转换 PreprocessedRequest 并对版本不足的 reasoning/control 字段定向拒绝。不能假设 engine Python API 接受的所有扩展也能通过旧 gRPC proto。TP 跨节点通常仍是一个 engine 的并行执行；不是每个 TP rank 都独立接一个 Router 请求。</p></section><section id="backends-sidecar-sg" class="lesson"><div class="sectionhead"><h2>10 / SGLang Sidecar：默认 gRPC 与特定 native HTTP 分支</h2><label class="done"><input type="checkbox" data-read="backends-sidecar-sg"> 已读</label></div><details class="source" id="src-backends-10"><summary><b>源码 · native 请求路由、HTTP ready 与 gRPC client</b><small>lib/sidecar/sglang/src/engine.rs:348–383</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/sidecar/sglang/src/engine.rs#L348-L383" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>348</i>    async fn generate(</span>
+<span class="line"><i>349</i>        &amp;self,</span>
+<span class="line"><i>350</i>        mut request: PreprocessedRequest,</span>
+<span class="line"><i>351</i>        ctx: GenerateContext,</span>
+<span class="line"><i>352</i>    ) -&gt; Result&lt;BoxStream&lt;&#x27;static, Result&lt;LLMEngineOutput, DynamoError&gt;&gt;, DynamoError&gt; {</span>
+<span class="line"><i>353</i>        let state = self</span>
+<span class="line"><i>354</i>            .state</span>
+<span class="line"><i>355</i>            .get()</span>
+<span class="line"><i>356</i>            .ok_or_else(|| client::engine_shutdown(&quot;generate called before start&quot;))?;</span>
+<span class="line"><i>357</i>        if let Some(native_request) = native_http::request(</span>
+<span class="line"><i>358</i>            &amp;request,</span>
+<span class="line"><i>359</i>            ctx.id(),</span>
+<span class="line"><i>360</i>            self.disaggregation_mode,</span>
+<span class="line"><i>361</i>            self.bootstrap_host.as_deref(),</span>
+<span class="line"><i>362</i>            self.bootstrap_port,</span>
+<span class="line"><i>363</i>        )? {</span>
+<span class="line"><i>364</i>            let native_http = state.native_http.clone().ok_or_else(|| {</span>
+<span class="line"><i>365</i>                client::invalid_arg(</span>
+<span class="line"><i>366</i>                    &quot;native SGLang Generate is unavailable because no ready incremental HTTP endpoint was discovered&quot;,</span>
+<span class="line"><i>367</i>                )</span>
+<span class="line"><i>368</i>            })?;</span>
+<span class="line"><i>369</i>            return Ok(native_http.generate(native_request, ctx, self.cancel.child_token()));</span>
+<span class="line"><i>370</i>        }</span>
+<span class="line"><i>371</i>        if request.stop_conditions.max_tokens.is_none() {</span>
+<span class="line"><i>372</i>            request.stop_conditions.max_tokens = omitted_max_tokens_default(</span>
+<span class="line"><i>373</i>                state.combined_token_limit,</span>
+<span class="line"><i>374</i>                request.token_ids.len(),</span>
+<span class="line"><i>375</i>                request.stop_conditions.min_tokens,</span>
+<span class="line"><i>376</i>            );</span>
+<span class="line"><i>377</i>        }</span>
+<span class="line"><i>378</i>        let mut grpc_client = state.pool.stream_client();</span>
+<span class="line"><i>379</i></span>
+<span class="line"><i>380</i>        let prompt_tokens = request.token_ids.len() as u32;</span>
+<span class="line"><i>381</i>        let return_tokens_as_ids = request</span>
+<span class="line"><i>382</i>            .output_options</span>
+<span class="line"><i>383</i>            .return_tokens_as_token_ids</span></code></pre></details><p>标准 token 路径使用 native gRPC；特定原生 Generate 请求根据能力走 incremental HTTP。没有发现 ready HTTP endpoint 时明确报错，不能从默认 gRPC 可用推断所有原生协议都能接入。Bootstrap/DP/多节点元数据仍需与引擎版本配套。</p></section><section id="backends-trt-load" class="lesson"><div class="sectionhead"><h2>11 / TensorRT-LLM Sidecar：负载采集也有 freshness</h2><label class="done"><input type="checkbox" data-read="backends-trt-load"> 已读</label></div><details class="source" id="src-backends-11"><summary><b>源码 · setup_metrics 创建 per-rank bindings、GetLoad 轮询与 stale deadline</b><small>lib/sidecar/trtllm/src/engine.rs:699–750</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/sidecar/trtllm/src/engine.rs#L699-L750" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>699</i>    async fn setup_metrics(&amp;self, _ctx: MetricsCtx&lt;&#x27;_&gt;) -&gt; Result&lt;MetricsBindings, DynamoError&gt; {</span>
+<span class="line"><i>700</i>        let routing = self</span>
+<span class="line"><i>701</i>            .routing</span>
+<span class="line"><i>702</i>            .get()</span>
+<span class="line"><i>703</i>            .ok_or_else(|| client::engine_shutdown(&quot;TensorRT-LLM sidecar is not started&quot;))?;</span>
+<span class="line"><i>704</i>        if routing.initial_snapshots.is_empty() {</span>
+<span class="line"><i>705</i>            return Ok(MetricsBindings::default());</span>
+<span class="line"><i>706</i>        }</span>
+<span class="line"><i>707</i>        let client = self</span>
+<span class="line"><i>708</i>            .connection</span>
+<span class="line"><i>709</i>            .get()</span>
+<span class="line"><i>710</i>            .ok_or_else(|| client::engine_shutdown(&quot;TensorRT-LLM sidecar is not started&quot;))?</span>
+<span class="line"><i>711</i>            .0</span>
+<span class="line"><i>712</i>            .clone();</span>
+<span class="line"><i>713</i>        let dp_size = routing.dp_size;</span>
+<span class="line"><i>714</i>        let initial = routing.initial_snapshots.clone();</span>
+<span class="line"><i>715</i>        let cancel = self.cancel.clone();</span>
+<span class="line"><i>716</i>        let task_slot = Arc::clone(&amp;self.metrics_task);</span>
+<span class="line"><i>717</i>        let load_failed = self.load_failed.clone();</span>
+<span class="line"><i>718</i>        let load_staleness_limit = self.supervision.load_staleness_limit;</span>
+<span class="line"><i>719</i></span>
+<span class="line"><i>720</i>        let bindings = MetricsBindings {</span>
+<span class="line"><i>721</i>            dp_ranks: (0..dp_size).collect(),</span>
+<span class="line"><i>722</i>            on_publisher_ready: Some(Box::new(move |publisher| {</span>
+<span class="line"><i>723</i>                for snapshot in initial {</span>
+<span class="line"><i>724</i>                    publisher.publish(snapshot.dp_rank, snapshot);</span>
+<span class="line"><i>725</i>                }</span>
+<span class="line"><i>726</i>                let task = tokio::spawn(async move {</span>
+<span class="line"><i>727</i>                    let mut interval = tokio::time::interval(LOAD_POLL_INTERVAL);</span>
+<span class="line"><i>728</i>                    interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);</span>
+<span class="line"><i>729</i>                    let mut warned = false;</span>
+<span class="line"><i>730</i>                    let mut deadline = tokio::time::Instant::now() + load_staleness_limit;</span>
+<span class="line"><i>731</i>                    loop {</span>
+<span class="line"><i>732</i>                        tokio::select! {</span>
+<span class="line"><i>733</i>                            biased;</span>
+<span class="line"><i>734</i>                            _ = cancel.cancelled() =&gt; break,</span>
+<span class="line"><i>735</i>                            _ = tokio::time::sleep_until(deadline) =&gt; {</span>
+<span class="line"><i>736</i>                                load_failed.cancel();</span>
+<span class="line"><i>737</i>                                break;</span>
+<span class="line"><i>738</i>                            }</span>
+<span class="line"><i>739</i>                            _ = interval.tick() =&gt; {</span>
+<span class="line"><i>740</i>                                let load = tokio::select! {</span>
+<span class="line"><i>741</i>                                    biased;</span>
+<span class="line"><i>742</i>                                    _ = cancel.cancelled() =&gt; break,</span>
+<span class="line"><i>743</i>                                    _ = tokio::time::sleep_until(deadline) =&gt; {</span>
+<span class="line"><i>744</i>                                        load_failed.cancel();</span>
+<span class="line"><i>745</i>                                        break;</span>
+<span class="line"><i>746</i>                                    }</span>
+<span class="line"><i>747</i>                                    load = client.get_load(true) =&gt; load,</span>
+<span class="line"><i>748</i>                                };</span>
+<span class="line"><i>749</i>                                match load.and_then(|load| {</span>
+<span class="line"><i>750</i>                                    load_snapshots(load, dp_size)</span></code></pre></details><p>这里的 Sidecar 通过 native GetLoad 轮询产生 snapshot，并在超过 staleness 限制时标记 load_failed。框架统一 snapshot 发布是事件驱动 API，不意味着所有 backend 的原始数据都来自引擎主动推送。采集失败与旧值保留必须结合 readiness/监督逻辑诊断。</p></section><section id="backends-metrics-contract" class="lesson"><div class="sectionhead"><h2>12 / 观测契约：foreign 指标、component snapshot、lifecycle 三条线</h2><label class="done"><input type="checkbox" data-read="backends-metrics-contract"> 已读</label></div><details class="source" id="src-backends-12"><summary><b>源码 · setup_metrics 的两种输出</b><small>lib/backend-common/src/engine.rs:313–338</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/engine.rs#L313-L338" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>313</i>    /// [`start`](LLMEngine::start) succeeds. Default returns an empty</span>
+<span class="line"><i>314</i>    /// [`MetricsBindings`] (no per-rank gauges, no foreign callbacks).</span>
+<span class="line"><i>315</i>    ///</span>
+<span class="line"><i>316</i>    /// Two things an engine can produce here:</span>
+<span class="line"><i>317</i>    /// 1. Bridge a vendor-prefixed registry (`vllm:*`, `sglang:*`,</span>
+<span class="line"><i>318</i>    ///    `trtllm_*`, `lmcache:*`) into the runtime&#x27;s `/metrics` output</span>
+<span class="line"><i>319</i>    ///    via [`EngineMetrics::add_expfmt_callback`](crate::metrics::EngineMetrics::add_expfmt_callback)</span>
+<span class="line"><i>320</i>    ///    on `ctx.metrics`. Side-effect only.</span>
+<span class="line"><i>321</i>    /// 2. Declare `dp_ranks` in [`MetricsBindings`] to opt into the</span>
+<span class="line"><i>322</i>    ///    per-rank `dynamo_component_*` gauges + KV router signal. The</span>
+<span class="line"><i>323</i>    ///    framework constructs a</span>
+<span class="line"><i>324</i>    ///    [`SnapshotPublisher`](crate::snapshot_publisher::SnapshotPublisher)</span>
+<span class="line"><i>325</i>    ///    sized to those ranks and hands it back via</span>
+<span class="line"><i>326</i>    ///    [`MetricsBindings::on_publisher_ready`]. Stash the `Arc` and</span>
+<span class="line"><i>327</i>    ///    call `publisher.publish(rank, snap)` from your stat-logger</span>
+<span class="line"><i>328</i>    ///    thread thereafter — event-driven, no polling.</span>
+<span class="line"><i>329</i>    ///</span>
+<span class="line"><i>330</i>    /// Framework-owned lifecycle gauges (cleanup_time, drain_time,</span>
+<span class="line"><i>331</i>    /// model_load_time) are emitted by `Worker` independent of this</span>
+<span class="line"><i>332</i>    /// method — they do NOT require the engine to opt in.</span>
+<span class="line"><i>333</i>    ///</span>
+<span class="line"><i>334</i>    /// Errors abort startup; `cleanup` runs on the partial state. Do not</span>
+<span class="line"><i>335</i>    /// retain `ctx.metrics` past return.</span>
+<span class="line"><i>336</i>    async fn setup_metrics(&amp;self, _ctx: MetricsCtx&lt;&#x27;_&gt;) -&gt; Result&lt;MetricsBindings, DynamoError&gt; {</span>
+<span class="line"><i>337</i>        Ok(MetricsBindings::default())</span>
+<span class="line"><i>338</i>    }</span></code></pre></details><details class="source" id="src-backends-13"><summary><b>源码 · engine start 计时与独立 lifecycle gauges</b><small>lib/backend-common/src/worker.rs:710–750</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/worker.rs#L710-L750" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>710</i>        let model_load_time_seconds = engine_start.elapsed().as_secs_f64();</span>
+<span class="line"><i>711</i>        tracing::debug!(</span>
+<span class="line"><i>712</i>            model = %engine_config.model,</span>
+<span class="line"><i>713</i>            worker_id,</span>
+<span class="line"><i>714</i>            model_load_time_seconds,</span>
+<span class="line"><i>715</i>            &quot;engine.start() complete&quot;</span>
+<span class="line"><i>716</i>        );</span>
+<span class="line"><i>717</i></span>
+<span class="line"><i>718</i>        // Engine builds its EngineMetrics once. `setup_metrics` is the</span>
+<span class="line"><i>719</i>        // single hook for both foreign-registry expfmt callbacks (side-</span>
+<span class="line"><i>720</i>        // effect on engine_metrics) and the structured component publisher</span>
+<span class="line"><i>721</i>        // (returned in MetricsBindings).</span>
+<span class="line"><i>722</i>        let engine_metrics =</span>
+<span class="line"><i>723</i>            crate::metrics::EngineMetrics::with_engine_config(endpoint.clone(), &amp;engine_config);</span>
+<span class="line"><i>724</i></span>
+<span class="line"><i>725</i>        // Framework-owned lifecycle gauges (cleanup_time, drain_time,</span>
+<span class="line"><i>726</i>        // model_load_time) — always emitted, regardless of engine opt-in.</span>
+<span class="line"><i>727</i>        let lifecycle =</span>
+<span class="line"><i>728</i>            crate::metrics::LifecycleGauges::new(&amp;engine_metrics, model_load_time_seconds)?;</span>
+<span class="line"><i>729</i></span>
+<span class="line"><i>730</i>        self.setup_publishing(</span>
+<span class="line"><i>731</i>            &amp;endpoint,</span>
+<span class="line"><i>732</i>            &amp;engine_config,</span>
+<span class="line"><i>733</i>            &amp;engine_metrics,</span>
+<span class="line"><i>734</i>            model_load_time_seconds,</span>
+<span class="line"><i>735</i>            lifecycle,</span>
+<span class="line"><i>736</i>        )</span>
+<span class="line"><i>737</i>        .await?;</span>
+<span class="line"><i>738</i></span>
+<span class="line"><i>739</i>        // Mid-start signal: engine.start() ran to completion but a signal</span>
+<span class="line"><i>740</i>        // arrived during it. Skip the serve loop and run the orchestrator</span>
+<span class="line"><i>741</i>        // directly so `engine.cleanup()` still runs while the runtime is</span>
+<span class="line"><i>742</i>        // alive.</span>
+<span class="line"><i>743</i>        if shutdown.is_cancelled() {</span>
+<span class="line"><i>744</i>            tracing::info!(&quot;Shutdown signal observed during engine.start(); running orchestrator&quot;);</span>
+<span class="line"><i>745</i>            self.orchestrator_steps(&amp;endpoint).await;</span>
+<span class="line"><i>746</i>            return Ok(());</span>
+<span class="line"><i>747</i>        }</span>
+<span class="line"><i>748</i></span>
+<span class="line"><i>749</i>        self.serve_with_orchestrator(&amp;engine_config, endpoint, shutdown.clone())</span>
+<span class="line"><i>750</i>            .await</span></code></pre></details><details class="source" id="src-backends-14"><summary><b>源码 · 根据 MetricsBindings 组装 publisher</b><small>lib/backend-common/src/worker.rs:753–795</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/worker.rs#L753-L795" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>753</i>    /// Build KV-event publishers and the `SnapshotPublisher` from the</span>
+<span class="line"><i>754</i>    /// engine&#x27;s declarations. KV events flow on the engine&#x27;s own threads</span>
+<span class="line"><i>755</i>    /// (via Push or ZMQ); snapshot writes flow through the publisher</span>
+<span class="line"><i>756</i>    /// inline (no polling, no GIL on the framework side). KV/snapshot setup is skipped when the</span>
+<span class="line"><i>757</i>    /// engine declares neither source, and KV events additionally require a block size. The</span>
+<span class="line"><i>758</i>    /// lifecycle publisher is independent of those engine declarations.</span>
+<span class="line"><i>759</i>    async fn setup_publishing(</span>
+<span class="line"><i>760</i>        &amp;mut self,</span>
+<span class="line"><i>761</i>        endpoint: &amp;dynamo_runtime::component::Endpoint,</span>
+<span class="line"><i>762</i>        engine_config: &amp;EngineConfig,</span>
+<span class="line"><i>763</i>        engine_metrics: &amp;crate::metrics::EngineMetrics,</span>
+<span class="line"><i>764</i>        model_load_time_seconds: f64,</span>
+<span class="line"><i>765</i>        lifecycle: crate::metrics::LifecycleGauges,</span>
+<span class="line"><i>766</i>    ) -&gt; Result&lt;(), DynamoError&gt; {</span>
+<span class="line"><i>767</i>        let ctx = crate::engine::MetricsCtx {</span>
+<span class="line"><i>768</i>            model: &amp;engine_config.model,</span>
+<span class="line"><i>769</i>            component: &amp;self.config.component,</span>
+<span class="line"><i>770</i>            model_load_time_seconds,</span>
+<span class="line"><i>771</i>            metrics: engine_metrics,</span>
+<span class="line"><i>772</i>        };</span>
+<span class="line"><i>773</i>        let bindings = self.engine.setup_metrics(ctx).await?;</span>
+<span class="line"><i>774</i></span>
+<span class="line"><i>775</i>        if !self.config.enable_kv_routing {</span>
+<span class="line"><i>776</i>            tracing::debug!(&quot;enable_kv_routing=false; skipping kv/snapshot publishers&quot;);</span>
+<span class="line"><i>777</i>            self.lifecycle = Some(lifecycle);</span>
+<span class="line"><i>778</i>            return Ok(());</span>
+<span class="line"><i>779</i>        }</span>
+<span class="line"><i>780</i>        let first_token_source = if matches!(&amp;self.engine, EngineKind::Llm(_)) {</span>
+<span class="line"><i>781</i>            let (worker_type, _) = resolve_worker_type_and_needs(&amp;self.config);</span>
+<span class="line"><i>782</i>            FirstTokenSource::for_endpoint(endpoint, worker_type).await</span>
+<span class="line"><i>783</i>        } else {</span>
+<span class="line"><i>784</i>            None</span>
+<span class="line"><i>785</i>        };</span>
+<span class="line"><i>786</i>        let kv_sources = self.engine.kv_event_sources().await?;</span>
+<span class="line"><i>787</i>        if kv_sources.is_empty() &amp;&amp; bindings.dp_ranks.is_empty() {</span>
+<span class="line"><i>788</i>            tracing::debug!(</span>
+<span class="line"><i>789</i>                &quot;engine returned no KV sources / dp_ranks; skipping KV/snapshot publishers&quot;</span>
+<span class="line"><i>790</i>            );</span>
+<span class="line"><i>791</i>            self.publishers = Some(PublisherHandles::lifecycle_only(first_token_source));</span>
+<span class="line"><i>792</i>            self.lifecycle = Some(lifecycle);</span>
+<span class="line"><i>793</i>            return Ok(());</span>
+<span class="line"><i>794</i>        }</span>
+<span class="line"><i>795</i>        let enable_local_indexer = self.config.effective_enable_local_indexer();</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>出口</th><th>产生方式</th><th>边界</th></tr></thead><tbody><tr><td>engine 原生指标</td><td>expfmt / typed callbacks bridge</td><td>保留 vendor 名称；需要避免重复采集</td></tr><tr><td>dynamo_component_*</td><td>声明 DP ranks 并 push ComponentSnapshot</td><td>框架不会凭空推断引擎内部队列</td></tr><tr><td>router kv_used_blocks signal</td><td>SnapshotPublisher 交给 worker metrics publisher</td><td>是路由状态信号，不能用 scrape 替代</td></tr><tr><td>lifecycle gauges</td><td>Worker 记录 model load / drain / cleanup</td><td>不依赖 engine 是否 opt in component metrics</td></tr></tbody></table></div></section><section id="backends-bridge" class="lesson"><div class="sectionhead"><h2>13 / Python registry 桥接：文本与 typed 两个回调</h2><label class="done"><input type="checkbox" data-read="backends-bridge"> 已读</label></div><details class="source" id="src-backends-15"><summary><b>源码 · 同一 engine registry 注册 expfmt 与 typed callback</b><small>components/src/dynamo/common/backend/metrics.py:63–101</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/common/backend/metrics.py#L63-L101" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>63</i>def register_engine_registry(</span>
+<span class="line"><i>64</i>    metrics: _backend.EngineMetrics,</span>
+<span class="line"><i>65</i>    registry: &quot;CollectorRegistry&quot;,</span>
+<span class="line"><i>66</i>    *,</span>
+<span class="line"><i>67</i>    prefix_filters: Optional[list[str]] = None,</span>
+<span class="line"><i>68</i>    exclude_prefixes: Optional[list[str]] = None,</span>
+<span class="line"><i>69</i>) -&gt; None:</span>
+<span class="line"><i>70</i>    &quot;&quot;&quot;Register a Python ``CollectorRegistry`` as a ``/metrics`` callback</span>
+<span class="line"><i>71</i>    against the runtime&#x27;s ``EngineMetrics`` handle. Auto-labels</span>
+<span class="line"><i>72</i>    (namespace/component/endpoint/worker_id/model) are injected at</span>
+<span class="line"><i>73</i>    scrape time.</span>
+<span class="line"><i>74</i></span>
+<span class="line"><i>75</i>    Engines that own a custom ``CollectorRegistry`` (e.g. SGLang&#x27;s</span>
+<span class="line"><i>76</i>    ``multiprocess.MultiProcessCollector`` over the scheduler ZMQ</span>
+<span class="line"><i>77</i>    socket) call this directly. The simpler :func:`register_global_registry`</span>
+<span class="line"><i>78</i>    handles the default ``prometheus_client.REGISTRY`` + K8s</span>
+<span class="line"><i>79</i>    multiproc-conflict case.</span>
+<span class="line"><i>80</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>81</i>    labels = metrics.auto_labels</span>
+<span class="line"><i>82</i>    from dynamo.common.utils.prometheus import get_prometheus_typed</span>
+<span class="line"><i>83</i></span>
+<span class="line"><i>84</i>    # /metrics renders the engine&#x27;s exposition text; OTLP exports the same</span>
+<span class="line"><i>85</i>    # metrics handed over typed. Register both so neither surface is missed.</span>
+<span class="line"><i>86</i>    metrics.register_prometheus_expfmt_callback(</span>
+<span class="line"><i>87</i>        lambda: gather_with_labels(</span>
+<span class="line"><i>88</i>            registry,</span>
+<span class="line"><i>89</i>            labels,</span>
+<span class="line"><i>90</i>            prefix_filters=prefix_filters,</span>
+<span class="line"><i>91</i>            exclude_prefixes=exclude_prefixes,</span>
+<span class="line"><i>92</i>        )</span>
+<span class="line"><i>93</i>    )</span>
+<span class="line"><i>94</i>    metrics.register_prometheus_typed_callback(</span>
+<span class="line"><i>95</i>        lambda: get_prometheus_typed(</span>
+<span class="line"><i>96</i>            registry,</span>
+<span class="line"><i>97</i>            metric_prefix_filters=prefix_filters,</span>
+<span class="line"><i>98</i>            exclude_prefixes=exclude_prefixes,</span>
+<span class="line"><i>99</i>            inject_custom_labels=dict(labels) if labels else None,</span>
+<span class="line"><i>100</i>        )</span>
+<span class="line"><i>101</i>    )</span></code></pre></details><details class="source" id="src-backends-16"><summary><b>源码 · global REGISTRY 的 MultiProcessCollector 冲突处理</b><small>components/src/dynamo/common/backend/metrics.py:104–153</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/common/backend/metrics.py#L104-L153" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>104</i>def register_global_registry(</span>
+<span class="line"><i>105</i>    metrics: _backend.EngineMetrics,</span>
+<span class="line"><i>106</i>    *,</span>
+<span class="line"><i>107</i>    engine_prefix: str,</span>
+<span class="line"><i>108</i>    multiproc_only_prefixes: Optional[list[str]] = None,</span>
+<span class="line"><i>109</i>    exclude_prefixes: Optional[list[str]] = None,</span>
+<span class="line"><i>110</i>) -&gt; None:</span>
+<span class="line"><i>111</i>    &quot;&quot;&quot;Register the global ``prometheus_client.REGISTRY`` against</span>
+<span class="line"><i>112</i>    ``/metrics``, handling the K8s ``MultiProcessCollector`` conflict.</span>
+<span class="line"><i>113</i>    Use from inside :meth:`LLMEngine.register_prometheus` to bridge an</span>
+<span class="line"><i>114</i>    engine&#x27;s native metrics into the runtime&#x27;s combined output.</span>
+<span class="line"><i>115</i></span>
+<span class="line"><i>116</i>    ``engine_prefix`` is the in-memory prefix (e.g. ``&quot;vllm:&quot;``);</span>
+<span class="line"><i>117</i>    ``multiproc_only_prefixes`` is for prefixes that live only in</span>
+<span class="line"><i>118</i>    ``.db`` files (e.g. ``[&quot;lmcache:&quot;]``).</span>
+<span class="line"><i>119</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>120</i>    # Lazy import so engines (notably SGLang, which calls</span>
+<span class="line"><i>121</i>    # set_prometheus_multiproc_dir during sgl.Engine init) can import</span>
+<span class="line"><i>122</i>    # this module before prometheus_client touches the env var.</span>
+<span class="line"><i>123</i>    from prometheus_client import REGISTRY, CollectorRegistry, multiprocess</span>
+<span class="line"><i>124</i></span>
+<span class="line"><i>125</i>    all_prefixes = [engine_prefix] + list(multiproc_only_prefixes or [])</span>
+<span class="line"><i>126</i>    multiproc_dir = os.environ.get(&quot;PROMETHEUS_MULTIPROC_DIR&quot;)</span>
+<span class="line"><i>127</i></span>
+<span class="line"><i>128</i>    if multiproc_dir and os.path.isdir(multiproc_dir):</span>
+<span class="line"><i>129</i>        try:</span>
+<span class="line"><i>130</i>            multiprocess.MultiProcessCollector(REGISTRY)</span>
+<span class="line"><i>131</i>            register_engine_registry(</span>
+<span class="line"><i>132</i>                metrics,</span>
+<span class="line"><i>133</i>                REGISTRY,</span>
+<span class="line"><i>134</i>                prefix_filters=all_prefixes,</span>
+<span class="line"><i>135</i>                exclude_prefixes=exclude_prefixes,</span>
+<span class="line"><i>136</i>            )</span>
+<span class="line"><i>137</i>            return</span>
+<span class="line"><i>138</i>        except ValueError as e:</span>
+<span class="line"><i>139</i>            logger.debug(</span>
+<span class="line"><i>140</i>                &quot;MultiProcessCollector conflict with REGISTRY (%s); &quot;</span>
+<span class="line"><i>141</i>                &quot;using a separate multiproc registry&quot;,</span>
+<span class="line"><i>142</i>                e,</span>
+<span class="line"><i>143</i>            )</span>
+<span class="line"><i>144</i>            # REGISTRY already has the existing MultiProcessCollector,</span>
+<span class="line"><i>145</i>            # so it covers engine_prefix metrics. The fresh mp_registry</span>
+<span class="line"><i>146</i>            # is only needed to pick up multiproc-only prefixes (e.g.</span>
+<span class="line"><i>147</i>            # `lmcache:`) that some forks scrape via a SECOND</span>
+<span class="line"><i>148</i>            # MultiProcessCollector. Filtering the second callback to</span>
+<span class="line"><i>149</i>            # `multiproc_only_prefixes` only avoids double-emitting</span>
+<span class="line"><i>150</i>            # engine_prefix in one /metrics scrape.</span>
+<span class="line"><i>151</i>            register_engine_registry(</span>
+<span class="line"><i>152</i>                metrics,</span>
+<span class="line"><i>153</i>                REGISTRY,</span></code></pre></details><p>labels 在 scrape/转换时注入。仅注册文本回调不等于 OTLP 也有同样数据，因此共享 helper 同时提供 typed callback。多进程 registry 发生 collector 冲突时，第二个 registry 仅抓特定 multiproc-only prefix，避免一次 scrape 重复暴露 engine 系列。PROMETHEUS_MULTIPROC_DIR 的生命周期还要覆盖 engine 后续写入。</p></section><section id="backends-snapshot" class="lesson"><div class="sectionhead"><h2>14 / SnapshotPublisher：自然生产者更新与缺失值</h2><label class="done"><input type="checkbox" data-read="backends-snapshot"> 已读</label></div><details class="source" id="src-backends-17"><summary><b>源码 · ComponentSnapshot 字段与可选 cache-hit rate</b><small>components/src/dynamo/common/backend/publisher.py:39–60</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/common/backend/publisher.py#L39-L60" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>39</i>@dataclass</span>
+<span class="line"><i>40</i>class ComponentSnapshot:</span>
+<span class="line"><i>41</i>    &quot;&quot;&quot;Rich per-rank snapshot the engine pushes into the Rust-owned</span>
+<span class="line"><i>42</i>    :class:`SnapshotPublisher` from its stat-logger thread.</span>
+<span class="line"><i>43</i></span>
+<span class="line"><i>44</i>    ``SnapshotPublisher.publish(rank, snap)`` atomically updates the</span>
+<span class="line"><i>45</i>    per-rank ``dynamo_component_*`` gauges (``total_blocks``,</span>
+<span class="line"><i>46</i>    ``gpu_cache_usage_percent``, ``kv_cache_hit_rate``) AND fires the</span>
+<span class="line"><i>47</i>    router-input signal (``kv_used_blocks``) inline — no GIL on the</span>
+<span class="line"><i>48</i>    framework reader side, no polling.</span>
+<span class="line"><i>49</i></span>
+<span class="line"><i>50</i>    ``kv_cache_hit_rate`` is tri-state:</span>
+<span class="line"><i>51</i>    - ``None``: engine hasn&#x27;t observed requests yet OR has no prefix</span>
+<span class="line"><i>52</i>      cache (gauge skipped — distinguishes &quot;no measurement&quot; from &quot;0%&quot;).</span>
+<span class="line"><i>53</i>    - ``0.0``: legitimate measurement (no hits).</span>
+<span class="line"><i>54</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>55</i></span>
+<span class="line"><i>56</i>    kv_used_blocks: int</span>
+<span class="line"><i>57</i>    kv_total_blocks: int</span>
+<span class="line"><i>58</i>    gpu_cache_usage: float</span>
+<span class="line"><i>59</i>    dp_rank: int</span>
+<span class="line"><i>60</i>    kv_cache_hit_rate: Optional[float] = None</span></code></pre></details><details class="source" id="src-backends-18"><summary><b>源码 · 更新 component gauges 并发布路由信号</b><small>lib/backend-common/src/snapshot_publisher.rs:43–80</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/snapshot_publisher.rs#L43-L80" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>43</i>    pub fn new(</span>
+<span class="line"><i>44</i>        gauges: Arc&lt;ComponentGauges&gt;,</span>
+<span class="line"><i>45</i>        router_publishers: HashMap&lt;u32, Arc&lt;WorkerMetricsPublisher&gt;&gt;,</span>
+<span class="line"><i>46</i>    ) -&gt; Self {</span>
+<span class="line"><i>47</i>        Self {</span>
+<span class="line"><i>48</i>            gauges,</span>
+<span class="line"><i>49</i>            router_publishers,</span>
+<span class="line"><i>50</i>            warned_ranks: Mutex::new(HashSet::new()),</span>
+<span class="line"><i>51</i>        }</span>
+<span class="line"><i>52</i>    }</span>
+<span class="line"><i>53</i></span>
+<span class="line"><i>54</i>    /// Push a snapshot for `dp_rank`. Atomically updates the per-rank</span>
+<span class="line"><i>55</i>    /// `dynamo_component_*` gauges and emits the `kv_used_blocks` router</span>
+<span class="line"><i>56</i>    /// signal. Hot path — no allocation, no GIL acquisition.</span>
+<span class="line"><i>57</i>    ///</span>
+<span class="line"><i>58</i>    /// Ranks not declared at construction are silently dropped (engine</span>
+<span class="line"><i>59</i>    /// emitting for an unknown rank is a misconfiguration the framework</span>
+<span class="line"><i>60</i>    /// can&#x27;t recover from cleanly).</span>
+<span class="line"><i>61</i>    pub fn publish(&amp;self, dp_rank: u32, snap: ComponentSnapshot) {</span>
+<span class="line"><i>62</i>        self.gauges.update(&amp;snap);</span>
+<span class="line"><i>63</i>        if let Some(rp) = self.router_publishers.get(&amp;dp_rank)</span>
+<span class="line"><i>64</i>            &amp;&amp; let Err(e) = rp.publish(Some(dp_rank), None, Some(snap.kv_used_blocks))</span>
+<span class="line"><i>65</i>        {</span>
+<span class="line"><i>66</i>            if self.warned_ranks.lock().insert(dp_rank) {</span>
+<span class="line"><i>67</i>                tracing::warn!(dp_rank, error = %e, &quot;router signal publish failed; suppressing further&quot;);</span>
+<span class="line"><i>68</i>            } else {</span>
+<span class="line"><i>69</i>                tracing::debug!(dp_rank, error = %e, &quot;router signal publish failed&quot;);</span>
+<span class="line"><i>70</i>            }</span>
+<span class="line"><i>71</i>        }</span>
+<span class="line"><i>72</i>    }</span>
+<span class="line"><i>73</i></span>
+<span class="line"><i>74</i>    /// Declared dp_ranks. Stable for the publisher&#x27;s lifetime.</span>
+<span class="line"><i>75</i>    pub fn dp_ranks(&amp;self) -&gt; Vec&lt;u32&gt; {</span>
+<span class="line"><i>76</i>        let mut ranks: Vec&lt;u32&gt; = self.router_publishers.keys().copied().collect();</span>
+<span class="line"><i>77</i>        ranks.sort_unstable();</span>
+<span class="line"><i>78</i>        ranks</span>
+<span class="line"><i>79</i>    }</span>
+<span class="line"><i>80</i>}</span></code></pre></details><details class="source" id="src-backends-19"><summary><b>源码 · 实际 gauge 更新与 cache-hit 可选值</b><small>lib/backend-common/src/metrics.rs:235–258</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/metrics.rs#L235-L258" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>235</i>    /// Apply a snapshot to the per-rank gauges. Atomic stores; safe to</span>
+<span class="line"><i>236</i>    /// call concurrently from multiple engine threads as long as each</span>
+<span class="line"><i>237</i>    /// targets a distinct `dp_rank`.</span>
+<span class="line"><i>238</i>    pub fn update(&amp;self, snap: &amp;crate::engine::ComponentSnapshot) {</span>
+<span class="line"><i>239</i>        let rank = snap.dp_rank.to_string();</span>
+<span class="line"><i>240</i>        self.total_blocks</span>
+<span class="line"><i>241</i>            .with_label_values(&amp;[&amp;rank])</span>
+<span class="line"><i>242</i>            .set(snap.kv_total_blocks as i64);</span>
+<span class="line"><i>243</i>        self.gpu_cache_usage_percent</span>
+<span class="line"><i>244</i>            .with_label_values(&amp;[&amp;rank])</span>
+<span class="line"><i>245</i>            .set(snap.gpu_cache_usage as f64);</span>
+<span class="line"><i>246</i>        // hit_rate is tri-state: None means &quot;no data yet / no prefix</span>
+<span class="line"><i>247</i>        // cache&quot; — skip the gauge update entirely. 0.0 is a legitimate</span>
+<span class="line"><i>248</i>        // measurement (no hits) and DOES write.</span>
+<span class="line"><i>249</i>        if let Some(hr) = snap.kv_cache_hit_rate {</span>
+<span class="line"><i>250</i>            self.kv_cache_hit_rate</span>
+<span class="line"><i>251</i>                .with_label_values(&amp;[&amp;rank])</span>
+<span class="line"><i>252</i>                .set(hr as f64);</span>
+<span class="line"><i>253</i>        }</span>
+<span class="line"><i>254</i>    }</span>
+<span class="line"><i>255</i>}</span>
+<span class="line"><i>256</i></span>
+<span class="line"><i>257</i>/// Standalone hierarchy for tests — no parent, no DRT, no connection_id.</span>
+<span class="line"><i>258</i>#[cfg(any(test, feature = &quot;testing&quot;))]</span></code></pre></details><p>producer 可以是 engine iteration、stat logger 或 Sidecar GetLoad 循环。kv_cache_hit_rate=None 表示未得到数据/不适用，不应显示成测量零命中；旧 gauge 的可见性还要考虑上次写入。snapshot rank、声明 ranks 与 publisher lookup 必须一致；metrics 写入与网络信号发布也不能当成跨系统事务。</p></section><section id="backends-integration" class="lesson"><div class="sectionhead"><h2>15 / 接入一个引擎需要完成的工作</h2><label class="done"><input type="checkbox" data-read="backends-integration"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>工作</th><th>具体结果</th></tr></thead><tbody><tr><td>选定入口</td><td>既有 adapter / common SDK / native Sidecar，固定双方版本与 proto</td></tr><tr><td>描述模型</td><td>ModelInput、endpoint、role、block size、DP/TP/PP 与 tokenizer/config</td></tr><tr><td>实现契约</td><td>并发 generate、terminal/error、取消、partial-start cleanup 与幂等释放</td></tr><tr><td>连接观测</td><td>engine span/header、foreign registry、per-rank snapshots（同时检查 enable_kv_routing 对 publishers 的门控）、lifecycle 与采集出口</td></tr><tr><td>验证能力</td><td>文本/多模态、stream/nonstream、PD、LoRA/control/update 按支持矩阵验证</td></tr><tr><td>运行验证</td><td>conformance + CPU fake gRPC + 授权 GPU smoke；不以探针替代真实请求</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>同版本官方仓库文档</th><th>阅读用途</th></tr></thead><tbody><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/README.md">Backend SDK</a></td><td>共享 Worker 与 Rust engine trait</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/common/backend/README.md">Python Backend SDK</a></td><td>BaseEngine / LLMEngine / RawEngine</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/sidecar/README.md">Sidecar overview</a></td><td>原生协议接入和实验状态</td></tr></tbody></table></div><p>本文未启动引擎或运行 conformance，参见<a href="validation.html">验证与回放</a>。</p></section><section id="backends-diagram" class="lesson"><div class="sectionhead"><h2>16 / 架构分层图与交叉阅读</h2><label class="done"><input type="checkbox" data-read="backends-diagram"> 已读</label></div><div class="diagram"><div class="lane"><b>既有 Python</b><span>main / worker_factory → Runtime endpoint → handler → engine API</span></div><div class="lane"><b>共享 SDK</b><span>Python BaseEngine / Rust LLMEngine → Worker → EngineAdapter</span></div><div class="lane"><b>Sidecar</b><span>Dynamo planes → native adapter → engine gRPC / specific HTTP path</span></div><div class="lane"><b>观测</b><span>foreign registry + ComponentSnapshot + Worker lifecycle → exporter / router signals</span></div></div><p><a href="backends-architecture.mmd">Mermaid 图源</a>按职责分泳道；泳道之间不暗示已经实现自动接线。离线 HTML 无外部渲染依赖。<a href="system-map.html">系统地图</a> / <a href="index.html">全部章节</a>。</p></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 9734418e5bc71027e6bd04a09314bf1765208c72。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

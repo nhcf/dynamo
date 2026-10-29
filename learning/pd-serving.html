@@ -1,0 +1,1741 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>Prefill / Decode 分离：架构、协议与观测源码 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#pd-scope">01 / PD 分离究竟拆开了什么</a><a href="#pd-architecture">02 / 架构：控制消息与 KV 数据各走哪条路</a><a href="#pd-outcomes">03 / 共享编排器有三种 Prefill 结果</a><a href="#pd-activation">04 / 自动激活：发现角色与配置收敛</a><a href="#pd-entry">05 / 入口状态机：先决定是否远端 Prefill</a><a href="#pd-selection">06 / 实例选择、Bootstrap room 与并行拓扑</a><a href="#pd-completed">07 / 完成后交接：Completed 时序</a><a href="#pd-bootstrap">08 / 提前协调：Bootstrap 时序</a><a href="#pd-forward">09 / 并行交接：最终成功必须等待什么</a><a href="#pd-terminal">10 / Prefill 自己结束，以及原始采样上限恢复</a><a href="#pd-sg">11 / SGLang：Bootstrap 与后台结果消费</a><a href="#pd-sg-decode">12 / SGLang Decode：必须把 Bootstrap 交给引擎</a><a href="#pd-vllm">13 / vLLM：由 KV Connector 决定交接契约</a><a href="#pd-vllm-decode">14 / vLLM Decode：恢复交接参数与本地执行分支</a><a href="#pd-trt">15 / TensorRT-LLM：context_only → generation_only</a><a href="#pd-conditional">16 / 条件 PD：评估 Decode 本地 Prefill 是否更划算</a><a href="#pd-cancel">17 / 取消与失败：独立 Prefill 生命周期的理由</a><a href="#pd-timing">18 / 观测源码：Prefill、首 token 与完成时点</a><a href="#pd-transfer-metric">19 / KV transfer estimated latency 到底测到了什么</a><a href="#pd-trace">20 / Trace：请求串联与数据面覆盖是两项检查</a><a href="#pd-configuration">21 / 部署接入：逐层准备与验证</a><a href="#pd-ack">22 / 结合现有 ACK 记录：如何确认真的走 PD</a><a href="#pd-method">23 / 阅读与实战顺序：从一条请求走到性能结论</a><a href="#pd-references">24 / 同版本官方文档与源码分工</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 9734418e5</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>Prefill / Decode 分离：架构、协议与观测源码</h1><p class="lede">从共享 PrefillRouter 状态机，走到三种引擎交接、并行生命周期和阶段指标。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 9734418e5</span><span class="pill ">Prefill / Decode 分离 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="pd-scope" class="lesson"><div class="sectionhead"><h2>01 / PD 分离究竟拆开了什么</h2><label class="done"><input type="checkbox" data-read="pd-scope"> 已读</label></div><p><strong>Dynamo 把一次逻辑生成请求编排到 Prefill 与 Decode 两类资源池，由引擎的交接协议搬运或复用 KV。</strong>Prefill 处理输入上下文，Decode 逐步生成后续 token；它们通常分别偏计算密集与访存密集，但实际瓶颈随模型、批量和输入输出长度变化。</p><div class="tablewrap"><table><thead><tr><th>层</th><th>职责</th><th>关键边界</th></tr></thead><tbody><tr><td>Frontend / PrefillRouter</td><td>发现角色、选择实例、编排交接与 Decode</td><td>转发 token/元数据，不经 Frontend 搬运 KV 张量</td></tr><tr><td>Backend adapter</td><td>把统一请求转换为 SGLang / vLLM / TensorRT-LLM 协议</td><td>三种引擎交接对象与完成时点不同</td></tr><tr><td>Engine / KV connector</td><td>分配 KV、协调接收、执行传输与生成</td><td>NIXL 配置本身不证明实际走 RDMA / GPUDirect</td></tr><tr><td>Discovery / events / metrics</td><td>发布角色与端点、缓存状态和负载、记录运行结果</td><td>KV 事件、KV 数据、Trace 是三条不同路径</td></tr></tbody></table></div><aside class="note ">源码固定于 9734418e5bc71027e6bd04a09314bf1765208c72（workspace 1.7.0）；它是本地文档提交的代码父提交。本文是静态源码解读，未执行集群请求、性能测试或故障注入。ACK 私有 SGLang 1.4.1 的部署证据须单独核对。</aside></section><section id="pd-architecture" class="lesson"><div class="sectionhead"><h2>02 / 架构：控制消息与 KV 数据各走哪条路</h2><label class="done"><input type="checkbox" data-read="pd-architecture"> 已读</label></div><div class="flow"><div><b>01</b>Frontend 收到请求</div><div><b>02</b>PrefillRouter 激活 / 路由</div><div><b>03</b>Prefill 引擎计算 KV</div><div><b>04</b>交接参数 / Bootstrap</div><div><b>05</b>Decode 接收 KV 并生成</div><div><b>06</b>流式结果与清理</div></div><div class="diagram"><div class="lane"><b>请求面</b><span>Client → Frontend → Prefill Worker；Frontend → Decode Worker → token stream → Client。</span></div><div class="lane"><b>KV 数据面</b><span>Prefill Engine / connector ↔ Decode Engine / connector。Bootstrap 是协调入口，张量不回传 Frontend。</span></div><div class="lane"><b>成员与状态</b><span>Discovery 发布 model card / role / bootstrap；KV events 更新缓存索引；Router 用状态选择实例。</span></div><div class="lane"><b>观测</b><span>Router request tracker + backend trace context + engine / connector metrics；需要分别核对采样与采集出口。</span></div></div><p>PD 的收益来自隔离、独立伸缩与批处理；成本包括 KV 移动、跨进程协调与额外排队。不能直接推导为所有请求的 TTFT 都降低。</p></section><section id="pd-outcomes" class="lesson"><div class="sectionhead"><h2>03 / 共享编排器有三种 Prefill 结果</h2><label class="done"><input type="checkbox" data-read="pd-outcomes"> 已读</label></div><details class="source" id="src-pd-serving-outcome"><summary><b>源码 · PrefillOutcome 与 Decode 请求构造</b><small>lib/llm/src/kv_router/prefill_router/mod.rs:98–157</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/mod.rs#L98-L157" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>98</i>    #[error(&quot;No disaggregated params in prefill response: {0}&quot;)]</span>
+<span class="line"><i>99</i>    NoDisaggregatedParams(String),</span>
+<span class="line"><i>100</i>}</span>
+<span class="line"><i>101</i></span>
+<span class="line"><i>102</i>enum PrefillOutcome {</span>
+<span class="line"><i>103</i>    Bootstrap {</span>
+<span class="line"><i>104</i>        bootstrap_info: BootstrapInfo,</span>
+<span class="line"><i>105</i>        worker_id: u64,</span>
+<span class="line"><i>106</i>        /// The decode engine&#x27;s KV receiver needs the prefill DP rank up front;</span>
+<span class="line"><i>107</i>        /// without it SGLang parks the request and asks the prefill bootstrap</span>
+<span class="line"><i>108</i>        /// server over HTTP, and the prefill forward waits on that round trip.</span>
+<span class="line"><i>109</i>        prefill_dp_rank: Option&lt;u32&gt;,</span>
+<span class="line"><i>110</i>    },</span>
+<span class="line"><i>111</i>    Completed {</span>
+<span class="line"><i>112</i>        result: PrefillResult,</span>
+<span class="line"><i>113</i>        worker_id: u64,</span>
+<span class="line"><i>114</i>        worker_link: Option&lt;TraceLink&gt;,</span>
+<span class="line"><i>115</i>    },</span>
+<span class="line"><i>116</i>    Terminal {</span>
+<span class="line"><i>117</i>        output: Box&lt;Annotated&lt;LLMEngineOutput&gt;&gt;,</span>
+<span class="line"><i>118</i>    },</span>
+<span class="line"><i>119</i>}</span>
+<span class="line"><i>120</i></span>
+<span class="line"><i>121</i>/// Turn a request whose prefill has finished into its decode leg.</span>
+<span class="line"><i>122</i>///</span>
+<span class="line"><i>123</i>/// Both surviving outcomes leave KV blocks staged on the prefill worker for one</span>
+<span class="line"><i>124</i>/// specific decode worker, and only that worker&#x27;s KV-transfer-complete path</span>
+<span class="line"><i>125</i>/// frees them. `staged_kv_cleanup` records that obligation so routing still</span>
+<span class="line"><i>126</i>/// delivers the leg after the client has disconnected.</span>
+<span class="line"><i>127</i>fn into_decode_request(</span>
+<span class="line"><i>128</i>    mut req: PreprocessedRequest,</span>
+<span class="line"><i>129</i>    outcome: PrefillOutcome,</span>
+<span class="line"><i>130</i>) -&gt; PreprocessedRequest {</span>
+<span class="line"><i>131</i>    match outcome {</span>
+<span class="line"><i>132</i>        PrefillOutcome::Bootstrap {</span>
+<span class="line"><i>133</i>            bootstrap_info,</span>
+<span class="line"><i>134</i>            worker_id,</span>
+<span class="line"><i>135</i>            prefill_dp_rank,</span>
+<span class="line"><i>136</i>        } =&gt; {</span>
+<span class="line"><i>137</i>            req.bootstrap_info = Some(bootstrap_info);</span>
+<span class="line"><i>138</i>            let routing = req.routing_mut();</span>
+<span class="line"><i>139</i>            routing.prefill_worker_id = Some(worker_id);</span>
+<span class="line"><i>140</i>            routing.prefill_dp_rank = prefill_dp_rank;</span>
+<span class="line"><i>141</i>        }</span>
+<span class="line"><i>142</i>        PrefillOutcome::Completed {</span>
+<span class="line"><i>143</i>            result,</span>
+<span class="line"><i>144</i>            worker_id,</span>
+<span class="line"><i>145</i>            worker_link,</span>
+<span class="line"><i>146</i>        } =&gt; {</span>
+<span class="line"><i>147</i>            req.prefill_result = Some(result);</span>
+<span class="line"><i>148</i>            req.migration_link = worker_link;</span>
+<span class="line"><i>149</i>            req.routing_mut().prefill_worker_id = Some(worker_id);</span>
+<span class="line"><i>150</i>        }</span>
+<span class="line"><i>151</i>        PrefillOutcome::Terminal { .. } =&gt; {</span>
+<span class="line"><i>152</i>            unreachable!(&quot;terminal prefill outcomes return before decode routing&quot;)</span>
+<span class="line"><i>153</i>        }</span>
+<span class="line"><i>154</i>    }</span>
+<span class="line"><i>155</i>    req.staged_kv_cleanup = true;</span>
+<span class="line"><i>156</i>    req</span>
+<span class="line"><i>157</i>}</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>结果</th><th>如何进入 Decode</th><th>意味着什么</th></tr></thead><tbody><tr><td>Completed</td><td>prefill_result + migration_link + prefill_worker_id</td><td>获得计算结果后交接；并不等价于 KV 已被 Decode 消费</td></tr><tr><td>Bootstrap</td><td>bootstrap_info + prefill_worker_id / prefill_dp_rank</td><td>协调信息可用即可启动 Decode，Prefill 继续在后台运行</td></tr><tr><td>Terminal</td><td>直接返回 output</td><td>Prefill 已触发终态，无需伪造 KV 参数或继续 Decode</td></tr></tbody></table></div><aside class="note ">handoff_id 不能当成通用 NIXL transfer ID 或 Trace ID。Request ID、engine request ID、bootstrap room、handoff ID 和 tracing context 各自有语义。</aside><details class="exercise"><summary>阅读检查 · Bootstrap 已返回，能否认为 Prefill 已完成？</summary><p>不能。后台 observer 仍要持续消费 Prefill 流，核对错误和结束时间。</p></details></section><section id="pd-activation" class="lesson"><div class="sectionhead"><h2>04 / 自动激活：发现角色与配置收敛</h2><label class="done"><input type="checkbox" data-read="pd-activation"> 已读</label></div><details class="source" id="src-pd-serving-binding"><summary><b>源码 · 目标 Prefill model card 与运行配置 watcher</b><small>lib/llm/src/kv_router/prefill_router/activation.rs:291–332</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/activation.rs#L291-L332" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>291</i>    async fn build_binding(</span>
+<span class="line"><i>292</i>        context: &amp;PrefillBuildContext,</span>
+<span class="line"><i>293</i>        target: WorkerSetTarget,</span>
+<span class="line"><i>294</i>        kv_cache_block_size: u32,</span>
+<span class="line"><i>295</i>        kv_router_config: Option&lt;KvRouterConfig&gt;,</span>
+<span class="line"><i>296</i>    ) -&gt; Result&lt;PrefillBinding&gt; {</span>
+<span class="line"><i>297</i>        let target_id = target.id();</span>
+<span class="line"><i>298</i>        let endpoint = target.endpoint();</span>
+<span class="line"><i>299</i>        let endpoint_id = endpoint.id();</span>
+<span class="line"><i>300</i>        let client = target.client(context.parent_token.clone()).await?;</span>
+<span class="line"><i>301</i></span>
+<span class="line"><i>302</i>        // Start runtime config watcher for this endpoint (needed for get_disaggregated_endpoint)</span>
+<span class="line"><i>303</i>        // This must be done before creating the router so bootstrap info is available</span>
+<span class="line"><i>304</i>        context</span>
+<span class="line"><i>305</i>            .model_manager</span>
+<span class="line"><i>306</i>            .get_or_create_runtime_config_watcher(endpoint)</span>
+<span class="line"><i>307</i>            .await?;</span>
+<span class="line"><i>308</i></span>
+<span class="line"><i>309</i>        let advertisement = match &amp;target {</span>
+<span class="line"><i>310</i>            WorkerSetTarget::Committed(target) =&gt; resolve_advertisement_from_cards(</span>
+<span class="line"><i>311</i>                std::slice::from_ref(target.card.as_ref()),</span>
+<span class="line"><i>312</i>                context.decode_router_mode,</span>
+<span class="line"><i>313</i>            )?,</span>
+<span class="line"><i>314</i>            WorkerSetTarget::Legacy(endpoint) =&gt; {</span>
+<span class="line"><i>315</i>                Self::resolve_prefill_advertisement(context, endpoint).await?</span>
+<span class="line"><i>316</i>            }</span>
+<span class="line"><i>317</i>        };</span>
+<span class="line"><i>318</i>        let prefill_router_mode = advertisement.router_mode;</span>
+<span class="line"><i>319</i></span>
+<span class="line"><i>320</i>        // Everything the hop uses comes from the prefill card when it says so,</span>
+<span class="line"><i>321</i>        // falling back to the decode set. A block size of 0 means the card never</span>
+<span class="line"><i>322</i>        // declared one, so it cannot be trusted over the decode set&#x27;s.</span>
+<span class="line"><i>323</i>        let prefill_block_size = match advertisement.kv_cache_block_size {</span>
+<span class="line"><i>324</i>            0 =&gt; kv_cache_block_size,</span>
+<span class="line"><i>325</i>            advertised =&gt; advertised,</span>
+<span class="line"><i>326</i>        };</span>
+<span class="line"><i>327</i>        let prefill_session_affinity_ttl = advertisement</span>
+<span class="line"><i>328</i>            .session_affinity_ttl</span>
+<span class="line"><i>329</i>            .unwrap_or(context.session_affinity_ttl);</span>
+<span class="line"><i>330</i>        let load_context = RoutingLoadContext::start(</span>
+<span class="line"><i>331</i>            client.clone(),</span>
+<span class="line"><i>332</i>            RouterLoadSource::Prefill,</span></code></pre></details><details class="source" id="src-pd-serving-activation"><summary><b>源码 · Active / Pending / Untargeted 的一致性快照</b><small>lib/llm/src/kv_router/prefill_router/activation.rs:640–664</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/activation.rs#L640-L664" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>640</i>    pub(super) fn lifecycle_state(&amp;self) -&gt; PrefillLifecycleState {</span>
+<span class="line"><i>641</i>        PrefillLifecycleState::from_atomic(self.lifecycle.load(Ordering::Acquire))</span>
+<span class="line"><i>642</i>    }</span>
+<span class="line"><i>643</i></span>
+<span class="line"><i>644</i>    /// One consistent view of target, lifecycle and binding, read under the</span>
+<span class="line"><i>645</i>    /// target lock. Both publishers (`set_target` and the build loop) store the</span>
+<span class="line"><i>646</i>    /// binding and lifecycle while holding that lock, so a routing decision made</span>
+<span class="line"><i>647</i>    /// from this snapshot cannot interleave with a Pending-&gt;Active transition the</span>
+<span class="line"><i>648</i>    /// way two separate lock-free reads can.</span>
+<span class="line"><i>649</i>    pub(super) fn activation_snapshot(&amp;self) -&gt; ActivationSnapshot {</span>
+<span class="line"><i>650</i>        let target = self.target.lock();</span>
+<span class="line"><i>651</i>        match self.lifecycle_state() {</span>
+<span class="line"><i>652</i>            PrefillLifecycleState::Active =&gt; match self.binding.load_full() {</span>
+<span class="line"><i>653</i>                Some(binding) =&gt; ActivationSnapshot::Active(binding),</span>
+<span class="line"><i>654</i>                // The binding is stored before `Active` under this lock, so this</span>
+<span class="line"><i>655</i>                // arm is not expected; resolve by target rather than panicking.</span>
+<span class="line"><i>656</i>                None if target.is_some() =&gt; ActivationSnapshot::Pending,</span>
+<span class="line"><i>657</i>                None =&gt; ActivationSnapshot::Untargeted,</span>
+<span class="line"><i>658</i>            },</span>
+<span class="line"><i>659</i>            PrefillLifecycleState::Pending if target.is_some() =&gt; ActivationSnapshot::Pending,</span>
+<span class="line"><i>660</i>            PrefillLifecycleState::Pending | PrefillLifecycleState::Unavailable =&gt; {</span>
+<span class="line"><i>661</i>                ActivationSnapshot::Untargeted</span>
+<span class="line"><i>662</i>            }</span>
+<span class="line"><i>663</i>        }</span>
+<span class="line"><i>664</i>    }</span></code></pre></details><details class="source" id="src-pd-serving-pending"><summary><b>源码 · Pending 错误与 Bootstrap 字段解析</b><small>lib/llm/src/kv_router/prefill_router/mod.rs:160–184</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/mod.rs#L160-L184" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>160</i>/// whose prefill binding is still being built. `WorkerUnavailable` is the</span>
+<span class="line"><i>161</i>/// migratable sibling of `Unavailable`: it maps to HTTP 503 and lets the retry</span>
+<span class="line"><i>162</i>/// layer re-dispatch rather than treating the whole model as down.</span>
+<span class="line"><i>163</i>fn prefill_activation_pending_error(model_name: &amp;str, namespace: &amp;str) -&gt; anyhow::Error {</span>
+<span class="line"><i>164</i>    DynamoError::builder()</span>
+<span class="line"><i>165</i>        .class(ErrorClass::WorkerUnavailable)</span>
+<span class="line"><i>166</i>        .message(format!(</span>
+<span class="line"><i>167</i>            &quot;prefill routing for model {model_name} in namespace {namespace} is still activating&quot;</span>
+<span class="line"><i>168</i>        ))</span>
+<span class="line"><i>169</i>        .build()</span>
+<span class="line"><i>170</i>        .into()</span>
+<span class="line"><i>171</i>}</span>
+<span class="line"><i>172</i></span>
+<span class="line"><i>173</i>fn extract_bootstrap_info(params: &amp;serde_json::Value) -&gt; Option&lt;BootstrapInfo&gt; {</span>
+<span class="line"><i>174</i>    let bootstrap_host = params.get(&quot;bootstrap_host&quot;)?.as_str()?.to_string();</span>
+<span class="line"><i>175</i>    let bootstrap_port = u16::try_from(params.get(&quot;bootstrap_port&quot;)?.as_u64()?).ok()?;</span>
+<span class="line"><i>176</i>    let bootstrap_room = params.get(&quot;bootstrap_room&quot;)?.as_u64()?;</span>
+<span class="line"><i>177</i>    Some(BootstrapInfo {</span>
+<span class="line"><i>178</i>        bootstrap_host,</span>
+<span class="line"><i>179</i>        bootstrap_port,</span>
+<span class="line"><i>180</i>        bootstrap_room,</span>
+<span class="line"><i>181</i>        handoff_id: Some(Uuid::new_v4()),</span>
+<span class="line"><i>182</i>    })</span>
+<span class="line"><i>183</i>}</span>
+<span class="line"><i>184</i></span></code></pre></details><p>激活依赖模型、命名空间、角色与端点发布，以及绑定构建完成；仅给进程加角色参数不足以证明路由器已经激活。Prefill card 的路由模式与 block size 可以独立于 Decode 配置，DP、TP、PP 也不能混为一谈。</p><p>Pending 在当前实现中使用 WorkerUnavailable 错误，通常对应 503，且被错误分类视为可迁移；是否实际重试仍受请求资格和预算约束，下一次也可能仍处于 Pending。仓库中部分概念文档称该错误不参与迁移，应以此固定版本实现为准。</p></section><section id="pd-entry" class="lesson"><div class="sectionhead"><h2>05 / 入口状态机：先决定是否远端 Prefill</h2><label class="done"><input type="checkbox" data-read="pd-entry"> 已读</label></div><details class="source" id="src-pd-serving-entry"><summary><b>源码 · 清理外部 bypass 标记、query-only 与激活状态</b><small>lib/llm/src/kv_router/prefill_router/mod.rs:368–441</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/mod.rs#L368-L441" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>368</i>    async fn generate(</span>
+<span class="line"><i>369</i>        &amp;self,</span>
+<span class="line"><i>370</i>        request: SingleIn&lt;PreprocessedRequest&gt;,</span>
+<span class="line"><i>371</i>        next: ServerStreamingEngine&lt;PreprocessedRequest, Annotated&lt;LLMEngineOutput&gt;&gt;,</span>
+<span class="line"><i>372</i>    ) -&gt; Result&lt;ManyOut&lt;Annotated&lt;LLMEngineOutput&gt;&gt;&gt; {</span>
+<span class="line"><i>373</i>        // Extract request data while preserving context</span>
+<span class="line"><i>374</i>        let (mut req, mut context) = request.into_parts();</span>
+<span class="line"><i>375</i>        let request_id = context.id().to_string();</span>
+<span class="line"><i>376</i>        let engine_ctx = context.context();</span>
+<span class="line"><i>377</i></span>
+<span class="line"><i>378</i>        // Conditional-disagg bypass is a router-owned decision. Drop any</span>
+<span class="line"><i>379</i>        // client-supplied marker before the policy runs so normal disagg</span>
+<span class="line"><i>380</i>        // requests cannot accidentally or maliciously skip remote prefill.</span>
+<span class="line"><i>381</i>        req.annotations</span>
+<span class="line"><i>382</i>            .retain(|annotation| annotation != BYPASS_REMOTE_PREFILL_ANNOTATION);</span>
+<span class="line"><i>383</i></span>
+<span class="line"><i>384</i>        // Save original max_tokens for decode</span>
+<span class="line"><i>385</i>        let original_max_tokens = req.stop_conditions.max_tokens;</span>
+<span class="line"><i>386</i></span>
+<span class="line"><i>387</i>        // Query-only requests are owned by the decode RoutingHost. In particular,</span>
+<span class="line"><i>388</i>        // do not turn an advisory worker lookup into conditional local execution.</span>
+<span class="line"><i>389</i>        let query_only = req.get_annotation_value(&quot;query_instance_id&quot;).is_some();</span>
+<span class="line"><i>390</i></span>
+<span class="line"><i>391</i>        // Hot path: an active router with a published binding never takes the</span>
+<span class="line"><i>392</i>        // target lock. Anything else is resolved from one locked snapshot.</span>
+<span class="line"><i>393</i>        if self.lifecycle_state() != PrefillLifecycleState::Active {</span>
+<span class="line"><i>394</i>            match self.activation_snapshot() {</span>
+<span class="line"><i>395</i>                // Activation completed between the lock-free read and the snapshot:</span>
+<span class="line"><i>396</i>                // continue through the prefill path below.</span>
+<span class="line"><i>397</i>                ActivationSnapshot::Active(_) =&gt; {}</span>
+<span class="line"><i>398</i>                // Model admission gates on the registered worker topology, which counts</span>
+<span class="line"><i>399</i>                // a prefill worker as live the moment it registers. This router only</span>
+<span class="line"><i>400</i>                // learns the matching target then, and its binding is built</span>
+<span class="line"><i>401</i>                // asynchronously. Until that build completes the namespace is already</span>
+<span class="line"><i>402</i>                // selectable, so forwarding the request would hand a decode-only worker</span>
+<span class="line"><i>403</i>                // an aggregated request it cannot run (`bootstrap_info is required for</span>
+<span class="line"><i>404</i>                // disaggregated decode`). Fail closed with a migratable error instead:</span>
+<span class="line"><i>405</i>                // the retry layer re-dispatches and the client sees a retryable 503</span>
+<span class="line"><i>406</i>                // rather than a backend failure.</span>
+<span class="line"><i>407</i>                ActivationSnapshot::Pending if !query_only =&gt; {</span>
+<span class="line"><i>408</i>                    tracing::debug!(</span>
+<span class="line"><i>409</i>                        request_id = %request_id,</span>
+<span class="line"><i>410</i>                        model_name = %self.model_name,</span>
+<span class="line"><i>411</i>                        namespace = %self.namespace,</span>
+<span class="line"><i>412</i>                        &quot;Prefill router target is still activating; rejecting request instead of \</span>
+<span class="line"><i>413</i>                         forwarding it to decode without a prefill hop&quot;</span>
+<span class="line"><i>414</i>                    );</span>
+<span class="line"><i>415</i>                    return Err(prefill_activation_pending_error(</span>
+<span class="line"><i>416</i>                        &amp;self.model_name,</span>
+<span class="line"><i>417</i>                        &amp;self.namespace,</span>
+<span class="line"><i>418</i>                    ));</span>
+<span class="line"><i>419</i>                }</span>
+<span class="line"><i>420</i>                // Query-only previews never reach the engine. Otherwise no prefill</span>
+<span class="line"><i>421</i>                // target was ever set (aggregated-capable deployment) or every prefill</span>
+<span class="line"><i>422</i>                // worker left (target cleared): route directly to the backend.</span>
+<span class="line"><i>423</i>                ActivationSnapshot::Pending | ActivationSnapshot::Untargeted =&gt; {</span>
+<span class="line"><i>424</i>                    return next.generate(context.map(|_| req)).await;</span>
+<span class="line"><i>425</i>                }</span>
+<span class="line"><i>426</i>            }</span>
+<span class="line"><i>427</i>        }</span>
+<span class="line"><i>428</i></span>
+<span class="line"><i>429</i>        if query_only {</span>
+<span class="line"><i>430</i>            return next.generate(context.map(|_| req)).await;</span>
+<span class="line"><i>431</i>        }</span>
+<span class="line"><i>432</i></span>
+<span class="line"><i>433</i>        let session_affinity = context</span>
+<span class="line"><i>434</i>            .get_optional::&lt;SessionAffinityId&gt;(SESSION_AFFINITY_CONTEXT_KEY)</span>
+<span class="line"><i>435</i>            .map_err(|message| anyhow::anyhow!(&quot;invalid session affinity context: {message}&quot;))?;</span>
+<span class="line"><i>436</i></span>
+<span class="line"><i>437</i>        if self.conditional_disagg_policy.is_enabled() {</span>
+<span class="line"><i>438</i>            let conditional_request = context.map(|_| req);</span>
+<span class="line"><i>439</i>            match self</span>
+<span class="line"><i>440</i>                .plan_conditional_disagg_decode(&amp;conditional_request, &amp;request_id)</span>
+<span class="line"><i>441</i>                .await</span></code></pre></details><p>客户端提供的 x-bypass-remote-prefill 会先被移除，避免外部伪造路由器拥有的决策。query_instance_id 是咨询 Decode RoutingHost 的查询路径，不实际执行 Prefill。Untargeted 进入后续 backend 路径，需要该 backend 能承接本地 Prefill。</p><aside class="note warn">这不是‘远端 Prefill 任意失败都自动回退聚合’。已派发后的错误会进入正常错误处理，不能在未知 KV 副作用下随意再做一次 Prefill。</aside></section><section id="pd-selection" class="lesson"><div class="sectionhead"><h2>06 / 实例选择、Bootstrap room 与并行拓扑</h2><label class="done"><input type="checkbox" data-read="pd-selection"> 已读</label></div><details class="source" id="src-pd-serving-prepare"><summary><b>源码 · 选中 Prefill 后准备请求与 Bootstrap</b><small>lib/llm/src/kv_router/prefill_router/mod.rs:743–783</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/mod.rs#L743-L783" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>743</i>    fn prepare_prefill_dispatch(</span>
+<span class="line"><i>744</i>        &amp;self,</span>
+<span class="line"><i>745</i>        request: &amp;mut PreprocessedRequest,</span>
+<span class="line"><i>746</i>        target: AffinityTarget,</span>
+<span class="line"><i>747</i>        endpoint_id: &amp;EndpointId,</span>
+<span class="line"><i>748</i>    ) -&gt; anyhow::Result&lt;PreparedPrefill&gt; {</span>
+<span class="line"><i>749</i>        let AffinityTarget { worker_id, dp_rank } = target;</span>
+<span class="line"><i>750</i>        let topology_constraints =</span>
+<span class="line"><i>751</i>            self.preflight_kv_transfer_constraints(Some(endpoint_id), worker_id)?;</span>
+<span class="line"><i>752</i></span>
+<span class="line"><i>753</i>        let bootstrap_info = self</span>
+<span class="line"><i>754</i>            .model_manager</span>
+<span class="line"><i>755</i>            .get_disaggregated_endpoint(endpoint_id, worker_id)</span>
+<span class="line"><i>756</i>            .map(|endpoint| (endpoint_id, endpoint))</span>
+<span class="line"><i>757</i>            .and_then(|(endpoint_id, endpoint)| {</span>
+<span class="line"><i>758</i>                let host = endpoint.bootstrap_host?;</span>
+<span class="line"><i>759</i>                let port = endpoint.bootstrap_port?;</span>
+<span class="line"><i>760</i>                let dp_size = self</span>
+<span class="line"><i>761</i>                    .model_manager</span>
+<span class="line"><i>762</i>                    .get_data_parallel_size(endpoint_id, worker_id);</span>
+<span class="line"><i>763</i>                let random_room = rand::random_range(0..=i64::MAX.cast_unsigned());</span>
+<span class="line"><i>764</i>                let bootstrap_room = compute_bootstrap_room(dp_rank, dp_size, random_room);</span>
+<span class="line"><i>765</i>                Some(BootstrapInfo {</span>
+<span class="line"><i>766</i>                    bootstrap_host: host,</span>
+<span class="line"><i>767</i>                    bootstrap_port: port,</span>
+<span class="line"><i>768</i>                    bootstrap_room,</span>
+<span class="line"><i>769</i>                    handoff_id: Some(Uuid::new_v4()),</span>
+<span class="line"><i>770</i>                })</span>
+<span class="line"><i>771</i>            });</span>
+<span class="line"><i>772</i>        let routing = request.routing_mut();</span>
+<span class="line"><i>773</i>        routing.prefill_worker_id = Some(worker_id);</span>
+<span class="line"><i>774</i>        routing.prefill_dp_rank = dp_rank;</span>
+<span class="line"><i>775</i>        request.bootstrap_info = bootstrap_info.clone();</span>
+<span class="line"><i>776</i></span>
+<span class="line"><i>777</i>        Ok(PreparedPrefill {</span>
+<span class="line"><i>778</i>            worker_id,</span>
+<span class="line"><i>779</i>            prefill_dp_rank: dp_rank,</span>
+<span class="line"><i>780</i>            bootstrap_info,</span>
+<span class="line"><i>781</i>            topology_constraints,</span>
+<span class="line"><i>782</i>        })</span>
+<span class="line"><i>783</i>    }</span></code></pre></details><details class="source" id="src-pd-serving-room"><summary><b>源码 · DP room 编码与 Decode 路由覆盖</b><small>lib/llm/src/kv_router/prefill_router/mod.rs:800–831</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/mod.rs#L800-L831" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>800</i>    let max_room = i64::MAX.cast_unsigned();</span>
+<span class="line"><i>801</i>    debug_assert!(random_room &lt;= max_room);</span>
+<span class="line"><i>802</i>    match (dp_rank, dp_size) {</span>
+<span class="line"><i>803</i>        (Some(rank), Some(size)) if size &gt; 0 =&gt; {</span>
+<span class="line"><i>804</i>            let size = size as u64;</span>
+<span class="line"><i>805</i>            let rank = rank as u64;</span>
+<span class="line"><i>806</i>            let max_quotient = (max_room - rank) / size;</span>
+<span class="line"><i>807</i>            let quotient = random_room % (max_quotient + 1);</span>
+<span class="line"><i>808</i>            quotient * size + rank</span>
+<span class="line"><i>809</i>        }</span>
+<span class="line"><i>810</i>        _ =&gt; random_room,</span>
+<span class="line"><i>811</i>    }</span>
+<span class="line"><i>812</i>}</span>
+<span class="line"><i>813</i></span>
+<span class="line"><i>814</i>fn build_decode_router_override(</span>
+<span class="line"><i>815</i>    existing_override: Option&lt;RouterConfigOverride&gt;,</span>
+<span class="line"><i>816</i>    allow_decode_overlap_affinity: bool,</span>
+<span class="line"><i>817</i>) -&gt; RouterConfigOverride {</span>
+<span class="line"><i>818</i>    let mut override_config = existing_override.unwrap_or_default();</span>
+<span class="line"><i>819</i></span>
+<span class="line"><i>820</i>    // Normal disagg keeps decode routing load-only by forcing zero overlap</span>
+<span class="line"><i>821</i>    // credit. Conditional disagg leaves this unset so the base router</span>
+<span class="line"><i>822</i>    // `overlap_score_credit` applies, unless the request already had an</span>
+<span class="line"><i>823</i>    // explicit override.</span>
+<span class="line"><i>824</i>    if !allow_decode_overlap_affinity {</span>
+<span class="line"><i>825</i>        override_config.overlap_score_credit = Some(0.0);</span>
+<span class="line"><i>826</i>    }</span>
+<span class="line"><i>827</i>    override_config.assume_kv_reuse = Some(false);</span>
+<span class="line"><i>828</i>    override_config.track_prefill_tokens = Some(false);</span>
+<span class="line"><i>829</i></span>
+<span class="line"><i>830</i>    override_config</span>
+<span class="line"><i>831</i>}</span></code></pre></details><p>共享 Frontend 主路径先选择并派发 Prefill，再派发 Decode；直接 Prefill 路由模式则需要外部路由者显式提供 Prefill 实例 ID。引擎内部可能先由 Decode 注册接收信息，不能把引擎的数据流时序套成所有 Frontend 的固定选点顺序。条件 PD 的 Decode preview 是另一个决策分支。</p><p>room 被限制到有符号 64 位范围，并在 DP 信息可用时满足 room % dp_size = dp_rank。它编码的是 DP 分组路由，不是 TP rank。Decode 覆盖把 overlap_score_credit 设为 0、assume_kv_reuse 设为 false，且不再跟踪 Prefill token 负载；这不意味着忽略 Decode 的块占用或容量。</p><p>模型、tokenizer、KV layout/dtype、并行拓扑、LoRA 和缓存隔离信息需符合实际引擎/connector 契约；不能任意混搭后端，也不能简单声称所有组合都要求 TP 完全相同。</p></section><section id="pd-completed" class="lesson"><div class="sectionhead"><h2>07 / 完成后交接：Completed 时序</h2><label class="done"><input type="checkbox" data-read="pd-completed"> 已读</label></div><div class="flow"><div><b>01</b>派发 Prefill</div><div><b>02</b>读取结果并排空尾流</div><div><b>03</b>构造 prefill_result</div><div><b>04</b>附带 worker link</div><div><b>05</b>派发 Decode</div><div><b>06</b>继续生成</div></div><details class="source" id="src-pd-serving-consume"><summary><b>源码 · 首个结果分类与 Prefill 尾流观察</b><small>lib/llm/src/kv_router/prefill_router/admission.rs:22–109</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/admission.rs#L22-L109" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>22</i>    pub(super) async fn consume_prefill_stream(</span>
+<span class="line"><i>23</i>        mut prefill_response: ManyOut&lt;Annotated&lt;LLMEngineOutput&gt;&gt;,</span>
+<span class="line"><i>24</i>        tracker: Option&lt;Arc&lt;RequestTracker&gt;&gt;,</span>
+<span class="line"><i>25</i>        task_guard: Option&lt;dynamo_runtime::engine::EngineContextGuard&gt;,</span>
+<span class="line"><i>26</i>    ) -&gt; Result&lt;PrefillCompletion, PrefillError&gt; {</span>
+<span class="line"><i>27</i>        let Some(first_output) = prefill_response.next().await else {</span>
+<span class="line"><i>28</i>            // The egress ends the response stream as soon as the request context is</span>
+<span class="line"><i>29</i>            // stopped, before the worker&#x27;s final item can arrive. Once a decode</span>
+<span class="line"><i>30</i>            // rejection has stopped this prefill, an empty stream is that cancellation.</span>
+<span class="line"><i>31</i>            if prefill_response.context().is_stopped() {</span>
+<span class="line"><i>32</i>                return Err(PrefillError::Cancelled);</span>
+<span class="line"><i>33</i>            }</span>
+<span class="line"><i>34</i>            return Err(PrefillError::PrefillError(</span>
+<span class="line"><i>35</i>                &quot;Prefill router returned no output (stream ended)&quot;.to_string(),</span>
+<span class="line"><i>36</i>                None,</span>
+<span class="line"><i>37</i>            ));</span>
+<span class="line"><i>38</i>        };</span>
+<span class="line"><i>39</i></span>
+<span class="line"><i>40</i>        if let Some(error) = first_output.err() {</span>
+<span class="line"><i>41</i>            // Include the worker&#x27;s text. `to_pyerr` keeps only `Display`, so a</span>
+<span class="line"><i>42</i>            // `#[source]` is lost. See `PrefillError::PrefillError`.</span>
+<span class="line"><i>43</i>            let detail = format!(&quot;Prefill router returned error in output: {error}&quot;);</span>
+<span class="line"><i>44</i>            return Err(PrefillError::PrefillError(detail, Some(Box::new(error))));</span>
+<span class="line"><i>45</i>        }</span>
+<span class="line"><i>46</i></span>
+<span class="line"><i>47</i>        let mut prompt_tokens_details = first_output</span>
+<span class="line"><i>48</i>            .data</span>
+<span class="line"><i>49</i>            .as_ref()</span>
+<span class="line"><i>50</i>            .and_then(|output| output.completion_usage.as_ref())</span>
+<span class="line"><i>51</i>            .and_then(|usage| usage.prompt_tokens_details.clone());</span>
+<span class="line"><i>52</i></span>
+<span class="line"><i>53</i>        // For SGLang, check if the first output is a bootstrap message.</span>
+<span class="line"><i>54</i>        let is_bootstrap = first_output</span>
+<span class="line"><i>55</i>            .data</span>
+<span class="line"><i>56</i>            .as_ref()</span>
+<span class="line"><i>57</i>            .and_then(|o| o.disaggregated_params.as_ref())</span>
+<span class="line"><i>58</i>            .and_then(|p| p.as_object())</span>
+<span class="line"><i>59</i>            .is_some_and(|obj| {</span>
+<span class="line"><i>60</i>                obj.contains_key(&quot;bootstrap_host&quot;)</span>
+<span class="line"><i>61</i>                    &amp;&amp; obj.contains_key(&quot;bootstrap_port&quot;)</span>
+<span class="line"><i>62</i>                    &amp;&amp; obj.contains_key(&quot;bootstrap_room&quot;)</span>
+<span class="line"><i>63</i>            });</span>
+<span class="line"><i>64</i></span>
+<span class="line"><i>65</i>        let completion = if !is_bootstrap {</span>
+<span class="line"><i>66</i>            if let Some(ref tracker) = tracker {</span>
+<span class="line"><i>67</i>                tracker.record_prefill_complete();</span>
+<span class="line"><i>68</i>            }</span>
+<span class="line"><i>69</i>            while let Some(next) = prefill_response.next().await {</span>
+<span class="line"><i>70</i>                if let Some(error) = next.err() {</span>
+<span class="line"><i>71</i>                    let detail = format!(&quot;Prefill router returned error in output stream: {error}&quot;);</span>
+<span class="line"><i>72</i>                    return Err(PrefillError::PrefillError(detail, Some(Box::new(error))));</span>
+<span class="line"><i>73</i>                }</span>
+<span class="line"><i>74</i>                if let Some(output) = next.data.as_ref()</span>
+<span class="line"><i>75</i>                    &amp;&amp; prompt_tokens_details.is_none()</span>
+<span class="line"><i>76</i>                {</span>
+<span class="line"><i>77</i>                    prompt_tokens_details = output</span>
+<span class="line"><i>78</i>                        .completion_usage</span>
+<span class="line"><i>79</i>                        .as_ref()</span>
+<span class="line"><i>80</i>                        .and_then(|usage| usage.prompt_tokens_details.clone());</span>
+<span class="line"><i>81</i>                }</span>
+<span class="line"><i>82</i>            }</span>
+<span class="line"><i>83</i>            None</span>
+<span class="line"><i>84</i>        } else {</span>
+<span class="line"><i>85</i>            let prefill_context = prefill_response.context();</span>
+<span class="line"><i>86</i>            Some(PrefillTask::spawn(</span>
+<span class="line"><i>87</i>                async move {</span>
+<span class="line"><i>88</i>                    let _task_guard = task_guard;</span>
+<span class="line"><i>89</i>                    let mut prefill_output = None;</span>
+<span class="line"><i>90</i>                    while let Some(output) = prefill_response.next().await {</span>
+<span class="line"><i>91</i>                        PrefillTask::check_output(&amp;output)?;</span>
+<span class="line"><i>92</i>                        if let Some(engine_data) = output.data.and_then(|data| data.engine_data) {</span>
+<span class="line"><i>93</i>                            prefill_output = Some(engine_data);</span>
+<span class="line"><i>94</i>                        }</span>
+<span class="line"><i>95</i>                    }</span>
+<span class="line"><i>96</i>                    // Bootstrap details unblock decode, but do not mean prefill is</span>
+<span class="line"><i>97</i>                    // complete. Record completion only after its stream finishes.</span>
+<span class="line"><i>98</i>                    if let Some(tracker) = tracker {</span>
+<span class="line"><i>99</i>                        tracker.record_prefill_complete();</span>
+<span class="line"><i>100</i>                    }</span>
+<span class="line"><i>101</i>                    Ok(prefill_output)</span>
+<span class="line"><i>102</i>                },</span>
+<span class="line"><i>103</i>                prefill_context,</span>
+<span class="line"><i>104</i>            ))</span>
+<span class="line"><i>105</i>        };</span>
+<span class="line"><i>106</i></span>
+<span class="line"><i>107</i>        // A CTX request that reaches EOS/stop during its one-token prefill step</span>
+<span class="line"><i>108</i>        // is already complete and does not establish a KV-cache handoff. The</span>
+<span class="line"><i>109</i>        // prefill protocol carries this classification on the first output&#x27;s</span></code></pre></details><p>没有 Bootstrap 的正常结果先记录 Prefill complete，再继续排空尾流；尾流错误仍会传播。Decode 通过 prefill_result 获得引擎特定参数，迁移/Trace 所需 worker link 在结果路径中传递。不能只检查第一个成功 chunk 就宣告请求成功。</p><p><a href="pd-serving-completed.mmd">Completed 时序 Mermaid 源图</a>。</p></section><section id="pd-bootstrap" class="lesson"><div class="sectionhead"><h2>08 / 提前协调：Bootstrap 时序</h2><label class="done"><input type="checkbox" data-read="pd-bootstrap"> 已读</label></div><details class="source" id="src-pd-serving-spawn"><summary><b>源码 · 独立 Prefill observer 与阶段 permit</b><small>lib/llm/src/kv_router/prefill_router/admission.rs:164–191</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/admission.rs#L164-L191" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>164</i>    pub(super) fn spawn_prefill_task(</span>
+<span class="line"><i>165</i>        &amp;self,</span>
+<span class="line"><i>166</i>        prefill_stream: ManyOut&lt;Annotated&lt;LLMEngineOutput&gt;&gt;,</span>
+<span class="line"><i>167</i>        tracker: Option&lt;Arc&lt;RequestTracker&gt;&gt;,</span>
+<span class="line"><i>168</i>        phase_transition_permit: OwnedSemaphorePermit,</span>
+<span class="line"><i>169</i>    ) -&gt; PrefillTask {</span>
+<span class="line"><i>170</i>        let task_guard = self.task_guard.clone();</span>
+<span class="line"><i>171</i>        let prefill_context = prefill_stream.context();</span>
+<span class="line"><i>172</i>        PrefillTask::spawn_unlogged(async move {</span>
+<span class="line"><i>173</i>            drop(phase_transition_permit);</span>
+<span class="line"><i>174</i>            let result =</span>
+<span class="line"><i>175</i>                match Self::consume_prefill_stream(prefill_stream, tracker, task_guard).await {</span>
+<span class="line"><i>176</i>                    Ok(PrefillCompletion::Handoff {</span>
+<span class="line"><i>177</i>                        completion: Some(task),</span>
+<span class="line"><i>178</i>                        ..</span>
+<span class="line"><i>179</i>                    }) =&gt; {</span>
+<span class="line"><i>180</i>                        // The inner observer already logs its own failures.</span>
+<span class="line"><i>181</i>                        return task.wait().await;</span>
+<span class="line"><i>182</i>                    }</span>
+<span class="line"><i>183</i>                    Ok(PrefillCompletion::Terminal { output }) =&gt; {</span>
+<span class="line"><i>184</i>                        PrefillTask::check_output(&amp;output).map(|()| None)</span>
+<span class="line"><i>185</i>                    }</span>
+<span class="line"><i>186</i>                    Ok(_) =&gt; Ok(None),</span>
+<span class="line"><i>187</i>                    Err(error) =&gt; Err(error),</span>
+<span class="line"><i>188</i>                };</span>
+<span class="line"><i>189</i>            result.inspect_err(|error| PrefillTask::log_failure(error, prefill_context.as_ref()))</span>
+<span class="line"><i>190</i>        })</span>
+<span class="line"><i>191</i>    }</span></code></pre></details><details class="source" id="src-pd-serving-outcome-dispatch"><summary><b>源码 · 预先发现 Bootstrap 与流中返回 Bootstrap 两种入口</b><small>lib/llm/src/kv_router/prefill_router/mod.rs:548–594</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/mod.rs#L548-L594" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>548</i>                    return next.generate(context.map(|_| req)).await;</span>
+<span class="line"><i>549</i>                }</span>
+<span class="line"><i>550</i>            },</span>
+<span class="line"><i>551</i>        };</span>
+<span class="line"><i>552</i></span>
+<span class="line"><i>553</i>        // Keyed on the prefill mode, not the decode set&#x27;s, and checked after</span>
+<span class="line"><i>554</i>        // the binding loads because that is where the prefill mode lives.</span>
+<span class="line"><i>555</i>        if binding.prefill_router_mode.is_direct_routing() &amp;&amp; preselected_worker.is_none() {</span>
+<span class="line"><i>556</i>            return Err(anyhow::anyhow!(</span>
+<span class="line"><i>557</i>                &quot;Prefill worker ID required in Direct routing mode but none found in request. \</span>
+<span class="line"><i>558</i>                 Expected prefill_worker_id to be set via x-dynamo-prefill-instance-id header by external router (e.g., EPP).&quot;</span>
+<span class="line"><i>559</i>            ));</span>
+<span class="line"><i>560</i>        }</span>
+<span class="line"><i>561</i></span>
+<span class="line"><i>562</i>        let router = &amp;binding.router;</span>
+<span class="line"><i>563</i>        let endpoint_id = &amp;binding.endpoint_id;</span>
+<span class="line"><i>564</i>        let mut prefill_completion = None;</span>
+<span class="line"><i>565</i>        let prefill_result: Result&lt;(PrefillOutcome, Option&lt;RoutingConstraints&gt;)&gt; = async {</span>
+<span class="line"><i>566</i>            let (prepared, prefill_stream) = router</span>
+<span class="line"><i>567</i>                .select_and_dispatch_prefill(prefill_context, |request, target| {</span>
+<span class="line"><i>568</i>                    self.prepare_prefill_dispatch(request, target, endpoint_id)</span>
+<span class="line"><i>569</i>                })</span>
+<span class="line"><i>570</i>                .await?;</span>
+<span class="line"><i>571</i>            let topology_constraints = prepared.topology_constraints;</span>
+<span class="line"><i>572</i>            let outcome = if let Some(bootstrap_info) = prepared.bootstrap_info {</span>
+<span class="line"><i>573</i>                prefill_completion =</span>
+<span class="line"><i>574</i>                    Some(self.spawn_prefill_task(prefill_stream, tracker, prefill_phase_barrier));</span>
+<span class="line"><i>575</i>                PrefillOutcome::Bootstrap {</span>
+<span class="line"><i>576</i>                    bootstrap_info,</span>
+<span class="line"><i>577</i>                    worker_id: prepared.worker_id,</span>
+<span class="line"><i>578</i>                    prefill_dp_rank: prepared.prefill_dp_rank,</span>
+<span class="line"><i>579</i>                }</span>
+<span class="line"><i>580</i>            } else {</span>
+<span class="line"><i>581</i>                drop(prefill_phase_barrier);</span>
+<span class="line"><i>582</i>                let completion =</span>
+<span class="line"><i>583</i>                    Self::consume_prefill_stream(prefill_stream, tracker, self.task_guard.clone())</span>
+<span class="line"><i>584</i>                        .await?;</span>
+<span class="line"><i>585</i></span>
+<span class="line"><i>586</i>                match completion {</span>
+<span class="line"><i>587</i>                    PrefillCompletion::Handoff {</span>
+<span class="line"><i>588</i>                        result,</span>
+<span class="line"><i>589</i>                        worker_link,</span>
+<span class="line"><i>590</i>                        completion,</span>
+<span class="line"><i>591</i>                    } =&gt; {</span>
+<span class="line"><i>592</i>                        prefill_completion = completion;</span>
+<span class="line"><i>593</i>                        if let Some(bootstrap_info) =</span>
+<span class="line"><i>594</i>                            extract_bootstrap_info(&amp;result.disaggregated_params)</span></code></pre></details><p>Bootstrap 可来自 Discovery 中已发布的端点，也可从 Prefill 首个输出提取。路由器可以在 Prefill 尚未结束时构造 Decode 请求，由引擎的接收/发送协议协调实际 KV 就绪。</p><div class="flow"><div><b>01</b>获得 Bootstrap</div><div><b>02</b>后台持续观察 Prefill</div><div><b>03</b>并行派发 Decode</div><div><b>04</b>流式转发普通 token</div><div><b>05</b>检查 Prefill observer 结果</div><div><b>06</b>允许最终成功结束</div></div><p>Bootstrap 分支的 Prefill complete 在 observer 消费到流结束后记录，和普通结果路径的采样位置不同。它是编排器观察点，不是 GPU kernel 计时。</p><p><a href="pd-serving-bootstrap.mmd">Bootstrap 时序 Mermaid 源图</a>。</p></section><section id="pd-forward" class="lesson"><div class="sectionhead"><h2>09 / 并行交接：最终成功必须等待什么</h2><label class="done"><input type="checkbox" data-read="pd-forward"> 已读</label></div><details class="source" id="src-pd-serving-task"><summary><b>源码 · PrefillTask 生命周期与 tracing span</b><small>lib/llm/src/kv_router/prefill_router/handoff.rs:26–82</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/handoff.rs#L26-L82" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>26</i>/// Dropping the observer detaches the task: client disconnects must not abort a</span>
+<span class="line"><i>27</i>/// prefill whose KV transfer may still be needed by the decode worker.</span>
+<span class="line"><i>28</i>pub(super) struct PrefillTask(JoinHandle&lt;Result&lt;PrefillOutput, PrefillError&gt;&gt;);</span>
+<span class="line"><i>29</i></span>
+<span class="line"><i>30</i>/// Prefill&#x27;s output as a stream item tagged with [`PREFILL_OUTPUT_ANNOTATION`].</span>
+<span class="line"><i>31</i>fn output_item(output: PrefillOutput) -&gt; Option&lt;Annotated&lt;LLMEngineOutput&gt;&gt; {</span>
+<span class="line"><i>32</i>    let engine_data = Some(output?);</span>
+<span class="line"><i>33</i>    Some(Annotated {</span>
+<span class="line"><i>34</i>        event: Some(PREFILL_OUTPUT_ANNOTATION.to_string()),</span>
+<span class="line"><i>35</i>        ..Annotated::from_data(LLMEngineOutput {</span>
+<span class="line"><i>36</i>            engine_data,</span>
+<span class="line"><i>37</i>            ..Default::default()</span>
+<span class="line"><i>38</i>        })</span>
+<span class="line"><i>39</i>    })</span>
+<span class="line"><i>40</i>}</span>
+<span class="line"><i>41</i></span>
+<span class="line"><i>42</i>impl PrefillTask {</span>
+<span class="line"><i>43</i>    /// Observe completion without dropping staged KV on client disconnect.</span>
+<span class="line"><i>44</i>    pub(super) fn spawn(</span>
+<span class="line"><i>45</i>        future: impl Future&lt;Output = Result&lt;PrefillOutput, PrefillError&gt;&gt; + Send + &#x27;static,</span>
+<span class="line"><i>46</i>        prefill_context: Arc&lt;dyn AsyncEngineContext&gt;,</span>
+<span class="line"><i>47</i>    ) -&gt; Self {</span>
+<span class="line"><i>48</i>        Self::spawn_unlogged(async move {</span>
+<span class="line"><i>49</i>            future</span>
+<span class="line"><i>50</i>                .await</span>
+<span class="line"><i>51</i>                .inspect_err(|error| Self::log_failure(error, prefill_context.as_ref()))</span>
+<span class="line"><i>52</i>        })</span>
+<span class="line"><i>53</i>    }</span>
+<span class="line"><i>54</i></span>
+<span class="line"><i>55</i>    /// Spawn a wrapper that delegates logging to its child, while logging its</span>
+<span class="line"><i>56</i>    /// own failures explicitly so the same child error is not reported twice.</span>
+<span class="line"><i>57</i>    pub(super) fn spawn_unlogged(</span>
+<span class="line"><i>58</i>        future: impl Future&lt;Output = Result&lt;PrefillOutput, PrefillError&gt;&gt; + Send + &#x27;static,</span>
+<span class="line"><i>59</i>    ) -&gt; Self {</span>
+<span class="line"><i>60</i>        Self(tokio::spawn(future.instrument(tracing::Span::current())))</span>
+<span class="line"><i>61</i>    }</span>
+<span class="line"><i>62</i></span>
+<span class="line"><i>63</i>    /// Keep intentional cancellation quiet without hiding unsolicited failures.</span>
+<span class="line"><i>64</i>    pub(super) fn log_failure(error: &amp;PrefillError, prefill_context: &amp;dyn AsyncEngineContext) {</span>
+<span class="line"><i>65</i>        if matches!(error, PrefillError::Cancelled) &amp;&amp; prefill_context.is_stopped() {</span>
+<span class="line"><i>66</i>            tracing::debug!(%error, &quot;Prefill background task cancelled&quot;);</span>
+<span class="line"><i>67</i>        } else {</span>
+<span class="line"><i>68</i>            tracing::warn!(%error, &quot;Prefill background task failed&quot;);</span>
+<span class="line"><i>69</i>        }</span>
+<span class="line"><i>70</i>    }</span>
+<span class="line"><i>71</i></span>
+<span class="line"><i>72</i>    /// Return the prefill result, including failures from the observer task.</span>
+<span class="line"><i>73</i>    pub(super) async fn wait(self) -&gt; Result&lt;PrefillOutput, PrefillError&gt; {</span>
+<span class="line"><i>74</i>        self.0.await.map_err(|error| {</span>
+<span class="line"><i>75</i>            tracing::warn!(%error, &quot;Prefill background task did not complete&quot;);</span>
+<span class="line"><i>76</i>            PrefillError::PrefillError(</span>
+<span class="line"><i>77</i>                format!(&quot;Prefill background task did not complete: {error}&quot;),</span>
+<span class="line"><i>78</i>                Some(Box::new(error)),</span>
+<span class="line"><i>79</i>            )</span>
+<span class="line"><i>80</i>        })?</span>
+<span class="line"><i>81</i>    }</span>
+<span class="line"><i>82</i></span></code></pre></details><details class="source" id="src-pd-serving-race"><summary><b>源码 · 并行等待 Decode、Prefill 与首项门控</b><small>lib/llm/src/kv_router/prefill_router/handoff.rs:110–168</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/handoff.rs#L110-L168" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>110</i>    pub(super) async fn forward_decode(</span>
+<span class="line"><i>111</i>        self,</span>
+<span class="line"><i>112</i>        decode: impl Future&lt;Output = anyhow::Result&lt;ManyOut&lt;Annotated&lt;LLMEngineOutput&gt;&gt;&gt;&gt;,</span>
+<span class="line"><i>113</i>        request_context: Arc&lt;dyn AsyncEngineContext&gt;,</span>
+<span class="line"><i>114</i>        output: PrefillNeed,</span>
+<span class="line"><i>115</i>        prefill_context: Arc&lt;dyn AsyncEngineContext&gt;,</span>
+<span class="line"><i>116</i>    ) -&gt; anyhow::Result&lt;ManyOut&lt;Annotated&lt;LLMEngineOutput&gt;&gt;&gt; {</span>
+<span class="line"><i>117</i>        let emit = output != PrefillNeed::None;</span>
+<span class="line"><i>118</i>        let mut completion = Box::pin(self.wait());</span>
+<span class="line"><i>119</i>        tokio::pin!(decode);</span>
+<span class="line"><i>120</i>        let mut response = tokio::select! {</span>
+<span class="line"><i>121</i>            biased;</span>
+<span class="line"><i>122</i>            result = &amp;mut completion =&gt; {</span>
+<span class="line"><i>123</i>                let prefill = result.inspect_err(|_| request_context.stop_generating())?;</span>
+<span class="line"><i>124</i>                let response = decode.await?;</span>
+<span class="line"><i>125</i>                if !emit {</span>
+<span class="line"><i>126</i>                    return Ok(response);</span>
+<span class="line"><i>127</i>                }</span>
+<span class="line"><i>128</i>                let context = response.context();</span>
+<span class="line"><i>129</i>                let stream = stream::iter(output_item(prefill)).chain(response);</span>
+<span class="line"><i>130</i>                return Ok(ResponseStream::new(Box::pin(stream), context));</span>
+<span class="line"><i>131</i>            }</span>
+<span class="line"><i>132</i>            result = &amp;mut decode =&gt; match result {</span>
+<span class="line"><i>133</i>                Ok(response) =&gt; response,</span>
+<span class="line"><i>134</i>                Err(error) =&gt; {</span>
+<span class="line"><i>135</i>                    cancel_prefill_on_decode_rejection(error.as_ref(), prefill_context.as_ref());</span>
+<span class="line"><i>136</i>                    return Err(error);</span>
+<span class="line"><i>137</i>                }</span>
+<span class="line"><i>138</i>            },</span>
+<span class="line"><i>139</i>        };</span>
+<span class="line"><i>140</i>        // Move the completion future into the response stream. The task itself</span>
+<span class="line"><i>141</i>        // keeps running if this stream is dropped during client cancellation.</span>
+<span class="line"><i>142</i>        let context = response.context();</span>
+<span class="line"><i>143</i>        let stream_context = context.clone();</span>
+<span class="line"><i>144</i>        let stream = async_stream::stream! {</span>
+<span class="line"><i>145</i>            if output == PrefillNeed::BeforeFirst {</span>
+<span class="line"><i>146</i>                // Admission refusals are the first decode stream item on this path.</span>
+<span class="line"><i>147</i>                // Observe it while prefill is pending; buffer only one ordinary item</span>
+<span class="line"><i>148</i>                // to preserve BeforeFirst ordering and backpressure.</span>
+<span class="line"><i>149</i>                let mut first_decode_output = None;</span>
+<span class="line"><i>150</i>                let mut decode_ended = false;</span>
+<span class="line"><i>151</i>                let prefill_result = tokio::select! {</span>
+<span class="line"><i>152</i>                    biased;</span>
+<span class="line"><i>153</i>                    result = &amp;mut completion =&gt; result,</span>
+<span class="line"><i>154</i>                    item = response.next() =&gt; {</span>
+<span class="line"><i>155</i>                        if let Some(error) = item.as_ref().and_then(|item| item.err())</span>
+<span class="line"><i>156</i>                            &amp;&amp; cancel_prefill_on_decode_rejection(&amp;error, prefill_context.as_ref())</span>
+<span class="line"><i>157</i>                        {</span>
+<span class="line"><i>158</i>                            yield item.unwrap();</span>
+<span class="line"><i>159</i>                            return;</span>
+<span class="line"><i>160</i>                        }</span>
+<span class="line"><i>161</i>                        decode_ended = item.is_none();</span>
+<span class="line"><i>162</i>                        first_decode_output = item;</span>
+<span class="line"><i>163</i>                        completion.as_mut().await</span>
+<span class="line"><i>164</i>                    }</span>
+<span class="line"><i>165</i>                };</span>
+<span class="line"><i>166</i>                match prefill_result {</span>
+<span class="line"><i>167</i>                    Ok(output) =&gt; {</span>
+<span class="line"><i>168</i>                        if let Some(item) = output_item(output) {</span></code></pre></details><details class="source" id="src-pd-serving-terminal-gate"><summary><b>源码 · 转发 token 与延迟最终成功终态</b><small>lib/llm/src/kv_router/prefill_router/handoff.rs:185–253</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/handoff.rs#L185-L253" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>185</i>                    return;</span>
+<span class="line"><i>186</i>                }</span>
+<span class="line"><i>187</i>                while let Some(output) = response.next().await {</span>
+<span class="line"><i>188</i>                    yield output;</span>
+<span class="line"><i>189</i>                }</span>
+<span class="line"><i>190</i>                return;</span>
+<span class="line"><i>191</i>            }</span>
+<span class="line"><i>192</i>            loop {</span>
+<span class="line"><i>193</i>                tokio::select! {</span>
+<span class="line"><i>194</i>                    biased;</span>
+<span class="line"><i>195</i>                    result = &amp;mut completion =&gt; {</span>
+<span class="line"><i>196</i>                        match result {</span>
+<span class="line"><i>197</i>                            Ok(prefill) =&gt; if emit &amp;&amp; let Some(item) = output_item(prefill) {</span>
+<span class="line"><i>198</i>                                yield item;</span>
+<span class="line"><i>199</i>                            },</span>
+<span class="line"><i>200</i>                            Err(error) =&gt; {</span>
+<span class="line"><i>201</i>                                request_context.stop_generating();</span>
+<span class="line"><i>202</i>                                stream_context.stop_generating();</span>
+<span class="line"><i>203</i>                                yield Annotated::from_err(error);</span>
+<span class="line"><i>204</i>                                return;</span>
+<span class="line"><i>205</i>                            }</span>
+<span class="line"><i>206</i>                        }</span>
+<span class="line"><i>207</i>                        while let Some(output) = response.next().await {</span>
+<span class="line"><i>208</i>                            yield output;</span>
+<span class="line"><i>209</i>                        }</span>
+<span class="line"><i>210</i>                        return;</span>
+<span class="line"><i>211</i>                    }</span>
+<span class="line"><i>212</i>                    output = response.next() =&gt; {</span>
+<span class="line"><i>213</i>                        if output.as_ref().is_some_and(|output| {</span>
+<span class="line"><i>214</i>                            output.err().is_some() || matches!(</span>
+<span class="line"><i>215</i>                                output.data.as_ref().and_then(|data| data.finish_reason.as_ref()),</span>
+<span class="line"><i>216</i>                                Some(FinishReason::Error(_) | FinishReason::Cancelled)</span>
+<span class="line"><i>217</i>                            )</span>
+<span class="line"><i>218</i>                        }) {</span>
+<span class="line"><i>219</i>                            if let Some(error) = output.as_ref().and_then(|output| output.err()) {</span>
+<span class="line"><i>220</i>                                cancel_prefill_on_decode_rejection(&amp;error, prefill_context.as_ref());</span>
+<span class="line"><i>221</i>                            }</span>
+<span class="line"><i>222</i>                            yield output.unwrap();</span>
+<span class="line"><i>223</i>                            return;</span>
+<span class="line"><i>224</i>                        }</span>
+<span class="line"><i>225</i>                        let terminal = output.as_ref().is_none_or(|output| {</span>
+<span class="line"><i>226</i>                            output.data.as_ref().is_some_and(|data| data.finish_reason.is_some())</span>
+<span class="line"><i>227</i>                        });</span>
+<span class="line"><i>228</i>                        if terminal {</span>
+<span class="line"><i>229</i>                            match completion.as_mut().await {</span>
+<span class="line"><i>230</i>                                Ok(prefill) =&gt; if emit &amp;&amp; let Some(item) = output_item(prefill) {</span>
+<span class="line"><i>231</i>                                    yield item;</span>
+<span class="line"><i>232</i>                                },</span>
+<span class="line"><i>233</i>                                Err(error) =&gt; {</span>
+<span class="line"><i>234</i>                                    request_context.stop_generating();</span>
+<span class="line"><i>235</i>                                    stream_context.stop_generating();</span>
+<span class="line"><i>236</i>                                    yield Annotated::from_err(error);</span>
+<span class="line"><i>237</i>                                    return;</span>
+<span class="line"><i>238</i>                                }</span>
+<span class="line"><i>239</i>                            }</span>
+<span class="line"><i>240</i>                        }</span>
+<span class="line"><i>241</i>                        match output {</span>
+<span class="line"><i>242</i>                            Some(output) =&gt; yield output,</span>
+<span class="line"><i>243</i>                            None =&gt; return,</span>
+<span class="line"><i>244</i>                        }</span>
+<span class="line"><i>245</i>                        if terminal {</span>
+<span class="line"><i>246</i>                            return;</span>
+<span class="line"><i>247</i>                        }</span>
+<span class="line"><i>248</i>                    }</span>
+<span class="line"><i>249</i>                }</span>
+<span class="line"><i>250</i>            }</span>
+<span class="line"><i>251</i>        };</span>
+<span class="line"><i>252</i>        Ok(ResponseStream::new(Box::pin(stream), context))</span>
+<span class="line"><i>253</i>    }</span></code></pre></details><p>PrefillTask 的 Drop 会分离后台任务，避免客户端取消直接中断尚需完成的 KV 传输。BeforeFirst 等模式可先缓存 Decode 首项，等待 Prefill 元数据。普通 token 可以提前转发，但成功终态/EOF 需要同时满足 Prefill observer 成功，防止先返回最终成功再发现 Prefill 错误。</p></section><section id="pd-terminal" class="lesson"><div class="sectionhead"><h2>10 / Prefill 自己结束，以及原始采样上限恢复</h2><label class="done"><input type="checkbox" data-read="pd-terminal"> 已读</label></div><details class="source" id="src-pd-serving-terminal-check"><summary><b>源码 · 终态优先于交接参数校验</b><small>lib/llm/src/kv_router/prefill_router/admission.rs:111–162</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/admission.rs#L111-L162" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>111</i>        // reason is equivalent to TRT-LLM&#x27;s &quot;not_finished&quot;, while Length still</span>
+<span class="line"><i>112</i>        // requires the normal GEN handoff.</span>
+<span class="line"><i>113</i>        let is_terminal = first_output</span>
+<span class="line"><i>114</i>            .data</span>
+<span class="line"><i>115</i>            .as_ref()</span>
+<span class="line"><i>116</i>            .and_then(|output| output.finish_reason.as_ref())</span>
+<span class="line"><i>117</i>            .is_some_and(|reason| !matches!(reason, FinishReason::Length));</span>
+<span class="line"><i>118</i>        if is_terminal {</span>
+<span class="line"><i>119</i>            return Ok(PrefillCompletion::Terminal {</span>
+<span class="line"><i>120</i>                output: Box::new(first_output),</span>
+<span class="line"><i>121</i>            });</span>
+<span class="line"><i>122</i>        }</span>
+<span class="line"><i>123</i></span>
+<span class="line"><i>124</i>        let Some(output) = &amp;first_output.data else {</span>
+<span class="line"><i>125</i>            return Err(PrefillError::NoDisaggregatedParams(</span>
+<span class="line"><i>126</i>                &quot;Prefill router output has no data field&quot;.to_string(),</span>
+<span class="line"><i>127</i>            ));</span>
+<span class="line"><i>128</i>        };</span>
+<span class="line"><i>129</i>        let Some(disaggregated_params) = output.disaggregated_params.clone() else {</span>
+<span class="line"><i>130</i>            return Err(PrefillError::NoDisaggregatedParams(</span>
+<span class="line"><i>131</i>                &quot;Prefill router output missing disaggregated_params&quot;.to_string(),</span>
+<span class="line"><i>132</i>            ));</span>
+<span class="line"><i>133</i>        };</span>
+<span class="line"><i>134</i>        // TRT-LLM serializes ctx_request_id as null for a terminal context</span>
+<span class="line"><i>135</i>        // response. Terminal responses returned above do not need a handoff;</span>
+<span class="line"><i>136</i>        // any non-terminal response that explicitly carries a null ID cannot</span>
+<span class="line"><i>137</i>        // be decoded safely. Refuse it here instead of dispatching GEN and</span>
+<span class="line"><i>138</i>        // failing later inside the backend. Other backends do not expose this</span>
+<span class="line"><i>139</i>        // TRT-LLM-specific field and are unaffected.</span>
+<span class="line"><i>140</i>        let ctx_request_id = disaggregated_params.get(&quot;ctx_request_id&quot;);</span>
+<span class="line"><i>141</i>        let is_trtllm_context_handoff = disaggregated_params</span>
+<span class="line"><i>142</i>            .get(&quot;request_type&quot;)</span>
+<span class="line"><i>143</i>            .and_then(serde_json::Value::as_str)</span>
+<span class="line"><i>144</i>            == Some(&quot;context_only&quot;);</span>
+<span class="line"><i>145</i>        if ctx_request_id.is_some_and(serde_json::Value::is_null)</span>
+<span class="line"><i>146</i>            || (is_trtllm_context_handoff &amp;&amp; ctx_request_id.is_none())</span>
+<span class="line"><i>147</i>        {</span>
+<span class="line"><i>148</i>            return Err(PrefillError::NoDisaggregatedParams(</span>
+<span class="line"><i>149</i>                &quot;Prefill router output has no usable ctx_request_id for a non-terminal handoff&quot;</span>
+<span class="line"><i>150</i>                    .to_string(),</span>
+<span class="line"><i>151</i>            ));</span>
+<span class="line"><i>152</i>        }</span>
+<span class="line"><i>153</i></span>
+<span class="line"><i>154</i>        Ok(PrefillCompletion::Handoff {</span>
+<span class="line"><i>155</i>            result: crate::protocols::common::preprocessor::PrefillResult {</span>
+<span class="line"><i>156</i>                disaggregated_params,</span>
+<span class="line"><i>157</i>                prompt_tokens_details,</span>
+<span class="line"><i>158</i>            },</span>
+<span class="line"><i>159</i>            worker_link: output.worker_trace_link.clone(),</span>
+<span class="line"><i>160</i>            completion,</span>
+<span class="line"><i>161</i>        })</span>
+<span class="line"><i>162</i>    }</span></code></pre></details><details class="source" id="src-pd-serving-decode-request"><summary><b>源码 · Terminal 返回、staged KV 与恢复 max_tokens</b><small>lib/llm/src/kv_router/prefill_router/mod.rs:635–689</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/mod.rs#L635-L689" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>635</i>        // A prefill request can terminate before the backend establishes a KV</span>
+<span class="line"><i>636</i>        // handoff (for example, EOS on the one-token context step). Native</span>
+<span class="line"><i>637</i>        // disaggregated backends return that context response directly instead</span>
+<span class="line"><i>638</i>        // of launching a generation-only request with missing handoff IDs.</span>
+<span class="line"><i>639</i>        let outcome = match outcome {</span>
+<span class="line"><i>640</i>            PrefillOutcome::Terminal { output } =&gt; {</span>
+<span class="line"><i>641</i>                let output = strip_terminal_disaggregated_params(*output);</span>
+<span class="line"><i>642</i>                return Ok(dynamo_runtime::pipeline::ResponseStream::new(</span>
+<span class="line"><i>643</i>                    Box::pin(stream::once(async move { output })),</span>
+<span class="line"><i>644</i>                    engine_ctx,</span>
+<span class="line"><i>645</i>                ));</span>
+<span class="line"><i>646</i>            }</span>
+<span class="line"><i>647</i>            outcome =&gt; outcome,</span>
+<span class="line"><i>648</i>        };</span>
+<span class="line"><i>649</i></span>
+<span class="line"><i>650</i>        // NVBugs 5969206: Do NOT abort decode routing when context is killed.</span>
+<span class="line"><i>651</i>        // In disaggregated serving, the prefill may have completed and KV transfer</span>
+<span class="line"><i>652</i>        // is in flight. Blocking decode here orphans the transfer (no receiver)</span>
+<span class="line"><i>653</i>        // and leaks KV blocks permanently. The decode handler&#x27;s</span>
+<span class="line"><i>654</i>        // kv_transfer_complete_event guard will clean up after KV is received.</span>
+<span class="line"><i>655</i>        // Log-only; decode routing must proceed for KV transfer cleanup.</span>
+<span class="line"><i>656</i>        if engine_ctx.is_stopped() || engine_ctx.is_killed() {</span>
+<span class="line"><i>657</i>            tracing::debug!(</span>
+<span class="line"><i>658</i>                &quot;Context {} killed/stopped after prefill, allowing decode routing for KV transfer&quot;,</span>
+<span class="line"><i>659</i>                engine_ctx.id()</span>
+<span class="line"><i>660</i>            );</span>
+<span class="line"><i>661</i>        }</span>
+<span class="line"><i>662</i></span>
+<span class="line"><i>663</i>        tracing::debug!(&quot;Prefill completed, proceeding to decode&quot;);</span>
+<span class="line"><i>664</i></span>
+<span class="line"><i>665</i>        // Set phase to Decode for the decode request.</span>
+<span class="line"><i>666</i>        // In bootstrap path, this blocks until the spawned prefill task releases its</span>
+<span class="line"><i>667</i>        // phase barrier after routing completes, ensuring correct worker attribution.</span>
+<span class="line"><i>668</i>        if let Some(ref tracker) = req.tracker {</span>
+<span class="line"><i>669</i>            let _decode_permit = tracker.set_phase(RequestPhase::Decode).await;</span>
+<span class="line"><i>670</i>        }</span>
+<span class="line"><i>671</i></span>
+<span class="line"><i>672</i>        let mut decode_req = into_decode_request(req, outcome);</span>
+<span class="line"><i>673</i></span>
+<span class="line"><i>674</i>        if let Some(topology_constraints) = topology_constraints {</span>
+<span class="line"><i>675</i>            merge_decode_topology_constraints(&amp;mut decode_req, topology_constraints);</span>
+<span class="line"><i>676</i>        }</span>
+<span class="line"><i>677</i></span>
+<span class="line"><i>678</i>        decode_req.stop_conditions.max_tokens = original_max_tokens;</span>
+<span class="line"><i>679</i></span>
+<span class="line"><i>680</i>        // Decode should not account prompt-side load. Normal disagg also</span>
+<span class="line"><i>681</i>        // forces zero overlap credit so decode routing stays load-only.</span>
+<span class="line"><i>682</i>        let existing_override = decode_req.router_config_override.take();</span>
+<span class="line"><i>683</i>        decode_req.router_config_override = Some(build_decode_router_override(</span>
+<span class="line"><i>684</i>            existing_override,</span>
+<span class="line"><i>685</i>            self.conditional_disagg_policy.is_enabled(),</span>
+<span class="line"><i>686</i>        ));</span>
+<span class="line"><i>687</i></span>
+<span class="line"><i>688</i>        let annotated = |name| decode_req.annotations.iter().any(|a| a == name);</span>
+<span class="line"><i>689</i>        let output = match (</span></code></pre></details><p>EOS、stop 等可能在 Prefill 阶段产生终态；此时不会要求不存在的交接参数。非终态 TRT context-only 结果却必须有有效 ctx_request_id。Prefill 内部常只生成一个 token，最终 Decode 请求恢复用户原来的 max_tokens；内部一 token 的采样/结果细节由后端协议承接，不能据此推断用户一定先收到一个独立 Prefill token。</p></section><section id="pd-sg" class="lesson"><div class="sectionhead"><h2>11 / SGLang：Bootstrap 与后台结果消费</h2><label class="done"><input type="checkbox" data-read="pd-sg"> 已读</label></div><details class="source" id="src-pd-serving-sg-sampling"><summary><b>源码 · PD 并行采样限制</b><small>components/src/dynamo/sglang/_disagg.py:15–44</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/sglang/_disagg.py#L15-L44" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>15</i>  the disagg path with SGLang&#x27;s `FAKE_BOOTSTRAP_HOST` so the first real</span>
+<span class="line"><i>16</i>  request doesn&#x27;t pay the JIT/CUDA-graph compile cost.</span>
+<span class="line"><i>17</i>&quot;&quot;&quot;</span>
+<span class="line"><i>18</i></span>
+<span class="line"><i>19</i>from __future__ import annotations</span>
+<span class="line"><i>20</i></span>
+<span class="line"><i>21</i>import asyncio</span>
+<span class="line"><i>22</i>import logging</span>
+<span class="line"><i>23</i>from collections.abc import Mapping</span>
+<span class="line"><i>24</i>from typing import Any, Optional</span>
+<span class="line"><i>25</i></span>
+<span class="line"><i>26</i>import sglang as sgl</span>
+<span class="line"><i>27</i></span>
+<span class="line"><i>28</i>from dynamo.llm.exceptions import InvalidArgument</span>
+<span class="line"><i>29</i>from dynamo.sglang.capacity import sglang_dp_layout</span>
+<span class="line"><i>30</i>from dynamo.sglang.engine_generate import native_generate_payload</span>
+<span class="line"><i>31</i></span>
+<span class="line"><i>32</i># Matches the prior in-tree value. Long enough for the slowest cold-start</span>
+<span class="line"><i>33</i># we&#x27;ve seen (TP8 70B with FlashInfer JIT).</span>
+<span class="line"><i>34</i>_PREFILL_WARMUP_TIMEOUT_S = 1800.0</span>
+<span class="line"><i>35</i></span>
+<span class="line"><i>36</i>SGLANG_WORKER_GROUP_ID_KEY = &quot;sglang_worker_group_id&quot;</span>
+<span class="line"><i>37</i></span>
+<span class="line"><i>38</i></span>
+<span class="line"><i>39</i>def validate_disagg_parallel_sampling(request: Mapping[str, Any]) -&gt; None:</span>
+<span class="line"><i>40</i>    &quot;&quot;&quot;Reject parallel samples before creating a single-room KV handoff.&quot;&quot;&quot;</span>
+<span class="line"><i>41</i>    inner_request = request.get(&quot;request&quot;, request)</span>
+<span class="line"><i>42</i>    native_payload = native_generate_payload(inner_request)</span>
+<span class="line"><i>43</i>    sampling_options = [</span>
+<span class="line"><i>44</i>        inner_request.get(&quot;sampling_options&quot;),</span></code></pre></details><details class="source" id="src-pd-serving-sg-max"><summary><b>源码 · Prefill 请求采样准备</b><small>components/src/dynamo/sglang/request_handlers/llm/prefill_handler.py:92–151</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/sglang/request_handlers/llm/prefill_handler.py#L92-L151" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>92</i>    async def generate(</span>
+<span class="line"><i>93</i>        self, request: Dict[str, Any], context: Context</span>
+<span class="line"><i>94</i>    ) -&gt; AsyncGenerator[Dict[str, Any], None]:</span>
+<span class="line"><i>95</i>        &quot;&quot;&quot;Generate prefill output and provide bootstrap info for decode worker.</span>
+<span class="line"><i>96</i></span>
+<span class="line"><i>97</i>        Args:</span>
+<span class="line"><i>98</i>            request: Request dict with &#x27;request&#x27;, &#x27;sampling_params&#x27;, and possibly &#x27;bootstrap_room&#x27; keys.</span>
+<span class="line"><i>99</i>            context: Context object for cancellation handling.</span>
+<span class="line"><i>100</i></span>
+<span class="line"><i>101</i>        Yields:</span>
+<span class="line"><i>102</i>            Bootstrap info dict with host, port, and room for decode worker connection.</span>
+<span class="line"><i>103</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>104</i>        validate_disagg_parallel_sampling(request)</span>
+<span class="line"><i>105</i>        logging.debug(f&quot;New Request ID: {context.id()}&quot;)</span>
+<span class="line"><i>106</i>        sglang_request_id = new_sglang_request_id()</span>
+<span class="line"><i>107</i>        logging.debug(</span>
+<span class="line"><i>108</i>            &quot;Submitted SGLang Request ID: %s, Context: %s&quot;,</span>
+<span class="line"><i>109</i>            sglang_request_id,</span>
+<span class="line"><i>110</i>            context.id(),</span>
+<span class="line"><i>111</i>        )</span>
+<span class="line"><i>112</i></span>
+<span class="line"><i>113</i>        if &quot;request&quot; in request:</span>
+<span class="line"><i>114</i>            # DisaggPreprocessedRequest format</span>
+<span class="line"><i>115</i>            inner_request = request[&quot;request&quot;]</span>
+<span class="line"><i>116</i>            sampling_params = request.get(&quot;sampling_params&quot;, {})</span>
+<span class="line"><i>117</i>        else:</span>
+<span class="line"><i>118</i>            inner_request = request</span>
+<span class="line"><i>119</i>            sampling_opts = request.get(&quot;sampling_options&quot;, {})</span>
+<span class="line"><i>120</i>            stop_conditions = request.get(&quot;stop_conditions&quot;, {})</span>
+<span class="line"><i>121</i>            sampling_params = {</span>
+<span class="line"><i>122</i>                &quot;n&quot;: sampling_opts.get(&quot;n&quot;),</span>
+<span class="line"><i>123</i>                &quot;max_new_tokens&quot;: stop_conditions.get(&quot;max_tokens&quot;),</span>
+<span class="line"><i>124</i>                **_sampling_option_params(sampling_opts),</span>
+<span class="line"><i>125</i>                **self._get_guided_decoding_params(</span>
+<span class="line"><i>126</i>                    sampling_opts.get(&quot;guided_decoding&quot;)</span>
+<span class="line"><i>127</i>                ),</span>
+<span class="line"><i>128</i>            }</span>
+<span class="line"><i>129</i>            sampling_params = {</span>
+<span class="line"><i>130</i>                k: v for k, v in sampling_params.items() if v is not None</span>
+<span class="line"><i>131</i>            }</span>
+<span class="line"><i>132</i>        native_payload = native_generate_payload(inner_request)</span>
+<span class="line"><i>133</i>        has_thinking_budget = False</span>
+<span class="line"><i>134</i>        if native_payload is None:</span>
+<span class="line"><i>135</i>            has_thinking_budget = thinking_budget_requested(inner_request)</span>
+<span class="line"><i>136</i>            sampling_params = apply_thinking_budget(</span>
+<span class="line"><i>137</i>                inner_request,</span>
+<span class="line"><i>138</i>                sampling_params,</span>
+<span class="line"><i>139</i>                self.config.server_args,</span>
+<span class="line"><i>140</i>                engine=self.engine,</span>
+<span class="line"><i>141</i>            )</span>
+<span class="line"><i>142</i>            sampling_params[&quot;n&quot;] = 1</span>
+<span class="line"><i>143</i>            sampling_params[&quot;max_new_tokens&quot;] = 1</span>
+<span class="line"><i>144</i></span>
+<span class="line"><i>145</i>        # Use provided bootstrap_info if available (e.g., for health checks with FAKE_BOOTSTRAP_HOST)</span>
+<span class="line"><i>146</i>        # Otherwise use real bootstrap host/port from engine and generate room locally</span>
+<span class="line"><i>147</i>        bootstrap_host = self.bootstrap_host</span>
+<span class="line"><i>148</i>        bootstrap_port = self.bootstrap_port</span>
+<span class="line"><i>149</i>        bootstrap_room = None</span>
+<span class="line"><i>150</i></span>
+<span class="line"><i>151</i>        bootstrap_info_from_req = inner_request.get(&quot;bootstrap_info&quot;)</span></code></pre></details><details class="source" id="src-pd-serving-sg-engine"><summary><b>源码 · engine Bootstrap 参数、首个空输出与持续消费</b><small>components/src/dynamo/sglang/request_handlers/llm/prefill_handler.py:246–304</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/sglang/request_handlers/llm/prefill_handler.py#L246-L304" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>246</i>                **input_param,</span>
+<span class="line"><i>247</i>                **logprob_kwargs,</span>
+<span class="line"><i>248</i>                **mm_kwargs,</span>
+<span class="line"><i>249</i>                **cache_salt_kwargs(self.engine, request_cache_salt(inner_request)),</span>
+<span class="line"><i>250</i>                sampling_params=sampling_params,</span>
+<span class="line"><i>251</i>                stream=True,</span>
+<span class="line"><i>252</i>                **require_reasoning_kwargs(</span>
+<span class="line"><i>253</i>                    self.engine,</span>
+<span class="line"><i>254</i>                    inner_request,</span>
+<span class="line"><i>255</i>                    thinking_budget_requested=has_thinking_budget,</span>
+<span class="line"><i>256</i>                ),</span>
+<span class="line"><i>257</i>                bootstrap_host=bootstrap_host,</span>
+<span class="line"><i>258</i>                bootstrap_port=bootstrap_port,</span>
+<span class="line"><i>259</i>                bootstrap_room=bootstrap_room,</span>
+<span class="line"><i>260</i>                external_trace_header=trace_header,</span>
+<span class="line"><i>261</i>                rid=sglang_request_id,</span>
+<span class="line"><i>262</i>                data_parallel_rank=dp_rank,</span>
+<span class="line"><i>263</i>                lora_path=lora_path,</span>
+<span class="line"><i>264</i>                **priority_kwargs,</span>
+<span class="line"><i>265</i>                **agent_session_kwargs(self.engine, inner_request),</span>
+<span class="line"><i>266</i>                **kv_hint_kwargs(self.engine, inner_request),</span>
+<span class="line"><i>267</i>            )</span>
+<span class="line"><i>268</i>        if inner_request.get(HEALTH_CHECK_KEY):</span>
+<span class="line"><i>269</i>            # Canary: stream engine output so the Rust canary sees scheduler output.</span>
+<span class="line"><i>270</i>            # No _cancellation_monitor — probe is bounded (max_tokens=1, FAKE_BOOTSTRAP_HOST).</span>
+<span class="line"><i>271</i>            async for res in results:</span>
+<span class="line"><i>272</i>                yield res</span>
+<span class="line"><i>273</i>            return</span>
+<span class="line"><i>274</i></span>
+<span class="line"><i>275</i>        # Yield bootstrap_info for PrefillRouter - required for async generator</span>
+<span class="line"><i>276</i>        # contract and Rust-side expects disaggregated_params in first output.</span>
+<span class="line"><i>277</i>        yield {</span>
+<span class="line"><i>278</i>            &quot;token_ids&quot;: [],</span>
+<span class="line"><i>279</i>            &quot;text&quot;: None,</span>
+<span class="line"><i>280</i>            &quot;finish_reason&quot;: None,</span>
+<span class="line"><i>281</i>            &quot;disaggregated_params&quot;: bootstrap_info,</span>
+<span class="line"><i>282</i>        }</span>
+<span class="line"><i>283</i></span>
+<span class="line"><i>284</i>        task = asyncio.create_task(</span>
+<span class="line"><i>285</i>            self._consume_results(results, submitted_request_id, context)</span>
+<span class="line"><i>286</i>        )</span>
+<span class="line"><i>287</i>        self._consume_tasks.add(task)</span>
+<span class="line"><i>288</i>        task.add_done_callback(self._consume_tasks.discard)</span>
+<span class="line"><i>289</i></span>
+<span class="line"><i>290</i>        final_meta_info = await task</span>
+<span class="line"><i>291</i>        if final_meta_info is None:</span>
+<span class="line"><i>292</i>            return</span>
+<span class="line"><i>293</i>        finish_reason = final_meta_info.get(&quot;finish_reason&quot;)</span>
+<span class="line"><i>294</i>        if isinstance(finish_reason, dict) and finish_reason.get(&quot;type&quot;) == &quot;abort&quot;:</span>
+<span class="line"><i>295</i>            # Unsolicited error-bearing aborts raise while consuming the stream.</span>
+<span class="line"><i>296</i>            # An ordinary backend cancellation must also terminate decode,</span>
+<span class="line"><i>297</i>            # rather than looking like a successful prefill handoff.</span>
+<span class="line"><i>298</i>            yield {&quot;token_ids&quot;: [], &quot;finish_reason&quot;: &quot;cancelled&quot;}</span>
+<span class="line"><i>299</i>            return</span>
+<span class="line"><i>300</i>        # Bootstrap happens before prefill runs, so the cache-hit report for</span>
+<span class="line"><i>301</i>        # this attempt needs its own trailing chunk.</span>
+<span class="line"><i>302</i>        kv_cache_hit = _kv_cache_hit_engine_data(final_meta_info)</span>
+<span class="line"><i>303</i>        if kv_cache_hit:</span>
+<span class="line"><i>304</i>            yield {&quot;token_ids&quot;: [], &quot;engine_data&quot;: {&quot;kv_cache_hit&quot;: kv_cache_hit}}</span></code></pre></details><p>SGLang 交接包含 host / port / room。Prefill handler 首先返回 token_ids 为空的 Bootstrap chunk，随后等待后台消费 engine 输出；这个空 chunk 是控制信息，不是首 token。当前 PD 只允许 n=1：单个 room 不能直接代表多个独立采样分支的传输。</p></section><section id="pd-sg-decode" class="lesson"><div class="sectionhead"><h2>12 / SGLang Decode：必须把 Bootstrap 交给引擎</h2><label class="done"><input type="checkbox" data-read="pd-sg-decode"> 已读</label></div><details class="source" id="src-pd-serving-sg-decode"><summary><b>源码 · native Decode 对 Bootstrap 的校验与参数传递</b><small>components/src/dynamo/sglang/request_handlers/llm/decode_handler.py:630–662</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/sglang/request_handlers/llm/decode_handler.py#L630-L662" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>630</i>    ) -&gt; AsyncIterator[Dict[str, Any]]:</span>
+<span class="line"><i>631</i>        &quot;&quot;&quot;Build and dispatch one native SGLang request.&quot;&quot;&quot;</span>
+<span class="line"><i>632</i>        raise_if_unextracted_multimodal(request)</span>
+<span class="line"><i>633</i>        input_ids = input_param.get(&quot;input_ids&quot;)</span>
+<span class="line"><i>634</i>        if not isinstance(input_ids, list):</span>
+<span class="line"><i>635</i>            raise ValueError(&quot;native SGLang Generate requires token input&quot;)</span>
+<span class="line"><i>636</i></span>
+<span class="line"><i>637</i>        bootstrap_info: dict[str, Any] = {}</span>
+<span class="line"><i>638</i>        if self.serving_mode == DisaggregationMode.DECODE:</span>
+<span class="line"><i>639</i>            bootstrap_info = request.get(&quot;bootstrap_info&quot;) or {}</span>
+<span class="line"><i>640</i>            if not bootstrap_info:</span>
+<span class="line"><i>641</i>                raise RuntimeError(</span>
+<span class="line"><i>642</i>                    &quot;bootstrap_info is required for disaggregated decode but was not provided&quot;</span>
+<span class="line"><i>643</i>                )</span>
+<span class="line"><i>644</i></span>
+<span class="line"><i>645</i>        routing = request.get(&quot;routing&quot;) or {}</span>
+<span class="line"><i>646</i>        native_request = build_native_generate_request(</span>
+<span class="line"><i>647</i>            native_payload,</span>
+<span class="line"><i>648</i>            input_ids=input_ids,</span>
+<span class="line"><i>649</i>            request_id=sglang_request_id,</span>
+<span class="line"><i>650</i>            priority=self._priority_kwargs(priority).get(&quot;priority&quot;),</span>
+<span class="line"><i>651</i>            bootstrap_host=bootstrap_info.get(&quot;bootstrap_host&quot;),</span>
+<span class="line"><i>652</i>            bootstrap_port=bootstrap_info.get(&quot;bootstrap_port&quot;),</span>
+<span class="line"><i>653</i>            bootstrap_room=bootstrap_info.get(&quot;bootstrap_room&quot;),</span>
+<span class="line"><i>654</i>            external_trace_header=(</span>
+<span class="line"><i>655</i>                context.trace_headers() if self.enable_trace else None</span>
+<span class="line"><i>656</i>            ),</span>
+<span class="line"><i>657</i>            routed_dp_rank=routing.get(&quot;dp_rank&quot;),</span>
+<span class="line"><i>658</i>            prefill_dp_rank=routing.get(&quot;prefill_dp_rank&quot;),</span>
+<span class="line"><i>659</i>            lora_path=self._resolve_lora(request),</span>
+<span class="line"><i>660</i>            cache_salt=request_cache_salt(request),</span>
+<span class="line"><i>661</i>            kv_hint=request.get(&quot;kv_hint&quot;),</span>
+<span class="line"><i>662</i>        )</span></code></pre></details><details class="source" id="src-pd-serving-sg-standard"><summary><b>源码 · 标准 Decode 与 prefill_dp_rank</b><small>components/src/dynamo/sglang/request_handlers/llm/decode_handler.py:779–821</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/sglang/request_handlers/llm/decode_handler.py#L779-L821" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>779</i>            # Check if bootstrap_info is pre-computed in the request (from frontend)</span>
+<span class="line"><i>780</i>            bootstrap_info = request.get(&quot;bootstrap_info&quot;)</span>
+<span class="line"><i>781</i></span>
+<span class="line"><i>782</i>            if not bootstrap_info:</span>
+<span class="line"><i>783</i>                raise RuntimeError(</span>
+<span class="line"><i>784</i>                    &quot;bootstrap_info is required for disaggregated decode but was not provided&quot;</span>
+<span class="line"><i>785</i>                )</span>
+<span class="line"><i>786</i></span>
+<span class="line"><i>787</i>            logging.debug(</span>
+<span class="line"><i>788</i>                f&quot;Using bootstrap_info: &quot;</span>
+<span class="line"><i>789</i>                f&quot;host={bootstrap_info[&#x27;bootstrap_host&#x27;]}, &quot;</span>
+<span class="line"><i>790</i>                f&quot;port={bootstrap_info[&#x27;bootstrap_port&#x27;]}, &quot;</span>
+<span class="line"><i>791</i>                f&quot;room={bootstrap_info[&#x27;bootstrap_room&#x27;]}&quot;</span>
+<span class="line"><i>792</i>            )</span>
+<span class="line"><i>793</i></span>
+<span class="line"><i>794</i>            trace_header = context.trace_headers() if self.enable_trace else None</span>
+<span class="line"><i>795</i></span>
+<span class="line"><i>796</i>            # Extract dp_rank from routing info (set by KV router)</span>
+<span class="line"><i>797</i>            routing = request.get(&quot;routing&quot;) or {}</span>
+<span class="line"><i>798</i>            dp_rank = routing.get(&quot;dp_rank&quot;)</span>
+<span class="line"><i>799</i></span>
+<span class="line"><i>800</i>            # Decode re-extracts the media so its token layout matches prefill&#x27;s</span>
+<span class="line"><i>801</i>            # and the transferred KV lines up.</span>
+<span class="line"><i>802</i>            decode_mm_kwargs = build_disagg_mm_kwargs(request)</span>
+<span class="line"><i>803</i></span>
+<span class="line"><i>804</i>            decode = await self.engine.async_generate(</span>
+<span class="line"><i>805</i>                **input_param,</span>
+<span class="line"><i>806</i>                **decode_mm_kwargs,</span>
+<span class="line"><i>807</i>                **cache_salt_kwargs(self.engine, request_cache_salt(request)),</span>
+<span class="line"><i>808</i>                sampling_params=sampling_params,</span>
+<span class="line"><i>809</i>                stream=True,</span>
+<span class="line"><i>810</i>                **require_reasoning_kwargs(</span>
+<span class="line"><i>811</i>                    self.engine,</span>
+<span class="line"><i>812</i>                    request,</span>
+<span class="line"><i>813</i>                    thinking_budget_requested=thinking_budget_requested(request),</span>
+<span class="line"><i>814</i>                ),</span>
+<span class="line"><i>815</i>                **self._routed_experts_kwargs,</span>
+<span class="line"><i>816</i>                bootstrap_host=bootstrap_info[&quot;bootstrap_host&quot;],</span>
+<span class="line"><i>817</i>                bootstrap_port=bootstrap_info[&quot;bootstrap_port&quot;],</span>
+<span class="line"><i>818</i>                bootstrap_room=bootstrap_info[&quot;bootstrap_room&quot;],</span>
+<span class="line"><i>819</i>                **prefill_dp_rank_kwargs(self.engine, routing.get(&quot;prefill_dp_rank&quot;)),</span>
+<span class="line"><i>820</i>                external_trace_header=trace_header,</span>
+<span class="line"><i>821</i>                rid=sglang_request_id,</span></code></pre></details><details class="source" id="src-pd-serving-sg-bypass"><summary><b>源码 · 当前 SGLang 不支持 conditional-disagg bypass</b><small>components/src/dynamo/sglang/request_handlers/llm/decode_handler.py:118–126</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/sglang/request_handlers/llm/decode_handler.py#L118-L126" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>118</i>def _raise_if_conditional_disagg_bypass(request: Dict[str, Any]) -&gt; None:</span>
+<span class="line"><i>119</i>    if BYPASS_REMOTE_PREFILL_ANNOTATION not in (request.get(&quot;annotations&quot;) or []):</span>
+<span class="line"><i>120</i>        return</span>
+<span class="line"><i>121</i>    raise HttpError(</span>
+<span class="line"><i>122</i>        400,</span>
+<span class="line"><i>123</i>        f&quot;Detected request annotation {BYPASS_REMOTE_PREFILL_ANNOTATION!r}, but &quot;</span>
+<span class="line"><i>124</i>        &quot;SGLang backend does not support conditional disaggregation yet. &quot;</span>
+<span class="line"><i>125</i>        &quot;Use vLLM or TensorRT-LLM for conditional disaggregation.&quot;,</span>
+<span class="line"><i>126</i>    )</span></code></pre></details><p>Decode-only 路径缺失 Bootstrap 会报错；prefill_dp_rank 在适用路径直接传给引擎。external_trace_header 仅在启用相应 tracing 时提供，传递 header 不能替代引擎侧启用与 exporter 配置。</p><aside class="note warn">当前源码明确拒绝 SGLang 条件 PD bypass（HTTP 400）。不要把 vLLM / TensorRT-LLM 的本地 Prefill bypass 能力套到 ACK 的 SGLang 部署。</aside></section><section id="pd-vllm" class="lesson"><div class="sectionhead"><h2>13 / vLLM：由 KV Connector 决定交接契约</h2><label class="done"><input type="checkbox" data-read="pd-vllm"> 已读</label></div><details class="source" id="src-pd-serving-connector-contract"><summary><b>源码 · NIXL / Mooncake / LMCacheMP 与 protocol adapter</b><small>components/src/dynamo/vllm/kv_connector_protocols.py:4–64</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/vllm/kv_connector_protocols.py#L4-L64" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>4</i>&quot;&quot;&quot;Per-connector PD-coordination strategies for dynamo&#x27;s vLLM prefill handler.</span>
+<span class="line"><i>5</i></span>
+<span class="line"><i>6</i>vLLM&#x27;s KV connectors disagree on the shape of ``kv_transfer_params``:</span>
+<span class="line"><i>7</i>NIXL is pull-based (decode reads block locations from the prefill</span>
+<span class="line"><i>8</i>response), Mooncake is push-based (prefill pushes blocks under a</span>
+<span class="line"><i>9</i>pre-allocated ``transfer_id``), and LMCache MP is cache-mediated (KV</span>
+<span class="line"><i>10</i>moves through a shared cache pool keyed by token hash, so no</span>
+<span class="line"><i>11</i>per-request params cross the PD boundary at all). This module isolates</span>
+<span class="line"><i>12</i>each protocol behind :class:`KvConnectorProtocol` so the handler stays</span>
+<span class="line"><i>13</i>connector-agnostic and new connectors are one class + one registry</span>
+<span class="line"><i>14</i>entry.</span>
+<span class="line"><i>15</i>&quot;&quot;&quot;</span>
+<span class="line"><i>16</i></span>
+<span class="line"><i>17</i>from __future__ import annotations</span>
+<span class="line"><i>18</i></span>
+<span class="line"><i>19</i>import copy</span>
+<span class="line"><i>20</i>import uuid</span>
+<span class="line"><i>21</i>from abc import ABC, abstractmethod</span>
+<span class="line"><i>22</i>from typing import Any, Dict, Optional, Tuple, Type</span>
+<span class="line"><i>23</i></span>
+<span class="line"><i>24</i></span>
+<span class="line"><i>25</i>class KvConnectorProtocol(ABC):</span>
+<span class="line"><i>26</i>    &quot;&quot;&quot;One instance per prefill request; carries any per-request state.&quot;&quot;&quot;</span>
+<span class="line"><i>27</i></span>
+<span class="line"><i>28</i>    #: False for cache-mediated connectors; wrapper resolution then lets a</span>
+<span class="line"><i>29</i>    #: transport child own PD coordination.</span>
+<span class="line"><i>30</i>    produces_kv_transfer_params: bool = True</span>
+<span class="line"><i>31</i></span>
+<span class="line"><i>32</i>    def __init__(self, vllm_config: Any) -&gt; None:</span>
+<span class="line"><i>33</i>        self._vllm_config = vllm_config</span>
+<span class="line"><i>34</i></span>
+<span class="line"><i>35</i>    @abstractmethod</span>
+<span class="line"><i>36</i>    def prefill_request_kv_transfer_params(self) -&gt; Dict[str, Any]:</span>
+<span class="line"><i>37</i>        &quot;&quot;&quot;``kv_transfer_params`` for the prefill request to vLLM.&quot;&quot;&quot;</span>
+<span class="line"><i>38</i></span>
+<span class="line"><i>39</i>    @abstractmethod</span>
+<span class="line"><i>40</i>    def decode_request_kv_transfer_params(</span>
+<span class="line"><i>41</i>        self, prefill_response: Any</span>
+<span class="line"><i>42</i>    ) -&gt; Optional[Dict[str, Any]]:</span>
+<span class="line"><i>43</i>        &quot;&quot;&quot;``kv_transfer_params`` for the decode worker, derived from the</span>
+<span class="line"><i>44</i>        prefill response. Return ``None`` if the protocol doesn&#x27;t produce</span>
+<span class="line"><i>45</i>        one.&quot;&quot;&quot;</span>
+<span class="line"><i>46</i></span>
+<span class="line"><i>47</i></span>
+<span class="line"><i>48</i>class NixlConnectorProtocol(KvConnectorProtocol):</span>
+<span class="line"><i>49</i>    &quot;&quot;&quot;Pull-based: decode-side params come straight off the engine response.&quot;&quot;&quot;</span>
+<span class="line"><i>50</i></span>
+<span class="line"><i>51</i>    def prefill_request_kv_transfer_params(self) -&gt; Dict[str, Any]:</span>
+<span class="line"><i>52</i>        return {</span>
+<span class="line"><i>53</i>            &quot;do_remote_decode&quot;: True,</span>
+<span class="line"><i>54</i>            &quot;do_remote_prefill&quot;: False,</span>
+<span class="line"><i>55</i>            &quot;remote_engine_id&quot;: None,</span>
+<span class="line"><i>56</i>            &quot;remote_block_ids&quot;: None,</span>
+<span class="line"><i>57</i>            &quot;remote_host&quot;: None,</span>
+<span class="line"><i>58</i>            &quot;remote_port&quot;: None,</span>
+<span class="line"><i>59</i>        }</span>
+<span class="line"><i>60</i></span>
+<span class="line"><i>61</i>    def decode_request_kv_transfer_params(</span>
+<span class="line"><i>62</i>        self, prefill_response: Any</span>
+<span class="line"><i>63</i>    ) -&gt; Optional[Dict[str, Any]]:</span>
+<span class="line"><i>64</i>        return prefill_response.kv_transfer_params</span></code></pre></details><details class="source" id="src-pd-serving-vl-prefill"><summary><b>源码 · Prefill 单 token 与 connector 参数</b><small>components/src/dynamo/vllm/handlers.py:4584–4624</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/vllm/handlers.py#L4584-L4624" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>4584</i>    async def _generate_token_mode(self, request, context, request_id):</span>
+<span class="line"><i>4585</i>        &quot;&quot;&quot;Generate prefill using internal protocol format (token-in-token-out).&quot;&quot;&quot;</span>
+<span class="line"><i>4586</i>        # Read the marker first: input preparation below can replace the request.</span>
+<span class="line"><i>4587</i>        is_local_probe = is_probe(request)</span>
+<span class="line"><i>4588</i>        prepared_input = await self._multimodal_request_processor.prepare_input(</span>
+<span class="line"><i>4589</i>            request,</span>
+<span class="line"><i>4590</i>            request_id,</span>
+<span class="line"><i>4591</i>            context,</span>
+<span class="line"><i>4592</i>            DisaggregationMode.PREFILL,</span>
+<span class="line"><i>4593</i>        )</span>
+<span class="line"><i>4594</i>        request = prepared_input.request</span>
+<span class="line"><i>4595</i>        multi_modal_data = prepared_input.multi_modal_data</span>
+<span class="line"><i>4596</i>        mm_processor_kwargs = prepared_input.mm_processor_kwargs</span>
+<span class="line"><i>4597</i></span>
+<span class="line"><i>4598</i>        # Build prompt from request (handles both prompt_embeds and token_ids)</span>
+<span class="line"><i>4599</i>        prompt = self._build_prompt_from_request(</span>
+<span class="line"><i>4600</i>            request,</span>
+<span class="line"><i>4601</i>            request_id,</span>
+<span class="line"><i>4602</i>            multi_modal_data,</span>
+<span class="line"><i>4603</i>            log_prefix=&quot;Prefill &quot;,</span>
+<span class="line"><i>4604</i>            mm_processor_kwargs=mm_processor_kwargs,</span>
+<span class="line"><i>4605</i>        )</span>
+<span class="line"><i>4606</i></span>
+<span class="line"><i>4607</i>        _apply_nvext_cache_salt(request, prompt)</span>
+<span class="line"><i>4608</i></span>
+<span class="line"><i>4609</i>        # Prefill generates only 1 token. Cap it before the builder, whose vLLM</span>
+<span class="line"><i>4610</i>        # checks reject a client min_tokens above max_tokens=1.</span>
+<span class="line"><i>4611</i>        stop_conditions = {</span>
+<span class="line"><i>4612</i>            **(request.get(&quot;stop_conditions&quot;) or {}),</span>
+<span class="line"><i>4613</i>            &quot;max_tokens&quot;: 1,</span>
+<span class="line"><i>4614</i>            &quot;min_tokens&quot;: 1,</span>
+<span class="line"><i>4615</i>        }</span>
+<span class="line"><i>4616</i>        sampling_params = build_sampling_params(</span>
+<span class="line"><i>4617</i>            {**request, &quot;stop_conditions&quot;: stop_conditions},</span>
+<span class="line"><i>4618</i>            self.default_sampling_params,</span>
+<span class="line"><i>4619</i>            self.model_max_len,</span>
+<span class="line"><i>4620</i>            enable_rl=self.config.enable_rl,</span>
+<span class="line"><i>4621</i>        )</span>
+<span class="line"><i>4622</i></span>
+<span class="line"><i>4623</i>        kv_protocol = self._prefill_kv_protocol(is_local_probe, sampling_params)</span>
+<span class="line"><i>4624</i></span></code></pre></details><details class="source" id="src-pd-serving-vl-output"><summary><b>源码 · Prefill 输出中的 disaggregated_params</b><small>components/src/dynamo/vllm/handlers.py:4670–4727</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/vllm/handlers.py#L4670-L4727" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>4670</i>                logger.warning(&quot;Initiating Dynamo Runtime shutdown.&quot;)</span>
+<span class="line"><i>4671</i>                self.runtime.shutdown()</span>
+<span class="line"><i>4672</i>                os._exit(1)</span>
+<span class="line"><i>4673</i></span>
+<span class="line"><i>4674</i>            async for res in gen:</span>
+<span class="line"><i>4675</i>                logger.debug(f&quot;kv transfer params: {res.kv_transfer_params}&quot;)</span>
+<span class="line"><i>4676</i></span>
+<span class="line"><i>4677</i>                token_ids = res.outputs[0].token_ids if res.outputs else []</span>
+<span class="line"><i>4678</i></span>
+<span class="line"><i>4679</i>                output: Dict[str, Any] = {</span>
+<span class="line"><i>4680</i>                    &quot;token_ids&quot;: list(token_ids),</span>
+<span class="line"><i>4681</i>                    &quot;disaggregated_params&quot;: self._prefill_disaggregated_params(</span>
+<span class="line"><i>4682</i>                        kv_protocol,</span>
+<span class="line"><i>4683</i>                        res,</span>
+<span class="line"><i>4684</i>                        multi_modal_data,</span>
+<span class="line"><i>4685</i>                        mm_processor_kwargs,</span>
+<span class="line"><i>4686</i>                    ),</span>
+<span class="line"><i>4687</i>                    &quot;completion_usage&quot;: BaseWorkerHandler._build_completion_usage(</span>
+<span class="line"><i>4688</i>                        request_output=res,</span>
+<span class="line"><i>4689</i>                    ),</span>
+<span class="line"><i>4690</i>                }</span>
+<span class="line"><i>4691</i>                # Parallel samples make the count unreliable; see generate_tokens.</span>
+<span class="line"><i>4692</i>                kv_cache_hit = (</span>
+<span class="line"><i>4693</i>                    BaseWorkerHandler._kv_cache_hit_engine_data(res)</span>
+<span class="line"><i>4694</i>                    if sampling_params.n == 1</span>
+<span class="line"><i>4695</i>                    else {}</span>
+<span class="line"><i>4696</i>                )</span>
+<span class="line"><i>4697</i>                if kv_cache_hit:</span>
+<span class="line"><i>4698</i>                    output[&quot;engine_data&quot;] = {&quot;kv_cache_hit&quot;: kv_cache_hit}</span>
+<span class="line"><i>4699</i></span>
+<span class="line"><i>4700</i>                # Log prefill completion with LoRA info</span>
+<span class="line"><i>4701</i>                self._log_with_lora_context(</span>
+<span class="line"><i>4702</i>                    &quot;Prefill completed for request {request_id}{lora_info}: &quot;</span>
+<span class="line"><i>4703</i>                    &quot;generated {token_count} token(s), has_kv_params={has_kv_params}&quot;,</span>
+<span class="line"><i>4704</i>                    request_id,</span>
+<span class="line"><i>4705</i>                    lora_request,</span>
+<span class="line"><i>4706</i>                    level=&quot;info&quot; if lora_request else &quot;debug&quot;,</span>
+<span class="line"><i>4707</i>                    token_count=len(token_ids),</span>
+<span class="line"><i>4708</i>                    has_kv_params=res.kv_transfer_params is not None,</span>
+<span class="line"><i>4709</i>                )</span>
+<span class="line"><i>4710</i></span>
+<span class="line"><i>4711</i>                yield output</span>
+<span class="line"><i>4712</i></span>
+<span class="line"><i>4713</i>    def _build_disaggregated_params(</span>
+<span class="line"><i>4714</i>        self, kv_transfer_params, embedding_params=None, expanded_prompt_token_ids=None</span>
+<span class="line"><i>4715</i>    ):</span>
+<span class="line"><i>4716</i>        disaggregated_params = {}</span>
+<span class="line"><i>4717</i>        if kv_transfer_params is not None:</span>
+<span class="line"><i>4718</i>            disaggregated_params[&quot;kv_transfer_params&quot;] = kv_transfer_params</span>
+<span class="line"><i>4719</i>        if embedding_params is not None:</span>
+<span class="line"><i>4720</i>            disaggregated_params[&quot;embedding_params&quot;] = embedding_params</span>
+<span class="line"><i>4721</i>        if expanded_prompt_token_ids is not None:</span>
+<span class="line"><i>4722</i>            disaggregated_params[</span>
+<span class="line"><i>4723</i>                &quot;expanded_prompt_token_ids&quot;</span>
+<span class="line"><i>4724</i>            ] = expanded_prompt_token_ids</span>
+<span class="line"><i>4725</i></span>
+<span class="line"><i>4726</i>        return disaggregated_params if disaggregated_params else None</span>
+<span class="line"><i>4727</i></span></code></pre></details><p>NixlConnectorProtocol 为 Prefill 构建 do_remote_decode=true 等参数，Decode 使用 Prefill 响应的 kv_transfer_params。这里的 NIXL pull、Mooncake push、LMCacheMP 共享缓存是 adapter 声明的不同契约，不能推广为所有 connector 都有同样的每请求参数或传输方向。</p></section><section id="pd-vllm-decode" class="lesson"><div class="sectionhead"><h2>14 / vLLM Decode：恢复交接参数与本地执行分支</h2><label class="done"><input type="checkbox" data-read="pd-vllm-decode"> 已读</label></div><details class="source" id="src-pd-serving-vl-decode"><summary><b>源码 · prefill_result、kv_transfer_params 与条件聚合分支</b><small>components/src/dynamo/vllm/handlers.py:3978–4026</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/vllm/handlers.py#L3978-L4026" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>3978</i></span>
+<span class="line"><i>3979</i>    async def _generate_token_mode(self, request, context, request_id):</span>
+<span class="line"><i>3980</i>        &quot;&quot;&quot;Generate tokens using internal protocol format (token-in-token-out).&quot;&quot;&quot;</span>
+<span class="line"><i>3981</i>        # Firstly extract disaggregated params from prefill result if available</span>
+<span class="line"><i>3982</i>        prefill_result = request.get(&quot;prefill_result&quot;)</span>
+<span class="line"><i>3983</i>        if prefill_result and isinstance(prefill_result, dict):</span>
+<span class="line"><i>3984</i>            # `disaggregated_params` may be explicitly None (prefill error path,</span>
+<span class="line"><i>3985</i>            # or _build_disaggregated_params returning None when empty), so use</span>
+<span class="line"><i>3986</i>            # `or {}` rather than a .get default — the default only applies when</span>
+<span class="line"><i>3987</i>            # the key is absent, not when it is present-but-None.</span>
+<span class="line"><i>3988</i>            disaggregated_params = prefill_result.get(&quot;disaggregated_params&quot;) or {}</span>
+<span class="line"><i>3989</i>            kv_params = disaggregated_params.get(&quot;kv_transfer_params&quot;)</span>
+<span class="line"><i>3990</i>        else:</span>
+<span class="line"><i>3991</i>            kv_params = None</span>
+<span class="line"><i>3992</i></span>
+<span class="line"><i>3993</i>        mode = cast(DisaggregationMode, self.config.disaggregation_mode)</span>
+<span class="line"><i>3994</i>        is_decode_only = mode == DisaggregationMode.DECODE</span>
+<span class="line"><i>3995</i>        if is_decode_only and BYPASS_REMOTE_PREFILL_ANNOTATION in (</span>
+<span class="line"><i>3996</i>            request.get(&quot;annotations&quot;) or []</span>
+<span class="line"><i>3997</i>        ):</span>
+<span class="line"><i>3998</i>            logger.debug(</span>
+<span class="line"><i>3999</i>                &quot;DECODE: conditional-disagg bypass annotation present; &quot;</span>
+<span class="line"><i>4000</i>                &quot;running request as AGG (prefill+decode on this worker).&quot;</span>
+<span class="line"><i>4001</i>            )</span>
+<span class="line"><i>4002</i>            is_decode_only = False</span>
+<span class="line"><i>4003</i>            mode = DisaggregationMode.AGGREGATED</span>
+<span class="line"><i>4004</i>        has_external_encoder_result = request.get(&quot;encoder_result&quot;) is not None</span>
+<span class="line"><i>4005</i>        if has_external_encoder_result and mode != DisaggregationMode.AGGREGATED:</span>
+<span class="line"><i>4006</i>            yield {</span>
+<span class="line"><i>4007</i>                &quot;finish_reason&quot;: (</span>
+<span class="line"><i>4008</i>                    &quot;error: external encoder results currently require an &quot;</span>
+<span class="line"><i>4009</i>                    &quot;aggregated vLLM worker&quot;</span>
+<span class="line"><i>4010</i>                ),</span>
+<span class="line"><i>4011</i>                &quot;index&quot;: 0,</span>
+<span class="line"><i>4012</i>                &quot;token_ids&quot;: [],</span>
+<span class="line"><i>4013</i>            }</span>
+<span class="line"><i>4014</i>            return</span>
+<span class="line"><i>4015</i>        has_mm_data = request.get(&quot;multi_modal_data&quot;) is not None</span>
+<span class="line"><i>4016</i>        assembled_prompt: EmbedsPrompt | TokensPrompt | None = None</span>
+<span class="line"><i>4017</i>        engine_generate_input = None</span>
+<span class="line"><i>4018</i>        extra_args = request.get(&quot;extra_args&quot;)</span>
+<span class="line"><i>4019</i>        if isinstance(extra_args, dict) and &quot;vllm_tito&quot; in extra_args:</span>
+<span class="line"><i>4020</i>            engine_generate_input = adapt_engine_generate_request(</span>
+<span class="line"><i>4021</i>                request,</span>
+<span class="line"><i>4022</i>                enable_multimodal=self._multimodal_request_processor.enable_multimodal,</span>
+<span class="line"><i>4023</i>                decode_capable=mode != DisaggregationMode.PREFILL,</span>
+<span class="line"><i>4024</i>                allow_multimodal_features=mode == DisaggregationMode.AGGREGATED,</span>
+<span class="line"><i>4025</i>                vllm_config=self.engine_client.vllm_config,</span>
+<span class="line"><i>4026</i>                default_sampling_params=self.default_sampling_params,</span></code></pre></details><details class="source" id="src-pd-serving-vl-params"><summary><b>源码 · 健康探测与交接参数构建</b><small>components/src/dynamo/vllm/handlers.py:4536–4582</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/vllm/handlers.py#L4536-L4582" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>4536</i>    def _prefill_kv_protocol(</span>
+<span class="line"><i>4537</i>        self, is_local_probe: bool, sampling_params</span>
+<span class="line"><i>4538</i>    ) -&gt; &quot;KvConnectorProtocol | None&quot;:</span>
+<span class="line"><i>4539</i>        &quot;&quot;&quot;The KV connector for this request, or None for a local health probe.</span>
+<span class="line"><i>4540</i></span>
+<span class="line"><i>4541</i>        A probe runs on this worker and no decode worker consumes it, so it must</span>
+<span class="line"><i>4542</i>        not ask for a handoff. Any caller-supplied transfer parameters are</span>
+<span class="line"><i>4543</i>        dropped as well.</span>
+<span class="line"><i>4544</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>4545</i>        if is_local_probe:</span>
+<span class="line"><i>4546</i>            if sampling_params.extra_args is not None:</span>
+<span class="line"><i>4547</i>                sampling_params.extra_args = dict(sampling_params.extra_args)</span>
+<span class="line"><i>4548</i>                sampling_params.extra_args.pop(_KV_TRANSFER_PARAMS_EXTRA_ARGS_KEY, None)</span>
+<span class="line"><i>4549</i>            return None</span>
+<span class="line"><i>4550</i></span>
+<span class="line"><i>4551</i>        # One protocol instance per request; carries per-request state</span>
+<span class="line"><i>4552</i>        # (e.g. Mooncake&#x27;s transfer_id) into the response loop.</span>
+<span class="line"><i>4553</i>        kv_protocol = make_kv_connector_protocol(self.engine_client.vllm_config)</span>
+<span class="line"><i>4554</i>        _update_kv_transfer_params(</span>
+<span class="line"><i>4555</i>            sampling_params,</span>
+<span class="line"><i>4556</i>            kv_protocol.prefill_request_kv_transfer_params(),</span>
+<span class="line"><i>4557</i>        )</span>
+<span class="line"><i>4558</i>        return kv_protocol</span>
+<span class="line"><i>4559</i></span>
+<span class="line"><i>4560</i>    def _prefill_disaggregated_params(</span>
+<span class="line"><i>4561</i>        self,</span>
+<span class="line"><i>4562</i>        kv_protocol: &quot;KvConnectorProtocol | None&quot;,</span>
+<span class="line"><i>4563</i>        res,</span>
+<span class="line"><i>4564</i>        multi_modal_data,</span>
+<span class="line"><i>4565</i>        mm_processor_kwargs,</span>
+<span class="line"><i>4566</i>    ) -&gt; &quot;Dict[str, Any] | None&quot;:</span>
+<span class="line"><i>4567</i>        &quot;&quot;&quot;The handoff field for the response, or None when there is no handoff.</span>
+<span class="line"><i>4568</i></span>
+<span class="line"><i>4569</i>        Only one result is generated per prefill request, so the embedding</span>
+<span class="line"><i>4570</i>        params are built here without further conditionals.</span>
+<span class="line"><i>4571</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>4572</i>        if kv_protocol is None:</span>
+<span class="line"><i>4573</i>            return None</span>
+<span class="line"><i>4574</i>        embedding_params = self._multimodal_request_processor.build_prefill_handoff(</span>
+<span class="line"><i>4575</i>            multi_modal_data=multi_modal_data,</span>
+<span class="line"><i>4576</i>            prompt_token_ids=list(res.prompt_token_ids or []),</span>
+<span class="line"><i>4577</i>            mm_processor_kwargs=mm_processor_kwargs,</span>
+<span class="line"><i>4578</i>        )</span>
+<span class="line"><i>4579</i>        return self._build_disaggregated_params(</span>
+<span class="line"><i>4580</i>            kv_protocol.decode_request_kv_transfer_params(res),</span>
+<span class="line"><i>4581</i>            embedding_params,</span>
+<span class="line"><i>4582</i>        )</span></code></pre></details><p>Decode 从 prefill_result.disaggregated_params 提取 kv_transfer_params；健康探测可跳过真实交接，因此探测成功不能证明 PD 数据面正常。路由器授权的 bypass 会使 Decode worker 在该请求上执行聚合模式。多模态/外部 encoder 的限制需要按代码分支检查，不能仅以文本 PD 成功推断所有协议组合都支持。</p></section><section id="pd-trt" class="lesson"><div class="sectionhead"><h2>15 / TensorRT-LLM：context_only → generation_only</h2><label class="done"><input type="checkbox" data-read="pd-trt"> 已读</label></div><details class="source" id="src-pd-serving-trt-prefill"><summary><b>源码 · PrefillHandler 的单结果与取消处理</b><small>components/src/dynamo/trtllm/request_handlers/handlers.py:146–218</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/trtllm/request_handlers/handlers.py#L146-L218" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>146</i>    async def generate(</span>
+<span class="line"><i>147</i>        self, request: dict, context: Context</span>
+<span class="line"><i>148</i>    ) -&gt; AsyncGenerator[dict, None]:</span>
+<span class="line"><i>149</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>150</i>        Prefill worker: process prompt and return disaggregated_params.</span>
+<span class="line"><i>151</i>        Frontend routes to decode workers automatically.</span>
+<span class="line"><i>152</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>153</i>        # Reject before optional remote encoder/cache work. HandlerBase keeps a</span>
+<span class="line"><i>154</i>        # second guard as a backstop for paths without these early side effects.</span>
+<span class="line"><i>155</i>        reject_unsupported_multimodal_uuids(request.get(&quot;multi_modal_uuids&quot;))</span>
+<span class="line"><i>156</i>        logging.debug(f&quot;Prefill Request ID: {context.id()}&quot;)</span>
+<span class="line"><i>157</i>        request_token_ids = request.get(&quot;token_ids&quot;)</span>
+<span class="line"><i>158</i>        logging.debug(</span>
+<span class="line"><i>159</i>            &quot;PrefillHandler.generate received request: token_ids=%s keys=%s&quot;,</span>
+<span class="line"><i>160</i>            len(request_token_ids) if isinstance(request_token_ids, list) else None,</span>
+<span class="line"><i>161</i>            len(request),</span>
+<span class="line"><i>162</i>        )</span>
+<span class="line"><i>163</i>        embeddings_tensor = None</span>
+<span class="line"><i>164</i>        ep_disaggregated_params = None</span>
+<span class="line"><i>165</i></span>
+<span class="line"><i>166</i>        if self.multimodal_processor:</span>
+<span class="line"><i>167</i>            (</span>
+<span class="line"><i>168</i>                _,</span>
+<span class="line"><i>169</i>                image_urls,</span>
+<span class="line"><i>170</i>                embedding_paths,</span>
+<span class="line"><i>171</i>            ) = self.multimodal_processor.extract_prompt_and_media_from_request(request)</span>
+<span class="line"><i>172</i>            # Handle embedding paths (NIXL transfer of pre-computed embeddings)</span>
+<span class="line"><i>173</i>            if embedding_paths:</span>
+<span class="line"><i>174</i>                if self.encode_client and self.connector:</span>
+<span class="line"><i>175</i>                    logging.info(f&quot;PrefillHandler: embedding_paths={embedding_paths}&quot;)</span>
+<span class="line"><i>176</i>                    embeddings_tensor = await self.remote_encode_with_nixl(</span>
+<span class="line"><i>177</i>                        request, context=context</span>
+<span class="line"><i>178</i>                    )</span>
+<span class="line"><i>179</i>                else:</span>
+<span class="line"><i>180</i>                    # We can still handle embedding_paths without NIXL:</span>
+<span class="line"><i>181</i>                    # `MultimodalRequestProcessor.process_openai_request` will load the embeddings</span>
+<span class="line"><i>182</i>                    # locally in the prefill worker as a fallback. The encode-worker+NIXL path is</span>
+<span class="line"><i>183</i>                    # useful when you want a dedicated I/O stage and/or explicit RDMA transfer.</span>
+<span class="line"><i>184</i>                    logging.info(</span>
+<span class="line"><i>185</i>                        &quot;PrefillHandler: no encode_client/connector; falling back to local embedding load&quot;</span>
+<span class="line"><i>186</i>                    )</span>
+<span class="line"><i>187</i></span>
+<span class="line"><i>188</i>            # Handle image URLs (full E-PD flow with MultimodalEncoder)</span>
+<span class="line"><i>189</i>            elif image_urls:</span>
+<span class="line"><i>190</i>                if self.encode_client:</span>
+<span class="line"><i>191</i>                    result = await fetch_embeddings_from_encoder(</span>
+<span class="line"><i>192</i>                        image_urls,</span>
+<span class="line"><i>193</i>                        request,</span>
+<span class="line"><i>194</i>                        self.encode_client,</span>
+<span class="line"><i>195</i>                        self._encoder_cache,</span>
+<span class="line"><i>196</i>                        trace_context=context,</span>
+<span class="line"><i>197</i>                    )</span>
+<span class="line"><i>198</i>                    if isinstance(result, list):</span>
+<span class="line"><i>199</i>                        # Cache path: got List[torch.Tensor]</span>
+<span class="line"><i>200</i>                        embeddings_tensor = result</span>
+<span class="line"><i>201</i>                    else:</span>
+<span class="line"><i>202</i>                        # No-cache path: got DisaggregatedParams</span>
+<span class="line"><i>203</i>                        ep_disaggregated_params = result</span>
+<span class="line"><i>204</i></span>
+<span class="line"><i>205</i>        # Normal flow: Generate the prefill response locally with embeddings</span>
+<span class="line"><i>206</i>        response_count = 0</span>
+<span class="line"><i>207</i>        async for res in self.generate_locally(</span>
+<span class="line"><i>208</i>            request, context, embeddings_tensor, ep_disaggregated_params</span>
+<span class="line"><i>209</i>        ):</span>
+<span class="line"><i>210</i>            response_count += 1</span>
+<span class="line"><i>211</i>            if response_count &gt; 1:</span>
+<span class="line"><i>212</i>                raise ValueError(&quot;Prefill response should be generated only once.&quot;)</span>
+<span class="line"><i>213</i></span>
+<span class="line"><i>214</i>            if context.is_stopped() or context.is_killed():</span>
+<span class="line"><i>215</i>                return</span>
+<span class="line"><i>216</i></span>
+<span class="line"><i>217</i>            # Return response with disaggregated_params to frontend</span>
+<span class="line"><i>218</i>            yield res</span></code></pre></details><details class="source" id="src-pd-serving-trt-decode"><summary><b>源码 · Decode 反序列化上下文并切换 generation_only</b><small>components/src/dynamo/trtllm/request_handlers/handler_base.py:597–647</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/trtllm/request_handlers/handler_base.py#L597-L647" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>597</i>    def _decode_disaggregated_params_from_prefill(</span>
+<span class="line"><i>598</i>        self, prefill_result: dict</span>
+<span class="line"><i>599</i>    ) -&gt; tuple[Any, dict]:</span>
+<span class="line"><i>600</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>601</i>        Extract and decode disaggregated params from prefill_result.</span>
+<span class="line"><i>602</i></span>
+<span class="line"><i>603</i>        Args:</span>
+<span class="line"><i>604</i>            prefill_result: Result from prefill worker containing encoded disaggregated params</span>
+<span class="line"><i>605</i></span>
+<span class="line"><i>606</i>        Returns:</span>
+<span class="line"><i>607</i>            Tuple of (disaggregated_params, epd_metadata) where:</span>
+<span class="line"><i>608</i>            - disaggregated_params: Decoded LlmDisaggregatedParams object</span>
+<span class="line"><i>609</i>            - epd_metadata: Dictionary containing EPD-specific metadata (_epd_processed_prompt, etc.)</span>
+<span class="line"><i>610</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>611</i>        params_dict = prefill_result[&quot;disaggregated_params&quot;]</span>
+<span class="line"><i>612</i></span>
+<span class="line"><i>613</i>        # Remove worker_id if present (added by prefill worker, not needed for decode)</span>
+<span class="line"><i>614</i>        params_dict.pop(&quot;worker_id&quot;, None)</span>
+<span class="line"><i>615</i></span>
+<span class="line"><i>616</i>        # Deserialize first_gen_log_probs from transport format back to</span>
+<span class="line"><i>617</i>        # TRT-LLM&#x27;s internal {token_id: Logprob} dict format.</span>
+<span class="line"><i>618</i>        DisaggregatedParamsCodec.deserialize_first_gen_log_probs(params_dict)</span>
+<span class="line"><i>619</i></span>
+<span class="line"><i>620</i>        # Extract EPD metadata that was packed by prefill worker</span>
+<span class="line"><i>621</i>        epd_metadata = {}</span>
+<span class="line"><i>622</i>        if &quot;_epd_metadata&quot; in params_dict:</span>
+<span class="line"><i>623</i>            epd_metadata = params_dict.pop(&quot;_epd_metadata&quot;)</span>
+<span class="line"><i>624</i>            logging.debug(</span>
+<span class="line"><i>625</i>                f&quot;DECODE: Extracted _epd_metadata with {len(epd_metadata)} fields&quot;</span>
+<span class="line"><i>626</i>            )</span>
+<span class="line"><i>627</i></span>
+<span class="line"><i>628</i>        # Decode the disaggregated params</span>
+<span class="line"><i>629</i>        disaggregated_params = DisaggregatedParamsCodec.decode(</span>
+<span class="line"><i>630</i>            DisaggregatedParams(**params_dict)</span>
+<span class="line"><i>631</i>        )</span>
+<span class="line"><i>632</i>        # Set to generation_only mode for decode phase</span>
+<span class="line"><i>633</i>        disaggregated_params.request_type = &quot;generation_only&quot;</span>
+<span class="line"><i>634</i></span>
+<span class="line"><i>635</i>        # In generation-only mode, multimodal embeddings are already processed and in KV cache</span>
+<span class="line"><i>636</i>        # Remove multimodal_embedding_handles to avoid TRT-LLM validation error</span>
+<span class="line"><i>637</i>        # NOTE: `hasattr` is used because multimodal_embedding_handles may not be present</span>
+<span class="line"><i>638</i>        # on DisaggregatedParams in all EPD flows (e.g., text-only requests or certain stages).</span>
+<span class="line"><i>639</i>        if (</span>
+<span class="line"><i>640</i>            hasattr(disaggregated_params, &quot;multimodal_embedding_handles&quot;)</span>
+<span class="line"><i>641</i>            and disaggregated_params.multimodal_embedding_handles</span>
+<span class="line"><i>642</i>        ):</span>
+<span class="line"><i>643</i>            disaggregated_params.multimodal_embedding_handles = None</span>
+<span class="line"><i>644</i></span>
+<span class="line"><i>645</i>        logging.debug(&quot;DECODE: Set request_type to generation_only&quot;)</span>
+<span class="line"><i>646</i></span>
+<span class="line"><i>647</i>        return disaggregated_params, epd_metadata</span></code></pre></details><details class="source" id="src-pd-serving-trt-context"><summary><b>源码 · context_only、disagg_request_id 与上下文交接</b><small>components/src/dynamo/trtllm/request_handlers/handler_base.py:815–849</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/trtllm/request_handlers/handler_base.py#L815-L849" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>815</i>            else:</span>
+<span class="line"><i>816</i>                disaggregated_params = LlmDisaggregatedParams(</span>
+<span class="line"><i>817</i>                    request_type=&quot;context_only&quot;,</span>
+<span class="line"><i>818</i>                    disagg_request_id=get_compatible_global_disagg_request_id(</span>
+<span class="line"><i>819</i>                        self.disagg_machine_id</span>
+<span class="line"><i>820</i>                    ),</span>
+<span class="line"><i>821</i>                )</span>
+<span class="line"><i>822</i></span>
+<span class="line"><i>823</i>            # Ensure disagg_request_id is set even when using</span>
+<span class="line"><i>824</i>            # ep_disaggregated_params, so the PYTHON transceiver can track</span>
+<span class="line"><i>825</i>            # requests across prefill/decode workers.</span>
+<span class="line"><i>826</i>            if disaggregated_params.disagg_request_id is None:</span>
+<span class="line"><i>827</i>                disaggregated_params.disagg_request_id = (</span>
+<span class="line"><i>828</i>                    get_compatible_global_disagg_request_id(self.disagg_machine_id)</span>
+<span class="line"><i>829</i>                )</span>
+<span class="line"><i>830</i></span>
+<span class="line"><i>831</i>        # AGGREGATED (prefill_and_decode) mode with encoder disaggregation:</span>
+<span class="line"><i>832</i>        # Pass the encode worker&#x27;s DisaggregatedParams (containing</span>
+<span class="line"><i>833</i>        # multimodal_embedding_handles) directly so TRT-LLM can import</span>
+<span class="line"><i>834</i>        # the vision embeddings.  Use &quot;context_and_generation&quot; so the</span>
+<span class="line"><i>835</i>        # engine runs a full prefill + decode cycle.</span>
+<span class="line"><i>836</i>        elif (</span>
+<span class="line"><i>837</i>            self.disaggregation_mode == DisaggregationMode.AGGREGATED</span>
+<span class="line"><i>838</i>            and ep_disaggregated_params is not None</span>
+<span class="line"><i>839</i>        ):</span>
+<span class="line"><i>840</i>            disaggregated_params = DisaggregatedParamsCodec.decode(</span>
+<span class="line"><i>841</i>                ep_disaggregated_params</span>
+<span class="line"><i>842</i>            )</span>
+<span class="line"><i>843</i>            disaggregated_params.request_type = &quot;context_and_generation&quot;</span>
+<span class="line"><i>844</i></span>
+<span class="line"><i>845</i>        # DECODE mode: decode params from prefill_result</span>
+<span class="line"><i>846</i>        prefill_result = request.get(&quot;prefill_result&quot;)</span>
+<span class="line"><i>847</i>        if prefill_result and &quot;disaggregated_params&quot; in prefill_result:</span>
+<span class="line"><i>848</i>            (</span>
+<span class="line"><i>849</i>                disaggregated_params,</span></code></pre></details><details class="source" id="src-pd-serving-trt-bypass"><summary><b>源码 · conditional bypass 使用 context_and_generation</b><small>components/src/dynamo/trtllm/request_handlers/handler_base.py:1098–1120</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/trtllm/request_handlers/handler_base.py#L1098-L1120" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1098</i>                logging.warning(&quot;Additional metrics (request type): %s&quot;, e)</span>
+<span class="line"><i>1099</i></span>
+<span class="line"><i>1100</i>        # Normalize OpenAI format to TRT-LLM internal format</span>
+<span class="line"><i>1101</i>        self._normalize_request_format(request)</span>
+<span class="line"><i>1102</i>        bypass_remote_prefill = (</span>
+<span class="line"><i>1103</i>            self.disaggregation_mode == DisaggregationMode.DECODE</span>
+<span class="line"><i>1104</i>            and BYPASS_REMOTE_PREFILL_ANNOTATION in (request.get(&quot;annotations&quot;) or [])</span>
+<span class="line"><i>1105</i>        )</span>
+<span class="line"><i>1106</i>        if bypass_remote_prefill:</span>
+<span class="line"><i>1107</i>            request_id = request.get(&quot;id&quot;) or request.get(&quot;request_id&quot;, &quot;unknown-id&quot;)</span>
+<span class="line"><i>1108</i>            logging.debug(</span>
+<span class="line"><i>1109</i>                &quot;DECODE: conditional-disagg bypass annotation present; &quot;</span>
+<span class="line"><i>1110</i>                &quot;running request %s as AGG (prefill+decode on this worker).&quot;,</span>
+<span class="line"><i>1111</i>                request_id,</span>
+<span class="line"><i>1112</i>            )</span>
+<span class="line"><i>1113</i>            request[&quot;disaggregated_params&quot;] = {&quot;request_type&quot;: &quot;context_and_generation&quot;}</span>
+<span class="line"><i>1114</i></span>
+<span class="line"><i>1115</i>        # Setup disaggregated params based on PREFILL/DECODE mode</span>
+<span class="line"><i>1116</i>        (</span>
+<span class="line"><i>1117</i>            disaggregated_params,</span>
+<span class="line"><i>1118</i>            ep_disaggregated_params,</span>
+<span class="line"><i>1119</i>            epd_metadata,</span>
+<span class="line"><i>1120</i>        ) = self._setup_disaggregated_params_for_mode(request, ep_disaggregated_params)</span></code></pre></details><p>TRT 使用 codec 编码/恢复引擎上下文参数和 request ID。聚合模式为 context_and_generation；拆分模式中 Prefill 负责 context_only，Decode 恢复后使用 generation_only。已处理的多模态 embedding handles 需要清理，避免重复导入。该协议不能机械替换成 SGLang 的 room 或 vLLM 的 kv_transfer_params。</p></section><section id="pd-conditional" class="lesson"><div class="sectionhead"><h2>16 / 条件 PD：评估 Decode 本地 Prefill 是否更划算</h2><label class="done"><input type="checkbox" data-read="pd-conditional"> 已读</label></div><details class="source" id="src-pd-serving-conditional-preview"><summary><b>源码 · 只在符合条件的 KV Decode 上 preview</b><small>lib/llm/src/kv_router/prefill_router/conditional_bypass.rs:31–75</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/conditional_bypass.rs#L31-L75" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>31</i>    pub(super) async fn plan_conditional_disagg_decode(</span>
+<span class="line"><i>32</i>        &amp;self,</span>
+<span class="line"><i>33</i>        request: &amp;SingleIn&lt;PreprocessedRequest&gt;,</span>
+<span class="line"><i>34</i>        request_id: &amp;str,</span>
+<span class="line"><i>35</i>    ) -&gt; Result&lt;Option&lt;ConditionalDisaggDecodeDecision&gt;&gt; {</span>
+<span class="line"><i>36</i>        // Conditional disagg chooses a cache-hot decode worker, so it only</span>
+<span class="line"><i>37</i>        // applies to a KV-routed decode set.</span>
+<span class="line"><i>38</i>        if !self.decode_router_mode.is_kv_routing() {</span>
+<span class="line"><i>39</i>            return Ok(None);</span>
+<span class="line"><i>40</i>        }</span>
+<span class="line"><i>41</i></span>
+<span class="line"><i>42</i>        if request</span>
+<span class="line"><i>43</i>            .routing</span>
+<span class="line"><i>44</i>            .as_ref()</span>
+<span class="line"><i>45</i>            .is_some_and(|routing| routing.prefill_worker_id.is_some())</span>
+<span class="line"><i>46</i>        {</span>
+<span class="line"><i>47</i>            tracing::debug!(</span>
+<span class="line"><i>48</i>                request_id,</span>
+<span class="line"><i>49</i>                &quot;Skipping conditional disagg because request has a preselected prefill worker&quot;</span>
+<span class="line"><i>50</i>            );</span>
+<span class="line"><i>51</i>            return Ok(None);</span>
+<span class="line"><i>52</i>        }</span>
+<span class="line"><i>53</i></span>
+<span class="line"><i>54</i>        let Some(decode_host) = self.decode_routing_host.get() else {</span>
+<span class="line"><i>55</i>            tracing::debug!(</span>
+<span class="line"><i>56</i>                request_id,</span>
+<span class="line"><i>57</i>                &quot;Skipping conditional disagg because decode RoutingHost is unavailable&quot;</span>
+<span class="line"><i>58</i>            );</span>
+<span class="line"><i>59</i>            return Ok(None);</span>
+<span class="line"><i>60</i>        };</span>
+<span class="line"><i>61</i></span>
+<span class="line"><i>62</i>        let (routing_token_ids, _) = request.block_mm_routing_info();</span>
+<span class="line"><i>63</i>        if routing_token_ids.is_empty() {</span>
+<span class="line"><i>64</i>            return Ok(None);</span>
+<span class="line"><i>65</i>        }</span>
+<span class="line"><i>66</i></span>
+<span class="line"><i>67</i>        let preview = decode_host</span>
+<span class="line"><i>68</i>            .preview_kv_route(request, RequestPhase::Decode)</span>
+<span class="line"><i>69</i>            .await?;</span>
+<span class="line"><i>70</i>        let signals = preview.signals;</span>
+<span class="line"><i>71</i>        let mut input =</span>
+<span class="line"><i>72</i>            ConditionalDisaggDecisionInput::new(routing_token_ids.len(), signals.cached_tokens);</span>
+<span class="line"><i>73</i>        if self.conditional_disagg_policy.needs_prefill_worker_busy() {</span>
+<span class="line"><i>74</i>            let busy = match self.peek_prefill_chosen_worker_busy(request).await {</span>
+<span class="line"><i>75</i>                Ok(busy) =&gt; busy,</span></code></pre></details><details class="source" id="src-pd-serving-policy"><summary><b>源码 · ISL 绝对与比例双阈值</b><small>lib/kv-router/src/conditional_disagg.rs:149–167</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kv-router/src/conditional_disagg.rs#L149-L167" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>149</i>#[async_trait]</span>
+<span class="line"><i>150</i>impl ConditionalDisaggPolicy for IslBoundingPolicy {</span>
+<span class="line"><i>151</i>    fn is_enabled(&amp;self) -&gt; bool {</span>
+<span class="line"><i>152</i>        self.enabled</span>
+<span class="line"><i>153</i>    }</span>
+<span class="line"><i>154</i></span>
+<span class="line"><i>155</i>    async fn should_bypass_remote_prefill(&amp;self, input: ConditionalDisaggDecisionInput) -&gt; bool {</span>
+<span class="line"><i>156</i>        if !self.enabled {</span>
+<span class="line"><i>157</i>            return false;</span>
+<span class="line"><i>158</i>        }</span>
+<span class="line"><i>159</i>        let eff_isl = input.net_new_tokens();</span>
+<span class="line"><i>160</i>        if eff_isl &gt;= self.eff_isl_threshold {</span>
+<span class="line"><i>161</i>            return false;</span>
+<span class="line"><i>162</i>        }</span>
+<span class="line"><i>163</i>        let denom = input.prompt_tokens.max(1) as f64;</span>
+<span class="line"><i>164</i>        let ratio = eff_isl as f64 / denom;</span>
+<span class="line"><i>165</i>        ratio &lt; self.eff_isl_ratio_threshold</span>
+<span class="line"><i>166</i>    }</span>
+<span class="line"><i>167</i>}</span></code></pre></details><details class="source" id="src-pd-serving-conditional-admit"><summary><b>源码 · Decode busy gate 与保留原 preview 选择</b><small>lib/llm/src/kv_router/prefill_router/conditional_bypass.rs:100–147</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/conditional_bypass.rs#L100-L147" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>100</i>            .await;</span>
+<span class="line"><i>101</i>        let decode_gate_configured = self.conditional_disagg_decode_busy_threshold.is_some();</span>
+<span class="line"><i>102</i>        let decode_busy = if policy_says_bypass {</span>
+<span class="line"><i>103</i>            self.conditional_disagg_decode_busy_threshold</span>
+<span class="line"><i>104</i>                .and_then(|threshold| signals.decode_load_exceeds(threshold))</span>
+<span class="line"><i>105</i>        } else {</span>
+<span class="line"><i>106</i>            None</span>
+<span class="line"><i>107</i>        };</span>
+<span class="line"><i>108</i>        input = input.with_decode_chosen_worker_busy(decode_busy);</span>
+<span class="line"><i>109</i></span>
+<span class="line"><i>110</i>        let bypass =</span>
+<span class="line"><i>111</i>            decode_gate_allows_bypass(policy_says_bypass, decode_gate_configured, decode_busy);</span>
+<span class="line"><i>112</i>        let decode_gate_decision = if !policy_says_bypass {</span>
+<span class="line"><i>113</i>            &quot;bypass_declined_by_policy&quot;</span>
+<span class="line"><i>114</i>        } else if !decode_gate_configured {</span>
+<span class="line"><i>115</i>            &quot;bypass_allowed_decode_gate_disabled&quot;</span>
+<span class="line"><i>116</i>        } else if decode_busy.is_none() {</span>
+<span class="line"><i>117</i>            &quot;bypass_denied_decode_busy_unknown&quot;</span>
+<span class="line"><i>118</i>        } else if decode_busy == Some(true) {</span>
+<span class="line"><i>119</i>            &quot;bypass_denied_decode_busy&quot;</span>
+<span class="line"><i>120</i>        } else {</span>
+<span class="line"><i>121</i>            &quot;bypass_allowed_decode_not_busy&quot;</span>
+<span class="line"><i>122</i>        };</span>
+<span class="line"><i>123</i></span>
+<span class="line"><i>124</i>        log_conditional_disagg_decision(</span>
+<span class="line"><i>125</i>            request_id,</span>
+<span class="line"><i>126</i>            signals,</span>
+<span class="line"><i>127</i>            net_new_tokens,</span>
+<span class="line"><i>128</i>            overlap_tokens,</span>
+<span class="line"><i>129</i>            input,</span>
+<span class="line"><i>130</i>            decode_busy,</span>
+<span class="line"><i>131</i>            self.conditional_disagg_decode_busy_threshold,</span>
+<span class="line"><i>132</i>            decode_gate_decision,</span>
+<span class="line"><i>133</i>            bypass,</span>
+<span class="line"><i>134</i>        );</span>
+<span class="line"><i>135</i></span>
+<span class="line"><i>136</i>        if bypass {</span>
+<span class="line"><i>137</i>            let plan = decode_host</span>
+<span class="line"><i>138</i>                .plan_kv_route_from_preview(request, preview)</span>
+<span class="line"><i>139</i>                .await?;</span>
+<span class="line"><i>140</i>            return Ok(Some(ConditionalDisaggDecodeDecision {</span>
+<span class="line"><i>141</i>                plan,</span>
+<span class="line"><i>142</i>                overlap_tokens,</span>
+<span class="line"><i>143</i>                net_new_tokens,</span>
+<span class="line"><i>144</i>            }));</span>
+<span class="line"><i>145</i>        }</span>
+<span class="line"><i>146</i></span>
+<span class="line"><i>147</i>        Ok(None)</span></code></pre></details><p>策略使用净新增 token、缓存覆盖与可用负载信号决定是否跳过远端 Prefill。ISL Bounding 同时检查有效 ISL 小于绝对阈值以及有效 ISL / max(prompt_tokens,1) 小于比例阈值（均为严格小于）。显式指定 Prefill 实例会阻止该 bypass。</p><p>Decode busy gate 启用而所需容量信息未知时不会贸然放行；成功分支提交的是同一 preview 路由计划，避免决策看中一个实例却派发另一个。需要相应缓存事件与后端本地执行能力，不能仅改一个阈值就认为功能可用。</p></section><section id="pd-cancel" class="lesson"><div class="sectionhead"><h2>17 / 取消与失败：独立 Prefill 生命周期的理由</h2><label class="done"><input type="checkbox" data-read="pd-cancel"> 已读</label></div><details class="source" id="src-pd-serving-independent"><summary><b>源码 · 保留 ID / metadata，使用独立取消上下文</b><small>lib/llm/src/kv_router/prefill_router/mod.rs:711–719</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/mod.rs#L711-L719" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>711</i>fn independent_prefill_context(</span>
+<span class="line"><i>712</i>    request: PreprocessedRequest,</span>
+<span class="line"><i>713</i>    source: &amp;Context&lt;()&gt;,</span>
+<span class="line"><i>714</i>) -&gt; Result&lt;Context&lt;PreprocessedRequest&gt;&gt; {</span>
+<span class="line"><i>715</i>    let mut prefill =</span>
+<span class="line"><i>716</i>        Context::with_id_and_metadata(request, source.id().to_string(), source.metadata().clone());</span>
+<span class="line"><i>717</i>    propagate_first_response_guard(source, &amp;mut prefill)?;</span>
+<span class="line"><i>718</i>    Ok(prefill)</span>
+<span class="line"><i>719</i>}</span></code></pre></details><details class="source" id="src-pd-serving-reject"><summary><b>源码 · 仅明确容量拒绝会取消 Prefill</b><small>lib/llm/src/kv_router/prefill_router/handoff.rs:259–276</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/handoff.rs#L259-L276" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>259</i>fn cancel_prefill_on_decode_rejection(</span>
+<span class="line"><i>260</i>    error: &amp;(dyn std::error::Error + &#x27;static),</span>
+<span class="line"><i>261</i>    prefill_context: &amp;dyn AsyncEngineContext,</span>
+<span class="line"><i>262</i>) -&gt; bool {</span>
+<span class="line"><i>263</i>    let mut current = Some(error);</span>
+<span class="line"><i>264</i>    while let Some(cause) = current {</span>
+<span class="line"><i>265</i>        if let Some(error) = cause.downcast_ref::&lt;DynamoError&gt;()</span>
+<span class="line"><i>266</i>            &amp;&amp; error.class() == ErrorClass::CapacityExhausted</span>
+<span class="line"><i>267</i>        {</span>
+<span class="line"><i>268</i>            tracing::debug!(request_id = %prefill_context.id(), %error,</span>
+<span class="line"><i>269</i>                &quot;Cancelling remote prefill after decode admission rejection&quot;);</span>
+<span class="line"><i>270</i>            prefill_context.stop_generating();</span>
+<span class="line"><i>271</i>            return true;</span>
+<span class="line"><i>272</i>        }</span>
+<span class="line"><i>273</i>        current = cause.source();</span>
+<span class="line"><i>274</i>    }</span>
+<span class="line"><i>275</i>    false</span>
+<span class="line"><i>276</i>}</span></code></pre></details><details class="source" id="src-pd-serving-cleanup"><summary><b>源码 · 取消后的 staged KV cleanup 预算</b><small>lib/llm/src/kv_router/routing_host/cancellation.rs:18–43</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/routing_host/cancellation.rs#L18-L43" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>18</i>/// finishes reaching its worker. On expiry we abandon the operation and release</span>
+<span class="line"><i>19</i>/// everything it held, which is what every phase did before the decode carve-out.</span>
+<span class="line"><i>20</i>const CLEANUP_DISPATCH_TIMEOUT: Duration = Duration::from_secs(120);</span>
+<span class="line"><i>21</i></span>
+<span class="line"><i>22</i>/// One budget for a disconnected request&#x27;s whole cleanup route.</span>
+<span class="line"><i>23</i>///</span>
+<span class="line"><i>24</i>/// The decode leg passes through several wrapped stages in sequence — worker</span>
+<span class="line"><i>25</i>/// selection, routing-decision recording, dispatch — and conditional</span>
+<span class="line"><i>26</i>/// disaggregation can select more than once. Giving each stage its own timeout</span>
+<span class="line"><i>27</i>/// would let total retention reach a multiple of [`CLEANUP_DISPATCH_TIMEOUT`],</span>
+<span class="line"><i>28</i>/// so the stages share this budget instead.</span>
+<span class="line"><i>29</i>///</span>
+<span class="line"><i>30</i>/// The clock starts the first time a stage actually observes a stopped context,</span>
+<span class="line"><i>31</i>/// which means a live request never arms it and keeps today&#x27;s semantics exactly.</span>
+<span class="line"><i>32</i>#[derive(Debug, Default)]</span>
+<span class="line"><i>33</i>pub(super) struct CleanupBudget {</span>
+<span class="line"><i>34</i>    started: Mutex&lt;Option&lt;Instant&gt;&gt;,</span>
+<span class="line"><i>35</i>}</span>
+<span class="line"><i>36</i></span>
+<span class="line"><i>37</i>impl CleanupBudget {</span>
+<span class="line"><i>38</i>    /// Time left in the budget, starting the clock on first use.</span>
+<span class="line"><i>39</i>    pub(super) fn remaining(&amp;self) -&gt; Duration {</span>
+<span class="line"><i>40</i>        let mut started = self.started.lock().unwrap();</span>
+<span class="line"><i>41</i>        let start = *started.get_or_insert_with(Instant::now);</span>
+<span class="line"><i>42</i>        CLEANUP_DISPATCH_TIMEOUT.saturating_sub(start.elapsed())</span>
+<span class="line"><i>43</i>    }</span></code></pre></details><p>取消不是把两个任务一同 abort。Decode 明确 CapacityExhausted 表示接收侧未准入，可以取消 Prefill；网络错误具有歧义，不能假定远端没有创建接收状态。客户端已退出时，携带 staged KV 的 Decode 仍可能获准进入清理路径。</p><p>独立取消上下文仍保留逻辑请求 ID 和 metadata，并传播首响应 guard。当前 cleanup 有共享 120 秒预算；这不是对 GPU 回收时延的保证。更完整的终态、迁移与清理责任见<a href="reliability.html">可靠性与流式生命周期</a>。</p></section><section id="pd-timing" class="lesson"><div class="sectionhead"><h2>18 / 观测源码：Prefill、首 token 与完成时点</h2><label class="done"><input type="checkbox" data-read="pd-timing"> 已读</label></div><details class="source" id="src-pd-serving-timing-start"><summary><b>源码 · Prefill start / first token / Decode first token</b><small>lib/llm/src/protocols/common/timing.rs:258–270</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/protocols/common/timing.rs#L258-L270" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>258</i>    pub fn record_prefill_start(&amp;self) -&gt; bool {</span>
+<span class="line"><i>259</i>        self.prefill_start_time.set(Instant::now()).is_ok()</span>
+<span class="line"><i>260</i>    }</span>
+<span class="line"><i>261</i></span>
+<span class="line"><i>262</i>    pub fn record_first_token(&amp;self) {</span>
+<span class="line"><i>263</i>        let _ = self.first_token_time.set(Instant::now());</span>
+<span class="line"><i>264</i>    }</span>
+<span class="line"><i>265</i></span>
+<span class="line"><i>266</i>    /// Record when the decode worker produced its first token.</span>
+<span class="line"><i>267</i>    /// Used for KV transfer latency estimation in disaggregated serving.</span>
+<span class="line"><i>268</i>    pub fn record_decode_first_token(&amp;self) {</span>
+<span class="line"><i>269</i>        let _ = self.decode_first_token_time.set(Instant::now());</span>
+<span class="line"><i>270</i>    }</span></code></pre></details><details class="source" id="src-pd-serving-timing-duration"><summary><b>源码 · 排队与 Prefill 时长的计算</b><small>lib/llm/src/protocols/common/timing.rs:315–326</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/protocols/common/timing.rs#L315-L326" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>315</i>    pub fn prefill_wait_time_ms(&amp;self) -&gt; Option&lt;f64&gt; {</span>
+<span class="line"><i>316</i>        self.prefill_start_time</span>
+<span class="line"><i>317</i>            .get()</span>
+<span class="line"><i>318</i>            .map(|t| t.duration_since(self.request_received).as_secs_f64() * 1000.0)</span>
+<span class="line"><i>319</i>    }</span>
+<span class="line"><i>320</i></span>
+<span class="line"><i>321</i>    /// Time from prefill start to first token (prefill execution time) in milliseconds.</span>
+<span class="line"><i>322</i>    pub fn prefill_time_ms(&amp;self) -&gt; Option&lt;f64&gt; {</span>
+<span class="line"><i>323</i>        let prefill_start = self.prefill_start_time.get()?;</span>
+<span class="line"><i>324</i>        let first_token = self.first_token_time.get()?;</span>
+<span class="line"><i>325</i>        Some(first_token.duration_since(*prefill_start).as_secs_f64() * 1000.0)</span>
+<span class="line"><i>326</i>    }</span></code></pre></details><details class="source" id="src-pd-serving-guard-start"><summary><b>源码 · 按阶段记录 start，按非空 token 记录 first token</b><small>lib/llm/src/kv_router/routing_host/request_guard.rs:315–355</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/routing_host/request_guard.rs#L315-L355" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>315</i>    /// runs local prefill and decode from the full prompt.</span>
+<span class="line"><i>316</i>    fn record_prefill_start(&amp;self, request: &amp;PreprocessedRequest) {</span>
+<span class="line"><i>317</i>        let Some(tracker) = &amp;self.tracker else {</span>
+<span class="line"><i>318</i>            return;</span>
+<span class="line"><i>319</i>        };</span>
+<span class="line"><i>320</i>        let includes_prefill = tracker.phase() != RequestPhase::Decode</span>
+<span class="line"><i>321</i>            || request</span>
+<span class="line"><i>322</i>                .annotations</span>
+<span class="line"><i>323</i>                .iter()</span>
+<span class="line"><i>324</i>                .any(|annotation| annotation == BYPASS_REMOTE_PREFILL_ANNOTATION);</span>
+<span class="line"><i>325</i>        if !includes_prefill {</span>
+<span class="line"><i>326</i>            return;</span>
+<span class="line"><i>327</i>        }</span>
+<span class="line"><i>328</i>        tracker.record_prefill_start();</span>
+<span class="line"><i>329</i>    }</span>
+<span class="line"><i>330</i></span>
+<span class="line"><i>331</i>    fn mark_dispatched(&amp;mut self) {</span>
+<span class="line"><i>332</i>        self.dispatched = true;</span>
+<span class="line"><i>333</i>    }</span>
+<span class="line"><i>334</i></span>
+<span class="line"><i>335</i>    fn observe_response(&amp;mut self) {</span>
+<span class="line"><i>336</i>        // Taking the guard ends dispatch latency exactly once; later responses see None.</span>
+<span class="line"><i>337</i>        self.dispatch_guard.take();</span>
+<span class="line"><i>338</i>    }</span>
+<span class="line"><i>339</i></span>
+<span class="line"><i>340</i>    fn observe_tokens(&amp;mut self, new_tokens: usize) {</span>
+<span class="line"><i>341</i>        if !self.first_token_recorded &amp;&amp; new_tokens &gt; 0 {</span>
+<span class="line"><i>342</i>            if let Some(tracker) = &amp;self.tracker {</span>
+<span class="line"><i>343</i>                tracker.record_first_token();</span>
+<span class="line"><i>344</i>                if tracker.phase() == RequestPhase::Decode {</span>
+<span class="line"><i>345</i>                    tracker.record_decode_first_token();</span>
+<span class="line"><i>346</i>                }</span>
+<span class="line"><i>347</i>                if let Some(ttft) = tracker.ttft_ms() {</span>
+<span class="line"><i>348</i>                    self.request_metrics</span>
+<span class="line"><i>349</i>                        .time_to_first_token_seconds</span>
+<span class="line"><i>350</i>                        .observe(ttft / 1000.0);</span>
+<span class="line"><i>351</i>                }</span>
+<span class="line"><i>352</i>            }</span>
+<span class="line"><i>353</i>            self.first_token_recorded = true;</span>
+<span class="line"><i>354</i>        }</span>
+<span class="line"><i>355</i></span></code></pre></details><div class="tablewrap"><table><thead><tr><th>观测</th><th>计算 / 触发</th><th>解读边界</th></tr></thead><tbody><tr><td>prefill_wait_time_ms</td><td>prefill_start − request_received</td><td>路由器观察的请求到 Prefill 起点时间；不是纯引擎排队</td></tr><tr><td>prefill_time_ms</td><td>first_token_time − prefill_start</td><td>包含相关调度与通信；不是 CUDA kernel 时间</td></tr><tr><td>first_token / decode_first_token</td><td>observe_tokens 看见 new_tokens > 0</td><td>Bootstrap 空 chunk 不触发；OnceLock 首次写入生效</td></tr><tr><td>prefill_complete</td><td>结果/流观察器的不同位置</td><td>Completed 与 Bootstrap 采样边界不同，不能当统一引擎完成信号</td></tr></tbody></table></div><p>不能把毫秒字段直接代入以秒为单位的 Prometheus 查询；缺失时间点返回 None，并不是实际耗时为零。</p></section><section id="pd-transfer-metric" class="lesson"><div class="sectionhead"><h2>19 / KV transfer estimated latency 到底测到了什么</h2><label class="done"><input type="checkbox" data-read="pd-transfer-metric"> 已读</label></div><details class="source" id="src-pd-serving-transfer-timing"><summary><b>源码 · Prefill complete 与 Decode first token 的差值</b><small>lib/llm/src/protocols/common/timing.rs:532–547</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/protocols/common/timing.rs#L532-L547" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>532</i>    /// Record when the prefill result was received by the router.</span>
+<span class="line"><i>533</i>    /// Returns true if this was the first call (OnceLock first-write-wins).</span>
+<span class="line"><i>534</i>    pub fn record_prefill_complete(&amp;self) -&gt; bool {</span>
+<span class="line"><i>535</i>        self.prefill_complete_time.set(Instant::now()).is_ok()</span>
+<span class="line"><i>536</i>    }</span>
+<span class="line"><i>537</i></span>
+<span class="line"><i>538</i>    /// Upper-bound estimation of KV cache transfer latency in seconds.</span>
+<span class="line"><i>539</i>    /// Computed as `decode_first_token_time - prefill_complete_time`, which captures:</span>
+<span class="line"><i>540</i>    /// router dispatch overhead + network + KV transfer (NIXL) + one decode forward pass.</span>
+<span class="line"><i>541</i>    /// Works for all disaggregated paths (original and bootstrap).</span>
+<span class="line"><i>542</i>    /// Returns None if either timestamp was not recorded.</span>
+<span class="line"><i>543</i>    pub fn kv_transfer_estimated_latency_secs(&amp;self) -&gt; Option&lt;f64&gt; {</span>
+<span class="line"><i>544</i>        let complete = *self.prefill_complete_time.get()?;</span>
+<span class="line"><i>545</i>        let first_tok = *self.decode_first_token_time.get()?;</span>
+<span class="line"><i>546</i>        Some(first_tok.saturating_duration_since(complete).as_secs_f64())</span>
+<span class="line"><i>547</i>    }</span></code></pre></details><details class="source" id="src-pd-serving-transfer-hist"><summary><b>源码 · KV transfer estimate 的 Histogram 与 buckets</b><small>lib/llm/src/kv_router/metrics.rs:1146–1153</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/metrics.rs#L1146-L1153" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1146</i>        let kv_transfer_estimated_latency_seconds = metrics</span>
+<span class="line"><i>1147</i>            .create_histogram(</span>
+<span class="line"><i>1148</i>                &amp;router_metric(frontend_service::KV_TRANSFER_ESTIMATED_LATENCY_SECONDS),</span>
+<span class="line"><i>1149</i>                &quot;Upper-bound estimation of KV cache transfer latency in disaggregated serving (prefill_complete to first_token)&quot;,</span>
+<span class="line"><i>1150</i>                extra_labels,</span>
+<span class="line"><i>1151</i>                Some(generate_log_buckets(0.001, 10.0, 15)),</span>
+<span class="line"><i>1152</i>            )</span>
+<span class="line"><i>1153</i>            .expect(&quot;failed to create router_kv_transfer_estimated_latency_seconds&quot;);</span></code></pre></details><details class="source" id="src-pd-serving-record"><summary><b>源码 · 请求生命周期结束时一次性记录</b><small>lib/llm/src/kv_router/routing_host/request_guard.rs:378–405</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/routing_host/request_guard.rs#L378-L405" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>378</i>    fn record_metrics(&amp;mut self, record_itl_at_completion: bool) {</span>
+<span class="line"><i>379</i>        // A failed dispatch never reached the backend and must not count as a request.</span>
+<span class="line"><i>380</i>        if self.metrics_recorded || !self.dispatched {</span>
+<span class="line"><i>381</i>            return;</span>
+<span class="line"><i>382</i>        }</span>
+<span class="line"><i>383</i>        self.metrics_recorded = true;</span>
+<span class="line"><i>384</i></span>
+<span class="line"><i>385</i>        if let Some(tracker) = &amp;self.tracker {</span>
+<span class="line"><i>386</i>            tracker.record_finish();</span>
+<span class="line"><i>387</i>            tracker.record_osl(self.cumulative_osl);</span>
+<span class="line"><i>388</i>            if record_itl_at_completion &amp;&amp; let Some(avg_itl) = tracker.avg_itl_ms() {</span>
+<span class="line"><i>389</i>                self.request_metrics</span>
+<span class="line"><i>390</i>                    .inter_token_latency_seconds</span>
+<span class="line"><i>391</i>                    .observe(avg_itl / 1000.0);</span>
+<span class="line"><i>392</i>            }</span>
+<span class="line"><i>393</i>            if let Some(latency) = tracker.kv_transfer_estimated_latency_secs() {</span>
+<span class="line"><i>394</i>                self.request_metrics</span>
+<span class="line"><i>395</i>                    .kv_transfer_estimated_latency_seconds</span>
+<span class="line"><i>396</i>                    .observe(latency);</span>
+<span class="line"><i>397</i>            }</span>
+<span class="line"><i>398</i>        }</span>
+<span class="line"><i>399</i>        if self.cumulative_osl &gt; 0 {</span>
+<span class="line"><i>400</i>            self.request_metrics</span>
+<span class="line"><i>401</i>                .output_sequence_tokens</span>
+<span class="line"><i>402</i>                .observe(self.cumulative_osl as f64);</span>
+<span class="line"><i>403</i>        }</span>
+<span class="line"><i>404</i>        self.request_metrics.requests_total.inc();</span>
+<span class="line"><i>405</i>    }</span></code></pre></details><p>指标为 <code>router_kv_transfer_estimated_latency_seconds</code>，计算 <code>decode_first_token.saturating_duration_since(prefill_complete)</code>。它可能包含路由派发、网络、接收等待、传输和首步 Decode。源码将其描述为传输延迟上界估计，但这不是对 NIXL 传输区间的直接打点。</p><aside class="note warn">Bootstrap 重叠执行或 observer 调度可能使观察到的 Prefill complete 晚于 Decode first token，此时饱和差值为 0；缺任一时间点则不记录。不能把所有样本解释为严格的物理传输上界，更不能用零值证明没有传输。</aside><p>guard 对已派发请求执行一次 metrics 记录，不能默认这些样本全部来自成功请求。分位数还受 buckets、实例/模型标签和聚合方法影响。要隔离实际 KV 数据面耗时，结合 engine / connector 传输统计与设备网络证据，见<a href="storage-events.html">Storage &amp; Events</a>。</p></section><section id="pd-trace" class="lesson"><div class="sectionhead"><h2>20 / Trace：请求串联与数据面覆盖是两项检查</h2><label class="done"><input type="checkbox" data-read="pd-trace"> 已读</label></div><details class="source" id="src-pd-serving-worker-attribution"><summary><b>源码 · Prefill / Decode worker 与 DP rank 归因</b><small>lib/llm/src/protocols/common/timing.rs:441–469</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/protocols/common/timing.rs#L441-L469" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>441</i>    fn record_prefill_worker(</span>
+<span class="line"><i>442</i>        &amp;self,</span>
+<span class="line"><i>443</i>        instance_id: u64,</span>
+<span class="line"><i>444</i>        dp_rank: Option&lt;u32&gt;,</span>
+<span class="line"><i>445</i>        worker_type: &amp;&#x27;static str,</span>
+<span class="line"><i>446</i>    ) {</span>
+<span class="line"><i>447</i>        Self::record_once_u64(&amp;self.prefill_worker_id, instance_id, &quot;prefill_worker_id&quot;);</span>
+<span class="line"><i>448</i>        if let Some(rank) = dp_rank {</span>
+<span class="line"><i>449</i>            Self::record_once_u32(&amp;self.prefill_dp_rank, rank, &quot;prefill_dp_rank&quot;);</span>
+<span class="line"><i>450</i>        }</span>
+<span class="line"><i>451</i>        Self::record_once_worker_type(</span>
+<span class="line"><i>452</i>            &amp;self.prefill_worker_type,</span>
+<span class="line"><i>453</i>            worker_type,</span>
+<span class="line"><i>454</i>            &quot;prefill_worker_type&quot;,</span>
+<span class="line"><i>455</i>        );</span>
+<span class="line"><i>456</i>    }</span>
+<span class="line"><i>457</i></span>
+<span class="line"><i>458</i>    fn record_decode_worker(</span>
+<span class="line"><i>459</i>        &amp;self,</span>
+<span class="line"><i>460</i>        instance_id: u64,</span>
+<span class="line"><i>461</i>        dp_rank: Option&lt;u32&gt;,</span>
+<span class="line"><i>462</i>        worker_type: &amp;&#x27;static str,</span>
+<span class="line"><i>463</i>    ) {</span>
+<span class="line"><i>464</i>        Self::record_once_u64(&amp;self.decode_worker_id, instance_id, &quot;decode_worker_id&quot;);</span>
+<span class="line"><i>465</i>        if let Some(rank) = dp_rank {</span>
+<span class="line"><i>466</i>            Self::record_once_u32(&amp;self.decode_dp_rank, rank, &quot;decode_dp_rank&quot;);</span>
+<span class="line"><i>467</i>        }</span>
+<span class="line"><i>468</i>        Self::record_once_worker_type(&amp;self.decode_worker_type, worker_type, &quot;decode_worker_type&quot;);</span>
+<span class="line"><i>469</i>    }</span></code></pre></details><details class="source" id="src-pd-serving-decision-log"><summary><b>源码 · 条件路由 debug 日志的诊断字段</b><small>lib/llm/src/kv_router/prefill_router/conditional_bypass.rs:170–198</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/prefill_router/conditional_bypass.rs#L170-L198" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>170</i>fn log_conditional_disagg_decision(</span>
+<span class="line"><i>171</i>    request_id: &amp;str,</span>
+<span class="line"><i>172</i>    signals: RoutePlanSignals,</span>
+<span class="line"><i>173</i>    net_new_tokens: usize,</span>
+<span class="line"><i>174</i>    overlap_tokens: usize,</span>
+<span class="line"><i>175</i>    input: ConditionalDisaggDecisionInput,</span>
+<span class="line"><i>176</i>    decode_busy: Option&lt;bool&gt;,</span>
+<span class="line"><i>177</i>    decode_busy_threshold: Option&lt;f64&gt;,</span>
+<span class="line"><i>178</i>    decode_gate_decision: &amp;str,</span>
+<span class="line"><i>179</i>    bypass: bool,</span>
+<span class="line"><i>180</i>) {</span>
+<span class="line"><i>181</i>    tracing::debug!(</span>
+<span class="line"><i>182</i>        request_id,</span>
+<span class="line"><i>183</i>        worker_id = signals.worker.worker_id,</span>
+<span class="line"><i>184</i>        dp_rank = signals.worker.dp_rank,</span>
+<span class="line"><i>185</i>        prompt_tokens = input.prompt_tokens,</span>
+<span class="line"><i>186</i>        net_new_tokens,</span>
+<span class="line"><i>187</i>        overlap_tokens,</span>
+<span class="line"><i>188</i>        prefill_chosen_worker_busy = ?input.prefill_chosen_worker_busy,</span>
+<span class="line"><i>189</i>        decode_chosen_worker_busy = ?decode_busy,</span>
+<span class="line"><i>190</i>        cached_tokens = signals.cached_tokens,</span>
+<span class="line"><i>191</i>        potential_decode_blocks = signals.potential_decode_blocks,</span>
+<span class="line"><i>192</i>        decode_busy_threshold = ?decode_busy_threshold,</span>
+<span class="line"><i>193</i>        decode_gate_decision,</span>
+<span class="line"><i>194</i>        bypass,</span>
+<span class="line"><i>195</i>        &quot;Conditional disagg decision&quot;</span>
+<span class="line"><i>196</i>    );</span>
+<span class="line"><i>197</i>}</span>
+<span class="line"><i>198</i></span></code></pre></details><p>从 Frontend request span 沿 Runtime metadata、backend context 到 engine tracing，逐段检查 parent / link / request ID。Completed 路径的 worker_link 与 Bootstrap 路径不保证具备完全相同的前驱关系。共享 Request ID、同一 Trace ID、span link 和引擎内部传输 span 是不同证据。</p><p>条件路由日志包含 request_id、worker_id、dp_rank、prompt/net_new/overlap/cached_tokens、负载与 gate 结果；需要对应 debug 日志等级。不要臆造一个未定义的条件路由 Prometheus counter。详细开关与既有覆盖缺口见<a href="pd-trace.html">PD 全链路 Trace 专题</a>。</p></section><section id="pd-configuration" class="lesson"><div class="sectionhead"><h2>21 / 部署接入：逐层准备与验证</h2><label class="done"><input type="checkbox" data-read="pd-configuration"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>工作</th><th>检查项</th><th>完成证据</th></tr></thead><tbody><tr><td>协议兼容</td><td>model/tokenizer、backend/engine/connector 版本、KV dtype/layout、TP/PP/DP、LoRA、并行采样和多模态能力</td><td>配置与引擎支持矩阵一致，真实请求可完成</td></tr><tr><td>角色与发现</td><td>两类 worker 发布相同目标模型、正确角色和端点，绑定为 Active</td><td>实际选中的 Prefill / Decode worker ID 可归因</td></tr><tr><td>请求面连通</td><td>Frontend 到两类 worker 的请求端点；直接路由时实例 pin</td><td>非健康探测请求完成且流式终态正确</td></tr><tr><td>交接与数据面</td><td>Bootstrap / connector 监听与地址可达、NIXL/UCX/网卡/设备可见性</td><td>传输实际发生，KV 与 token 结果正确</td></tr><tr><td>缓存与容量状态</td><td>KV events 采集和订阅、块大小/容量配置</td><td>路由状态更新且不混同监控抓取</td></tr><tr><td>观测出口</td><td>Frontend/backend tracing、engine tracing、metrics 端口与 Collector/Prometheus</td><td>同一真实请求可定位两阶段，指标有样本</td></tr><tr><td>故障语义</td><td>Prefill/Decode 拒绝、晚到错误、取消和清理</td><td>按授权实验，验证终态与资源恢复；本文未执行</td></tr></tbody></table></div><p>示例入口：<code>examples/backends/sglang/launch/disagg.sh</code> 与 <code>examples/backends/vllm/launch/disagg.sh</code>；这些脚本提供当前版本参数参考，不应直接覆盖已有部署。工作负载可先验证文本单请求，再验证实际并发、长上下文与扩缩容。</p></section><section id="pd-ack" class="lesson"><div class="sectionhead"><h2>22 / 结合现有 ACK 记录：如何确认真的走 PD</h2><label class="done"><input type="checkbox" data-read="pd-ack"> 已读</label></div><p>用户保存的<a href="ack-LB97i2CZNR/dynamo-test-deployment.md">部署快照</a>描述 <code>nhss-job/dynamo-qwen38-27b-mixed-demo</code>：Frontend、Prefill、Decode、aggregated 各 1，私有 SGLang runtime 1.4.1，TP=4，Qwen3.8-27B。它是混合拓扑的历史证据，不能只看见两种角色的 Pod 就断言流量均走 PD。</p><div class="tablewrap"><table><thead><tr><th>已有记录</th><th>在 PD 分析中的作用</th><th>需要补充的运行证据</th></tr></thead><tbody><tr><td>请求 TCP / 事件 ZMQ</td><td>Request Plane 与缓存状态分别连通</td><td>实际 endpoint、订阅与选中实例</td></tr><tr><td>Bootstrap 12345</td><td>SGLang 的 KV 协调入口</td><td>room、Prefill/Decode 角色与数据面成功</td></tr><tr><td>worker metrics 9090 / NIXL 19090</td><td>业务/引擎与传输观测出口</td><td>真实暴露指标、采集状态、请求前后变化</td></tr><tr><td>engine KV events 5557</td><td>缓存状态发布</td><td>接收方状态更新；它不是 KV 张量传输端口</td></tr><tr><td>聚合与 igd-* 可见</td><td>存在其他候选端点</td><td>真实请求 worker 归因，排除聚合路径与健康探测假交接</td></tr></tbody></table></div><p>上述端口均来自已保存快照，未重新连接集群验证；当前代码的自动激活、条件 PD 和指标细节不能直接承诺在该私有 1.4.1 镜像中完全相同。继续沿用<a href="ack-LB97i2CZNR/request-plane-trace-checklist.html">ACK Request Plane Trace 工作清单</a>，补充真实 PD 请求证据后再作性能结论。</p></section><section id="pd-method" class="lesson"><div class="sectionhead"><h2>23 / 阅读与实战顺序：从一条请求走到性能结论</h2><label class="done"><input type="checkbox" data-read="pd-method"> 已读</label></div><div class="flow"><div><b>01</b>确认版本 / 激活 / worker 角色</div><div><b>02</b>识别 Completed 或 Bootstrap</div><div><b>03</b>跟踪元数据与真实 KV 交接</div><div><b>04</b>核对 token / 终态 / cleanup</div><div><b>05</b>关联 Trace 与阶段指标</div><div><b>06</b>对照 workload 评估收益</div></div><p>TTFT 的关键路径大致包含 Prefill 排队与计算、交接/重叠协调、Decode 排队与首步生成；存在重叠时不能把所有阶段 wall time 直接相加。ITL 是否改善，需要看 Decode 批处理、KV 压力与传输竞争；同时记录两池负载、输入输出长度和实际网络吞吐。</p><div class="tablewrap"><table><thead><tr><th>源码回归场景</th><th>应验证的语义</th></tr></thead><tbody><tr><td>激活 Pending / 解绑重绑</td><td>不在缺 Bootstrap 时误发 Decode，错误分类与预算正确</td></tr><tr><td>Bootstrap 后晚到 Prefill 错误</td><td>持续观察，不能先输出最终成功</td></tr><tr><td>Decode 容量拒绝 / 模糊传输错误</td><td>仅明确拒绝取消 Prefill，其余保留清理所需生命周期</td></tr><tr><td>EOS / context_only 缺失参数</td><td>终态可直接返回，非终态缺上下文应报错</td></tr><tr><td>条件 PD 与显式 pin / SGLang n>1</td><td>尊重决策边界与后端能力</td></tr><tr><td>阶段时间缺失 / 反序</td><td>不记录缺失估计，饱和为零且不误读为无传输</td></tr></tbody></table></div><p>本次验证范围为文档生成、固定版本源码摘录、离线链接与浏览器交互；没有运行上述推理回归场景。相邻专题：<a href="reliability.html">可靠性</a> · <a href="storage-events.html">Storage &amp; Events</a> · <a href="planner.html">Planner</a>。</p></section><section id="pd-references" class="lesson"><div class="sectionhead"><h2>24 / 同版本官方文档与源码分工</h2><label class="done"><input type="checkbox" data-read="pd-references"> 已读</label></div><p>以下官方仓库文档均固定在本章代码提交，避免把网站 latest 的变化误当成本地版本行为。架构页解释拆分动机，Router 页解释激活与编排，后端页解释引擎协议，条件 PD 页标明能力边界；有差异时回到本章逐行源码。</p><div class="tablewrap"><table><thead><tr><th>官方文档</th><th>核对重点</th></tr></thead><tbody><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/docs/fern/pages/developer-guide/knowledge-base/concepts/system-architecture/disaggregated-serving.md">Disaggregated Serving 架构</a></td><td>Prefill / Decode 拆分与 KV 数据流</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/docs/fern/pages/developer-guide/knowledge-base/modular-components/router/disaggregated-serving.md">Router disaggregated serving</a></td><td>自动激活、角色绑定；Pending 错误分类以当前实现为准</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/docs/fern/pages/developer-guide/knowledge-base/modular-components/backends/sglang/disaggregation.md">SGLang disaggregation</a></td><td>引擎 Bootstrap 协调与共享 Frontend 选点顺序需分开理解</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/docs/fern/pages/developer-guide/advanced-customizations/conditional-disaggregation.md">Conditional Disaggregation</a></td><td>实验功能；KV events、策略、后端支持（SGLang 尚不支持）</td></tr></tbody></table></div></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 9734418e5bc71027e6bd04a09314bf1765208c72。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

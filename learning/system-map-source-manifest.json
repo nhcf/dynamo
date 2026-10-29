@@ -1,0 +1,96 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "用实际流水线组装和所有权模型连接 00–12 章，按请求、KV、状态事件、观测与控制反馈五条路径理解整个仓库。",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "system-map-1",
+      "path": "Cargo.toml",
+      "start": 5,
+      "end": 62,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "46bd1eb7cccef382e2707ac9a85dff7a86c9f50f8e92014f978f988593a49189"
+    },
+    {
+      "id": "system-map-2",
+      "path": "pyproject.toml",
+      "start": 5,
+      "end": 30,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "5c7b412da33513b2a3fde45c78a7a137dc4ab29b041df1ae236df020bcc0c870"
+    },
+    {
+      "id": "system-map-3",
+      "path": "lib/llm/src/local_model.rs",
+      "start": 674,
+      "end": 709,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "3d8a1b7c521cca72d9f8e4aca4ad52b3067f1e5b0fd299ce9f8ed66e9d9d56d0"
+    },
+    {
+      "id": "system-map-4",
+      "path": "lib/llm/src/discovery/controller.rs",
+      "start": 968,
+      "end": 1005,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "38ca8eb4ec9773815e6bc7c9cd504e37483cc630d099e24e91b7d86e46319666"
+    },
+    {
+      "id": "system-map-5",
+      "path": "lib/llm/src/entrypoint/input/common.rs",
+      "start": 472,
+      "end": 515,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "0811ff622a51cf2bdadf05971355bb6bf02bcf9bd90c0e380beae440319f358e"
+    },
+    {
+      "id": "system-map-6",
+      "path": "lib/llm/src/entrypoint/input/common.rs",
+      "start": 517,
+      "end": 549,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "0811ff622a51cf2bdadf05971355bb6bf02bcf9bd90c0e380beae440319f358e"
+    },
+    {
+      "id": "system-map-7",
+      "path": "lib/runtime/src/metrics.rs",
+      "start": 694,
+      "end": 731,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "5b31472853686070e70c681aa7856e531397b82e9a4ebf049130a862837b79cf"
+    },
+    {
+      "id": "system-map-8",
+      "path": "lib/llm/src/frontend_load.rs",
+      "start": 130,
+      "end": 175,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "add8c05878046ea0d91607fb6d6250236732242ea666bca7ccf1b464a617e497"
+    },
+    {
+      "id": "system-map-9",
+      "path": "lib/backend-common/src/metrics.rs",
+      "start": 136,
+      "end": 164,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "55d0302b02eb7b4f49ac596ab36e39f772912b90aca2a4b9e65fe3d67c4a162d"
+    },
+    {
+      "id": "system-map-10",
+      "path": "lib/backend-common/src/engine.rs",
+      "start": 252,
+      "end": 281,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "30aea38ca7a5ba86058f45a7951ed82030b41049880b33b693e828bd020b4385"
+    },
+    {
+      "id": "system-map-11",
+      "path": "lib/kvbm-logical/src/blocks/mutable.rs",
+      "start": 96,
+      "end": 119,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "eb8f6b3a19d0e10047f67c861cf73e42cb218dc505ec43f8fbe8bf128b304df2"
+    }
+  ]
+}

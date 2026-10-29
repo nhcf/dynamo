@@ -1,0 +1,408 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "HTTP/SSE lifecycle, admission, cancellation, PD cleanup, fault handling, migration, resource release and shutdown observability",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "rl-admission-contract",
+      "path": "lib/llm/src/admission_gate.rs",
+      "start": 32,
+      "end": 58,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "3573565fefbf5160469ba8b658474333d4eabb0685e572485c47b18308654db7"
+    },
+    {
+      "id": "rl-permit-drop",
+      "path": "lib/llm/src/admission_gate.rs",
+      "start": 1890,
+      "end": 1903,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "3573565fefbf5160469ba8b658474333d4eabb0685e572485c47b18308654db7"
+    },
+    {
+      "id": "rl-ticket-drop",
+      "path": "lib/llm/src/admission_gate.rs",
+      "start": 2069,
+      "end": 2076,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "3573565fefbf5160469ba8b658474333d4eabb0685e572485c47b18308654db7"
+    },
+    {
+      "id": "rl-preflight",
+      "path": "lib/llm/src/http/service/openai.rs",
+      "start": 3072,
+      "end": 3135,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "270928ba898e40db8bedcadbae181b52cf7cc93f94497c35407e72761f837cd3"
+    },
+    {
+      "id": "rl-sse-default",
+      "path": "lib/llm/src/http/service/disconnect.rs",
+      "start": 603,
+      "end": 631,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f7e23f90156cba188adf3dfd6dca472b3d59345dcbba71d25e94cbbbba4dff62"
+    },
+    {
+      "id": "rl-sse-error",
+      "path": "lib/llm/src/http/service/disconnect.rs",
+      "start": 685,
+      "end": 724,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f7e23f90156cba188adf3dfd6dca472b3d59345dcbba71d25e94cbbbba4dff62"
+    },
+    {
+      "id": "rl-connection-drop",
+      "path": "lib/llm/src/http/service/disconnect.rs",
+      "start": 269,
+      "end": 284,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f7e23f90156cba188adf3dfd6dca472b3d59345dcbba71d25e94cbbbba4dff62"
+    },
+    {
+      "id": "rl-two-guards",
+      "path": "lib/llm/src/http/service/disconnect.rs",
+      "start": 293,
+      "end": 318,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f7e23f90156cba188adf3dfd6dca472b3d59345dcbba71d25e94cbbbba4dff62"
+    },
+    {
+      "id": "rl-disconnect-counter",
+      "path": "lib/llm/src/http/service/disconnect.rs",
+      "start": 321,
+      "end": 358,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f7e23f90156cba188adf3dfd6dca472b3d59345dcbba71d25e94cbbbba4dff62"
+    },
+    {
+      "id": "rl-context-api",
+      "path": "lib/runtime/src/engine.rs",
+      "start": 117,
+      "end": 159,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "eab19ebc43f17dd811ff856a511e37b9ea47de607405e6b0ea98e4a0fa312172"
+    },
+    {
+      "id": "rl-controller",
+      "path": "lib/runtime/src/pipeline/context.rs",
+      "start": 444,
+      "end": 505,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "02395c80f51715a8f92b99d57b03de58064080850cf8f3ba2b97f0e6919549e4"
+    },
+    {
+      "id": "rl-tcp-control",
+      "path": "lib/runtime/src/pipeline/network/tcp/client.rs",
+      "start": 435,
+      "end": 464,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "6b5099907120ab0bffc0b062ad47f4a97da4c0e9a681be9a80fb1a45027d7209"
+    },
+    {
+      "id": "rl-tcp-log",
+      "path": "lib/runtime/src/pipeline/network/tcp/client.rs",
+      "start": 36,
+      "end": 46,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "6b5099907120ab0bffc0b062ad47f4a97da4c0e9a681be9a80fb1a45027d7209"
+    },
+    {
+      "id": "rl-cancel-monitor",
+      "path": "lib/backend-common/src/adapter.rs",
+      "start": 128,
+      "end": 151,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7a0bb657693f89cf92ddc2d1e82b6f838f005255e28a25b2097e24de80f89eaa"
+    },
+    {
+      "id": "rl-abort-select",
+      "path": "lib/backend-common/src/adapter.rs",
+      "start": 340,
+      "end": 374,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7a0bb657693f89cf92ddc2d1e82b6f838f005255e28a25b2097e24de80f89eaa"
+    },
+    {
+      "id": "rl-abort-wait",
+      "path": "lib/backend-common/src/adapter.rs",
+      "start": 383,
+      "end": 414,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7a0bb657693f89cf92ddc2d1e82b6f838f005255e28a25b2097e24de80f89eaa"
+    },
+    {
+      "id": "rl-sg-abort",
+      "path": "components/src/dynamo/sglang/request_handlers/cancellation.py",
+      "start": 92,
+      "end": 102,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "e18f5c5189e7c1968f692ada5ef6423931b0cd279315b1b811aabd65aa124a19"
+    },
+    {
+      "id": "rl-sg-monitor",
+      "path": "components/src/dynamo/sglang/request_handlers/cancellation.py",
+      "start": 259,
+      "end": 309,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "e18f5c5189e7c1968f692ada5ef6423931b0cd279315b1b811aabd65aa124a19"
+    },
+    {
+      "id": "rl-sg-finally",
+      "path": "components/src/dynamo/sglang/request_handlers/cancellation.py",
+      "start": 449,
+      "end": 490,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "e18f5c5189e7c1968f692ada5ef6423931b0cd279315b1b811aabd65aa124a19"
+    },
+    {
+      "id": "rl-pd-policy",
+      "path": "lib/llm/src/kv_router/routing_host/cancellation.rs",
+      "start": 47,
+      "end": 97,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f9e408fe575c8cadd12696ff3f5aec36e91766f424fd2741ebfbf9704258d85d"
+    },
+    {
+      "id": "rl-pd-budget",
+      "path": "lib/llm/src/kv_router/routing_host/cancellation.rs",
+      "start": 18,
+      "end": 43,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f9e408fe575c8cadd12696ff3f5aec36e91766f424fd2741ebfbf9704258d85d"
+    },
+    {
+      "id": "rl-pd-await",
+      "path": "lib/llm/src/kv_router/routing_host/cancellation.rs",
+      "start": 103,
+      "end": 130,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f9e408fe575c8cadd12696ff3f5aec36e91766f424fd2741ebfbf9704258d85d"
+    },
+    {
+      "id": "rl-timeout-config",
+      "path": "lib/llm/src/http/service/disconnect.rs",
+      "start": 42,
+      "end": 58,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f7e23f90156cba188adf3dfd6dca472b3d59345dcbba71d25e94cbbbba4dff62"
+    },
+    {
+      "id": "rl-timeout-router",
+      "path": "lib/runtime/src/pipeline/network/egress/push_router.rs",
+      "start": 2061,
+      "end": 2093,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c1a356e0ca5f00e8834267e486ee1c662635bb5e99754658b4ca2336fee9f9f6"
+    },
+    {
+      "id": "rl-timeout-http",
+      "path": "lib/llm/src/http/service/disconnect.rs",
+      "start": 729,
+      "end": 771,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f7e23f90156cba188adf3dfd6dca472b3d59345dcbba71d25e94cbbbba4dff62"
+    },
+    {
+      "id": "rl-inhibition",
+      "path": "lib/runtime/src/pipeline/network/egress/push_router.rs",
+      "start": 2043,
+      "end": 2060,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c1a356e0ca5f00e8834267e486ee1c662635bb5e99754658b4ca2336fee9f9f6"
+    },
+    {
+      "id": "rl-migration-reasons",
+      "path": "lib/llm/src/migration.rs",
+      "start": 89,
+      "end": 147,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "107dbcbbc9e0c4dbbbe400c20d4a5879588e0c0314b37242f57852110af49ac0"
+    },
+    {
+      "id": "rl-attempts",
+      "path": "lib/llm/src/migration.rs",
+      "start": 531,
+      "end": 573,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "107dbcbbc9e0c4dbbbe400c20d4a5879588e0c0314b37242f57852110af49ac0"
+    },
+    {
+      "id": "rl-stop-before-retry",
+      "path": "lib/llm/src/migration.rs",
+      "start": 573,
+      "end": 616,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "107dbcbbc9e0c4dbbbe400c20d4a5879588e0c0314b37242f57852110af49ac0"
+    },
+    {
+      "id": "rl-disable-migration",
+      "path": "lib/llm/src/migration.rs",
+      "start": 383,
+      "end": 440,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "107dbcbbc9e0c4dbbbe400c20d4a5879588e0c0314b37242f57852110af49ac0"
+    },
+    {
+      "id": "rl-explicit-pin",
+      "path": "lib/llm/src/migration.rs",
+      "start": 158,
+      "end": 195,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "107dbcbbc9e0c4dbbbe400c20d4a5879588e0c0314b37242f57852110af49ac0"
+    },
+    {
+      "id": "rl-replay-cap",
+      "path": "lib/llm/src/migration.rs",
+      "start": 854,
+      "end": 872,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "107dbcbbc9e0c4dbbbe400c20d4a5879588e0c0314b37242f57852110af49ac0"
+    },
+    {
+      "id": "rl-replay",
+      "path": "lib/llm/src/migration.rs",
+      "start": 755,
+      "end": 800,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "107dbcbbc9e0c4dbbbe400c20d4a5879588e0c0314b37242f57852110af49ac0"
+    },
+    {
+      "id": "rl-usage",
+      "path": "lib/llm/src/migration.rs",
+      "start": 817,
+      "end": 850,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "107dbcbbc9e0c4dbbbe400c20d4a5879588e0c0314b37242f57852110af49ac0"
+    },
+    {
+      "id": "rl-router-finish",
+      "path": "lib/llm/src/kv_router/routing_host/request_guard.rs",
+      "start": 860,
+      "end": 892,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "9b62d5971a2a30151099849ff184a734874ce674464161c8990b2f83139c841c"
+    },
+    {
+      "id": "rl-router-drop",
+      "path": "lib/llm/src/kv_router/routing_host/request_guard.rs",
+      "start": 918,
+      "end": 924,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "9b62d5971a2a30151099849ff184a734874ce674464161c8990b2f83139c841c"
+    },
+    {
+      "id": "rl-inflight-drop",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 2212,
+      "end": 2235,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "rl-metrics-finish",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 878,
+      "end": 900,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "rl-admission-metrics",
+      "path": "lib/llm/src/admission_gate/metrics.rs",
+      "start": 52,
+      "end": 66,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "6e08fb10c5f9efc3be9459fe54fcbbb1ec5f5cdc4fb93ba247f7d481c7905606"
+    },
+    {
+      "id": "rl-admission-cancel",
+      "path": "lib/llm/src/admission_gate/metrics.rs",
+      "start": 142,
+      "end": 161,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "6e08fb10c5f9efc3be9459fe54fcbbb1ec5f5cdc4fb93ba247f7d481c7905606"
+    },
+    {
+      "id": "rl-migration-metrics",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 1541,
+      "end": 1564,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "rl-migration-outcome",
+      "path": "lib/llm/src/migration.rs",
+      "start": 732,
+      "end": 754,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "107dbcbbc9e0c4dbbbe400c20d4a5879588e0c0314b37242f57852110af49ac0"
+    },
+    {
+      "id": "rl-replacement-success",
+      "path": "lib/llm/src/migration.rs",
+      "start": 627,
+      "end": 650,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "107dbcbbc9e0c4dbbbe400c20d4a5879588e0c0314b37242f57852110af49ac0"
+    },
+    {
+      "id": "rl-terminal-once",
+      "path": "lib/runtime/src/telemetry.rs",
+      "start": 366,
+      "end": 382,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "61cce285cf5cf616b24e7eb5bcac61d17a922427e4221df696d1ff9e15bfbc13"
+    },
+    {
+      "id": "rl-stream-terminal",
+      "path": "lib/llm/src/http/service/openai.rs",
+      "start": 149,
+      "end": 184,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "270928ba898e40db8bedcadbae181b52cf7cc93f94497c35407e72761f837cd3"
+    },
+    {
+      "id": "rl-http-terminal",
+      "path": "lib/llm/src/http/service/openai.rs",
+      "start": 3810,
+      "end": 3841,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "270928ba898e40db8bedcadbae181b52cf7cc93f94497c35407e72761f837cd3"
+    },
+    {
+      "id": "rl-py-shutdown",
+      "path": "components/src/dynamo/common/utils/graceful_shutdown.py",
+      "start": 107,
+      "end": 150,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "1a46d792a14b3710ed2364a3790d2d1cd7e31f00999d5f3e8d94b7181dff7804"
+    },
+    {
+      "id": "rl-rust-shutdown",
+      "path": "lib/backend-common/src/worker.rs",
+      "start": 1341,
+      "end": 1364,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "49298b3a14daeb718ad1a3b077dd040892f47c3c5d14ba236151f822d5b1ab23"
+    },
+    {
+      "id": "rl-prefill-drain",
+      "path": "lib/backend-common/src/worker.rs",
+      "start": 1374,
+      "end": 1427,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "49298b3a14daeb718ad1a3b077dd040892f47c3c5d14ba236151f822d5b1ab23"
+    },
+    {
+      "id": "rl-shutdown-gauges",
+      "path": "lib/backend-common/src/metrics.rs",
+      "start": 124,
+      "end": 163,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "55d0302b02eb7b4f49ac596ab36e39f772912b90aca2a4b9e65fe3d67c4a162d"
+    }
+  ]
+}

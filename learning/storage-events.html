@@ -1,0 +1,1458 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>Storage & Events：架构、原理与可观测源码 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#se-map">01 / 组件边界：缓存字节、成员索引与观测信号</a><a href="#se-architecture">02 / 架构：数据流与元数据流分开</a><a href="#se-lifecycle">03 / 逻辑块：状态机、持有与淘汰</a><a href="#se-logical-metrics">04 / 新块池指标：从操作到原子量</a><a href="#se-scrape">05 / 新指标导出：Collector 必须接上 Registry</a><a href="#se-stats">06 / StatsCollector：局部采样率不等于导出指标</a><a href="#se-legacy">07 / 既有 block_manager 指标：定义、更新和独立出口</a><a href="#se-counter-boundary">08 / 计数边界：offload 尝试与成功完成不同</a><a href="#se-offload">09 / 分层 Offload：策略、前置条件、批处理、提交</a><a href="#se-onboarding">10 / Onboarding：找到块、保留块、准备与拉取</a><a href="#se-object">11 / G4 对象存储：数据、可见性标记与部分失败</a><a href="#se-physical">12 / 物理搬运与 NIXL：提交不等于完成</a><a href="#se-nixl-observe">13 / NIXL 遥测：独立开关、端口与 rank</a><a href="#se-event-kinds">14 / 同名 Events 背后是不同契约</a><a href="#se-kvbm-events">15 / KVBM 内部事件：RAII → broadcast → batching → publisher</a><a href="#se-consolidator">16 / Consolidator：同一逻辑块多处驻留如何合并</a><a href="#se-runtime-events">17 / 通用 Event Plane：Envelope、ZMQ、NATS 与发现</a><a href="#se-engine-pipeline">18 / 引擎事件进入 Router：两条序列空间与一次重编号</a><a href="#se-event-metrics">19 / KV publisher 指标：定义、标签、注册与含义</a><a href="#se-reliability">20 / 可靠性：普通提示与 Cleared 屏障</a><a href="#se-trace">21 / 全链路追踪：已有信号、缺口与正确关联方式</a><a href="#se-cluster">22 / 对照 ACK 快照与接入验收</a><a href="#se-evidence">23 / 证据、排障入口与后续阅读</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 9734418e5</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>Storage & Events：架构、原理与可观测源码</h1><p class="lede">把逻辑块、物理搬运、异步事件和遥测出口串成可核对的阅读路径。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 9734418e5</span><span class="pill ">Storage & Events 专题 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="se-map" class="lesson"><div class="sectionhead"><h2>01 / 组件边界：缓存字节、成员索引与观测信号</h2><label class="done"><input type="checkbox" data-read="se-map"> 已读</label></div><p><strong>Storage 保存和搬运 KV 数据；Events 描述缓存驻留、移除和运行状态。</strong>事件不是 KV tensor 本身，路由索引也不是缓存存储。本章按当前源码拆解逻辑块、物理搬运、协调会话和事件传播，再追踪各层可观测信号的产生及导出。</p><div class="tablewrap"><table><thead><tr><th>组件</th><th>职责</th><th>需要避免的混淆</th></tr></thead><tbody><tr><td>引擎 KV cache / connector</td><td>引擎分配 KV、执行 attention，connector 协调 PD cache 传输</td><td>用 NIXL 不等于使用 Dynamo KVBM</td></tr><tr><td>kvbm-logical</td><td>块状态、哈希、注册、持有/淘汰与池度量</td><td>逻辑块不等于一段可跨 layout 直接复制的裸地址</td></tr><tr><td>kvbm-physical</td><td>内存/layout 注册、策略选择、搬运与完成通知</td><td>submit 不等于完成，通知事件不等于 Event Plane 消息</td></tr><tr><td>kvbm-engine</td><td>Leader/Worker、分层 offload、onboarding、对象存储协调</td><td>不同 backend/feature/配置可能只启用一部分</td></tr><tr><td>lib/llm/src/block_manager</td><td>另一组仍在仓库中的块管理与 KVBM 指标实现</td><td>不能把这里的字段、端口与新 crates 的指标当成同一套</td></tr><tr><td>kvbm-consolidator</td><td>合并引擎与 KVBM 缓存事件、处理驻留引用并输出兼容事件</td><td>中间聚合不自动保证持久回放/每消息必达</td></tr><tr><td>Runtime Event Plane / KV publisher</td><td>通用 pub/sub；引擎事件转换、索引入队与外部发布</td><td>KV routing advisory events 不等于一致性数据库日志</td></tr></tbody></table></div><aside class="note ">源码固定于 9734418e5bc71027e6bd04a09314bf1765208c72，workspace 1.7.0；集群快照是私有 SGLang 1.4.1。本文为静态源码分析，没有执行 CUDA/NIXL/S3 测试、部署、压测或线上抓包；不能用新 crates 的能力推定旧镜像已启用。</aside></section><section id="se-architecture" class="lesson"><div class="sectionhead"><h2>02 / 架构：数据流与元数据流分开</h2><label class="done"><input type="checkbox" data-read="se-architecture"> 已读</label></div><div class="diagram"><div class="lane"><b>KV 数据</b><span>Engine G1 GPU ↔ G2 pinned host ↔ G3 disk；G4 object storage 可选。跨实例可先把远端 G3 stage 到远端 G2，再经 NIXL pull 到本地 G2；路径由配置、layout、能力与策略决定。</span></div><div class="lane"><b>逻辑/协调</b><span>SequenceHash / BlockRegistry / pools → Leader 搜索与会话 → Worker / TransferManager → 执行和等待完成 → 目的层注册。</span></div><div class="lane"><b>缓存事件</b><span>Engine 原生 ZMQ 或 KVBM EventsManager → 可选 consolidator / publisher → Event Plane ZMQ/NATS → Router indexer；只传播驻留与负载等元数据。</span></div><div class="lane"><b>可观测</b><span>块池 atomics / legacy counters / pipeline timing logs / relay counters / NIXL telemetry → 对应 Registry 或 exporter → Prometheus/日志平台；OTel propagation 另有明确边界。</span></div></div><p><a href="storage-events-architecture.mmd">架构图 Mermaid 源文件</a>；本页 HTML 图离线可读。图中箭头表示可能路径，不表示所有部署都启用每层或强制逐层经过。</p></section><section id="se-lifecycle" class="lesson"><div class="sectionhead"><h2>03 / 逻辑块：状态机、持有与淘汰</h2><label class="done"><input type="checkbox" data-read="se-lifecycle"> 已读</label></div><details class="source" id="src-se-block-state"><summary><b>源码 · Mutable / Complete / Immutable / Weak 的类型状态</b><small>lib/kvbm-logical/src/blocks/mod.rs:4–33</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/blocks/mod.rs#L4-L33" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>4</i>//! RAII guard types that enforce the block lifecycle state machine.</span>
+<span class="line"><i>5</i>//!</span>
+<span class="line"><i>6</i>//! Every logical block in KVBM progresses through a fixed sequence of</span>
+<span class="line"><i>7</i>//! states. The guard types in this module make those transitions explicit</span>
+<span class="line"><i>8</i>//! at the type level: each transition consumes one guard and produces the</span>
+<span class="line"><i>9</i>//! next. Dropping a guard at any point automatically returns the</span>
+<span class="line"><i>10</i>//! underlying slot to the appropriate pool, so blocks are never leaked.</span>
+<span class="line"><i>11</i>//!</span>
+<span class="line"><i>12</i>//! # State machine</span>
+<span class="line"><i>13</i>//!</span>
+<span class="line"><i>14</i>//! ```text</span>
+<span class="line"><i>15</i>//!                  stage / complete          register_block</span>
+<span class="line"><i>16</i>//!   Reset ──────────────────────► Staged ─────────────────► Registered</span>
+<span class="line"><i>17</i>//!     ▲                              │                          │</span>
+<span class="line"><i>18</i>//!     │          reset               │                          │</span>
+<span class="line"><i>19</i>//!     ├──────────────────────────────┘                          │</span>
+<span class="line"><i>20</i>//!     │                          drop (reset + return)          │</span>
+<span class="line"><i>21</i>//!     └─────────────────────────────────────────────────────────┘</span>
+<span class="line"><i>22</i>//! ```</span>
+<span class="line"><i>23</i>//!</span>
+<span class="line"><i>24</i>//! # Public guard types</span>
+<span class="line"><i>25</i>//!</span>
+<span class="line"><i>26</i>//! - [`MutableBlock`] — `Reset` state.</span>
+<span class="line"><i>27</i>//! - [`CompleteBlock`] — `Staged` state.</span>
+<span class="line"><i>28</i>//! - [`ImmutableBlock`] — `Registered` state (cheap-to-clone strong handle).</span>
+<span class="line"><i>29</i>//! - [`WeakBlock`] — non-owning reference to a registered block.</span>
+<span class="line"><i>30</i>//!</span>
+<span class="line"><i>31</i>//! Slot bookkeeping lives in `BlockStore&lt;T&gt;` (`crate::pools::BlockStore`);</span>
+<span class="line"><i>32</i>//! `Primary` vs `Duplicate` is captured by an internal flag on</span>
+<span class="line"><i>33</i>//! `ImmutableBlockInner` and the corresponding slot state.</span></code></pre></details><div class="flow"><div><b>01</b>Reset pool 分配 MutableBlock</div><div><b>02</b>写入后 stage/complete 成 CompleteBlock</div><div><b>03</b>注册为 ImmutableBlock / SequenceHash</div><div><b>04</b>强持有阻止回收；Weak 不保活</div><div><b>05</b>释放后按生命周期进入可回收/缓存状态</div></div><p>注册表回答“某逻辑前缀/哈希是否有可持有的块”，池与淘汰后端管理可用 slot 和缓存候选。匹配得到强句柄后，需要保证异步传输期间源、目的内存仍有效；不能只保存一个裸 block ID 后让源被回收。</p><aside class="note ">逻辑块的状态转换不代表 KV bytes 已写入目的地。物理传输成功、目的块注册以及对外发驻留事件之间要保持正确顺序；否则 Router 可能认为一个尚未可用的块已经存在。</aside></section><section id="se-logical-metrics" class="lesson"><div class="sectionhead"><h2>04 / 新块池指标：从操作到原子量</h2><label class="done"><input type="checkbox" data-read="se-logical-metrics"> 已读</label></div><details class="source" id="src-se-atomics"><summary><b>源码 · 每个 BlockManager 的累计量与当前量</b><small>lib/kvbm-logical/src/metrics/pool_metrics.rs:15–45</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/metrics/pool_metrics.rs#L15-L45" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>15</i>pub struct BlockPoolMetrics {</span>
+<span class="line"><i>16</i>    type_label: String,</span>
+<span class="line"><i>17</i></span>
+<span class="line"><i>18</i>    // Counters (monotonic)</span>
+<span class="line"><i>19</i>    allocations: AtomicU64,</span>
+<span class="line"><i>20</i>    allocations_from_reset: AtomicU64,</span>
+<span class="line"><i>21</i>    evictions: AtomicU64,</span>
+<span class="line"><i>22</i>    registrations: AtomicU64,</span>
+<span class="line"><i>23</i>    duplicate_blocks: AtomicU64,</span>
+<span class="line"><i>24</i>    registration_dedup: AtomicU64,</span>
+<span class="line"><i>25</i>    stagings: AtomicU64,</span>
+<span class="line"><i>26</i>    match_hashes_requested: AtomicU64,</span>
+<span class="line"><i>27</i>    match_blocks_returned: AtomicU64,</span>
+<span class="line"><i>28</i>    scan_hashes_requested: AtomicU64,</span>
+<span class="line"><i>29</i>    scan_blocks_returned: AtomicU64,</span>
+<span class="line"><i>30</i></span>
+<span class="line"><i>31</i>    // Audit counters for normally-rare branches. These exist primarily</span>
+<span class="line"><i>32</i>    // so tests can assert &quot;this code path actually fired&quot; rather than</span>
+<span class="line"><i>33</i>    // inferring it from emergent behaviour, and so production</span>
+<span class="line"><i>34</i>    // dashboards detect regressions if these spike.</span>
+<span class="line"><i>35</i>    eager_primary_to_inactive_total: AtomicU64,</span>
+<span class="line"><i>36</i>    allocate_atomic_rollback_total: AtomicU64,</span>
+<span class="line"><i>37</i>    release_primary_noop_total: AtomicU64,</span>
+<span class="line"><i>38</i>    release_duplicate_noop_total: AtomicU64,</span>
+<span class="line"><i>39</i></span>
+<span class="line"><i>40</i>    // Gauges (bidirectional)</span>
+<span class="line"><i>41</i>    inflight_mutable: AtomicI64,</span>
+<span class="line"><i>42</i>    inflight_immutable: AtomicI64,</span>
+<span class="line"><i>43</i>    reset_pool_size: AtomicI64,</span>
+<span class="line"><i>44</i>    inactive_pool_size: AtomicI64,</span>
+<span class="line"><i>45</i>}</span></code></pre></details><details class="source" id="src-se-increments"><summary><b>源码 · Relaxed atomics 记录 allocation/registration/match/scan</b><small>lib/kvbm-logical/src/metrics/pool_metrics.rs:81–141</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/metrics/pool_metrics.rs#L81-L141" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>81</i></span>
+<span class="line"><i>82</i>    #[inline(always)]</span>
+<span class="line"><i>83</i>    pub fn inc_allocations(&amp;self, n: u64) {</span>
+<span class="line"><i>84</i>        self.allocations.fetch_add(n, Ordering::Relaxed);</span>
+<span class="line"><i>85</i>    }</span>
+<span class="line"><i>86</i></span>
+<span class="line"><i>87</i>    #[inline(always)]</span>
+<span class="line"><i>88</i>    pub fn inc_allocations_from_reset(&amp;self, n: u64) {</span>
+<span class="line"><i>89</i>        self.allocations_from_reset.fetch_add(n, Ordering::Relaxed);</span>
+<span class="line"><i>90</i>    }</span>
+<span class="line"><i>91</i></span>
+<span class="line"><i>92</i>    #[inline(always)]</span>
+<span class="line"><i>93</i>    pub fn inc_evictions(&amp;self, n: u64) {</span>
+<span class="line"><i>94</i>        self.evictions.fetch_add(n, Ordering::Relaxed);</span>
+<span class="line"><i>95</i>    }</span>
+<span class="line"><i>96</i></span>
+<span class="line"><i>97</i>    #[inline(always)]</span>
+<span class="line"><i>98</i>    pub fn inc_registrations(&amp;self) {</span>
+<span class="line"><i>99</i>        self.inc_registrations_by(1);</span>
+<span class="line"><i>100</i>    }</span>
+<span class="line"><i>101</i></span>
+<span class="line"><i>102</i>    /// Increment registrations after a completed batch becomes visible.</span>
+<span class="line"><i>103</i>    #[inline(always)]</span>
+<span class="line"><i>104</i>    pub fn inc_registrations_by(&amp;self, n: u64) {</span>
+<span class="line"><i>105</i>        self.registrations.fetch_add(n, Ordering::Relaxed);</span>
+<span class="line"><i>106</i>    }</span>
+<span class="line"><i>107</i></span>
+<span class="line"><i>108</i>    #[inline(always)]</span>
+<span class="line"><i>109</i>    pub fn inc_duplicate_blocks(&amp;self) {</span>
+<span class="line"><i>110</i>        self.duplicate_blocks.fetch_add(1, Ordering::Relaxed);</span>
+<span class="line"><i>111</i>    }</span>
+<span class="line"><i>112</i></span>
+<span class="line"><i>113</i>    #[inline(always)]</span>
+<span class="line"><i>114</i>    pub fn inc_registration_dedup(&amp;self) {</span>
+<span class="line"><i>115</i>        self.registration_dedup.fetch_add(1, Ordering::Relaxed);</span>
+<span class="line"><i>116</i>    }</span>
+<span class="line"><i>117</i></span>
+<span class="line"><i>118</i>    #[inline(always)]</span>
+<span class="line"><i>119</i>    pub fn inc_stagings(&amp;self) {</span>
+<span class="line"><i>120</i>        self.stagings.fetch_add(1, Ordering::Relaxed);</span>
+<span class="line"><i>121</i>    }</span>
+<span class="line"><i>122</i></span>
+<span class="line"><i>123</i>    #[inline(always)]</span>
+<span class="line"><i>124</i>    pub fn inc_match_hashes_requested(&amp;self, n: u64) {</span>
+<span class="line"><i>125</i>        self.match_hashes_requested.fetch_add(n, Ordering::Relaxed);</span>
+<span class="line"><i>126</i>    }</span>
+<span class="line"><i>127</i></span>
+<span class="line"><i>128</i>    #[inline(always)]</span>
+<span class="line"><i>129</i>    pub fn inc_match_blocks_returned(&amp;self, n: u64) {</span>
+<span class="line"><i>130</i>        self.match_blocks_returned.fetch_add(n, Ordering::Relaxed);</span>
+<span class="line"><i>131</i>    }</span>
+<span class="line"><i>132</i></span>
+<span class="line"><i>133</i>    #[inline(always)]</span>
+<span class="line"><i>134</i>    pub fn inc_scan_hashes_requested(&amp;self, n: u64) {</span>
+<span class="line"><i>135</i>        self.scan_hashes_requested.fetch_add(n, Ordering::Relaxed);</span>
+<span class="line"><i>136</i>    }</span>
+<span class="line"><i>137</i></span>
+<span class="line"><i>138</i>    #[inline(always)]</span>
+<span class="line"><i>139</i>    pub fn inc_scan_blocks_returned(&amp;self, n: u64) {</span>
+<span class="line"><i>140</i>        self.scan_blocks_returned.fetch_add(n, Ordering::Relaxed);</span>
+<span class="line"><i>141</i>    }</span></code></pre></details><details class="source" id="src-se-match"><summary><b>源码 · 实际 match_blocks 记录输入 hash occurrences 与返回块数</b><small>lib/kvbm-logical/src/manager/mod.rs:135–168</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/manager/mod.rs#L135-L168" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>135</i>    pub fn match_blocks(&amp;self, seq_hash: &amp;[SequenceHash]) -&gt; Vec&lt;ImmutableBlock&lt;T&gt;&gt; {</span>
+<span class="line"><i>136</i>        self.metrics</span>
+<span class="line"><i>137</i>            .inc_match_hashes_requested(seq_hash.len() as u64);</span>
+<span class="line"><i>138</i></span>
+<span class="line"><i>139</i>        if seq_hash.is_empty() {</span>
+<span class="line"><i>140</i>            self.metrics.inc_match_blocks_returned(0);</span>
+<span class="line"><i>141</i>            return Vec::new();</span>
+<span class="line"><i>142</i>        }</span>
+<span class="line"><i>143</i></span>
+<span class="line"><i>144</i>        // ONE store-lock acquisition for the whole active+inactive prefix.</span>
+<span class="line"><i>145</i>        let inners = self.store.match_prefix_locked_batch(seq_hash);</span>
+<span class="line"><i>146</i></span>
+<span class="line"><i>147</i>        // Frequency-tracker touches, batched, AFTER the store lock is</span>
+<span class="line"><i>148</i>        // released. Touches every returned hit exactly once — including</span>
+<span class="line"><i>149</i>        // inactive resurrections, which the old `find_inactive_primaries`</span>
+<span class="line"><i>150</i>        // path never touched.</span>
+<span class="line"><i>151</i>        if self.block_registry.has_frequency_tracking() {</span>
+<span class="line"><i>152</i>            for inner in &amp;inners {</span>
+<span class="line"><i>153</i>                self.block_registry.touch(inner.sequence_hash());</span>
+<span class="line"><i>154</i>            }</span>
+<span class="line"><i>155</i>        }</span>
+<span class="line"><i>156</i></span>
+<span class="line"><i>157</i>        let matched: Vec&lt;ImmutableBlock&lt;T&gt;&gt; =</span>
+<span class="line"><i>158</i>            inners.into_iter().map(ImmutableBlock::from_inner).collect();</span>
+<span class="line"><i>159</i></span>
+<span class="line"><i>160</i>        self.metrics.inc_match_blocks_returned(matched.len() as u64);</span>
+<span class="line"><i>161</i>        tracing::debug!(</span>
+<span class="line"><i>162</i>            num_hashes = seq_hash.len(),</span>
+<span class="line"><i>163</i>            total_matched = matched.len(),</span>
+<span class="line"><i>164</i>            &quot;match_blocks result&quot;</span>
+<span class="line"><i>165</i>        );</span>
+<span class="line"><i>166</i>        tracing::trace!(matched = ?matched, &quot;matched blocks&quot;);</span>
+<span class="line"><i>167</i>        matched</span>
+<span class="line"><i>168</i>    }</span></code></pre></details><p>热路径只更新 atomics，避免在每次操作上创建 Prometheus labels/protos；这仍有原子操作和竞争成本，不是绝对零开销。Relaxed 多原子快照也不是所有字段同一瞬间的事务一致视图。</p><div class="tablewrap"><table><thead><tr><th>指标族</th><th>口径</th><th>错误解释</th></tr></thead><tbody><tr><td>kvbm_allocations_total / evictions_total / registrations_total</td><td>块分配/淘汰/注册操作累计数</td><td>不能直接当请求数或 GPU bytes</td></tr><tr><td>kvbm_match_hashes_requested_total / match_blocks_returned_total</td><td>输入 hash 出现次数 / 返回 hit 出现次数；prefix 和 scattered 共用 match 指标</td><td>不是全请求命中率，也不是全局唯一块数</td></tr><tr><td>kvbm_scan_hashes_requested_total / scan_blocks_returned_total</td><td>scan 输入出现次数 / 返回 distinct matching hashes</td><td>与 match 分子口径不同，不直接拼一个总命中率</td></tr><tr><td>kvbm_inflight_mutable / inflight_immutable / reset_pool_size / inactive_pool_size</td><td>当前状态计数/gauge</td><td>不能把 inflight_immutable 简单等同显存占用 bytes</td></tr><tr><td>kvbm_allocate_atomic_rollback_total 等 audit counters</td><td>特定竞争/回滚/释放分支</td><td>非零要按各分支契约判断，不能一律等同用户请求失败</td></tr></tbody></table></div></section><section id="se-scrape" class="lesson"><div class="sectionhead"><h2>05 / 新指标导出：Collector 必须接上 Registry</h2><label class="done"><input type="checkbox" data-read="se-scrape"> 已读</label></div><details class="source" id="src-se-agg-wire"><summary><b>源码 · build 时仅在提供 aggregator 后注册 source</b><small>lib/kvbm-logical/src/manager/builder.rs:450–463</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/manager/builder.rs#L450-L463" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>450</i>        let store = BlockStore::new(</span>
+<span class="line"><i>451</i>            block_count,</span>
+<span class="line"><i>452</i>            block_size,</span>
+<span class="line"><i>453</i>            backend,</span>
+<span class="line"><i>454</i>            metrics.clone(),</span>
+<span class="line"><i>455</i>            self.default_reset_on_release.unwrap_or(false),</span>
+<span class="line"><i>456</i>        );</span>
+<span class="line"><i>457</i></span>
+<span class="line"><i>458</i>        // Register with aggregator if provided</span>
+<span class="line"><i>459</i>        if let Some(ref aggregator) = self.aggregator {</span>
+<span class="line"><i>460</i>            aggregator.register_source(metrics.clone());</span>
+<span class="line"><i>461</i>        }</span>
+<span class="line"><i>462</i></span>
+<span class="line"><i>463</i>        Ok(BlockManager {</span></code></pre></details><details class="source" id="src-se-agg-register"><summary><b>源码 · source、外部标签与 register_with</b><small>lib/kvbm-logical/src/metrics/collector.rs:144–172</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/metrics/collector.rs#L144-L172" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>144</i></span>
+<span class="line"><i>145</i>    /// Register a `BlockPoolMetrics` source (called by `BlockManager::build()`).</span>
+<span class="line"><i>146</i>    pub fn register_source(&amp;self, source: Arc&lt;BlockPoolMetrics&gt;) {</span>
+<span class="line"><i>147</i>        self.inner</span>
+<span class="line"><i>148</i>            .sources</span>
+<span class="line"><i>149</i>            .write()</span>
+<span class="line"><i>150</i>            .expect(&quot;sources lock poisoned&quot;)</span>
+<span class="line"><i>151</i>            .push(source);</span>
+<span class="line"><i>152</i>    }</span>
+<span class="line"><i>153</i></span>
+<span class="line"><i>154</i>    /// Set external labels appended at scrape time (e.g. `instance_id`, `worker_id`).</span>
+<span class="line"><i>155</i>    pub fn set_external_labels(&amp;self, labels: Vec&lt;(String, String)&gt;) {</span>
+<span class="line"><i>156</i>        *self</span>
+<span class="line"><i>157</i>            .inner</span>
+<span class="line"><i>158</i>            .external_labels</span>
+<span class="line"><i>159</i>            .write()</span>
+<span class="line"><i>160</i>            .expect(&quot;external_labels lock poisoned&quot;) = labels;</span>
+<span class="line"><i>161</i>    }</span>
+<span class="line"><i>162</i></span>
+<span class="line"><i>163</i>    /// Register this collector with a `prometheus::Registry`.</span>
+<span class="line"><i>164</i>    pub fn register_with(&amp;self, registry: &amp;prometheus::Registry) -&gt; Result&lt;(), prometheus::Error&gt; {</span>
+<span class="line"><i>165</i>        registry.register(Box::new(self.clone()))</span>
+<span class="line"><i>166</i>    }</span>
+<span class="line"><i>167</i>}</span>
+<span class="line"><i>168</i></span>
+<span class="line"><i>169</i>impl Default for MetricsAggregator {</span>
+<span class="line"><i>170</i>    fn default() -&gt; Self {</span>
+<span class="line"><i>171</i>        Self::new()</span>
+<span class="line"><i>172</i>    }</span></code></pre></details><details class="source" id="src-se-agg-collect"><summary><b>源码 · scrape 时读取 snapshot、生成 pool 与外部 labels</b><small>lib/kvbm-logical/src/metrics/collector.rs:181–210</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/metrics/collector.rs#L181-L210" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>181</i>        let sources = self.inner.sources.read().expect(&quot;sources lock poisoned&quot;);</span>
+<span class="line"><i>182</i>        let ext_labels = self</span>
+<span class="line"><i>183</i>            .inner</span>
+<span class="line"><i>184</i>            .external_labels</span>
+<span class="line"><i>185</i>            .read()</span>
+<span class="line"><i>186</i>            .expect(&quot;external_labels lock poisoned&quot;);</span>
+<span class="line"><i>187</i></span>
+<span class="line"><i>188</i>        let mut families: Vec&lt;MetricFamily&gt; = Vec::new();</span>
+<span class="line"><i>189</i></span>
+<span class="line"><i>190</i>        for source in sources.iter() {</span>
+<span class="line"><i>191</i>            let snap = source.snapshot();</span>
+<span class="line"><i>192</i>            let pool_label = source.type_label();</span>
+<span class="line"><i>193</i></span>
+<span class="line"><i>194</i>            let mut base_labels: Vec&lt;LabelPair&gt; = Vec::with_capacity(1 + ext_labels.len());</span>
+<span class="line"><i>195</i>            let mut pool_lp = LabelPair::default();</span>
+<span class="line"><i>196</i>            pool_lp.set_name(&quot;pool&quot;.to_string());</span>
+<span class="line"><i>197</i>            pool_lp.set_value(pool_label.to_string());</span>
+<span class="line"><i>198</i>            base_labels.push(pool_lp);</span>
+<span class="line"><i>199</i>            for (k, v) in ext_labels.iter() {</span>
+<span class="line"><i>200</i>                let mut lp = LabelPair::default();</span>
+<span class="line"><i>201</i>                lp.set_name(k.clone());</span>
+<span class="line"><i>202</i>                lp.set_value(v.clone());</span>
+<span class="line"><i>203</i>                base_labels.push(lp);</span>
+<span class="line"><i>204</i>            }</span>
+<span class="line"><i>205</i></span>
+<span class="line"><i>206</i>            // Counter values in order matching COUNTER_DEFS</span>
+<span class="line"><i>207</i>            let counter_values: [u64; 15] = [</span>
+<span class="line"><i>208</i>                snap.allocations,</span>
+<span class="line"><i>209</i>                snap.allocations_from_reset,</span>
+<span class="line"><i>210</i>                snap.evictions,</span></code></pre></details><p>完整链路是 BlockManager 操作 → BlockPoolMetrics → MetricsAggregator.register_source → register_with(目标 Registry) → 集成方暴露的 /metrics。MetricsAggregator 自身不会自动创建 HTTP server，也不会因为 Worker :9090 可用就自动出现在该端点。</p><aside class="note ">默认 pool 标签来自 short_type_name&lt;T&gt;，不是每次都固定为 G1/G2。instance/worker labels 需集成方设置；同一 pool label 的多个 sources 可能需要额外区分或合并，不能假定 source 名天然唯一。确认实际抓取端点与 labels 后再建面板。</aside></section><section id="se-stats" class="lesson"><div class="sectionhead"><h2>06 / StatsCollector：局部采样率不等于导出指标</h2><label class="done"><input type="checkbox" data-read="se-stats"> 已读</label></div><details class="source" id="src-se-stats"><summary><b>源码 · sample：delta/dt、match/scan ratio 与梯度</b><small>lib/kvbm-logical/src/metrics/stats.rs:99–166</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/metrics/stats.rs#L99-L166" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>99</i>    pub fn sample(&amp;self) {</span>
+<span class="line"><i>100</i>        if !self.is_enabled() {</span>
+<span class="line"><i>101</i>            return;</span>
+<span class="line"><i>102</i>        }</span>
+<span class="line"><i>103</i></span>
+<span class="line"><i>104</i>        let now = Instant::now();</span>
+<span class="line"><i>105</i>        let raw = self.metrics.snapshot();</span>
+<span class="line"><i>106</i></span>
+<span class="line"><i>107</i>        let mut entries = self.entries.write().expect(&quot;entries lock poisoned&quot;);</span>
+<span class="line"><i>108</i></span>
+<span class="line"><i>109</i>        let stats = if let Some(prev) = entries.back() {</span>
+<span class="line"><i>110</i>            let dt = now.duration_since(prev.timestamp).as_secs_f64();</span>
+<span class="line"><i>111</i>            if dt &gt; 0.0 {</span>
+<span class="line"><i>112</i>                let alloc_rate = (raw.allocations - prev.raw.allocations) as f64 / dt;</span>
+<span class="line"><i>113</i>                let eviction_rate = (raw.evictions - prev.raw.evictions) as f64 / dt;</span>
+<span class="line"><i>114</i></span>
+<span class="line"><i>115</i>                let match_hit_rate = {</span>
+<span class="line"><i>116</i>                    let delta_req = raw.match_hashes_requested - prev.raw.match_hashes_requested;</span>
+<span class="line"><i>117</i>                    let delta_ret = raw.match_blocks_returned - prev.raw.match_blocks_returned;</span>
+<span class="line"><i>118</i>                    if delta_req &gt; 0 {</span>
+<span class="line"><i>119</i>                        delta_ret as f64 / delta_req as f64</span>
+<span class="line"><i>120</i>                    } else {</span>
+<span class="line"><i>121</i>                        0.0</span>
+<span class="line"><i>122</i>                    }</span>
+<span class="line"><i>123</i>                };</span>
+<span class="line"><i>124</i></span>
+<span class="line"><i>125</i>                let scan_hit_rate = {</span>
+<span class="line"><i>126</i>                    let delta_req = raw.scan_hashes_requested - prev.raw.scan_hashes_requested;</span>
+<span class="line"><i>127</i>                    let delta_ret = raw.scan_blocks_returned - prev.raw.scan_blocks_returned;</span>
+<span class="line"><i>128</i>                    if delta_req &gt; 0 {</span>
+<span class="line"><i>129</i>                        delta_ret as f64 / delta_req as f64</span>
+<span class="line"><i>130</i>                    } else {</span>
+<span class="line"><i>131</i>                        0.0</span>
+<span class="line"><i>132</i>                    }</span>
+<span class="line"><i>133</i>                };</span>
+<span class="line"><i>134</i></span>
+<span class="line"><i>135</i>                let allocation_gradient = (alloc_rate - prev.stats.allocation_rate) / dt;</span>
+<span class="line"><i>136</i>                let eviction_gradient = (eviction_rate - prev.stats.eviction_rate) / dt;</span>
+<span class="line"><i>137</i></span>
+<span class="line"><i>138</i>                StatsSnapshot {</span>
+<span class="line"><i>139</i>                    allocation_rate: alloc_rate,</span>
+<span class="line"><i>140</i>                    eviction_rate,</span>
+<span class="line"><i>141</i>                    match_hit_rate,</span>
+<span class="line"><i>142</i>                    scan_hit_rate,</span>
+<span class="line"><i>143</i>                    allocation_gradient,</span>
+<span class="line"><i>144</i>                    eviction_gradient,</span>
+<span class="line"><i>145</i>                    inflight_mutable: raw.inflight_mutable,</span>
+<span class="line"><i>146</i>                    inflight_immutable: raw.inflight_immutable,</span>
+<span class="line"><i>147</i>                    reset_pool_size: raw.reset_pool_size,</span>
+<span class="line"><i>148</i>                    inactive_pool_size: raw.inactive_pool_size,</span>
+<span class="line"><i>149</i>                }</span>
+<span class="line"><i>150</i>            } else {</span>
+<span class="line"><i>151</i>                zero_stats(&amp;raw)</span>
+<span class="line"><i>152</i>            }</span>
+<span class="line"><i>153</i>        } else {</span>
+<span class="line"><i>154</i>            zero_stats(&amp;raw)</span>
+<span class="line"><i>155</i>        };</span>
+<span class="line"><i>156</i></span>
+<span class="line"><i>157</i>        entries.push_back(TimedEntry {</span>
+<span class="line"><i>158</i>            timestamp: now,</span>
+<span class="line"><i>159</i>            raw,</span>
+<span class="line"><i>160</i>            stats,</span>
+<span class="line"><i>161</i>        });</span>
+<span class="line"><i>162</i></span>
+<span class="line"><i>163</i>        while entries.len() &gt; self.config.window_size {</span>
+<span class="line"><i>164</i>            entries.pop_front();</span>
+<span class="line"><i>165</i>        }</span>
+<span class="line"><i>166</i>    }</span></code></pre></details><p>StatsCollector 可选启用，sample() 在禁用时不工作。首个样本没有前值时使用 zero_stats；后续从原始累计值差和实际 dt 计算 allocations/s、evictions/s、命中比及每秒速率变化。这里只维护本地样本，不自动向 Registry 增加这些派生指标。</p><pre><code># Prometheus 侧计算逻辑 match occurrence 命中比
+# 补充真实集群/实例标签；空闲无样本时不强行填成 0
+sum by (pool) (rate(kvbm_match_blocks_returned_total[5m]))
+/
+sum by (pool) (rate(kvbm_match_hashes_requested_total[5m]))</code></pre><aside class="note ">scan 的 distinct 分子可能受重复输入影响；不要把 scan ratio 与 match occurrence ratio 当作完全相同定义。缓存命中还需区分 Router 预测、逻辑块匹配、引擎 prefix reuse 与用户实际避免的计算量。</aside></section><section id="se-legacy" class="lesson"><div class="sectionhead"><h2>07 / 既有 block_manager 指标：定义、更新和独立出口</h2><label class="done"><input type="checkbox" data-read="se-legacy"> 已读</label></div><details class="source" id="src-se-legacy-fields"><summary><b>源码 · 旧路径 offload/onboard、滑窗 hit-rate 与对象失败字段</b><small>lib/llm/src/block_manager/metrics_kvbm.rs:21–62</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/block_manager/metrics_kvbm.rs#L21-L62" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>21</i>pub struct KvbmMetrics {</span>
+<span class="line"><i>22</i>    // number of blocks offloaded from device to host</span>
+<span class="line"><i>23</i>    pub offload_blocks_d2h: IntCounter,</span>
+<span class="line"><i>24</i></span>
+<span class="line"><i>25</i>    // number of blocks offloaded from host to disk</span>
+<span class="line"><i>26</i>    pub offload_blocks_h2d: IntCounter,</span>
+<span class="line"><i>27</i></span>
+<span class="line"><i>28</i>    // number of blocks offloaded from device to disk (bypassing host memory)</span>
+<span class="line"><i>29</i>    pub offload_blocks_d2d: IntCounter,</span>
+<span class="line"><i>30</i></span>
+<span class="line"><i>31</i>    // number of blocks offloaded from device to object storage</span>
+<span class="line"><i>32</i>    pub offload_blocks_d2o: IntCounter,</span>
+<span class="line"><i>33</i></span>
+<span class="line"><i>34</i>    // number of blocks onboarded from host to device</span>
+<span class="line"><i>35</i>    pub onboard_blocks_h2d: IntCounter,</span>
+<span class="line"><i>36</i></span>
+<span class="line"><i>37</i>    // number of blocks onboarded from disk to device</span>
+<span class="line"><i>38</i>    pub onboard_blocks_d2d: IntCounter,</span>
+<span class="line"><i>39</i></span>
+<span class="line"><i>40</i>    // number of blocks onboarded from object storage to device</span>
+<span class="line"><i>41</i>    pub onboard_blocks_o2d: IntCounter,</span>
+<span class="line"><i>42</i></span>
+<span class="line"><i>43</i>    // number of matched tokens from KVBM</span>
+<span class="line"><i>44</i>    pub matched_tokens: IntCounter,</span>
+<span class="line"><i>45</i></span>
+<span class="line"><i>46</i>    // host cache hit rate (0.0-1.0) from the sliding window</span>
+<span class="line"><i>47</i>    pub host_cache_hit_rate: Gauge,</span>
+<span class="line"><i>48</i></span>
+<span class="line"><i>49</i>    // disk cache hit rate (0.0-1.0) from the sliding window</span>
+<span class="line"><i>50</i>    pub disk_cache_hit_rate: Gauge,</span>
+<span class="line"><i>51</i></span>
+<span class="line"><i>52</i>    // object cache hit rate (0.0-1.0) from the sliding window</span>
+<span class="line"><i>53</i>    pub object_cache_hit_rate: Gauge,</span>
+<span class="line"><i>54</i></span>
+<span class="line"><i>55</i>    // number of failed object storage read operations (blocks)</span>
+<span class="line"><i>56</i>    pub object_read_failures: IntCounter,</span>
+<span class="line"><i>57</i></span>
+<span class="line"><i>58</i>    // number of failed object storage write operations (blocks)</span>
+<span class="line"><i>59</i>    pub object_write_failures: IntCounter,</span>
+<span class="line"><i>60</i></span>
+<span class="line"><i>61</i>    shutdown_notify: Option&lt;Arc&lt;Notify&gt;&gt;,</span>
+<span class="line"><i>62</i>}</span></code></pre></details><details class="source" id="src-se-legacy-endpoint"><summary><b>源码 · create_endpoint=false 只返回指标；true 建立独立 HTTP server</b><small>lib/llm/src/block_manager/metrics_kvbm.rs:155–192</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/block_manager/metrics_kvbm.rs#L155-L192" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>155</i>            )</span>
+<span class="line"><i>156</i>            .unwrap();</span>
+<span class="line"><i>157</i>        // early return if no endpoint is needed</span>
+<span class="line"><i>158</i>        if !create_endpoint {</span>
+<span class="line"><i>159</i>            return Self {</span>
+<span class="line"><i>160</i>                offload_blocks_d2h,</span>
+<span class="line"><i>161</i>                offload_blocks_h2d,</span>
+<span class="line"><i>162</i>                offload_blocks_d2d,</span>
+<span class="line"><i>163</i>                offload_blocks_d2o,</span>
+<span class="line"><i>164</i>                onboard_blocks_h2d,</span>
+<span class="line"><i>165</i>                onboard_blocks_d2d,</span>
+<span class="line"><i>166</i>                onboard_blocks_o2d,</span>
+<span class="line"><i>167</i>                matched_tokens,</span>
+<span class="line"><i>168</i>                host_cache_hit_rate,</span>
+<span class="line"><i>169</i>                disk_cache_hit_rate,</span>
+<span class="line"><i>170</i>                object_cache_hit_rate,</span>
+<span class="line"><i>171</i>                object_read_failures,</span>
+<span class="line"><i>172</i>                object_write_failures,</span>
+<span class="line"><i>173</i>                shutdown_notify: None,</span>
+<span class="line"><i>174</i>            };</span>
+<span class="line"><i>175</i>        }</span>
+<span class="line"><i>176</i></span>
+<span class="line"><i>177</i>        // 2) start HTTP server in background with graceful shutdown via Notify</span>
+<span class="line"><i>178</i>        let registry = mr.inner(); // Arc&lt;Registry&gt;</span>
+<span class="line"><i>179</i>        let notify = Arc::new(Notify::new());</span>
+<span class="line"><i>180</i>        let notify_for_task = notify.clone();</span>
+<span class="line"><i>181</i></span>
+<span class="line"><i>182</i>        let addr = SocketAddr::from(([0, 0, 0, 0], metrics_port));</span>
+<span class="line"><i>183</i>        let (_route_docs, app): (Vec&lt;RouteDoc&gt;, Router) = router(</span>
+<span class="line"><i>184</i>            (*registry).clone(), // take owned Registry (Clone) for router to wrap in Arc</span>
+<span class="line"><i>185</i>            None,                // or Some(&quot;/metrics&quot;.to_string()) to override the path</span>
+<span class="line"><i>186</i>            None,                // no DRT metrics for standalone KVBM server</span>
+<span class="line"><i>187</i>        );</span>
+<span class="line"><i>188</i></span>
+<span class="line"><i>189</i>        let run_server = async move {</span>
+<span class="line"><i>190</i>            let listener = match TcpListener::bind(addr).await {</span>
+<span class="line"><i>191</i>                Ok(listener) =&gt; listener,</span>
+<span class="line"><i>192</i>                Err(err) =&gt; {</span></code></pre></details><details class="source" id="src-se-legacy-update"><summary><b>源码 · hit rates 直接 Set；对象失败按 num_blocks 增加</b><small>lib/llm/src/block_manager/metrics_kvbm.rs:240–253</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/block_manager/metrics_kvbm.rs#L240-L253" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>240</i>    pub fn update_cache_hit_rates(&amp;self, host_rate: f32, disk_rate: f32, object_rate: f32) {</span>
+<span class="line"><i>241</i>        self.host_cache_hit_rate.set(host_rate as f64);</span>
+<span class="line"><i>242</i>        self.disk_cache_hit_rate.set(disk_rate as f64);</span>
+<span class="line"><i>243</i>        self.object_cache_hit_rate.set(object_rate as f64);</span>
+<span class="line"><i>244</i>    }</span>
+<span class="line"><i>245</i>    /// Record failed object storage read operations</span>
+<span class="line"><i>246</i>    pub fn record_object_read_failure(&amp;self, num_blocks: u64) {</span>
+<span class="line"><i>247</i>        self.object_read_failures.inc_by(num_blocks);</span>
+<span class="line"><i>248</i>    }</span>
+<span class="line"><i>249</i></span>
+<span class="line"><i>250</i>    /// Record failed object storage write operations</span>
+<span class="line"><i>251</i>    pub fn record_object_write_failure(&amp;self, num_blocks: u64) {</span>
+<span class="line"><i>252</i>        self.object_write_failures.inc_by(num_blocks);</span>
+<span class="line"><i>253</i>    }</span></code></pre></details><details class="source" id="src-se-legacy-registry"><summary><b>源码 · 独立 Registry 及 kvbm_ 前缀</b><small>lib/llm/src/block_manager/metrics_kvbm.rs:268–298</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/block_manager/metrics_kvbm.rs#L268-L298" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>268</i>/// A raw, standalone Prometheus metrics registry implementation using the fixed prefix: `kvbm_`</span>
+<span class="line"><i>269</i>#[derive(Debug, Clone)]</span>
+<span class="line"><i>270</i>pub struct KvbmMetricsRegistry {</span>
+<span class="line"><i>271</i>    registry: Arc&lt;Registry&gt;,</span>
+<span class="line"><i>272</i>    prefix: String,</span>
+<span class="line"><i>273</i>}</span>
+<span class="line"><i>274</i></span>
+<span class="line"><i>275</i>impl KvbmMetricsRegistry {</span>
+<span class="line"><i>276</i>    pub fn new() -&gt; Self {</span>
+<span class="line"><i>277</i>        Self {</span>
+<span class="line"><i>278</i>            registry: Arc::new(Registry::new()),</span>
+<span class="line"><i>279</i>            prefix: &quot;kvbm&quot;.to_string(),</span>
+<span class="line"><i>280</i>        }</span>
+<span class="line"><i>281</i>    }</span>
+<span class="line"><i>282</i></span>
+<span class="line"><i>283</i>    pub fn create_intcounter(</span>
+<span class="line"><i>284</i>        &amp;self,</span>
+<span class="line"><i>285</i>        name: &amp;str,</span>
+<span class="line"><i>286</i>        description: &amp;str,</span>
+<span class="line"><i>287</i>        labels: &amp;[(&amp;str, &amp;str)],</span>
+<span class="line"><i>288</i>    ) -&gt; anyhow::Result&lt;IntCounter&gt; {</span>
+<span class="line"><i>289</i>        let metrics_name = sanitize_prometheus_name(&amp;format!(&quot;{}_{}&quot;, self.prefix, name))?;</span>
+<span class="line"><i>290</i>        let const_labels: HashMap&lt;String, String&gt; = labels</span>
+<span class="line"><i>291</i>            .iter()</span>
+<span class="line"><i>292</i>            .map(|(k, v)| (k.to_string(), v.to_string()))</span>
+<span class="line"><i>293</i>            .collect();</span>
+<span class="line"><i>294</i>        let opts = Opts::new(metrics_name, description).const_labels(const_labels);</span>
+<span class="line"><i>295</i>        let c = IntCounter::with_opts(opts)?;</span>
+<span class="line"><i>296</i>        self.registry.register(Box::new(c.clone()))?;</span>
+<span class="line"><i>297</i>        Ok(c)</span>
+<span class="line"><i>298</i>    }</span></code></pre></details><p>旧路径的 kvbm_offload_blocks_d2h / kvbm_offload_blocks_h2d 等名称没有新逻辑池指标的 _total 后缀，但类型是 Counter。D2D 在这些字段中指 device→disk，不应套用 CUDA D2D=device→device 的缩写含义。对象失败指标以传入 num_blocks 计量，不能当作 HTTP/S3 请求失败次数。</p><aside class="note ">调用图未找到本提交 KvbmMetrics::new 的直接生产调用者，这只是 best-effort 结果，不证明所有外部集成都不用它。这里分析定义与可选出口，未证明当前 Worker 实例化或导出了它；hit-rate 更新函数存在也不证明持续被调用。</aside></section><section id="se-counter-boundary" class="lesson"><div class="sectionhead"><h2>08 / 计数边界：offload 尝试与成功完成不同</h2><label class="done"><input type="checkbox" data-read="se-counter-boundary"> 已读</label></div><details class="source" id="src-se-legacy-attempt"><summary><b>源码 · 拿到目的 block 后先 metric.inc，再 enqueue_transfer</b><small>lib/llm/src/block_manager/offload.rs:478–499</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/block_manager/offload.rs#L478-L499" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>478</i>                    if let Some(target_block) = target_block {</span>
+<span class="line"><i>479</i>                        tracing::debug!(</span>
+<span class="line"><i>480</i>                            &quot;Offloading block with sequence hash {} to target pool.&quot;,</span>
+<span class="line"><i>481</i>                            request.sequence_hash</span>
+<span class="line"><i>482</i>                        );</span>
+<span class="line"><i>483</i></span>
+<span class="line"><i>484</i>                        // Track the offload metric if available</span>
+<span class="line"><i>485</i>                        if let Some(ref metric) = offload_metric {</span>
+<span class="line"><i>486</i>                            metric.inc();</span>
+<span class="line"><i>487</i>                        }</span>
+<span class="line"><i>488</i></span>
+<span class="line"><i>489</i>                        transfer_manager</span>
+<span class="line"><i>490</i>                            .enqueue_transfer(PendingTransfer::new(</span>
+<span class="line"><i>491</i>                                vec![block],</span>
+<span class="line"><i>492</i>                                vec![target_block],</span>
+<span class="line"><i>493</i>                                None,</span>
+<span class="line"><i>494</i>                                target_pool.clone(),</span>
+<span class="line"><i>495</i>                            ))</span>
+<span class="line"><i>496</i>                            .await?;</span>
+<span class="line"><i>497</i>                    }</span>
+<span class="line"><i>498</i>                }</span>
+<span class="line"><i>499</i>            } else {</span></code></pre></details><p>该 offload 路径在分配到目标块后、传输排队前增加计数。因此计数包含已准备并提交的工作，不是严格的完成确认；目标池满而跳过的分支不会走到这里。不要用 offload_blocks × block_bytes 宣称“成功落盘带宽”，也不能用 offload 与 onboard 的差值直接推断缓存剩余量。</p><p>成功字节量、失败/取消量、排队等待、执行耗时应按不同边界观测；涉及多个 rank/layout 时，块数到字节还需要真实张量 layout、dtype、层数、KV 维度与分片信息。</p><details class="exercise"><summary>阅读检查 · 为什么 offload counter 增加，但看不到目标层命中？</summary><p>计数可能在传输提交前增加；还需验证执行完成、目的层注册、后续是否被淘汰，以及读请求实际查询的层与 namespace。</p></details></section><section id="se-offload" class="lesson"><div class="sectionhead"><h2>09 / 分层 Offload：策略、前置条件、批处理、提交</h2><label class="done"><input type="checkbox" data-read="se-offload"> 已读</label></div><div class="flow"><div><b>01</b>PolicyEvaluator 决定是否迁移</div><div><b>02</b>Batcher 合并符合条件的 containers</div><div><b>03</b>PreconditionAwaiter 等待 forward/CUDA 条件</div><div><b>04</b>取消检查与 Weak→Strong 升级</div><div><b>05</b>Worker 执行并等待完成</div><div><b>06</b>目的层 stage/register，再交给下游链</div></div><details class="source" id="src-se-pipeline-wiring"><summary><b>源码 · 当前实际接线：Policy → BatchCollector → PreconditionAwaiter → Executor</b><small>lib/kvbm-engine/src/offload/pipeline.rs:347–382</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-engine/src/offload/pipeline.rs#L347-L382" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>347</i>        let eval_handle = runtime.spawn(async move {</span>
+<span class="line"><i>348</i>            evaluator.run().await;</span>
+<span class="line"><i>349</i>        });</span>
+<span class="line"><i>350</i></span>
+<span class="line"><i>351</i>        // Spawn batch collector (reads from CancellableQueue, outputs to mpsc)</span>
+<span class="line"><i>352</i>        let collector_input_queue = batch_queue.clone();</span>
+<span class="line"><i>353</i>        let batch_config = config.batch_config.clone();</span>
+<span class="line"><i>354</i>        let collector_cancel_rx = cancel_rx.clone();</span>
+<span class="line"><i>355</i>        let batch_handle = runtime.spawn(async move {</span>
+<span class="line"><i>356</i>            let collector = BatchCollector::new(</span>
+<span class="line"><i>357</i>                batch_config,</span>
+<span class="line"><i>358</i>                collector_input_queue,</span>
+<span class="line"><i>359</i>                batch_tx,</span>
+<span class="line"><i>360</i>                collector_cancel_rx,</span>
+<span class="line"><i>361</i>            );</span>
+<span class="line"><i>362</i>            collector.run().await;</span>
+<span class="line"><i>363</i>        });</span>
+<span class="line"><i>364</i></span>
+<span class="line"><i>365</i>        // Spawn precondition awaiter (reads from batch_rx, outputs to precond_tx)</span>
+<span class="line"><i>366</i>        let awaiter_leader = leader.clone();</span>
+<span class="line"><i>367</i>        let awaiter_settlement = settlement.clone();</span>
+<span class="line"><i>368</i>        let precond_handle = runtime.spawn(async move {</span>
+<span class="line"><i>369</i>            let awaiter = PreconditionAwaiter {</span>
+<span class="line"><i>370</i>                input_rx: batch_rx,</span>
+<span class="line"><i>371</i>                output_tx: precond_tx,</span>
+<span class="line"><i>372</i>                leader: awaiter_leader,</span>
+<span class="line"><i>373</i>                settlement: awaiter_settlement,</span>
+<span class="line"><i>374</i>            };</span>
+<span class="line"><i>375</i>            awaiter.run().await;</span>
+<span class="line"><i>376</i>        });</span>
+<span class="line"><i>377</i></span>
+<span class="line"><i>378</i>        // Spawn block transfer executor (reads from precond_rx)</span>
+<span class="line"><i>379</i>        let executor = BlockTransferExecutor {</span>
+<span class="line"><i>380</i>            input_rx: precond_rx,</span>
+<span class="line"><i>381</i>            leader,</span>
+<span class="line"><i>382</i>            dst_manager,</span></code></pre></details><p>配套 offload.md 的概览图将 Precondition 放在 Batcher 前，而当前 pipeline.rs 实际先 batch 后 await；本章以接线代码为准。</p><p>Container 是取消单元，提交前 sweep 已取消工作；Weak→Strong upgrade 后持有实际块，进入不能简单撤销的阶段。不能把单次推理请求取消等同于所有已经提交的后台 cache 搬运都被中断。批处理可能聚合不同请求产生的块。</p><details class="source" id="src-se-timing"><summary><b>源码 · TimingTrace 是本进程 Instant 阶段时间点</b><small>lib/kvbm-engine/src/offload/batch.rs:24–42</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-engine/src/offload/batch.rs#L24-L42" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>24</i>/// Timing trace for tracking block progression through pipeline stages.</span>
+<span class="line"><i>25</i>///</span>
+<span class="line"><i>26</i>/// Each block carries a timing trace that records when it passed through</span>
+<span class="line"><i>27</i>/// each stage. This enables per-container and batch-level timing analysis.</span>
+<span class="line"><i>28</i>#[derive(Debug, Clone)]</span>
+<span class="line"><i>29</i>pub struct TimingTrace {</span>
+<span class="line"><i>30</i>    /// When the block was initially enqueued into the pipeline</span>
+<span class="line"><i>31</i>    pub enqueued_at: Instant,</span>
+<span class="line"><i>32</i>    /// When policy evaluation completed for this block</span>
+<span class="line"><i>33</i>    pub policy_complete_at: Option&lt;Instant&gt;,</span>
+<span class="line"><i>34</i>    /// When the precondition (e.g., forward pass) completed</span>
+<span class="line"><i>35</i>    pub precondition_complete_at: Option&lt;Instant&gt;,</span>
+<span class="line"><i>36</i>    /// When the block was added to a transfer batch</span>
+<span class="line"><i>37</i>    pub batched_at: Option&lt;Instant&gt;,</span>
+<span class="line"><i>38</i>    /// When the transfer operation started</span>
+<span class="line"><i>39</i>    pub transfer_start_at: Option&lt;Instant&gt;,</span>
+<span class="line"><i>40</i>    /// When the transfer operation completed</span>
+<span class="line"><i>41</i>    pub transfer_complete_at: Option&lt;Instant&gt;,</span>
+<span class="line"><i>42</i>}</span></code></pre></details><details class="source" id="src-se-batch-log"><summary><b>源码 · 传输后注册目的块，记录阶段毫秒数</b><small>lib/kvbm-engine/src/offload/pipeline.rs:1600–1650</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-engine/src/offload/pipeline.rs#L1600-L1650" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1600</i>            // Register each transferred block in the destination tier</span>
+<span class="line"><i>1601</i>            let completed_blocks = dst_blocks</span>
+<span class="line"><i>1602</i>                .into_iter()</span>
+<span class="line"><i>1603</i>                .zip(sequence_hashes.iter())</span>
+<span class="line"><i>1604</i>                .map(|(dst_block, seq_hash)| {</span>
+<span class="line"><i>1605</i>                    dst_block</span>
+<span class="line"><i>1606</i>                        .stage(*seq_hash, shared.dst_manager.block_size())</span>
+<span class="line"><i>1607</i>                        .expect(&quot;block size mismatch&quot;)</span>
+<span class="line"><i>1608</i>                })</span>
+<span class="line"><i>1609</i>                .collect();</span>
+<span class="line"><i>1610</i>            let registered_blocks: Vec&lt;ImmutableBlock&lt;Dst&gt;&gt; =</span>
+<span class="line"><i>1611</i>                shared.dst_manager.register_blocks(completed_blocks);</span>
+<span class="line"><i>1612</i></span>
+<span class="line"><i>1613</i>            let registration_timepoint = Instant::now();</span>
+<span class="line"><i>1614</i></span>
+<span class="line"><i>1615</i>            // Compute timing statistics from batch timing (O(1), not per-block)</span>
+<span class="line"><i>1616</i>            let unique_transfer_ids: std::collections::HashSet&lt;_&gt; =</span>
+<span class="line"><i>1617</i>                resolved.iter().map(|b| b.transfer_id).collect();</span>
+<span class="line"><i>1618</i></span>
+<span class="line"><i>1619</i>            let policy_ms = batch</span>
+<span class="line"><i>1620</i>                .timing</span>
+<span class="line"><i>1621</i>                .policy_duration()</span>
+<span class="line"><i>1622</i>                .map(|d| d.as_millis() as u64)</span>
+<span class="line"><i>1623</i>                .unwrap_or(0);</span>
+<span class="line"><i>1624</i>            let precondition_ms = batch</span>
+<span class="line"><i>1625</i>                .timing</span>
+<span class="line"><i>1626</i>                .precondition_duration()</span>
+<span class="line"><i>1627</i>                .map(|d| d.as_millis() as u64)</span>
+<span class="line"><i>1628</i>                .unwrap_or(0);</span>
+<span class="line"><i>1629</i>            let total_ms = batch</span>
+<span class="line"><i>1630</i>                .timing</span>
+<span class="line"><i>1631</i>                .total_duration()</span>
+<span class="line"><i>1632</i>                .map(|d| d.as_millis() as u64)</span>
+<span class="line"><i>1633</i>                .unwrap_or(0);</span>
+<span class="line"><i>1634</i></span>
+<span class="line"><i>1635</i>            tracing::info!(</span>
+<span class="line"><i>1636</i>                blocks = resolved.len(),</span>
+<span class="line"><i>1637</i>                containers = unique_transfer_ids.len(),</span>
+<span class="line"><i>1638</i>                policy_ms,</span>
+<span class="line"><i>1639</i>                precondition_ms,</span>
+<span class="line"><i>1640</i>                xfer_ms = end_xfer.duration_since(start_xfer).as_millis() as u64,</span>
+<span class="line"><i>1641</i>                registration_ms =</span>
+<span class="line"><i>1642</i>                    registration_timepoint.duration_since(end_xfer).as_millis() as u64,</span>
+<span class="line"><i>1643</i>                total_ms,</span>
+<span class="line"><i>1644</i>                src = std::any::type_name::&lt;Src&gt;(),</span>
+<span class="line"><i>1645</i>                dst = std::any::type_name::&lt;Dst&gt;(),</span>
+<span class="line"><i>1646</i>                &quot;Batch transfer complete&quot;</span>
+<span class="line"><i>1647</i>            );</span>
+<span class="line"><i>1648</i></span>
+<span class="line"><i>1649</i>            // Send registered blocks to downstream pipeline if chaining is enabled</span>
+<span class="line"><i>1650</i>            if let Some(chain_tx) = &amp;shared.chain_tx {</span></code></pre></details><details class="source" id="src-se-timing-finish"><summary><b>源码 · 完成时间在前述日志之后才标记</b><small>lib/kvbm-engine/src/offload/pipeline.rs:1691–1710</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-engine/src/offload/pipeline.rs#L1691-L1710" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1691</i>            if let Some(transfer_start) = &amp;mut transfer_start {</span>
+<span class="line"><i>1692</i>                transfer_start.release();</span>
+<span class="line"><i>1693</i>            }</span>
+<span class="line"><i>1694</i>            phase.mark_settling();</span>
+<span class="line"><i>1695</i>            for (state, block_ids) in transfer_states.values() {</span>
+<span class="line"><i>1696</i>                let mut state_guard = state.lock().unwrap();</span>
+<span class="line"><i>1697</i>                state_guard.set_status(TransferStatus::Transferring);</span>
+<span class="line"><i>1698</i>                state_guard.mark_in_flight(block_ids.iter().copied());</span>
+<span class="line"><i>1699</i>            }</span>
+<span class="line"><i>1700</i>        }</span>
+<span class="line"><i>1701</i></span>
+<span class="line"><i>1702</i>        // Mark transfer complete (batch-level, O(1))</span>
+<span class="line"><i>1703</i>        batch.timing.mark_transfer_complete();</span>
+<span class="line"><i>1704</i></span>
+<span class="line"><i>1705</i>        // Mark blocks as completed in each transfer state</span>
+<span class="line"><i>1706</i>        for (transfer_id, (state, block_ids)) in transfer_states {</span>
+<span class="line"><i>1707</i>            let mut state_guard = state.lock().unwrap();</span>
+<span class="line"><i>1708</i>            state_guard.mark_completed(block_ids);</span>
+<span class="line"><i>1709</i></span>
+<span class="line"><i>1710</i>            let progress = state_guard.progress_counts();</span></code></pre></details><details class="source" id="src-se-precondition-timeout"><summary><b>源码 · 等待超时代码为 300 秒，错误日志文案却为 30s</b><small>lib/kvbm-engine/src/offload/pipeline.rs:1262–1295</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-engine/src/offload/pipeline.rs#L1262-L1295" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1262</i>                    let awaiter_result = nova.events().awaiter(event_handle);</span>
+<span class="line"><i>1263</i></span>
+<span class="line"><i>1264</i>                    match awaiter_result {</span>
+<span class="line"><i>1265</i>                        Ok(awaiter) =&gt; {</span>
+<span class="line"><i>1266</i>                            // Now await the LocalEventWaiter with timeout</span>
+<span class="line"><i>1267</i>                            match tokio::time::timeout(Duration::from_secs(300), awaiter).await {</span>
+<span class="line"><i>1268</i>                                Ok(Ok(())) =&gt; {</span>
+<span class="line"><i>1269</i>                                    tracing::debug!(?event_handle, &quot;Precondition satisfied&quot;);</span>
+<span class="line"><i>1270</i>                                }</span>
+<span class="line"><i>1271</i>                                Ok(Err(poison)) =&gt; {</span>
+<span class="line"><i>1272</i>                                    tracing::error!(</span>
+<span class="line"><i>1273</i>                                        ?event_handle,</span>
+<span class="line"><i>1274</i>                                        ?poison,</span>
+<span class="line"><i>1275</i>                                        &quot;Precondition poisoned, marking all blocks as failed&quot;</span>
+<span class="line"><i>1276</i>                                    );</span>
+<span class="line"><i>1277</i>                                    // Mark all blocks as failed</span>
+<span class="line"><i>1278</i>                                    for queued in batch.blocks {</span>
+<span class="line"><i>1279</i>                                        let mut state = queued.state.lock().unwrap();</span>
+<span class="line"><i>1280</i>                                        state.set_error(format!(</span>
+<span class="line"><i>1281</i>                                            &quot;precondition poisoned: {:?}&quot;,</span>
+<span class="line"><i>1282</i>                                            poison</span>
+<span class="line"><i>1283</i>                                        ));</span>
+<span class="line"><i>1284</i>                                    }</span>
+<span class="line"><i>1285</i>                                    return;</span>
+<span class="line"><i>1286</i>                                }</span>
+<span class="line"><i>1287</i>                                Err(_) =&gt; {</span>
+<span class="line"><i>1288</i>                                    tracing::error!(</span>
+<span class="line"><i>1289</i>                                        ?event_handle,</span>
+<span class="line"><i>1290</i>                                        &quot;Precondition timeout after 30s&quot;</span>
+<span class="line"><i>1291</i>                                    );</span>
+<span class="line"><i>1292</i>                                    // Mark all blocks as failed</span>
+<span class="line"><i>1293</i>                                    for queued in batch.blocks {</span>
+<span class="line"><i>1294</i>                                        let mut state = queued.state.lock().unwrap();</span>
+<span class="line"><i>1295</i>                                        state.set_error(&quot;precondition timeout&quot;.to_string());</span></code></pre></details><aside class="note ">按上方普通 BlockTransferExecutor 成功路径的调用顺序，日志在 mark_transfer_complete 前读取 total_duration，尚未填充的值经 unwrap_or(0) 记为 0；因此该 total_ms 不能视为可靠总耗时。precondition_ms 从 policy_complete 计到 precondition_complete，可能包含批处理等待，不是纯 GPU 前置事件等待。超时阈值也应以 Duration::from_secs(300) 为准，不按日志文字推断 30 秒。这里是静态推导，未做运行复现。</aside><aside class="note ">Batch transfer complete 日志包含 blocks、containers、policy_ms、precondition_ms、xfer_ms、registration_ms、total_ms。TimingTrace 不是 OTel Span，没有天然的跨进程 epoch/Trace ID；Instant 不能用于直接对齐不同机器的时间点。日志阶段值中 unwrap_or(0) 还会把缺失时间记为 0，不能把所有 0 解读成真实零耗时。</aside></section><section id="se-onboarding" class="lesson"><div class="sectionhead"><h2>10 / Onboarding：找到块、保留块、准备与拉取</h2><label class="done"><input type="checkbox" data-read="se-onboarding"> 已读</label></div><details class="source" id="src-se-onboard-status"><summary><b>源码 · Holding/Preparing/Prepared/Staging/Complete 的位置与数量</b><small>lib/kvbm-engine/src/leader/onboarding.rs:10–66</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-engine/src/leader/onboarding.rs#L10-L66" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>10</i>/// Status of an onboarding operation.</span>
+<span class="line"><i>11</i>#[derive(Debug, Clone, PartialEq, Eq)]</span>
+<span class="line"><i>12</i>pub enum OnboardingStatus {</span>
+<span class="line"><i>13</i>    /// Searching for blocks (local or remote).</span>
+<span class="line"><i>14</i>    Searching,</span>
+<span class="line"><i>15</i></span>
+<span class="line"><i>16</i>    /// Holding blocks without staging (StagingMode::Hold).</span>
+<span class="line"><i>17</i>    /// Provides location breakdown for cost analysis.</span>
+<span class="line"><i>18</i>    /// - `local_g2`: number of blocks in local G2 (ready to use)</span>
+<span class="line"><i>19</i>    /// - `local_g3`: number of blocks in local G3 (needs local staging)</span>
+<span class="line"><i>20</i>    /// - `remote_g2`: number of blocks in remote G2 (needs RDMA pull)</span>
+<span class="line"><i>21</i>    /// - `remote_g3`: number of blocks in remote G3 (needs remote staging + RDMA)</span>
+<span class="line"><i>22</i>    /// - `pending_g4`: number of blocks with G4 load in progress</span>
+<span class="line"><i>23</i>    /// - `loaded_g4`: number of blocks successfully loaded from G4 (included in local_g2)</span>
+<span class="line"><i>24</i>    /// - `failed_g4`: number of blocks that failed to load from G4</span>
+<span class="line"><i>25</i>    Holding {</span>
+<span class="line"><i>26</i>        local_g2: usize,</span>
+<span class="line"><i>27</i>        local_g3: usize,</span>
+<span class="line"><i>28</i>        remote_g2: usize,</span>
+<span class="line"><i>29</i>        remote_g3: usize,</span>
+<span class="line"><i>30</i>        pending_g4: usize,</span>
+<span class="line"><i>31</i>        loaded_g4: usize,</span>
+<span class="line"><i>32</i>        failed_g4: usize,</span>
+<span class="line"><i>33</i>    },</span>
+<span class="line"><i>34</i></span>
+<span class="line"><i>35</i>    /// Preparing: staging G3→G2 (StagingMode::Prepare or Full).</span>
+<span class="line"><i>36</i>    /// - `matched`: total number of blocks matched during search</span>
+<span class="line"><i>37</i>    /// - `staging_local`: number of local G3→G2 transfers in progress</span>
+<span class="line"><i>38</i>    /// - `staging_remote`: number of remote G3→G2 transfers in progress</span>
+<span class="line"><i>39</i>    Preparing {</span>
+<span class="line"><i>40</i>        matched: usize,</span>
+<span class="line"><i>41</i>        staging_local: usize,</span>
+<span class="line"><i>42</i>        staging_remote: usize,</span>
+<span class="line"><i>43</i>    },</span>
+<span class="line"><i>44</i></span>
+<span class="line"><i>45</i>    /// Prepared: all blocks in G2, session still alive (StagingMode::Prepare).</span>
+<span class="line"><i>46</i>    /// - `local_g2`: number of blocks in local G2</span>
+<span class="line"><i>47</i>    /// - `remote_g2`: number of blocks in remote G2 instances</span>
+<span class="line"><i>48</i>    Prepared { local_g2: usize, remote_g2: usize },</span>
+<span class="line"><i>49</i></span>
+<span class="line"><i>50</i>    /// Staging: full mode with RDMA pulls (StagingMode::Full).</span>
+<span class="line"><i>51</i>    /// - `matched`: total number of blocks matched</span>
+<span class="line"><i>52</i>    /// - `staging_local`: local G3→G2 in progress</span>
+<span class="line"><i>53</i>    /// - `staging_remote`: remote G3→G2 in progress</span>
+<span class="line"><i>54</i>    /// - `pulling`: remote G2→local G2 (RDMA) in progress</span>
+<span class="line"><i>55</i>    Staging {</span>
+<span class="line"><i>56</i>        matched: usize,</span>
+<span class="line"><i>57</i>        staging_local: usize,</span>
+<span class="line"><i>58</i>        staging_remote: usize,</span>
+<span class="line"><i>59</i>        pulling: usize,</span>
+<span class="line"><i>60</i>    },</span>
+<span class="line"><i>61</i></span>
+<span class="line"><i>62</i>    /// Operation complete - all blocks are in initiator&#x27;s G2 (StagingMode::Full).</span>
+<span class="line"><i>63</i>    /// Or terminal state for Hold/Prepare modes.</span>
+<span class="line"><i>64</i>    /// - `matched`: total number of blocks in local G2</span>
+<span class="line"><i>65</i>    Complete { matched_blocks: usize },</span>
+<span class="line"><i>66</i>}</span></code></pre></details><p>Leader 搜索并持有本地/远端匹配块；Hold 仅保留，Prepare 将 G3 stage 到 G2，Full 执行远端 G2→本地 G2 的 pull。具体模式可在不同阶段结束，不强制每次都走完整顺序。G4 load 有 pending/loaded/failed 等位置统计。</p><p>这些是操作状态数据，不天然是 Prometheus 指标。诊断应区分“匹配到缓存”“已经 pin 住”“已 stage 到可 RDMA 的 G2”“远端 pull 完成”“引擎可消费”；远端命中不保证低 TTFT，还受磁盘准备、网络与队列影响。</p></section><section id="se-object" class="lesson"><div class="sectionhead"><h2>11 / G4 对象存储：数据、可见性标记与部分失败</h2><label class="done"><input type="checkbox" data-read="se-object"> 已读</label></div><p>ObjectBlockOps 把 has/put/get 与物理 layout/blocks 联系起来；ObjectLockManager 协调多个实例的重复 offload。典型流程是检查 meta → 争取锁 → 上传各块/rank 数据 → 创建 meta → 释放锁。S3 锁实现使用 conditional PUT 及过期恢复；这里只分析接口与 pipeline 可见性，不逐行证明底层锁算法。</p><details class="source" id="src-se-object-lock-contract"><summary><b>源码 · meta existence、lock acquisition、create_meta、release_lock 契约</b><small>lib/kvbm-engine/src/object/mod.rs:277–309</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-engine/src/object/mod.rs#L277-L309" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>277</i>///                                           -&gt; false -&gt; skip (another instance owns it)</span>
+<span class="line"><i>278</i>///            -&gt; true -&gt; skip (already offloaded)</span>
+<span class="line"><i>279</i>/// ```</span>
+<span class="line"><i>280</i>pub trait ObjectLockManager: Send + Sync {</span>
+<span class="line"><i>281</i>    /// Check if meta file exists (block already offloaded).</span>
+<span class="line"><i>282</i>    ///</span>
+<span class="line"><i>283</i>    /// Returns `true` if `{hash}.meta` exists, meaning the block has been</span>
+<span class="line"><i>284</i>    /// successfully offloaded and should be skipped.</span>
+<span class="line"><i>285</i>    fn has_meta(&amp;self, hash: SequenceHash) -&gt; BoxFuture&lt;&#x27;static, Result&lt;bool&gt;&gt;;</span>
+<span class="line"><i>286</i></span>
+<span class="line"><i>287</i>    /// Try to acquire a lock for the given block.</span>
+<span class="line"><i>288</i>    ///</span>
+<span class="line"><i>289</i>    /// This method:</span>
+<span class="line"><i>290</i>    /// 1. Attempts conditional PUT of `{hash}.lock` with `If-None-Match: *`</span>
+<span class="line"><i>291</i>    /// 2. If lock exists, reads it to check deadline</span>
+<span class="line"><i>292</i>    /// 3. If deadline is breached (&gt; timeout), overwrites the lock</span>
+<span class="line"><i>293</i>    ///</span>
+<span class="line"><i>294</i>    /// Returns:</span>
+<span class="line"><i>295</i>    /// - `Ok(true)` if lock was acquired or overwritten</span>
+<span class="line"><i>296</i>    /// - `Ok(false)` if another instance owns a valid lock</span>
+<span class="line"><i>297</i>    /// - `Err(...)` for other errors</span>
+<span class="line"><i>298</i>    fn try_acquire_lock(&amp;self, hash: SequenceHash) -&gt; BoxFuture&lt;&#x27;static, Result&lt;bool&gt;&gt;;</span>
+<span class="line"><i>299</i></span>
+<span class="line"><i>300</i>    /// Create the meta file after successful offload.</span>
+<span class="line"><i>301</i>    ///</span>
+<span class="line"><i>302</i>    /// This marks the block as successfully offloaded by creating `{hash}.meta`.</span>
+<span class="line"><i>303</i>    fn create_meta(&amp;self, hash: SequenceHash) -&gt; BoxFuture&lt;&#x27;static, Result&lt;()&gt;&gt;;</span>
+<span class="line"><i>304</i></span>
+<span class="line"><i>305</i>    /// Release the lock by deleting the lock file.</span>
+<span class="line"><i>306</i>    ///</span>
+<span class="line"><i>307</i>    /// Deletes `{hash}.lock` after the transfer is complete.</span>
+<span class="line"><i>308</i>    fn release_lock(&amp;self, hash: SequenceHash) -&gt; BoxFuture&lt;&#x27;static, Result&lt;()&gt;&gt;;</span>
+<span class="line"><i>309</i>}</span></code></pre></details><details class="source" id="src-se-object-results"><summary><b>源码 · 按输入 block 对齐结果；分别记录 success_count/fail_count</b><small>lib/kvbm-engine/src/offload/pipeline.rs:1935–1979</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-engine/src/offload/pipeline.rs#L1935-L1979" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1935</i></span>
+<span class="line"><i>1936</i>            // Guard: put_blocks must return exactly one result per input block.</span>
+<span class="line"><i>1937</i>            // If mismatched, mark all blocks as failed since we can&#x27;t correlate results.</span>
+<span class="line"><i>1938</i>            if results.len() != keys.len() {</span>
+<span class="line"><i>1939</i>                tracing::error!(</span>
+<span class="line"><i>1940</i>                    expected = keys.len(),</span>
+<span class="line"><i>1941</i>                    actual = results.len(),</span>
+<span class="line"><i>1942</i>                    &quot;put_blocks returned mismatched result count&quot;</span>
+<span class="line"><i>1943</i>                );</span>
+<span class="line"><i>1944</i>                for (_transfer_id, (state, block_ids)) in transfer_states {</span>
+<span class="line"><i>1945</i>                    let mut state_guard = state.lock().unwrap();</span>
+<span class="line"><i>1946</i>                    state_guard.mark_failed(block_ids);</span>
+<span class="line"><i>1947</i>                    state_guard</span>
+<span class="line"><i>1948</i>                        .set_error(&quot;put_blocks returned mismatched result count&quot;.to_string());</span>
+<span class="line"><i>1949</i>                }</span>
+<span class="line"><i>1950</i>                return Ok(());</span>
+<span class="line"><i>1951</i>            }</span>
+<span class="line"><i>1952</i></span>
+<span class="line"><i>1953</i>            // Log results and track successful transfers</span>
+<span class="line"><i>1954</i>            let mut success_count = 0;</span>
+<span class="line"><i>1955</i>            let mut fail_count = 0;</span>
+<span class="line"><i>1956</i></span>
+<span class="line"><i>1957</i>            for result in results {</span>
+<span class="line"><i>1958</i>                match result {</span>
+<span class="line"><i>1959</i>                    Ok(hash) =&gt; {</span>
+<span class="line"><i>1960</i>                        success_count += 1;</span>
+<span class="line"><i>1961</i>                        successful_hashes.push(hash);</span>
+<span class="line"><i>1962</i>                    }</span>
+<span class="line"><i>1963</i>                    Err(hash) =&gt; {</span>
+<span class="line"><i>1964</i>                        fail_count += 1;</span>
+<span class="line"><i>1965</i>                        tracing::warn!(?hash, &quot;Failed to transfer block to object storage&quot;);</span>
+<span class="line"><i>1966</i>                    }</span>
+<span class="line"><i>1967</i>                }</span>
+<span class="line"><i>1968</i>            }</span>
+<span class="line"><i>1969</i></span>
+<span class="line"><i>1970</i>            if fail_count &gt; 0 {</span>
+<span class="line"><i>1971</i>                tracing::warn!(</span>
+<span class="line"><i>1972</i>                    success = success_count,</span>
+<span class="line"><i>1973</i>                    failed = fail_count,</span>
+<span class="line"><i>1974</i>                    &quot;Object transfer partially failed&quot;</span>
+<span class="line"><i>1975</i>                );</span>
+<span class="line"><i>1976</i>            } else {</span>
+<span class="line"><i>1977</i>                tracing::debug!(</span>
+<span class="line"><i>1978</i>                    num_blocks = success_count,</span>
+<span class="line"><i>1979</i>                    &quot;Successfully transferred blocks to object storage&quot;</span></code></pre></details><details class="source" id="src-se-object-meta"><summary><b>源码 · 成功 hash 创建 meta 后释放锁，失败也需释放；错误日志</b><small>lib/kvbm-engine/src/offload/pipeline.rs:1982–2018</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-engine/src/offload/pipeline.rs#L1982-L2018" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1982</i></span>
+<span class="line"><i>1983</i>            // todo: merge the else part of this conditional and perhaps add the event tap for the successful transfers</span>
+<span class="line"><i>1984</i>            // for block transfers we emit an event as part of registration; however, we don&#x27;t register g4 blocks in the</span>
+<span class="line"><i>1985</i>            // same way; therefore, we need a new convention on how we inform the broader system of the object creation</span>
+<span class="line"><i>1986</i></span>
+<span class="line"><i>1987</i>            // Create meta files and release locks for successful transfers</span>
+<span class="line"><i>1988</i>            if let Some(lock_manager) = &amp;shared.lock_manager {</span>
+<span class="line"><i>1989</i>                for hash in &amp;successful_hashes {</span>
+<span class="line"><i>1990</i>                    // Create meta file to mark block as offloaded</span>
+<span class="line"><i>1991</i>                    if let Err(e) = lock_manager.create_meta(*hash).await {</span>
+<span class="line"><i>1992</i>                        tracing::error!(?hash, error = %e, &quot;Failed to create meta file&quot;);</span>
+<span class="line"><i>1993</i>                    }</span>
+<span class="line"><i>1994</i></span>
+<span class="line"><i>1995</i>                    // Release lock</span>
+<span class="line"><i>1996</i>                    if let Err(e) = lock_manager.release_lock(*hash).await {</span>
+<span class="line"><i>1997</i>                        tracing::error!(?hash, error = %e, &quot;Failed to release lock&quot;);</span>
+<span class="line"><i>1998</i>                    }</span>
+<span class="line"><i>1999</i>                }</span>
+<span class="line"><i>2000</i>                tracing::debug!(</span>
+<span class="line"><i>2001</i>                    num_blocks = successful_hashes.len(),</span>
+<span class="line"><i>2002</i>                    &quot;Created meta files and released locks&quot;</span>
+<span class="line"><i>2003</i>                );</span>
+<span class="line"><i>2004</i>            }</span>
+<span class="line"><i>2005</i>        } else {</span>
+<span class="line"><i>2006</i>            phase.mark_in_flight();</span>
+<span class="line"><i>2007</i>            phase.mark_settling();</span>
+<span class="line"><i>2008</i>            // In skip mode, still do lock management if configured</span>
+<span class="line"><i>2009</i>            if let Some(lock_manager) = &amp;shared.lock_manager {</span>
+<span class="line"><i>2010</i>                for hash in &amp;keys {</span>
+<span class="line"><i>2011</i>                    if let Err(e) = lock_manager.create_meta(*hash).await {</span>
+<span class="line"><i>2012</i>                        tracing::error!(?hash, error = %e, &quot;Failed to create meta file&quot;);</span>
+<span class="line"><i>2013</i>                    }</span>
+<span class="line"><i>2014</i>                    if let Err(e) = lock_manager.release_lock(*hash).await {</span>
+<span class="line"><i>2015</i>                        tracing::error!(?hash, error = %e, &quot;Failed to release lock&quot;);</span>
+<span class="line"><i>2016</i>                    }</span>
+<span class="line"><i>2017</i>                }</span>
+<span class="line"><i>2018</i>            }</span></code></pre></details><p>同一逻辑 hash 在不同 SPMD rank 上可能对应不同物理切片，因此对象 key 需要正确的 rank/schema 隔离。数据上传成功不自动等于元数据可见；create_meta、release_lock 的失败也需要检查。这里逐块结果和日志不能替换为“调用没抛错就是整批成功”。</p><aside class="note ">本路径对结果个数不匹配会标记块失败并 return Ok；正确结果还可能部分成功、部分失败。观测应保留 expected/actual、success_count/fail_count、失败 hash 和 meta/lock 错误。不要只统计 Rust Result::Err 或只复用旧 KvbmMetrics 的对象失败字段，就声称已覆盖新 G4 管线。</aside></section><section id="se-physical" class="lesson"><div class="sectionhead"><h2>12 / 物理搬运与 NIXL：提交不等于完成</h2><label class="done"><input type="checkbox" data-read="se-physical"> 已读</label></div><details class="source" id="src-se-strategy"><summary><b>源码 · Memcpy/CUDA/NIXL 与 Direct/TwoHop 的不同策略</b><small>lib/kvbm-physical/src/transfer/strategy.rs:16–76</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-physical/src/transfer/strategy.rs#L16-L76" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>16</i>pub enum TransferStrategy {</span>
+<span class="line"><i>17</i>    /// CPU memcpy (for host-to-host transfers)</span>
+<span class="line"><i>18</i>    Memcpy,</span>
+<span class="line"><i>19</i></span>
+<span class="line"><i>20</i>    /// CUDA async host-to-device transfer</span>
+<span class="line"><i>21</i>    CudaAsyncH2D,</span>
+<span class="line"><i>22</i></span>
+<span class="line"><i>23</i>    /// CUDA async device-to-host transfer</span>
+<span class="line"><i>24</i>    CudaAsyncD2H,</span>
+<span class="line"><i>25</i></span>
+<span class="line"><i>26</i>    /// CUDA async device-to-device transfer</span>
+<span class="line"><i>27</i>    CudaAsyncD2D,</span>
+<span class="line"><i>28</i></span>
+<span class="line"><i>29</i>    /// NIXL read operation (pull from remote)</span>
+<span class="line"><i>30</i>    NixlRead,</span>
+<span class="line"><i>31</i></span>
+<span class="line"><i>32</i>    /// NIXL write operation (push to remote)</span>
+<span class="line"><i>33</i>    NixlWrite,</span>
+<span class="line"><i>34</i></span>
+<span class="line"><i>35</i>    /// NIXL write (flipped local and remote order)</span>
+<span class="line"><i>36</i>    /// This is needed for some NIXL backends.</span>
+<span class="line"><i>37</i>    /// For example, the POSIX backend requires that host memory</span>
+<span class="line"><i>38</i>    /// always be the &quot;local&quot; descriptor list, regardless of whether</span>
+<span class="line"><i>39</i>    /// it&#x27;s a read or write.</span>
+<span class="line"><i>40</i>    #[expect(dead_code)]</span>
+<span class="line"><i>41</i>    NixlWriteFlipped,</span>
+<span class="line"><i>42</i></span>
+<span class="line"><i>43</i>    /// NIXL read (flipped local and remote order)</span>
+<span class="line"><i>44</i>    NixlReadFlipped,</span>
+<span class="line"><i>45</i></span>
+<span class="line"><i>46</i>    /// Invalid/unsupported transfer</span>
+<span class="line"><i>47</i>    #[expect(dead_code)]</span>
+<span class="line"><i>48</i>    Invalid,</span>
+<span class="line"><i>49</i>}</span>
+<span class="line"><i>50</i></span>
+<span class="line"><i>51</i>/// Plan for executing a transfer, either direct or via bounce buffer.</span>
+<span class="line"><i>52</i>///</span>
+<span class="line"><i>53</i>/// Some transfers require staging through host memory when direct paths</span>
+<span class="line"><i>54</i>/// are not enabled via capabilities.</span>
+<span class="line"><i>55</i>#[derive(Debug, Clone, PartialEq, Eq)]</span>
+<span class="line"><i>56</i>pub enum TransferPlan {</span>
+<span class="line"><i>57</i>    /// Direct single-hop transfer using the specified strategy.</span>
+<span class="line"><i>58</i>    Direct(TransferStrategy),</span>
+<span class="line"><i>59</i></span>
+<span class="line"><i>60</i>    /// Two-hop transfer requiring a bounce buffer in host memory.</span>
+<span class="line"><i>61</i>    ///</span>
+<span class="line"><i>62</i>    /// This is used when:</span>
+<span class="line"><i>63</i>    /// - Device → Remote (without GPU RDMA)</span>
+<span class="line"><i>64</i>    /// - Disk → Remote</span>
+<span class="line"><i>65</i>    /// - Device ↔ Disk (without GDS)</span>
+<span class="line"><i>66</i>    TwoHop {</span>
+<span class="line"><i>67</i>        /// First hop strategy (src → bounce)</span>
+<span class="line"><i>68</i>        first: TransferStrategy,</span>
+<span class="line"><i>69</i></span>
+<span class="line"><i>70</i>        /// Bounce buffer location (always Pinned for best performance)</span>
+<span class="line"><i>71</i>        bounce_location: StorageKind,</span>
+<span class="line"><i>72</i></span>
+<span class="line"><i>73</i>        /// Second hop strategy (bounce → dst)</span>
+<span class="line"><i>74</i>        second: TransferStrategy,</span>
+<span class="line"><i>75</i>    },</span>
+<span class="line"><i>76</i>}</span></code></pre></details><details class="source" id="src-se-nixl-post"><summary><b>源码 · 创建请求、post、按同步完成或注册 status 轮询返回 notification</b><small>lib/kvbm-physical/src/transfer/executor/nixl.rs:351–381</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-physical/src/transfer/executor/nixl.rs#L351-L381" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>351</i></span>
+<span class="line"><i>352</i>        // Create transfer request</span>
+<span class="line"><i>353</i>        // The remote agent depends on operation type:</span>
+<span class="line"><i>354</i>        // - For Write (push): remote is the destination</span>
+<span class="line"><i>355</i>        // - For Read (pull): remote is the source</span>
+<span class="line"><i>356</i>        let remote_agent = match xfer_op {</span>
+<span class="line"><i>357</i>            XferOp::Write =&gt; dst_metadata.agent_name(),</span>
+<span class="line"><i>358</i>            XferOp::Read =&gt; src_metadata.agent_name(),</span>
+<span class="line"><i>359</i>        };</span>
+<span class="line"><i>360</i></span>
+<span class="line"><i>361</i>        let xfer_req = nixl_agent.create_xfer_req(</span>
+<span class="line"><i>362</i>            xfer_op,</span>
+<span class="line"><i>363</i>            &amp;src_dl,</span>
+<span class="line"><i>364</i>            &amp;dst_dl,</span>
+<span class="line"><i>365</i>            remote_agent,</span>
+<span class="line"><i>366</i>            None, // opt_args</span>
+<span class="line"><i>367</i>        )?;</span>
+<span class="line"><i>368</i></span>
+<span class="line"><i>369</i>        // Post transfer request</span>
+<span class="line"><i>370</i>        // Note: Notification handling via OptArgs can be added later if needed</span>
+<span class="line"><i>371</i>        let still_pending = nixl_agent.post_xfer_req(&amp;xfer_req, None)?;</span>
+<span class="line"><i>372</i></span>
+<span class="line"><i>373</i>        if still_pending {</span>
+<span class="line"><i>374</i>            // Register for async completion via status polling</span>
+<span class="line"><i>375</i>            Ok(ctx.register_nixl_status(xfer_req))</span>
+<span class="line"><i>376</i>        } else {</span>
+<span class="line"><i>377</i>            // Transfer completed synchronously</span>
+<span class="line"><i>378</i>            Ok(TransferCompleteNotification::completed())</span>
+<span class="line"><i>379</i>        }</span>
+<span class="line"><i>380</i>    }</span>
+<span class="line"><i>381</i>}</span></code></pre></details><details class="source" id="src-se-slow"><summary><b>源码 · 等待超过 60s 后警告、后续约 30s 限频</b><small>lib/kvbm-physical/src/transfer/notifications/mod.rs:54–75</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-physical/src/transfer/notifications/mod.rs#L54-L75" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>54</i>fn check_and_warn_slow_transfer(</span>
+<span class="line"><i>55</i>    uuid: &amp;Uuid,</span>
+<span class="line"><i>56</i>    arrived_at: Instant,</span>
+<span class="line"><i>57</i>    last_warned_at: Option&lt;Instant&gt;,</span>
+<span class="line"><i>58</i>) -&gt; Option&lt;Instant&gt; {</span>
+<span class="line"><i>59</i>    let elapsed = arrived_at.elapsed();</span>
+<span class="line"><i>60</i>    if elapsed &gt; Duration::from_secs(60) {</span>
+<span class="line"><i>61</i>        let should_warn = last_warned_at</span>
+<span class="line"><i>62</i>            .map(|last| last.elapsed() &gt; Duration::from_secs(30))</span>
+<span class="line"><i>63</i>            .unwrap_or(true);</span>
+<span class="line"><i>64</i></span>
+<span class="line"><i>65</i>        if should_warn {</span>
+<span class="line"><i>66</i>            warn!(</span>
+<span class="line"><i>67</i>                uuid = %uuid,</span>
+<span class="line"><i>68</i>                elapsed_secs = elapsed.as_secs(),</span>
+<span class="line"><i>69</i>                &quot;Transfer has been pending for over 1 minute&quot;</span>
+<span class="line"><i>70</i>            );</span>
+<span class="line"><i>71</i>            return Some(Instant::now());</span>
+<span class="line"><i>72</i>        }</span>
+<span class="line"><i>73</i>    }</span>
+<span class="line"><i>74</i>    last_warned_at</span>
+<span class="line"><i>75</i>}</span></code></pre></details><details class="source" id="src-se-poll"><summary><b>源码 · 状态成功触发完成事件、错误 poison 事件</b><small>lib/kvbm-physical/src/transfer/notifications/mod.rs:111–157</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-physical/src/transfer/notifications/mod.rs#L111-L157" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>111</i>                    // Check transfer status</span>
+<span class="line"><i>112</i>                    match transfer.checker.is_complete() {</span>
+<span class="line"><i>113</i>                        Ok(true) =&gt; {</span>
+<span class="line"><i>114</i>                            // Transfer complete - mark for removal</span>
+<span class="line"><i>115</i>                            completed.push((*uuid, Ok(())));</span>
+<span class="line"><i>116</i>                        }</span>
+<span class="line"><i>117</i>                        Ok(false) =&gt; {</span>
+<span class="line"><i>118</i>                            // Transfer still in progress - check if we should warn</span>
+<span class="line"><i>119</i>                            transfer.last_warned_at = check_and_warn_slow_transfer(</span>
+<span class="line"><i>120</i>                                uuid,</span>
+<span class="line"><i>121</i>                                transfer.arrived_at,</span>
+<span class="line"><i>122</i>                                transfer.last_warned_at,</span>
+<span class="line"><i>123</i>                            );</span>
+<span class="line"><i>124</i>                        }</span>
+<span class="line"><i>125</i>                        Err(e) =&gt; {</span>
+<span class="line"><i>126</i>                            warn!(</span>
+<span class="line"><i>127</i>                                uuid = %uuid,</span>
+<span class="line"><i>128</i>                                error = %e,</span>
+<span class="line"><i>129</i>                                &quot;Transfer status check failed&quot;</span>
+<span class="line"><i>130</i>                            );</span>
+<span class="line"><i>131</i>                            completed.push((*uuid, Err(e)));</span>
+<span class="line"><i>132</i>                        }</span>
+<span class="line"><i>133</i>                    }</span>
+<span class="line"><i>134</i>                }</span>
+<span class="line"><i>135</i></span>
+<span class="line"><i>136</i>                // Remove completed transfers and signal completion</span>
+<span class="line"><i>137</i>                for (uuid, result) in completed {</span>
+<span class="line"><i>138</i>                    if let Some(transfer) = outstanding.remove(&amp;uuid) {</span>
+<span class="line"><i>139</i>                        // Signal completion via Nova event system</span>
+<span class="line"><i>140</i>                        match result {</span>
+<span class="line"><i>141</i>                            Ok(()) =&gt; {</span>
+<span class="line"><i>142</i>                                if let Err(e) = system.trigger(transfer.event_handle) {</span>
+<span class="line"><i>143</i>                                    error!(</span>
+<span class="line"><i>144</i>                                        uuid = %uuid,</span>
+<span class="line"><i>145</i>                                        error = %e,</span>
+<span class="line"><i>146</i>                                        &quot;Failed to trigger completion event&quot;</span>
+<span class="line"><i>147</i>                                    );</span>
+<span class="line"><i>148</i>                                }</span>
+<span class="line"><i>149</i>                            }</span>
+<span class="line"><i>150</i>                            Err(e) =&gt; {</span>
+<span class="line"><i>151</i>                                if let Err(err) = system.poison(transfer.event_handle, e.to_string()) {</span>
+<span class="line"><i>152</i>                                    error!(</span>
+<span class="line"><i>153</i>                                        uuid = %uuid,</span>
+<span class="line"><i>154</i>                                        error = %err,</span>
+<span class="line"><i>155</i>                                        &quot;Failed to poison completion event&quot;</span>
+<span class="line"><i>156</i>                                    );</span>
+<span class="line"><i>157</i>                                }</span></code></pre></details><p>TransferManager 根据 src/dst layout、locality、能力与偏好选执行器；NIXL Read/Write 的远端 agent 取决于方向。post 返回 pending 时，要保留请求/内存直到完成通知，不能直接复用 buffer。轮询正常周期为 1ms，但它不是网络耗时精度或 completion SLA 保证。</p><aside class="note ">慢传输 warning 只是诊断，所示函数不会在 60s 自动 cancel/timeout。Velo EventHandle、CUDA event 和 NIXL notification 是完成同步机制，不是 Runtime Event Plane 的 KV 驻留事件。</aside></section><section id="se-nixl-observe" class="lesson"><div class="sectionhead"><h2>13 / NIXL 遥测：独立开关、端口与 rank</h2><label class="done"><input type="checkbox" data-read="se-nixl-observe"> 已读</label></div><details class="source" id="src-se-nixl-enable"><summary><b>源码 · 识别 enable + prometheus exporter，拒绝不可声明的随机端口</b><small>components/src/dynamo/common/utils/nixl_telemetry.py:100–130</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/common/utils/nixl_telemetry.py#L100-L130" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>100</i>def nixl_prometheus_base_port(env: Mapping[str, str] | None = None) -&gt; int | None:</span>
+<span class="line"><i>101</i>    &quot;&quot;&quot;Return the fixed Prometheus port selected by the NIXL environment.</span>
+<span class="line"><i>102</i></span>
+<span class="line"><i>103</i>    ``None`` means this environment does not select the Prometheus exporter.</span>
+<span class="line"><i>104</i>    Invalid NIXL values raise, as they do during NIXL agent construction.</span>
+<span class="line"><i>105</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>106</i>    environ = os.environ if env is None else env</span>
+<span class="line"><i>107</i>    enabled = environ.get(NIXL_TELEMETRY_ENABLE_ENV)</span>
+<span class="line"><i>108</i>    if enabled is None or not _parse_nixl_bool(NIXL_TELEMETRY_ENABLE_ENV, enabled):</span>
+<span class="line"><i>109</i>        return None</span>
+<span class="line"><i>110</i></span>
+<span class="line"><i>111</i>    exporter = environ.get(NIXL_TELEMETRY_EXPORTER_ENV, &quot;&quot;)</span>
+<span class="line"><i>112</i>    # TODO: NIXL main also has a prometheus_mp exporter that shares this port</span>
+<span class="line"><i>113</i>    # variable but aggregates all ranks behind one endpoint. Add separate</span>
+<span class="line"><i>114</i>    # reservation semantics when Dynamo moves to a NIXL release containing it.</span>
+<span class="line"><i>115</i>    if exporter != &quot;prometheus&quot;:</span>
+<span class="line"><i>116</i>        return None</span>
+<span class="line"><i>117</i></span>
+<span class="line"><i>118</i>    raw_port = environ.get(NIXL_TELEMETRY_PROMETHEUS_PORT_ENV)</span>
+<span class="line"><i>119</i>    port = (</span>
+<span class="line"><i>120</i>        DEFAULT_NIXL_PROMETHEUS_PORT</span>
+<span class="line"><i>121</i>        if raw_port is None</span>
+<span class="line"><i>122</i>        else _parse_nixl_uint16(NIXL_TELEMETRY_PROMETHEUS_PORT_ENV, raw_port)</span>
+<span class="line"><i>123</i>    )</span>
+<span class="line"><i>124</i>    if port == 0:</span>
+<span class="line"><i>125</i>        raise ValueError(</span>
+<span class="line"><i>126</i>            f&quot;{NIXL_TELEMETRY_PROMETHEUS_PORT_ENV}=0 asks NIXL for an ephemeral &quot;</span>
+<span class="line"><i>127</i>            &quot;port, which Dynamo cannot declare or configure as a scrape target. &quot;</span>
+<span class="line"><i>128</i>            f&quot;Set a fixed port between 1 and {MAX_PORT}.&quot;</span>
+<span class="line"><i>129</i>        )</span>
+<span class="line"><i>130</i>    return port</span></code></pre></details><details class="source" id="src-se-nixl-rank"><summary><b>源码 · 按 Pod 内 local rank 派生 exporter 端口</b><small>components/src/dynamo/common/utils/nixl_telemetry.py:151–172</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/common/utils/nixl_telemetry.py#L151-L172" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>151</i>def derive_nixl_prometheus_port(</span>
+<span class="line"><i>152</i>    base_port: int,</span>
+<span class="line"><i>153</i>    local_rank: int,</span>
+<span class="line"><i>154</i>    *,</span>
+<span class="line"><i>155</i>    max_ranks: int = MAX_COLOCATED_NIXL_EXPORTERS,</span>
+<span class="line"><i>156</i>    env: Mapping[str, str] | None = None,</span>
+<span class="line"><i>157</i>) -&gt; int:</span>
+<span class="line"><i>158</i>    &quot;&quot;&quot;Return the exporter port for one node-local rank.</span>
+<span class="line"><i>159</i></span>
+<span class="line"><i>160</i>    ``local_rank`` is the rank&#x27;s index *within its pod*, not its global rank: a</span>
+<span class="line"><i>161</i>    port range is reserved per pod, so a multi-node deployment restarts the</span>
+<span class="line"><i>162</i>    offset on every node.</span>
+<span class="line"><i>163</i></span>
+<span class="line"><i>164</i>    ``max_ranks`` is how wide that reservation is. A caller that knows how many</span>
+<span class="line"><i>165</i>    ranks its launch actually places on a node should pass that count rather</span>
+<span class="line"><i>166</i>    than the maximum, because every check below measures that whole span.</span>
+<span class="line"><i>167</i></span>
+<span class="line"><i>168</i>    Raises ValueError rather than returning a port outside the reservation.</span>
+<span class="line"><i>169</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>170</i>    # A narrower reservation is the caller describing its own launch, but a</span>
+<span class="line"><i>171</i>    # wider one would hand out ports past the range the operator declares as</span>
+<span class="line"><i>172</i>    # container ports, which is the one thing no caller may narrow away.</span></code></pre></details><details class="source" id="src-se-sglang-env"><summary><b>源码 · 在 SGLang scheduler 子进程内设置 NIXL exporter port</b><small>components/src/dynamo/sglang/nixl_telemetry.py:132–149</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/sglang/nixl_telemetry.py#L132-L149" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>132</i>    # the scheduler is handed: resolution is where attention data parallelism is</span>
+<span class="line"><i>133</i>    # turned on, so the raw values would fold ``dp_rank`` in a second time and</span>
+<span class="line"><i>134</i>    # send later ranks past the reserved range. Imported here because the module</span>
+<span class="line"><i>135</i>    # is imported to reach ``install_scheduler_process_wrapper()``, which</span>
+<span class="line"><i>136</i>    # validates the NIXL environment before importing SGLang.</span>
+<span class="line"><i>137</i>    from dynamo.sglang._compat import resolved_server_args</span>
+<span class="line"><i>138</i></span>
+<span class="line"><i>139</i>    server_args = resolved_server_args(arguments[&quot;server_args&quot;])</span>
+<span class="line"><i>140</i>    local_rank = _node_local_rank(</span>
+<span class="line"><i>141</i>        server_args, tp_rank=tp_rank, pp_rank=pp_rank, dp_rank=dp_rank</span>
+<span class="line"><i>142</i>    )</span>
+<span class="line"><i>143</i>    # The reservation is as wide as this launch, not as wide as a pod may ever</span>
+<span class="line"><i>144</i>    # reserve: a four-rank launch that fits below the top of the port range, or</span>
+<span class="line"><i>145</i>    # beside another listener eight ports up, is one the maximum would refuse.</span>
+<span class="line"><i>146</i>    colocated_ranks = _node_local_rank_count(server_args, dp_rank=dp_rank)</span>
+<span class="line"><i>147</i>    port = derive_nixl_prometheus_port(base_port, local_rank, max_ranks=colocated_ranks)</span>
+<span class="line"><i>148</i>    os.environ[NIXL_TELEMETRY_PROMETHEUS_PORT_ENV] = str(port)</span>
+<span class="line"><i>149</i>    logger.info(</span></code></pre></details><p>当前 Dynamo helper 识别 NIXL_TELEMETRY_ENABLE、NIXL_TELEMETRY_EXPORTER=prometheus 与固定 NIXL_TELEMETRY_PROMETHEUS_PORT。每个共置 scheduler 的 NIXL agent 可能要独立端口；应在 agent 构造前、正确 rank 的进程设置，不能只在父进程临时改值。</p><aside class="note ">NIXL upstream main 已有 prometheus_mp 多进程聚合描述，但本固定提交 helper 明确将该适配留作 TODO。必须核对实际安装版本和 exporter，不能把 main 文档直接当作集群镜像能力。也不能仅凭 Pod 声明 nixl:19090 就证明 exporter 监听、遥测开启或所有 TP rank 已被采集。</aside><p>主库能力参考 <a href="https://github.com/ai-dynamo/nixl/blob/main/docs/telemetry.md">NIXL 官方 Telemetry</a>；Dynamo 本地 wrapper 的范围以上方源码为准。NIXL metrics 是传输级观测，不自动成为用户请求级 Trace。</p></section><section id="se-event-kinds" class="lesson"><div class="sectionhead"><h2>14 / 同名 Events 背后是不同契约</h2><label class="done"><input type="checkbox" data-read="se-event-kinds"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>事件种类</th><th>内容与用途</th><th>是否天然可请求级关联</th></tr></thead><tbody><tr><td>CUDA / Velo / NIXL completion</td><td>本地或跨实例同步某次操作完成/失败</td><td>transfer UUID/EventHandle 不是 OTel Trace ID</td></tr><tr><td>KVBM Create / Remove / batch / Shutdown</td><td>逻辑块驻留生命周期与实例上下文</td><td>共享块/批次可能对应多个请求</td></tr><tr><td>Engine 原生 KV events</td><td>引擎 cache Store/Remove/Clear 与 engine seq/rank</td><td>格式由 backend 协议决定</td></tr><tr><td>Runtime EventEnvelope</td><td>publisher_id、sequence、published_at、topic、payload</td><td>外层没有通用 traceparent/tracestate 字段</td></tr><tr><td>FPM / Worker load telemetry</td><td>调度迭代、负载、容量输入</td><td>通常按 worker/rank/iteration；详见 Planner 专题</td></tr><tr><td>Kubernetes Event</td><td>控制器资源变更诊断</td><td>不是本章消息总线，也不是 OTel event 自动转发</td></tr></tbody></table></div><p>FPM 的完整生产/消费口径见 <a href="planner.html">Planner 观测输入专题</a>；请求生命周期传播见 <a href="pd-trace.html">PD Trace 专题</a>，这里重点追 KV 存储和事件可靠性。</p></section><section id="se-kvbm-events" class="lesson"><div class="sectionhead"><h2>15 / KVBM 内部事件：RAII → broadcast → batching → publisher</h2><label class="done"><input type="checkbox" data-read="se-kvbm-events"> 已读</label></div><details class="source" id="src-se-kvbm-protocol"><summary><b>源码 · 逻辑事件与批次的 instance_id</b><small>lib/kvbm-logical/src/events/protocol.rs:24–61</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/events/protocol.rs#L24-L61" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>24</i>///</span>
+<span class="line"><i>25</i>/// This is the simplified internal event type. Instance and cluster context</span>
+<span class="line"><i>26</i>/// are provided at the batch level via [`KvbmCacheEvents`].</span>
+<span class="line"><i>27</i>#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]</span>
+<span class="line"><i>28</i>pub enum KvCacheEvent {</span>
+<span class="line"><i>29</i>    /// A block has been registered in a worker&#x27;s cache.</span>
+<span class="line"><i>30</i>    Create(SequenceHash),</span>
+<span class="line"><i>31</i>    /// A block has been removed from a worker&#x27;s cache.</span>
+<span class="line"><i>32</i>    Remove(SequenceHash),</span>
+<span class="line"><i>33</i>}</span>
+<span class="line"><i>34</i></span>
+<span class="line"><i>35</i>/// Batched events with multiple sequence hashes.</span>
+<span class="line"><i>36</i>///</span>
+<span class="line"><i>37</i>/// Events are batched by type - either all creates or all removes.</span>
+<span class="line"><i>38</i>/// Create events are sorted by position ascending (low to high) for efficient</span>
+<span class="line"><i>39</i>/// radix tree insertion. Remove events are sorted by position descending</span>
+<span class="line"><i>40</i>/// (high to low) for efficient radix tree removal.</span>
+<span class="line"><i>41</i>#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]</span>
+<span class="line"><i>42</i>pub enum KvCacheEvents {</span>
+<span class="line"><i>43</i>    /// Multiple blocks have been registered.</span>
+<span class="line"><i>44</i>    Create(Vec&lt;SequenceHash&gt;),</span>
+<span class="line"><i>45</i>    /// Multiple blocks have been removed.</span>
+<span class="line"><i>46</i>    Remove(Vec&lt;SequenceHash&gt;),</span>
+<span class="line"><i>47</i>    /// Publisher is shutting down.</span>
+<span class="line"><i>48</i>    Shutdown,</span>
+<span class="line"><i>49</i>}</span>
+<span class="line"><i>50</i></span>
+<span class="line"><i>51</i>/// Wire format for publishing batched events.</span>
+<span class="line"><i>52</i>///</span>
+<span class="line"><i>53</i>/// This is the complete message format sent over the wire, including</span>
+<span class="line"><i>54</i>/// instance context that applies to all events in the batch.</span>
+<span class="line"><i>55</i>#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]</span>
+<span class="line"><i>56</i>pub struct KvbmCacheEvents {</span>
+<span class="line"><i>57</i>    /// The batched events.</span>
+<span class="line"><i>58</i>    pub events: KvCacheEvents,</span>
+<span class="line"><i>59</i>    /// The worker instance that generated these events.</span>
+<span class="line"><i>60</i>    pub instance_id: InstanceId,</span>
+<span class="line"><i>61</i>}</span></code></pre></details><details class="source" id="src-se-kvbm-emit"><summary><b>源码 · 普通订阅过滤 lag error；loss-aware 订阅及注册触发 Create</b><small>lib/kvbm-logical/src/events/manager.rs:153–201</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/events/manager.rs#L153-L201" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>153</i>    pub fn subscribe(&amp;self) -&gt; impl Stream&lt;Item = KvCacheEvent&gt; + Send + &#x27;static {</span>
+<span class="line"><i>154</i>        let rx = self.event_tx.subscribe();</span>
+<span class="line"><i>155</i>        BroadcastStream::new(rx).filter_map(|result| result.ok())</span>
+<span class="line"><i>156</i>    }</span>
+<span class="line"><i>157</i></span>
+<span class="line"><i>158</i>    /// Subscribe without discarding broadcast lag errors.</span>
+<span class="line"><i>159</i>    ///</span>
+<span class="line"><i>160</i>    /// This is intended for exact, process-local consumers that must fail</span>
+<span class="line"><i>161</i>    /// closed if they cannot keep up. Normal production consumers should use</span>
+<span class="line"><i>162</i>    /// [`subscribe`](Self::subscribe), whose best-effort behavior is unchanged.</span>
+<span class="line"><i>163</i>    pub fn subscribe_loss_aware(</span>
+<span class="line"><i>164</i>        &amp;self,</span>
+<span class="line"><i>165</i>    ) -&gt; impl Stream&lt;Item = Result&lt;KvCacheEvent, BroadcastStreamRecvError&gt;&gt; + Send + &#x27;static {</span>
+<span class="line"><i>166</i>        BroadcastStream::new(self.event_tx.subscribe())</span>
+<span class="line"><i>167</i>    }</span>
+<span class="line"><i>168</i></span>
+<span class="line"><i>169</i>    /// Hook called when a block is registered in the BlockRegistry.</span>
+<span class="line"><i>170</i>    ///</span>
+<span class="line"><i>171</i>    /// This method:</span>
+<span class="line"><i>172</i>    /// 1. Checks the policy to determine if an event should be emitted</span>
+<span class="line"><i>173</i>    /// 2. Broadcasts a Create event if the policy allows</span>
+<span class="line"><i>174</i>    /// 3. Attaches an EventReleaseHandle to the registration handle for cleanup</span>
+<span class="line"><i>175</i>    ///</span>
+<span class="line"><i>176</i>    /// # Arguments</span>
+<span class="line"><i>177</i>    /// * `handle` - The block registration handle</span>
+<span class="line"><i>178</i>    ///</span>
+<span class="line"><i>179</i>    /// # Returns</span>
+<span class="line"><i>180</i>    /// Ok(()) if successful, or an error if attachment fails</span>
+<span class="line"><i>181</i>    pub fn on_block_registered(&amp;self, handle: &amp;BlockRegistrationHandle) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>182</i>        let seq_hash = handle.seq_hash();</span>
+<span class="line"><i>183</i></span>
+<span class="line"><i>184</i>        // Check policy - only emit events for filtered blocks</span>
+<span class="line"><i>185</i>        if !self.policy.should_emit(seq_hash) {</span>
+<span class="line"><i>186</i>            return Ok(());</span>
+<span class="line"><i>187</i>        }</span>
+<span class="line"><i>188</i></span>
+<span class="line"><i>189</i>        // Emit Create event</span>
+<span class="line"><i>190</i>        let create_event = KvCacheEvent::Create(seq_hash);</span>
+<span class="line"><i>191</i></span>
+<span class="line"><i>192</i>        // Broadcast send only fails if there are no receivers, which is fine</span>
+<span class="line"><i>193</i>        let _ = self.event_tx.send(create_event);</span>
+<span class="line"><i>194</i></span>
+<span class="line"><i>195</i>        // Attach RAII handle for Remove event</span>
+<span class="line"><i>196</i>        let release_handle = EventReleaseHandle::new(seq_hash, self.event_tx.clone());</span>
+<span class="line"><i>197</i></span>
+<span class="line"><i>198</i>        // Attach as Arc&lt;dyn Any&gt; to the registration handle</span>
+<span class="line"><i>199</i>        handle.attach_unique(Arc::new(release_handle))?;</span>
+<span class="line"><i>200</i></span>
+<span class="line"><i>201</i>        Ok(())</span></code></pre></details><details class="source" id="src-se-kvbm-publish"><summary><b>源码 · MessagePack 编码、失败记录日志、结束时 Shutdown/flush</b><small>lib/kvbm-logical/src/events/publisher.rs:133–163</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/events/publisher.rs#L133-L163" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>133</i>        while let Some(batch) = batched_stream.next().await {</span>
+<span class="line"><i>134</i>            // Serialize using msgpack</span>
+<span class="line"><i>135</i>            let payload = match rmp_serde::to_vec(&amp;batch) {</span>
+<span class="line"><i>136</i>                Ok(bytes) =&gt; Bytes::from(bytes),</span>
+<span class="line"><i>137</i>                Err(e) =&gt; {</span>
+<span class="line"><i>138</i>                    tracing::error!(&quot;Failed to serialize batch: {}&quot;, e);</span>
+<span class="line"><i>139</i>                    continue;</span>
+<span class="line"><i>140</i>                }</span>
+<span class="line"><i>141</i>            };</span>
+<span class="line"><i>142</i></span>
+<span class="line"><i>143</i>            if let Err(e) = publisher.publish(&amp;subject, payload) {</span>
+<span class="line"><i>144</i>                tracing::error!(&quot;Failed to publish batch: {}&quot;, e);</span>
+<span class="line"><i>145</i>            }</span>
+<span class="line"><i>146</i>        }</span>
+<span class="line"><i>147</i></span>
+<span class="line"><i>148</i>        // Emit shutdown event</span>
+<span class="line"><i>149</i>        let shutdown_event = KvbmCacheEvents {</span>
+<span class="line"><i>150</i>            events: super::protocol::KvCacheEvents::Shutdown,</span>
+<span class="line"><i>151</i>            instance_id,</span>
+<span class="line"><i>152</i>        };</span>
+<span class="line"><i>153</i>        if let Ok(bytes) = rmp_serde::to_vec(&amp;shutdown_event)</span>
+<span class="line"><i>154</i>            &amp;&amp; let Err(e) = publisher.publish(&amp;subject, Bytes::from(bytes))</span>
+<span class="line"><i>155</i>        {</span>
+<span class="line"><i>156</i>            tracing::error!(&quot;Failed to publish shutdown event: {}&quot;, e);</span>
+<span class="line"><i>157</i>        }</span>
+<span class="line"><i>158</i></span>
+<span class="line"><i>159</i>        // Flush on stream end</span>
+<span class="line"><i>160</i>        if let Err(e) = publisher.flush().await {</span>
+<span class="line"><i>161</i>            tracing::error!(&quot;Failed to flush publisher: {}&quot;, e);</span>
+<span class="line"><i>162</i>        }</span>
+<span class="line"><i>163</i>    }</span></code></pre></details><p>注册 hook 根据 emission policy 发送 Create，并 attach RAII release handle，使最终释放产生 Remove。默认 subscribe() 过滤 broadcast lag 错误并继续；subscribe_loss_aware() 提供显式错误给需要严格局部语义的消费者。晚订阅者不会自动得到过去事件。</p><aside class="note ">Publisher 日志失败后继续，不自动提供持久回放或每批重试。这里自己的 KvbmCacheEvents wire schema 与 Runtime EventEnvelope 是不同接口；只有经具体 adapter 桥接时才建立关系。</aside></section><section id="se-consolidator" class="lesson"><div class="sectionhead"><h2>16 / Consolidator：同一逻辑块多处驻留如何合并</h2><label class="done"><input type="checkbox" data-read="se-consolidator"> 已读</label></div><details class="source" id="src-se-consolidator"><summary><b>源码 · 引擎 G1 与 KVBM G2/G3 事件的 canonical hash 与聚合</b><small>lib/kvbm-consolidator/src/lib.rs:4–19</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-consolidator/src/lib.rs#L4-L19" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>4</i>//! KV-cache event consolidator.</span>
+<span class="line"><i>5</i>//!</span>
+<span class="line"><i>6</i>//! Consumes events from multiple sources and publishes a deduplicated, kv-router-compatible</span>
+<span class="line"><i>7</i>//! stream:</span>
+<span class="line"><i>8</i>//! - G1 events from vLLM / TensorRT-LLM worker processes over ZMQ SUB.</span>
+<span class="line"><i>9</i>//! - G2/G3 events from in-process KVBM via [`kvbm_logical::events::EventsManager`] broadcast.</span>
+<span class="line"><i>10</i>//!</span>
+<span class="line"><i>11</i>//! Dedup key is [`kvbm_logical::SequenceHash`] (a 128-bit [`dynamo_tokens::PositionalLineageHash`]).</span>
+<span class="line"><i>12</i>//! All sources produce the same key for the same logical block, so the first STORE</span>
+<span class="line"><i>13</i>//! publishes and only the last REMOVE publishes — no external-hash translation needed</span>
+<span class="line"><i>14</i>//! between the tracker and kvbm-logical&#x27;s registry.</span>
+<span class="line"><i>15</i>//!</span>
+<span class="line"><i>16</i>//! For external string-hashed sources (vLLM / TRT-LLM), a `(EventSource, String)` map inside</span>
+<span class="line"><i>17</i>//! the tracker resolves framework block hashes to the canonical `SequenceHash`.</span>
+<span class="line"><i>18</i>//!</span>
+<span class="line"><i>19</i>//! Egress events use kv-router&#x27;s u64 wire format: the 128-bit hash is projected via</span></code></pre></details><details class="source" id="src-se-bridge"><summary><b>源码 · 仅 hash 的 Create 不立刻发布缺元数据的 Store</b><small>lib/kvbm-consolidator/src/ingress/kvbm_bridge.rs:4–17</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-consolidator/src/ingress/kvbm_bridge.rs#L4-L17" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>4</i>//! KVBM ingress bridge: pumps [`kvbm_logical::events::protocol::KvCacheEvent`]s from</span>
+<span class="line"><i>5</i>//! an [`kvbm_logical::events::EventsManager`] subscription into the tracker.</span>
+<span class="line"><i>6</i>//!</span>
+<span class="line"><i>7</i>//! `KvCacheEvent::Create(seq_hash)` → `tracker.handle_kvbm_store(seq_hash, [], 0, None)`.</span>
+<span class="line"><i>8</i>//! The bridge has no tokens/block_size/lora_name to forward — the canonical key is the</span>
+<span class="line"><i>9</i>//! PLH, and a placeholder Store would be invalid downstream — so the tracker registers</span>
+<span class="line"><i>10</i>//! the block without publishing. A subsequent vLLM / TRT-LLM store for the same PLH</span>
+<span class="line"><i>11</i>//! publishes with real metadata.</span>
+<span class="line"><i>12</i>//!</span>
+<span class="line"><i>13</i>//! `KvCacheEvent::Remove(seq_hash)` → `tracker.handle_kvbm_remove(seq_hash)`.</span>
+<span class="line"><i>14</i>//!</span>
+<span class="line"><i>15</i>//! The bridge accepts an `impl Stream&lt;Item = KvCacheEvent&gt;` so callers can pass</span>
+<span class="line"><i>16</i>//! `EventsManager::subscribe()` directly (it returns a Stream, not a broadcast</span>
+<span class="line"><i>17</i>//! Receiver). Tests can wrap a `broadcast::Receiver` with `BroadcastStream` if they</span></code></pre></details><details class="source" id="src-se-consolidator-out"><summary><b>源码 · 定时 drain、转换、序列化与三帧引擎兼容输出</b><small>lib/kvbm-consolidator/src/egress/zmq_publisher.rs:153–201</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-consolidator/src/egress/zmq_publisher.rs#L153-L201" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>153</i>                    let drained = { tracker.write().await.drain_events() };</span>
+<span class="line"><i>154</i>                    if drained.is_empty() {</span>
+<span class="line"><i>155</i>                        continue;</span>
+<span class="line"><i>156</i>                    }</span>
+<span class="line"><i>157</i></span>
+<span class="line"><i>158</i>                    let drained = sort_for_emission(drained);</span>
+<span class="line"><i>159</i></span>
+<span class="line"><i>160</i>                    let events: Vec&lt;Event&gt; = drained</span>
+<span class="line"><i>161</i>                        .into_iter()</span>
+<span class="line"><i>162</i>                        .filter_map(|ev| match consolidated_to_event(ev) {</span>
+<span class="line"><i>163</i>                            Ok(e) =&gt; Some(e),</span>
+<span class="line"><i>164</i>                            Err(e) =&gt; {</span>
+<span class="line"><i>165</i>                                tracing::warn!(&quot;Failed to convert consolidated event: {e}&quot;);</span>
+<span class="line"><i>166</i>                                None</span>
+<span class="line"><i>167</i>                            }</span>
+<span class="line"><i>168</i>                        })</span>
+<span class="line"><i>169</i>                        .collect();</span>
+<span class="line"><i>170</i></span>
+<span class="line"><i>171</i>                    if events.is_empty() {</span>
+<span class="line"><i>172</i>                        continue;</span>
+<span class="line"><i>173</i>                    }</span>
+<span class="line"><i>174</i></span>
+<span class="line"><i>175</i>                    let now_f64 = std::time::SystemTime::now()</span>
+<span class="line"><i>176</i>                        .duration_since(UNIX_EPOCH)</span>
+<span class="line"><i>177</i>                        .unwrap_or_default()</span>
+<span class="line"><i>178</i>                        .as_secs_f64();</span>
+<span class="line"><i>179</i></span>
+<span class="line"><i>180</i>                    let batch = EventBatch(now_f64, events, Some(0));</span>
+<span class="line"><i>181</i></span>
+<span class="line"><i>182</i>                    let mut buf = Vec::new();</span>
+<span class="line"><i>183</i>                    // Store events have optional named fields such as cache_salt. Encode</span>
+<span class="line"><i>184</i>                    // structs as maps so omitted fields cannot shift positional values.</span>
+<span class="line"><i>185</i>                    let mut serializer =</span>
+<span class="line"><i>186</i>                        rmp_serde::Serializer::new(&amp;mut buf).with_struct_map();</span>
+<span class="line"><i>187</i>                    if let Err(e) = batch.serialize(&amp;mut serializer) {</span>
+<span class="line"><i>188</i>                        tracing::warn!(&quot;Failed to publish batch: {e}&quot;);</span>
+<span class="line"><i>189</i>                        continue;</span>
+<span class="line"><i>190</i>                    }</span>
+<span class="line"><i>191</i></span>
+<span class="line"><i>192</i>                    let seq = seq_counter.fetch_add(1, Ordering::Relaxed);</span>
+<span class="line"><i>193</i>                    let seq_be_bytes: [u8; 8] = seq.to_be_bytes();</span>
+<span class="line"><i>194</i></span>
+<span class="line"><i>195</i>                    let frames = vec![vec![], seq_be_bytes.to_vec(), buf];</span>
+<span class="line"><i>196</i>                    if let Err(e) = zmq_util::send_multipart(&amp;socket, frames).await {</span>
+<span class="line"><i>197</i>                        tracing::warn!(&quot;Failed to publish batch: {e}&quot;);</span>
+<span class="line"><i>198</i>                    }</span>
+<span class="line"><i>199</i>                }</span>
+<span class="line"><i>200</i>            }</span>
+<span class="line"><i>201</i>        }</span></code></pre></details><p>Tracker 用 canonical SequenceHash 维护同一逻辑块的多源驻留引用：完整元数据可用时发首个有效 Store，最后一个来源消失才发 Remove。外部字符串 hash 需要映射到 canonical hash；对 Router wire 的 u64 投影也在显式边界处理。</p><p>KVBM broadcast bridge 只有 hash，没有 tokens/block_size 等完整 Store 信息，因此不能伪造空元数据 Store。引擎后续提供信息后才可发布。输出 drain 之后若转换/发送失败，所示循环 warn 并继续，不应称作 durable exactly-once；需要同时观察输入、tracker 和 egress 才能定位缺失。</p></section><section id="se-runtime-events" class="lesson"><div class="sectionhead"><h2>17 / 通用 Event Plane：Envelope、ZMQ、NATS 与发现</h2><label class="done"><input type="checkbox" data-read="se-runtime-events"> 已读</label></div><details class="source" id="src-se-envelope"><summary><b>源码 · 通用 Envelope：发布身份、序列与 Unix 毫秒时间</b><small>lib/runtime/src/transports/event_plane/traits.rs:12–25</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/transports/event_plane/traits.rs#L12-L25" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>12</i>#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]</span>
+<span class="line"><i>13</i>pub struct EventEnvelope {</span>
+<span class="line"><i>14</i>    /// Unique identifier of the publisher (typically discovery instance_id)</span>
+<span class="line"><i>15</i>    pub publisher_id: u64,</span>
+<span class="line"><i>16</i>    /// Monotonically increasing sequence number per publisher</span>
+<span class="line"><i>17</i>    pub sequence: u64,</span>
+<span class="line"><i>18</i>    /// Unix timestamp in milliseconds when the event was published</span>
+<span class="line"><i>19</i>    pub published_at: u64,</span>
+<span class="line"><i>20</i>    /// The topic this event was published to</span>
+<span class="line"><i>21</i>    pub topic: String,</span>
+<span class="line"><i>22</i>    /// The serialized event payload</span>
+<span class="line"><i>23</i>    #[serde(with = &quot;bytes_serde&quot;)]</span>
+<span class="line"><i>24</i>    pub payload: Bytes,</span>
+<span class="line"><i>25</i>}</span></code></pre></details><details class="source" id="src-se-event-publish"><summary><b>源码 · 先编码 payload/envelope，再调用 transport</b><small>lib/runtime/src/transports/event_plane/mod.rs:662–683</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/transports/event_plane/mod.rs#L662-L683" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>662</i>    pub async fn publish&lt;T: Serialize + Send + Sync&gt;(&amp;self, event: &amp;T) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>663</i>        let payload = self.codec.encode_payload(event)?;</span>
+<span class="line"><i>664</i>        self.publish_bytes_ref(payload.as_ref()).await</span>
+<span class="line"><i>665</i>    }</span>
+<span class="line"><i>666</i></span>
+<span class="line"><i>667</i>    /// Publish raw bytes.</span>
+<span class="line"><i>668</i>    pub async fn publish_bytes(&amp;self, bytes: Vec&lt;u8&gt;) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>669</i>        self.publish_bytes_ref(&amp;bytes).await</span>
+<span class="line"><i>670</i>    }</span>
+<span class="line"><i>671</i></span>
+<span class="line"><i>672</i>    /// Publish raw bytes without taking ownership of the payload buffer.</span>
+<span class="line"><i>673</i>    pub async fn publish_bytes_ref(&amp;self, bytes: &amp;[u8]) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>674</i>        let envelope_bytes = self.codec.encode_envelope_parts(</span>
+<span class="line"><i>675</i>            self.publisher_id,</span>
+<span class="line"><i>676</i>            self.sequence.fetch_add(1, Ordering::SeqCst),</span>
+<span class="line"><i>677</i>            current_timestamp_ms(),</span>
+<span class="line"><i>678</i>            &amp;self.topic,</span>
+<span class="line"><i>679</i>            bytes,</span>
+<span class="line"><i>680</i>        )?;</span>
+<span class="line"><i>681</i></span>
+<span class="line"><i>682</i>        self.tx.publish(&amp;self.subject, envelope_bytes).await</span>
+<span class="line"><i>683</i>    }</span></code></pre></details><details class="source" id="src-se-zmq-frames"><summary><b>源码 · 通用 ZMQ 四帧：topic / publisher_id / sequence / Frame</b><small>lib/runtime/src/transports/event_plane/zmq_transport.rs:281–300</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/transports/event_plane/zmq_transport.rs#L281-L300" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>281</i>impl EventTransportTx for ZmqPubTransport {</span>
+<span class="line"><i>282</i>    async fn publish(&amp;self, _subject: &amp;str, envelope_bytes: Bytes) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>283</i>        let codec = MsgpackCodec;</span>
+<span class="line"><i>284</i>        let (publisher_id, sequence) = codec.decode_envelope_identity(&amp;envelope_bytes)?;</span>
+<span class="line"><i>285</i></span>
+<span class="line"><i>286</i>        let frame = Frame::new(envelope_bytes);</span>
+<span class="line"><i>287</i>        let frames = vec![</span>
+<span class="line"><i>288</i>            self.topic.as_bytes().to_vec(),</span>
+<span class="line"><i>289</i>            publisher_id.to_be_bytes().to_vec(),</span>
+<span class="line"><i>290</i>            sequence.to_be_bytes().to_vec(),</span>
+<span class="line"><i>291</i>            frame.encode().to_vec(),</span>
+<span class="line"><i>292</i>        ];</span>
+<span class="line"><i>293</i></span>
+<span class="line"><i>294</i>        self.socket</span>
+<span class="line"><i>295</i>            .lock()</span>
+<span class="line"><i>296</i>            .await</span>
+<span class="line"><i>297</i>            .send(Multipart::from(frames))</span>
+<span class="line"><i>298</i>            .await?;</span>
+<span class="line"><i>299</i></span>
+<span class="line"><i>300</i>        Ok(())</span></code></pre></details><details class="source" id="src-se-nats-publish"><summary><b>源码 · NATS Core publish；未配置 client 时可跳过并返回 Ok</b><small>lib/runtime/src/distributed.rs:739–750</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/distributed.rs#L739-L750" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>739</i>    pub(crate) async fn kv_router_nats_publish_subject(</span>
+<span class="line"><i>740</i>        &amp;self,</span>
+<span class="line"><i>741</i>        subject: async_nats::Subject,</span>
+<span class="line"><i>742</i>        payload: bytes::Bytes,</span>
+<span class="line"><i>743</i>    ) -&gt; anyhow::Result&lt;()&gt; {</span>
+<span class="line"><i>744</i>        let Some(nats_client) = self.nats_client.as_ref() else {</span>
+<span class="line"><i>745</i>            // NATS not available - this is expected in approximate mode (--no-kv-events)</span>
+<span class="line"><i>746</i>            tracing::trace!(&quot;Skipping NATS publish (NATS not configured): {subject}&quot;);</span>
+<span class="line"><i>747</i>            return Ok(());</span>
+<span class="line"><i>748</i>        };</span>
+<span class="line"><i>749</i>        Ok(nats_client.client().publish(subject, payload).await?)</span>
+<span class="line"><i>750</i>    }</span></code></pre></details><p>Event Plane 支持 ZMQ direct publisher 与 broker 拓扑，订阅端通过 Discovery 找地址；NATS 使用 subject。Request Plane 选择 TCP 不限制 Event Plane 同时使用 ZMQ。通用四帧协议不能直接拿去解码引擎原生三帧消息。</p><aside class="note ">NATS 安装了 JetStream 不代表这条调用用了 durable stream/ack；这里是 Core client.publish。返回 Ok 也不证明消费者应用成功，尤其未配置 client 的跳过分支。published_at 是发布方墙钟，跨机计算消息延迟需要时钟同步，不能替代单机 Instant 测量。</aside></section><section id="se-engine-pipeline" class="lesson"><div class="sectionhead"><h2>18 / 引擎事件进入 Router：两条序列空间与一次重编号</h2><label class="done"><input type="checkbox" data-read="se-engine-pipeline"> 已读</label></div><div class="flow"><div><b>01</b>Engine ZMQ source_cursor / rank</div><div><b>02</b>listener decode、过滤、normalization</div><div><b>03</b>accepted event 分配输入 event_id</div><div><b>04</b>processor 检查输入 id 缺口</div><div><b>05</b>batching/dedup、分层索引入队</div><div><b>06</b>输出重新编号并通过 Event Plane 发布</div></div><details class="source" id="src-se-relay-stages"><summary><b>源码 · received / accepted / filtered / conversion / suspicious 的实际记录位置</b><small>lib/llm/src/kv_router/publisher/zmq_listener.rs:186–226</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/publisher/zmq_listener.rs#L186-L226" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>186</i>                }</span>
+<span class="line"><i>187</i>                for raw_event in batch.events {</span>
+<span class="line"><i>188</i>                    let event_type = raw_event.event_type_label();</span>
+<span class="line"><i>189</i>                    if let Some(metrics) = &amp;metrics {</span>
+<span class="line"><i>190</i>                        metrics.increment_zmq_event(&quot;received&quot;, event_type);</span>
+<span class="line"><i>191</i>                    }</span>
+<span class="line"><i>192</i>                    let worker = WorkerWithDpRank::new(worker_id, dp_rank);</span>
+<span class="line"><i>193</i>                    let raw_event = match normalizer.preprocess_with_reason(raw_event, worker) {</span>
+<span class="line"><i>194</i>                        Ok(raw_event) =&gt; raw_event,</span>
+<span class="line"><i>195</i>                        Err(reason) =&gt; {</span>
+<span class="line"><i>196</i>                            if let Some(metrics) = &amp;metrics {</span>
+<span class="line"><i>197</i>                                metrics.increment_zmq_filtered_event(event_type, reason.as_label());</span>
+<span class="line"><i>198</i>                            }</span>
+<span class="line"><i>199</i>                            continue;</span>
+<span class="line"><i>200</i>                        }</span>
+<span class="line"><i>201</i>                    };</span>
+<span class="line"><i>202</i>                    if let Some(metrics) = &amp;metrics {</span>
+<span class="line"><i>203</i>                        metrics.increment_zmq_event(&quot;accepted&quot;, event_type);</span>
+<span class="line"><i>204</i>                    }</span>
+<span class="line"><i>205</i>                    let event_id = next_event_id.fetch_add(1, Ordering::SeqCst);</span>
+<span class="line"><i>206</i>                    let Some(event) =</span>
+<span class="line"><i>207</i>                        normalizer.normalize_preprocessed(raw_event, event_id, worker)</span>
+<span class="line"><i>208</i>                    else {</span>
+<span class="line"><i>209</i>                        if let Some(metrics) = &amp;metrics {</span>
+<span class="line"><i>210</i>                            metrics.increment_zmq_conversion_issue(event_type, &quot;conversion_none&quot;);</span>
+<span class="line"><i>211</i>                        }</span>
+<span class="line"><i>212</i>                        continue;</span>
+<span class="line"><i>213</i>                    };</span>
+<span class="line"><i>214</i>                    if matches!(event.event.data, KvCacheEventData::Stored(ref data) if data.blocks.is_empty())</span>
+<span class="line"><i>215</i>                        &amp;&amp; let Some(metrics) = &amp;metrics</span>
+<span class="line"><i>216</i>                    {</span>
+<span class="line"><i>217</i>                        metrics.increment_zmq_suspicious_event(event_type, &quot;empty_store_blocks&quot;);</span>
+<span class="line"><i>218</i>                    }</span>
+<span class="line"><i>219</i>                    events.push(event);</span>
+<span class="line"><i>220</i>                }</span>
+<span class="line"><i>221</i>                if !events.is_empty() {</span>
+<span class="line"><i>222</i>                    let event_count = events.len() as u64;</span>
+<span class="line"><i>223</i>                    if tx.send(events).is_err() {</span>
+<span class="line"><i>224</i>                        tracing::warn!(&quot;Failed to send message to channel - receiver dropped&quot;);</span>
+<span class="line"><i>225</i>                        break &#x27;main String::from(&quot;channel receiver dropped&quot;);</span>
+<span class="line"><i>226</i>                    }</span></code></pre></details><details class="source" id="src-se-input-gap"><summary><b>源码 · processor 观察 event_id 缺口，按 gap 大小累加</b><small>lib/llm/src/kv_router/publisher/event_processor.rs:54–78</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/publisher/event_processor.rs#L54-L78" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>54</i>                &#x27;event_batch: for placement_event in event_batch {</span>
+<span class="line"><i>55</i>                    let raw_event_id = placement_event.event.event_id;</span>
+<span class="line"><i>56</i>                    if let Some(last_id) = last_raw_input_id</span>
+<span class="line"><i>57</i>                        &amp;&amp; raw_event_id &gt; last_id + 1</span>
+<span class="line"><i>58</i>                    {</span>
+<span class="line"><i>59</i>                        let gap = raw_event_id - last_id - 1;</span>
+<span class="line"><i>60</i>                        tracing::warn!(</span>
+<span class="line"><i>61</i>                            worker_id,</span>
+<span class="line"><i>62</i>                            last_raw_input_id = last_id,</span>
+<span class="line"><i>63</i>                            raw_event_id,</span>
+<span class="line"><i>64</i>                            gap,</span>
+<span class="line"><i>65</i>                            &quot;Input event gap detected: raw events dropped before batching&quot;</span>
+<span class="line"><i>66</i>                        );</span>
+<span class="line"><i>67</i>                        if let Some(metrics) = kv_publisher_metrics() {</span>
+<span class="line"><i>68</i>                            metrics.increment_engines_dropped_events(gap);</span>
+<span class="line"><i>69</i>                        } else {</span>
+<span class="line"><i>70</i>                            tracing::warn!(</span>
+<span class="line"><i>71</i>                                worker_id,</span>
+<span class="line"><i>72</i>                                gap,</span>
+<span class="line"><i>73</i>                                &quot;Failed to record dropped events metric: metrics not initialized&quot;</span>
+<span class="line"><i>74</i>                            );</span>
+<span class="line"><i>75</i>                        }</span>
+<span class="line"><i>76</i>                    }</span>
+<span class="line"><i>77</i>                    last_raw_input_id = Some(raw_event_id);</span>
+<span class="line"><i>78</i></span></code></pre></details><details class="source" id="src-se-output-id"><summary><b>源码 · 输出事件重编号，与输入/native batch cursor 分开</b><small>lib/llm/src/kv_router/publisher/batching.rs:218–239</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/publisher/batching.rs#L218-L239" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>218</i>            KvCacheEventData::Cleared =&gt; {</span>
+<span class="line"><i>219</i>                unreachable!(&quot;Cleared is handled by the publisher&#x27;s barrier policy&quot;)</span>
+<span class="line"><i>220</i>            }</span>
+<span class="line"><i>221</i>        };</span>
+<span class="line"><i>222</i>        event.event_id = self.next_publish_id;</span>
+<span class="line"><i>223</i>        let _ = emit(</span>
+<span class="line"><i>224</i>            local_indexer,</span>
+<span class="line"><i>225</i>            worker_id,</span>
+<span class="line"><i>226</i>            tier,</span>
+<span class="line"><i>227</i>            domain,</span>
+<span class="line"><i>228</i>            event,</span>
+<span class="line"><i>229</i>            session_id,</span>
+<span class="line"><i>230</i>            output,</span>
+<span class="line"><i>231</i>        )</span>
+<span class="line"><i>232</i>        .await;</span>
+<span class="line"><i>233</i>        self.next_publish_id = self</span>
+<span class="line"><i>234</i>            .next_publish_id</span>
+<span class="line"><i>235</i>            .checked_add(1)</span>
+<span class="line"><i>236</i>            .expect(&quot;KV event publisher outbound cursor exhausted&quot;);</span>
+<span class="line"><i>237</i>    }</span>
+<span class="line"><i>238</i>}</span>
+<span class="line"><i>239</i></span></code></pre></details><p>至少区分三种计数：引擎批次 source_cursor；归一化后进入处理器的 event_id（processor 名为 raw_input）；通用 EventEnvelope.sequence。合并/过滤/去重会改变数量关系，不能逐一对齐或把它们的差都称为丢包。</p><aside class="note ">engines_dropped_events_total 的帮助文本说是 engine drops，但这个累加点直接证明的是处理器所见输入 event_id 的缺口，不足以单独定位网络、引擎或本地管线哪一段丢失；原生 ZMQ source_cursor 的 discontinuity 又是独立检测。</aside></section><section id="se-event-metrics" class="lesson"><div class="sectionhead"><h2>19 / KV publisher 指标：定义、标签、注册与含义</h2><label class="done"><input type="checkbox" data-read="se-event-metrics"> 已读</label></div><details class="source" id="src-se-relay-metrics"><summary><b>源码 · MetricsHierarchy 注册与进程级 OnceLock memoization</b><small>lib/llm/src/kv_router/metrics.rs:95–174</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/metrics.rs#L95-L174" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>95</i>/// Metrics for the KV publisher, created via the MetricsHierarchy API.</span>
+<span class="line"><i>96</i>/// This provides automatic `dynamo_namespace`, `dynamo_component`, and other</span>
+<span class="line"><i>97</i>/// hierarchy labels for free.</span>
+<span class="line"><i>98</i>pub(crate) struct KvPublisherMetrics {</span>
+<span class="line"><i>99</i>    /// Total number of raw events dropped by engines before reaching publisher.</span>
+<span class="line"><i>100</i>    pub engines_dropped_events_total: IntCounter,</span>
+<span class="line"><i>101</i>    /// Total number of decoded ZMQ KV events by relay stage and event type.</span>
+<span class="line"><i>102</i>    pub zmq_events_total: IntCounterVec,</span>
+<span class="line"><i>103</i>    /// Total number of ZMQ KV events filtered before conversion.</span>
+<span class="line"><i>104</i>    pub zmq_filtered_events_total: IntCounterVec,</span>
+<span class="line"><i>105</i>    /// Total number of ZMQ KV events dropped due to conversion issues.</span>
+<span class="line"><i>106</i>    pub zmq_conversion_issues_total: IntCounterVec,</span>
+<span class="line"><i>107</i>    /// Total number of suspicious-but-forwarded ZMQ KV events.</span>
+<span class="line"><i>108</i>    pub zmq_suspicious_events_total: IntCounterVec,</span>
+<span class="line"><i>109</i>}</span>
+<span class="line"><i>110</i></span>
+<span class="line"><i>111</i>static KV_PUBLISHER_METRICS: OnceLock&lt;Arc&lt;KvPublisherMetrics&gt;&gt; = OnceLock::new();</span>
+<span class="line"><i>112</i></span>
+<span class="line"><i>113</i>impl KvPublisherMetrics {</span>
+<span class="line"><i>114</i>    /// Create from a Component, memoized in a static OnceLock.</span>
+<span class="line"><i>115</i>    /// Uses the MetricsHierarchy API which auto-prepends `dynamo_component_`,</span>
+<span class="line"><i>116</i>    /// injects hierarchy labels (including `worker_id`), and registers with the</span>
+<span class="line"><i>117</i>    /// DRT `MetricsRegistry`.</span>
+<span class="line"><i>118</i>    pub fn from_component(component: &amp;Component) -&gt; Arc&lt;Self&gt; {</span>
+<span class="line"><i>119</i>        KV_PUBLISHER_METRICS</span>
+<span class="line"><i>120</i>            .get_or_init(|| Arc::new(Self::build(component)))</span>
+<span class="line"><i>121</i>            .clone()</span>
+<span class="line"><i>122</i>    }</span>
+<span class="line"><i>123</i></span>
+<span class="line"><i>124</i>    /// Register the publisher&#x27;s metrics against any metrics hierarchy.</span>
+<span class="line"><i>125</i>    ///</span>
+<span class="line"><i>126</i>    /// Split out of [`Self::from_component`] so registration is reachable from</span>
+<span class="line"><i>127</i>    /// tests: `from_component` needs a real `Component` (and therefore a live</span>
+<span class="line"><i>128</i>    /// `DistributedRuntime`) and memoizes into a process-global `OnceLock`, so</span>
+<span class="line"><i>129</i>    /// only the first call in a process runs this code at all.</span>
+<span class="line"><i>130</i>    fn build&lt;H: MetricsHierarchy&gt;(hierarchy: &amp;H) -&gt; Self {</span>
+<span class="line"><i>131</i>        let metrics = hierarchy.metrics();</span>
+<span class="line"><i>132</i>        let engines_dropped_events_total = metrics</span>
+<span class="line"><i>133</i>            .create_intcounter(</span>
+<span class="line"><i>134</i>                kv_publisher::ENGINES_DROPPED_EVENTS_TOTAL,</span>
+<span class="line"><i>135</i>                &quot;Total number of raw events dropped by engines before reaching publisher (detected via event_id gaps)&quot;,</span>
+<span class="line"><i>136</i>                &amp;[],</span>
+<span class="line"><i>137</i>            )</span>
+<span class="line"><i>138</i>            .expect(&quot;failed to create kv_publisher_engines_dropped_events_total&quot;);</span>
+<span class="line"><i>139</i>        let zmq_events_total = metrics</span>
+<span class="line"><i>140</i>            .create_intcountervec(</span>
+<span class="line"><i>141</i>                kv_publisher::ZMQ_EVENTS_TOTAL,</span>
+<span class="line"><i>142</i>                &quot;Total number of ZMQ KV events seen by the relay&quot;,</span>
+<span class="line"><i>143</i>                &amp;[&quot;stage&quot;, &quot;event_type&quot;],</span>
+<span class="line"><i>144</i>                &amp;[],</span>
+<span class="line"><i>145</i>            )</span>
+<span class="line"><i>146</i>            .expect(&quot;failed to create kv_publisher_zmq_events_total&quot;);</span>
+<span class="line"><i>147</i>        let zmq_filtered_events_total = metrics</span>
+<span class="line"><i>148</i>            .create_intcountervec(</span>
+<span class="line"><i>149</i>                kv_publisher::ZMQ_FILTERED_EVENTS_TOTAL,</span>
+<span class="line"><i>150</i>                &quot;Total number of ZMQ KV events filtered before conversion&quot;,</span>
+<span class="line"><i>151</i>                &amp;[&quot;event_type&quot;, &quot;reason&quot;],</span>
+<span class="line"><i>152</i>                &amp;[],</span>
+<span class="line"><i>153</i>            )</span>
+<span class="line"><i>154</i>            .expect(&quot;failed to create kv_publisher_zmq_filtered_events_total&quot;);</span>
+<span class="line"><i>155</i>        let zmq_conversion_issues_total = metrics</span>
+<span class="line"><i>156</i>            .create_intcountervec(</span>
+<span class="line"><i>157</i>                kv_publisher::ZMQ_CONVERSION_ISSUES_TOTAL,</span>
+<span class="line"><i>158</i>                &quot;Total number of ZMQ KV events dropped due to conversion issues&quot;,</span>
+<span class="line"><i>159</i>                &amp;[&quot;event_type&quot;, &quot;reason&quot;],</span>
+<span class="line"><i>160</i>                &amp;[],</span>
+<span class="line"><i>161</i>            )</span>
+<span class="line"><i>162</i>            .expect(&quot;failed to create kv_publisher_zmq_conversion_issues_total&quot;);</span>
+<span class="line"><i>163</i>        let zmq_suspicious_events_total = metrics</span>
+<span class="line"><i>164</i>            .create_intcountervec(</span>
+<span class="line"><i>165</i>                kv_publisher::ZMQ_SUSPICIOUS_EVENTS_TOTAL,</span>
+<span class="line"><i>166</i>                &quot;Total number of suspicious-but-forwarded ZMQ KV events&quot;,</span>
+<span class="line"><i>167</i>                &amp;[&quot;event_type&quot;, &quot;reason&quot;],</span>
+<span class="line"><i>168</i>                &amp;[],</span>
+<span class="line"><i>169</i>            )</span>
+<span class="line"><i>170</i>            .expect(&quot;failed to create kv_publisher_zmq_suspicious_events_total&quot;);</span>
+<span class="line"><i>171</i></span>
+<span class="line"><i>172</i>        Self {</span>
+<span class="line"><i>173</i>            engines_dropped_events_total,</span>
+<span class="line"><i>174</i>            zmq_events_total,</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>指标后缀（完整名加 dynamo_component_）</th><th>记录/labels</th><th>解释边界</th></tr></thead><tbody><tr><td>kv_publisher_zmq_events_total</td><td>stage=received/accepted，event_type</td><td>received 在成功 decode batch 后逐 raw event 记；accepted 在 preprocessing 后，转换仍可能失败</td></tr><tr><td>kv_publisher_zmq_filtered_events_total</td><td>event_type, reason</td><td>预处理过滤，可能是预期忽略而非故障</td></tr><tr><td>kv_publisher_zmq_conversion_issues_total</td><td>event_type, reason</td><td>转换失败/无结果，需查具体原因和 schema</td></tr><tr><td>kv_publisher_zmq_suspicious_events_total</td><td>event_type, reason</td><td>可疑但仍被转发，不能当作 dropped 数</td></tr><tr><td>kv_publisher_engines_dropped_events_total</td><td>按输入 event_id gap 的数量增加</td><td>不是 gap 事件发生次数，也不是端到端确认丢失的精确计数</td></tr></tbody></table></div><p>Hierarchy 自动提供 dynamo_namespace/component/worker 等标签并注册到 DRT Registry；进程全局 OnceLock 只在首次初始化构建。若进程承载多个逻辑组件，需要核查指标归属，不能假定每次 from_component 都重新绑定。</p><pre><code># 补充集群/组件筛选；各 stage 分别看，不直接相加当事件数
+sum by (stage, event_type) (
+  rate(dynamo_component_kv_publisher_zmq_events_total[5m])
+)
+
+sum by (event_type, reason) (
+  rate(dynamo_component_kv_publisher_zmq_conversion_issues_total[5m])
+)</code></pre></section><section id="se-reliability" class="lesson"><div class="sectionhead"><h2>20 / 可靠性：普通提示与 Cleared 屏障</h2><label class="done"><input type="checkbox" data-read="se-reliability"> 已读</label></div><p>普通 Store/Remove 使用本地索引队列 admission 语义，不等于 index 已应用完成或所有订阅者收到；普通 gap/局部失败通常 warning 后继续。Cleared 是排序屏障，需要完成受影响层的清理后再对外发布。state-agent/恢复路径有独立身份校验与 fencing，不把所有 advisory 路径都描述成同一强一致协议。</p><details class="source" id="src-se-local-admit"><summary><b>源码 · 本地 admission 契约及 Cleared 更强语义</b><small>lib/llm/src/kv_router/publisher/sinks.rs:153–165</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/publisher/sinks.rs#L153-L165" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>153</i></span>
+<span class="line"><i>154</i>/// Apply one canonical event using the shared local queue-admission contract.</span>
+<span class="line"><i>155</i>///</span>
+<span class="line"><i>156</i>/// Callers own logging and fail-open/fail-closed policy. `Cleared` is stronger</span>
+<span class="line"><i>157</i>/// inside `LocalKvIndexer` and returns only after every affected tier completes.</span>
+<span class="line"><i>158</i>pub(super) async fn admit_local_event(</span>
+<span class="line"><i>159</i>    local_indexer: Option&lt;&amp;LocalKvIndexer&gt;,</span>
+<span class="line"><i>160</i>    event: &amp;RouterEvent,</span>
+<span class="line"><i>161</i>) -&gt; Result&lt;(), KvRouterError&gt; {</span>
+<span class="line"><i>162</i>    let Some(local_indexer) = local_indexer else {</span>
+<span class="line"><i>163</i>        return Ok(());</span>
+<span class="line"><i>164</i>    };</span>
+<span class="line"><i>165</i>    local_indexer.apply_event_with_buffer(event.clone()).await</span></code></pre></details><details class="source" id="src-se-heartbeat"><summary><b>源码 · 只有协商 liveness 才会因 heartbeat 过期清 residency</b><small>lib/llm/src/kv_router/publisher/zmq_listener.rs:101–120</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/publisher/zmq_listener.rs#L101-L120" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>101</i>                    tokio::time::sleep_until(last_message + timeout).await;</span>
+<span class="line"><i>102</i>                } else {</span>
+<span class="line"><i>103</i>                    std::future::pending::&lt;()&gt;().await;</span>
+<span class="line"><i>104</i>                }</span>
+<span class="line"><i>105</i>            }, if !expired =&gt; {</span>
+<span class="line"><i>106</i>                let (rank, _) = liveness.expect(&quot;deadline requires negotiated liveness&quot;);</span>
+<span class="line"><i>107</i>                let worker = WorkerWithDpRank::new(worker_id, rank);</span>
+<span class="line"><i>108</i>                let clear = normalizer.preprocess_with_reason(</span>
+<span class="line"><i>109</i>                    RawKvEvent::AllBlocksCleared { ownership: None }, worker</span>
+<span class="line"><i>110</i>                ).expect(&quot;clear is accepted&quot;);</span>
+<span class="line"><i>111</i>                let clear = normalizer.normalize_preprocessed(</span>
+<span class="line"><i>112</i>                    clear, next_event_id.fetch_add(1, Ordering::SeqCst), worker</span>
+<span class="line"><i>113</i>                ).expect(&quot;clear normalizes&quot;);</span>
+<span class="line"><i>114</i>                if tx.send(vec![clear]).is_err() {</span>
+<span class="line"><i>115</i>                    break &#x27;main String::from(&quot;channel receiver dropped&quot;);</span>
+<span class="line"><i>116</i>                }</span>
+<span class="line"><i>117</i>                expired = true;</span>
+<span class="line"><i>118</i>                tracing::warn!(%zmq_endpoint, rank, &quot;KV event source heartbeat expired; cleared residency&quot;);</span>
+<span class="line"><i>119</i>            }</span>
+<span class="line"><i>120</i></span></code></pre></details><p>Publisher 的 advisory 规则见固定提交中 publisher/AGENTS.md 与 README。显式协商 heartbeat 的 legacy source 对 sequence discontinuity/expiry 有清理行为；未启用者不应被描述为每次 gap 自动清空。去重只在指定 publisher/sequence 与有限缓存窗口内，不等于持久 exactly-once。</p><aside class="note ">可观测重点是语义边界：原生 seq 断点、decode/convert 失败、队列准入失败、Clear 完成、publication 错误、消费者进度和 recovery 状态；不要把任何一层单独的吞吐 counter 当端到端正确性证明。</aside></section><section id="se-trace" class="lesson"><div class="sectionhead"><h2>21 / 全链路追踪：已有信号、缺口与正确关联方式</h2><label class="done"><input type="checkbox" data-read="se-trace"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>层</th><th>已有证据</th><th>关联限制</th></tr></thead><tbody><tr><td>逻辑池</td><td>原子量、pool/external labels、匹配日志</td><td>通常按池/实例聚合，不天然带每请求 Trace ID</td></tr><tr><td>offload batch</td><td>TimingTrace + Batch transfer complete 字段</td><td>一批多 container；Instant 与缺失值不是 OTel 上下文</td></tr><tr><td>physical transfer</td><td>transfer UUID/EventHandle、pending/status warning</td><td>提交/完成需成对关联；UUID 不等于 Trace ID</td></tr><tr><td>EventEnvelope / KVBM batches</td><td>publisher/sequence/topic/instance</td><td>没有通用 W3C context 外层字段；可自定义 payload 但非自动契约</td></tr><tr><td>NIXL telemetry</td><td>传输级性能事件与 exporter（依安装版本）</td><td>不自动串联用户请求、缓存异步处理和全部订阅消费者</td></tr></tbody></table></div><p>与 <a href="pd-trace.html">PD Trace 结论</a>一致：Request Plane 的上下文契约不能自动覆盖 Storage &amp; Events。要补齐，需定义请求→共享块/批次/transfer 的多对多关联、异步完成边界、跨语言传播和 exporter；更适合用 Span Link 表达共享/批量因果，避免把一个共享块硬挂到单个请求。</p><aside class="note ">不能仅凭在几个日志里找到相同 request_id，或 NIXL exporter 有指标，就宣称存储和事件已全链路追踪。本章给出实施边界，不自动修改任何 wire schema 或热路径。</aside></section><section id="se-cluster" class="lesson"><div class="sectionhead"><h2>22 / 对照 ACK 快照与接入验收</h2><label class="done"><input type="checkbox" data-read="se-cluster"> 已读</label></div><p>依据 <a href="ack-LB97i2CZNR/dynamo-test-deployment.md">用户部署记录</a>：SGLang/NIXL PD、TCP Request Plane、ZMQ Event Plane、原生 KV events tcp://*:5557，Worker metrics:9090，Pod 声明 nixl:19090，TP=4。</p><div class="tablewrap"><table><thead><tr><th>需要核实</th><th>为什么</th><th>完成证据</th></tr></thead><tbody><tr><td>实际版本、connector 与 KVBM 是否启用</td><td>PD=NIXL 不能推导分层 KVBM 已接入</td><td>镜像 digest、包版本、启动参数、已加载 connector/库</td></tr><tr><td>5557 对应哪段 ZMQ 协议</td><td>可能是引擎原生 ingress，不是通用 Event Plane egress</td><td>publisher/listener 的两端地址、topic、帧格式、rank 和 source cursor</td></tr><tr><td>9090 实际指标与 Registry</td><td>逻辑池 aggregator/旧独立 exporter/DRT 是不同入口</td><td>抓取样例、TYPE、labels、Collector 注册位置和 targets</td></tr><tr><td>19090 实际 exporter/rank 覆盖</td><td>端口声明不是 enable/监听/成功采集证据</td><td>实际 NIXL 配置/版本、rank 的端口映射、Prometheus targets</td></tr><tr><td>驻留事件完整性</td><td>metrics 200 不保证 Router index 跟随 cache</td><td>Store→命中、Remove/Clear→失效、错误/重连后的状态变化</td></tr><tr><td>底层性能</td><td>块命中不保证 TTFT 降低</td><td>匹配、staging、queue、传输、注册与实际请求时延的同口径对照</td></tr></tbody></table></div><p>继续保留已有的 <a href="ack-LB97i2CZNR/request-plane-trace-checklist.html">Request Plane Trace 清单</a>；Storage/Event 接入是额外验证范围，不要求给当前 ZMQ 部署新增 NATS。</p></section><section id="se-evidence" class="lesson"><div class="sectionhead"><h2>23 / 证据、排障入口与后续阅读</h2><label class="done"><input type="checkbox" data-read="se-evidence"> 已读</label></div><p><a href="storage-events-source-manifest.json">固定提交源码摘录清单</a>记录每段路径、行号、revision、文件 SHA-256。页面提供搜索、源码展开、阅读进度与打印；没有保留临时图索引诊断或浏览器截图。</p><div class="tablewrap"><table><thead><tr><th>现象</th><th>先查的边界</th></tr></thead><tbody><tr><td>hit ratio 高但 TTFT 仍高</td><td>hit 的口径与层级 → G3/G4 staging → NIXL queue/xfer → 引擎实际 reuse</td></tr><tr><td>offload 数增长但目的层无块</td><td>尝试计数时点 → transfer completion/错误 → 注册与淘汰</td></tr><tr><td>路由认为有缓存但引擎 miss</td><td>Store/Remove/Clear 时序 → source identity/rank → index 应用与恢复 → 选择时状态陈旧</td></tr><tr><td>收到 accepted 事件但输出不足</td><td>conversion_none / batching / dedup → local admission → publish/subscribe</td></tr><tr><td>没有 NIXL metrics</td><td>enable/exporter/版本 → scheduler 子进程环境 → 端口占用/监听 → targets</td></tr></tbody></table></div><ul><li>本仓库配套设计：lib/kvbm-engine/docs/architecture.md、offload.md、session.md；kvbm-logical/README.md；kvbm-physical/README.md；KV publisher/README.md。</li><li><a href="https://docs.nvidia.com/dynamo/dev/reference/components/kvbm-configuration">官方 KVBM 配置参考</a>：用于查配置入口，dev 内容不能替代镜像版本核查。</li><li>相关章节：<a href="observability.html">可观测</a>、<a href="planner.html">Planner</a>、<a href="control-plane.html">控制面</a>、<a href="pd-trace.html">PD Trace</a>。</li></ul><aside class="note ">本章未逐行覆盖 S3 SDK/对象锁实现、NIXL/UCX 内部协议、CUDA kernel、各引擎 connector 全部内部代码与 KVCR 恢复全状态机。这些依赖或专项需要按安装版本进一步分析；不把局部结构缺字段推广成全仓库绝对不支持。</aside></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 9734418e5bc71027e6bd04a09314bf1765208c72。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

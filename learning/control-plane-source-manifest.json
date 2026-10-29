@@ -1,0 +1,305 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "Operator, admission, deployment, profiling, scaling, model management and Kubernetes discovery observability",
+  "runtime_verified": false,
+  "discovery_method": "Graph-first for indexed Python/Rust; deploy subtree excluded from graph, read fixed source directly",
+  "excerpts": [
+    {
+      "id": "cp-program",
+      "path": "deploy/operator/internal/controller/dgd_workload_program.go",
+      "start": 34,
+      "end": 99,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "448b01e51cd50213c70bebe4d649f853b0b559629e21ff2ed3b0a817e1aead8e"
+    },
+    {
+      "id": "cp-conditions",
+      "path": "deploy/operator/internal/controller/dgd_workload_program.go",
+      "start": 144,
+      "end": 180,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "448b01e51cd50213c70bebe4d649f853b0b559629e21ff2ed3b0a817e1aead8e"
+    },
+    {
+      "id": "cp-reconcile",
+      "path": "deploy/operator/internal/controller/dynamographdeployment_controller.go",
+      "start": 192,
+      "end": 243,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "959dd551674d1a16c060b3093ab16aea001c2b3a488de3ce1e6f696f4cde2e4d"
+    },
+    {
+      "id": "cp-component",
+      "path": "deploy/operator/internal/controller/dgd_component_program.go",
+      "start": 106,
+      "end": 161,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "b2455c431144c5e0b21e7313be7f461cbc23df76d2062b219868c5aa78653ce8"
+    },
+    {
+      "id": "cp-register",
+      "path": "deploy/operator/internal/webhook/validation/register.go",
+      "start": 18,
+      "end": 34,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7210abe60ee3bc01c0aef7c7726ab577ffe2575b914ecc74024629262d9b922a"
+    },
+    {
+      "id": "cp-wrapper",
+      "path": "deploy/operator/internal/observability/webhook_wrapper.go",
+      "start": 43,
+      "end": 89,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "0578335acdfc980b63b94c2ccf5ca55f1da256c753b06e32fccb477c180ea594"
+    },
+    {
+      "id": "cp-webhook-metrics",
+      "path": "deploy/operator/internal/observability/metrics.go",
+      "start": 43,
+      "end": 98,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "37615031f6b5e1cdb4b28c543a756da5eeaed85b852438716f654ddd51b534aa"
+    },
+    {
+      "id": "cp-reason",
+      "path": "deploy/operator/internal/observability/metrics.go",
+      "start": 105,
+      "end": 137,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "37615031f6b5e1cdb4b28c543a756da5eeaed85b852438716f654ddd51b534aa"
+    },
+    {
+      "id": "cp-resource-def",
+      "path": "deploy/operator/internal/observability/metrics.go",
+      "start": 28,
+      "end": 41,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "37615031f6b5e1cdb4b28c543a756da5eeaed85b852438716f654ddd51b534aa"
+    },
+    {
+      "id": "cp-resource-run",
+      "path": "deploy/operator/internal/observability/resource_counter.go",
+      "start": 67,
+      "end": 108,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "1c65e5f83ec38ac73430dd3d6210b1cb4791a78d259d12e481b7f1d381eade54"
+    },
+    {
+      "id": "cp-resource-count",
+      "path": "deploy/operator/internal/observability/resource_counter.go",
+      "start": 110,
+      "end": 160,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "1c65e5f83ec38ac73430dd3d6210b1cb4791a78d259d12e481b7f1d381eade54"
+    },
+    {
+      "id": "cp-registry",
+      "path": "deploy/operator/internal/observability/metrics.go",
+      "start": 73,
+      "end": 81,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "37615031f6b5e1cdb4b28c543a756da5eeaed85b852438716f654ddd51b534aa"
+    },
+    {
+      "id": "cp-manager",
+      "path": "deploy/operator/cmd/main.go",
+      "start": 235,
+      "end": 260,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "74910beb510e90a773e4abe6776f63d2169b7dcbcd876b2337ca77c4e4947584"
+    },
+    {
+      "id": "cp-resource-add",
+      "path": "deploy/operator/cmd/main.go",
+      "start": 379,
+      "end": 389,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "74910beb510e90a773e4abe6776f63d2169b7dcbcd876b2337ca77c4e4947584"
+    },
+    {
+      "id": "cp-monitor",
+      "path": "deploy/helm/charts/platform/components/operator/templates/operator-servicemonitor.yaml",
+      "start": 15,
+      "end": 49,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "56c90d75fd4b88d0dba33ad1bb996335449ac6dd02e5d7f0662e517c27a2f70c"
+    },
+    {
+      "id": "cp-metric-service",
+      "path": "deploy/helm/charts/platform/components/operator/templates/metrics-service.yaml",
+      "start": 15,
+      "end": 37,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "0903ecf5811ce432111636ad50f00a1cdf9fa259e602e65ebcf423250a505765"
+    },
+    {
+      "id": "cp-health",
+      "path": "deploy/operator/cmd/main.go",
+      "start": 481,
+      "end": 491,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "74910beb510e90a773e4abe6776f63d2169b7dcbcd876b2337ca77c4e4947584"
+    },
+    {
+      "id": "cp-dcd",
+      "path": "deploy/operator/internal/controller/dynamocomponentdeployment_controller.go",
+      "start": 184,
+      "end": 231,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "9be2f3e9a62ef4f0d541efb2c6aa086c729492dd5d24b0af8e38e2e0f6654bd3"
+    },
+    {
+      "id": "cp-dgdr-state",
+      "path": "deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go",
+      "start": 495,
+      "end": 513,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "e5404ebec8d0936a655108b6bbc35b12b987bccc49e815ebb3755be4e6386489"
+    },
+    {
+      "id": "cp-profile-start",
+      "path": "components/src/dynamo/profiler/profile_sla.py",
+      "start": 343,
+      "end": 395,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "5bd96fe32e33fbcf31bf4e8540a9999d01a250c520a4db0132492f85874b1484"
+    },
+    {
+      "id": "cp-profile-status",
+      "path": "components/src/dynamo/profiler/utils/profiler_status.py",
+      "start": 35,
+      "end": 73,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "a0b6b84f74d3f288fa30a1f3cbc84b217910f0457ef2f147edad2dc300a5d21d"
+    },
+    {
+      "id": "cp-copier",
+      "path": "deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go",
+      "start": 139,
+      "end": 197,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "e5404ebec8d0936a655108b6bbc35b12b987bccc49e815ebb3755be4e6386489"
+    },
+    {
+      "id": "cp-subphase",
+      "path": "deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go",
+      "start": 572,
+      "end": 616,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "e5404ebec8d0936a655108b6bbc35b12b987bccc49e815ebb3755be4e6386489"
+    },
+    {
+      "id": "cp-profile-failure",
+      "path": "deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go",
+      "start": 698,
+      "end": 734,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "e5404ebec8d0936a655108b6bbc35b12b987bccc49e815ebb3755be4e6386489"
+    },
+    {
+      "id": "cp-planner-write",
+      "path": "components/src/dynamo/planner/connectors/clients/kubernetes_api.py",
+      "start": 207,
+      "end": 236,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "8747ded990dc1279b42dd8c863ddc9b1aedd9b208ed8f575757bcb5c2347770d"
+    },
+    {
+      "id": "cp-adapter",
+      "path": "deploy/operator/internal/controller/dynamographdeploymentscalingadapter_controller.go",
+      "start": 107,
+      "end": 148,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "9d132a3af2f172c7ad64310f472387c39060e1f5038670040ea9a720247669ab"
+    },
+    {
+      "id": "cp-prom-env",
+      "path": "deploy/operator/internal/dynamo/component_common.go",
+      "start": 172,
+      "end": 204,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "e64a8efc8521e82992daaf52a0a36253790f4a6bdf9c3faacd46508ab7dbb5a0"
+    },
+    {
+      "id": "cp-model-empty",
+      "path": "deploy/operator/internal/controller/dynamo_model_controller.go",
+      "start": 112,
+      "end": 151,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "0f738eec7ac49c441b7fd2779018970d051ddcd91f5d29b73221fccab45d439d"
+    },
+    {
+      "id": "cp-model-status",
+      "path": "deploy/operator/internal/controller/dynamo_model_controller.go",
+      "start": 164,
+      "end": 195,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "0f738eec7ac49c441b7fd2779018970d051ddcd91f5d29b73221fccab45d439d"
+    },
+    {
+      "id": "cp-discover-register",
+      "path": "lib/runtime/src/discovery/kube.rs",
+      "start": 280,
+      "end": 301,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "b8648b19456ef399bb2c59a71ecb58e9a401fb53b58e1c609058ada3d526f424"
+    },
+    {
+      "id": "cp-discover-source",
+      "path": "lib/runtime/src/discovery/kube/daemon.rs",
+      "start": 136,
+      "end": 164,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "925092a21e6c37cd6b57eeb94b006899d60c6561e343eae0bc6e5dd9fe72ff66"
+    },
+    {
+      "id": "cp-discover-join",
+      "path": "lib/runtime/src/discovery/kube/daemon/state.rs",
+      "start": 246,
+      "end": 262,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "d5546dc531d5abc907853c4b92e761708895e22b04748a099f4427e1fedd528f"
+    },
+    {
+      "id": "cp-discover-connect",
+      "path": "lib/runtime/src/discovery/kube.rs",
+      "start": 190,
+      "end": 199,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "b8648b19456ef399bb2c59a71ecb58e9a401fb53b58e1c609058ada3d526f424"
+    },
+    {
+      "id": "cp-discover-ready",
+      "path": "lib/runtime/src/discovery/kube.rs",
+      "start": 88,
+      "end": 113,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "b8648b19456ef399bb2c59a71ecb58e9a401fb53b58e1c609058ada3d526f424"
+    },
+    {
+      "id": "cp-discover-watch",
+      "path": "lib/runtime/src/discovery/kube.rs",
+      "start": 439,
+      "end": 467,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "b8648b19456ef399bb2c59a71ecb58e9a401fb53b58e1c609058ada3d526f424"
+    },
+    {
+      "id": "cp-discover-lag",
+      "path": "lib/runtime/src/discovery/kube.rs",
+      "start": 552,
+      "end": 574,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "b8648b19456ef399bb2c59a71ecb58e9a401fb53b58e1c609058ada3d526f424"
+    },
+    {
+      "id": "cp-discover-errors",
+      "path": "lib/runtime/src/discovery/kube/daemon.rs",
+      "start": 261,
+      "end": 301,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "925092a21e6c37cd6b57eeb94b006899d60c6561e343eae0bc6e5dd9fe72ff66"
+    }
+  ]
+}

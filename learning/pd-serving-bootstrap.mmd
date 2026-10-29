@@ -1,0 +1,29 @@
+%% SPDX-License-Identifier: Apache-2.0
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant R as Frontend / PrefillRouter
+    participant O as Independent Prefill observer
+    participant P as Prefill backend / engine
+    participant D as Decode backend / engine
+    C->>R: Logical generation request
+    R->>P: Prefill with selected bootstrap room / DP rank
+    Note over R,P: Bootstrap may be known from discovery or first output
+    R->>O: Continue consuming Prefill stream
+    par Context execution and observation
+        P->>P: Compute context KV
+        P-->>O: Tail outputs / completion or error
+        O->>O: Record observed Prefill completion at stream end
+    and Decode coordination and generation
+        R->>D: bootstrap_info + Prefill worker / DP rank
+        D->>P: Engine-specific receiver / KV coordination
+        P-->>D: KV data via connector transport
+        D-->>R: Tokens (ordinary items may stream early)
+        R-->>C: Streamed tokens
+    end
+    alt Prefill observer successful
+        R-->>C: Permit successful final terminal / EOF
+    else Prefill observer failed
+        R-->>C: Error (do not emit final success first)
+    end
+    Note over O,D: Client cancellation does not blindly abort independent Prefill

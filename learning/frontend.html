@@ -1,0 +1,786 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>Frontend 与协议流水线 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#frontend-scope">01 / 阅读范围与证据版本</a><a href="#frontend-architecture">02 / Frontend 是模型与协议流水线的宿主</a><a href="#frontend-startup">03 / 启动与配置：显式跨越语言边界</a><a href="#frontend-models">04 / 模型发现不是看见一个 endpoint 就立即使用</a><a href="#frontend-http">05 / HTTP 入口：解析、生命周期与 readiness</a><a href="#frontend-identity">06 / 模型别名、标签基数和请求指标归属</a><a href="#frontend-validation">07 / 字段准入、值校验与 owner 必须分开</a><a href="#frontend-preprocess">08 / 预处理：模板、tokenization、多模态和路由信息</a><a href="#frontend-preprocess-observe">09 / 预处理观测：测的是哪个区间</a><a href="#frontend-postprocess">10 / 后处理：token 流不等于 SSE 帧</a><a href="#frontend-sse">11 / 流式投影：错误与扩展事件</a><a href="#frontend-live-metrics">12 / 活跃负载：从 tokenization 更新到首 token 状态迁移</a><a href="#frontend-end-metrics">13 / 结束时的 Histogram 与 span 摘要</a><a href="#frontend-relay">14 / 观测数据也是控制输入：FrontendLoad 发布</a><a href="#frontend-practice">15 / 接入与排查顺序</a><a href="#frontend-diagram">16 / 架构分层图与交叉阅读</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 9734418e5</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>Frontend 与协议流水线</h1><p class="lede">从 Python 启动、模型准入到 Rust HTTP、预处理、生成和流式投影，逐层核对协议语义与观测时点。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 9734418e5</span><span class="pill ">系统源码专题 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="frontend-scope" class="lesson"><div class="sectionhead"><h2>01 / 阅读范围与证据版本</h2><label class="done"><input type="checkbox" data-read="frontend-scope"> 已读</label></div><p>从 Python 启动、模型准入到 Rust HTTP、预处理、生成和流式投影，逐层核对协议语义与观测时点。</p><aside class="note ">源码固定于 9734418e5bc71027e6bd04a09314bf1765208c72（workspace 1.7.0），与 PD / 可靠性等新专题使用同一代码基线。本文分析实现和配置边界，未运行推理、性能实验或集群修改。历史部署与旧版章节须按版本对照。</aside></section><section id="frontend-architecture" class="lesson"><div class="sectionhead"><h2>02 / Frontend 是模型与协议流水线的宿主</h2><label class="done"><input type="checkbox" data-read="frontend-architecture"> 已读</label></div><div class="flow"><div><b>01</b>CLI / FrontendConfig</div><div><b>02</b>DistributedRuntime / PyO3</div><div><b>03</b>ModelManager / Discovery</div><div><b>04</b>HTTP 协议与语义校验</div><div><b>05</b>模板 / token / Router / backend</div><div><b>06</b>解析 / SSE / 生命周期指标</div></div><p>Python 负责组装配置和扩展工厂，Rust 承担默认 HTTP 服务与大量 token 流水线。选择 Python chat processor 时，预处理/后处理的语义 owner 会变化，不能把默认 Rust 路径当作所有部署唯一实现。Frontend 可以内嵌 Router，但引擎计算与 KV 张量不因此搬进 Frontend。</p></section><section id="frontend-startup" class="lesson"><div class="sectionhead"><h2>03 / 启动与配置：显式跨越语言边界</h2><label class="done"><input type="checkbox" data-read="frontend-startup"> 已读</label></div><details class="source" id="src-frontend-1"><summary><b>源码 · 解析配置、传输 TLS 与 DistributedRuntime</b><small>components/src/dynamo/frontend/main.py:370–418</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/frontend/main.py#L370-L418" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>370</i>async def async_main():</span>
+<span class="line"><i>371</i>    &quot;&quot;&quot;Main async entry point for the Dynamo frontend.</span>
+<span class="line"><i>372</i></span>
+<span class="line"><i>373</i>    Initializes the distributed runtime, configures routing, and starts</span>
+<span class="line"><i>374</i>    the HTTP server or interactive mode based on command-line arguments.</span>
+<span class="line"><i>375</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>376</i>    # The system status server port is a worker concern.</span>
+<span class="line"><i>377</i>    #</span>
+<span class="line"><i>378</i>    # Serve tests set DYN_SYSTEM_PORT for the worker, but aggregated launch scripts</span>
+<span class="line"><i>379</i>    # start `dynamo.frontend` first. If the frontend inherits DYN_SYSTEM_PORT, it can</span>
+<span class="line"><i>380</i>    # bind that port before the worker, causing port conflicts and/or scraping the</span>
+<span class="line"><i>381</i>    # wrong metrics endpoint.</span>
+<span class="line"><i>382</i>    os.environ.pop(&quot;DYN_SYSTEM_PORT&quot;, None)</span>
+<span class="line"><i>383</i>    config, vllm_flags, sglang_flags = parse_args()</span>
+<span class="line"><i>384</i>    dump_config(config.dump_config_to, config)</span>
+<span class="line"><i>385</i>    max_seq_info = (</span>
+<span class="line"><i>386</i>        f&quot;, max_seq_len: {config.migration_max_seq_len}&quot;</span>
+<span class="line"><i>387</i>        if config.migration_max_seq_len is not None</span>
+<span class="line"><i>388</i>        else &quot;&quot;</span>
+<span class="line"><i>389</i>    )</span>
+<span class="line"><i>390</i>    logger.info(</span>
+<span class="line"><i>391</i>        f&quot;Request migration {&#x27;enabled&#x27; if config.migration_limit &gt; 0 else &#x27;disabled&#x27;} &quot;</span>
+<span class="line"><i>392</i>        f&quot;(limit: {config.migration_limit}{max_seq_info})&quot;</span>
+<span class="line"><i>393</i>    )</span>
+<span class="line"><i>394</i>    # Warn if DYN_SYSTEM_PORT is set (frontend doesn&#x27;t use system metrics server)</span>
+<span class="line"><i>395</i>    if os.environ.get(&quot;DYN_SYSTEM_PORT&quot;):</span>
+<span class="line"><i>396</i>        logger.warning(</span>
+<span class="line"><i>397</i>            &quot;=&quot; * 80 + &quot;\n&quot;</span>
+<span class="line"><i>398</i>            &quot;WARNING: DYN_SYSTEM_PORT is set but NOT used by the frontend!\n&quot;</span>
+<span class="line"><i>399</i>            &quot;The frontend does not expose a system metrics server.\n&quot;</span>
+<span class="line"><i>400</i>            &quot;Only backend workers should set DYN_SYSTEM_PORT.\n&quot;</span>
+<span class="line"><i>401</i>            &quot;Use --http-port to configure the frontend HTTP API port.\n&quot; + &quot;=&quot; * 80</span>
+<span class="line"><i>402</i>        )</span>
+<span class="line"><i>403</i></span>
+<span class="line"><i>404</i>    loop = asyncio.get_running_loop()</span>
+<span class="line"><i>405</i>    # Export transport TLS/mTLS settings BEFORE constructing DistributedRuntime:</span>
+<span class="line"><i>406</i>    # it connects to NATS eagerly, so NATS (m)TLS env vars must already be set or</span>
+<span class="line"><i>407</i>    # the CLI flags are silently ignored (unlike the lazily-dialed TCP planes).</span>
+<span class="line"><i>408</i>    _export_transport_tls_env(config)</span>
+<span class="line"><i>409</i>    warn_if_frontend_cpu_affinity_spans_numa_nodes(logger)</span>
+<span class="line"><i>410</i>    runtime = DistributedRuntime(</span>
+<span class="line"><i>411</i>        loop,</span>
+<span class="line"><i>412</i>        config.discovery_backend,</span>
+<span class="line"><i>413</i>        config.request_plane,</span>
+<span class="line"><i>414</i>        event_plane=config.event_plane,</span>
+<span class="line"><i>415</i>        response_plane=config.response_plane,</span>
+<span class="line"><i>416</i>    )</span>
+<span class="line"><i>417</i></span>
+<span class="line"><i>418</i>    def signal_handler():</span></code></pre></details><details class="source" id="src-frontend-2"><summary><b>源码 · 传给绑定的显式参数与 chat processor 工厂</b><small>components/src/dynamo/frontend/main.py:435–481</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/frontend/main.py#L435-L481" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>435</i>    kwargs: dict[str, Any] = {</span>
+<span class="line"><i>436</i>        &quot;http_host&quot;: config.http_host,</span>
+<span class="line"><i>437</i>        &quot;http_port&quot;: config.http_port,</span>
+<span class="line"><i>438</i>        &quot;batch_gateway_url&quot;: config.batch_gateway_url,</span>
+<span class="line"><i>439</i>        &quot;kv_cache_block_size&quot;: config.kv_cache_block_size,</span>
+<span class="line"><i>440</i>        &quot;router_config&quot;: router_config,</span>
+<span class="line"><i>441</i>        &quot;migration_limit&quot;: config.migration_limit,</span>
+<span class="line"><i>442</i>        &quot;metrics_prefix&quot;: metrics_prefix,</span>
+<span class="line"><i>443</i>        &quot;enable_anthropic_api&quot;: config.enable_anthropic_api,</span>
+<span class="line"><i>444</i>        &quot;strip_anthropic_preamble&quot;: config.strip_anthropic_preamble,</span>
+<span class="line"><i>445</i>        &quot;enable_streaming_tool_dispatch&quot;: config.enable_streaming_tool_dispatch,</span>
+<span class="line"><i>446</i>        &quot;enable_streaming_reasoning_dispatch&quot;: config.enable_streaming_reasoning_dispatch,</span>
+<span class="line"><i>447</i>        &quot;reasoning_field_name&quot;: config.reasoning_field_name,</span>
+<span class="line"><i>448</i>        &quot;tokenizer_backend&quot;: config.tokenizer_backend,</span>
+<span class="line"><i>449</i>        &quot;tokenizer_fallback&quot;: config.tokenizer_fallback,</span>
+<span class="line"><i>450</i>    }</span>
+<span class="line"><i>451</i>    if config.migration_max_seq_len is not None:</span>
+<span class="line"><i>452</i>        kwargs[&quot;migration_max_seq_len&quot;] = config.migration_max_seq_len</span>
+<span class="line"><i>453</i></span>
+<span class="line"><i>454</i>    if config.model_name:</span>
+<span class="line"><i>455</i>        kwargs[&quot;model_name&quot;] = config.model_name</span>
+<span class="line"><i>456</i>    if config.model_path:</span>
+<span class="line"><i>457</i>        kwargs[&quot;model_path&quot;] = config.model_path</span>
+<span class="line"><i>458</i>    if config.tls_cert_path:</span>
+<span class="line"><i>459</i>        kwargs[&quot;tls_cert_path&quot;] = config.tls_cert_path</span>
+<span class="line"><i>460</i>    if config.tls_key_path:</span>
+<span class="line"><i>461</i>        kwargs[&quot;tls_key_path&quot;] = config.tls_key_path</span>
+<span class="line"><i>462</i>    if config.tls_client_ca_cert_path:</span>
+<span class="line"><i>463</i>        kwargs[&quot;tls_client_ca_cert_path&quot;] = config.tls_client_ca_cert_path</span>
+<span class="line"><i>464</i>    if config.namespace:</span>
+<span class="line"><i>465</i>        kwargs[&quot;namespace&quot;] = config.namespace</span>
+<span class="line"><i>466</i>    if config.namespace_prefix:</span>
+<span class="line"><i>467</i>        kwargs[&quot;namespace_prefix&quot;] = config.namespace_prefix</span>
+<span class="line"><i>468</i>    if config.kserve_grpc_server and config.grpc_metrics_port:</span>
+<span class="line"><i>469</i>        kwargs[&quot;http_metrics_port&quot;] = config.grpc_metrics_port</span>
+<span class="line"><i>470</i></span>
+<span class="line"><i>471</i>    if config.chat_processor == &quot;vllm&quot;:</span>
+<span class="line"><i>472</i>        assert (</span>
+<span class="line"><i>473</i>            vllm_flags is not None</span>
+<span class="line"><i>474</i>        ), &quot;vllm_flags is required when chat processor is vllm&quot;</span>
+<span class="line"><i>475</i>        chat_engine_factory = setup_engine_factory(</span>
+<span class="line"><i>476</i>            config, vllm_flags</span>
+<span class="line"><i>477</i>        ).chat_engine_factory</span>
+<span class="line"><i>478</i>        kwargs[&quot;chat_engine_factory&quot;] = chat_engine_factory</span>
+<span class="line"><i>479</i>    elif config.chat_processor == &quot;sglang&quot;:</span>
+<span class="line"><i>480</i>        chat_engine_factory = setup_sglang_engine_factory(</span>
+<span class="line"><i>481</i>            config, sglang_flags</span></code></pre></details><p>FrontendConfig 是前端配置的来源。传输 TLS 设置必须在 Runtime 初始化前可见，而前端业务参数通过绑定参数/结构显式传递。Frontend 不使用 worker 的 DYN_SYSTEM_PORT；HTTP API/metrics 与 worker system server 应分别确认。</p></section><section id="frontend-models" class="lesson"><div class="sectionhead"><h2>04 / 模型发现不是看见一个 endpoint 就立即使用</h2><label class="done"><input type="checkbox" data-read="frontend-models"> 已读</label></div><details class="source" id="src-frontend-3"><summary><b>源码 · 按端点类型注册模型</b><small>lib/llm/src/discovery/model_manager.rs:1686–1732</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/discovery/model_manager.rs#L1686-L1732" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1686</i>    pub fn add_chat_completions_model(</span>
+<span class="line"><i>1687</i>        &amp;self,</span>
+<span class="line"><i>1688</i>        model: &amp;str,</span>
+<span class="line"><i>1689</i>        card_checksum: &amp;str,</span>
+<span class="line"><i>1690</i>        engine: OpenAIChatCompletionsStreamingEngine,</span>
+<span class="line"><i>1691</i>    ) -&gt; Result&lt;(), ModelManagerError&gt; {</span>
+<span class="line"><i>1692</i>        let _reservation = self.reservation_lock.lock();</span>
+<span class="line"><i>1693</i>        self.ensure_name_not_alias(model)?;</span>
+<span class="line"><i>1694</i>        let model_entry = self.get_or_create_model(model);</span>
+<span class="line"><i>1695</i>        if model_entry.has_chat_engine() {</span>
+<span class="line"><i>1696</i>            return Err(ModelManagerError::ModelAlreadyExists(model.to_string()));</span>
+<span class="line"><i>1697</i>        }</span>
+<span class="line"><i>1698</i>        let namespace = format!(&quot;__local_chat_{}&quot;, model);</span>
+<span class="line"><i>1699</i>        let mut ws = WorkerSet::new(</span>
+<span class="line"><i>1700</i>            namespace.clone(),</span>
+<span class="line"><i>1701</i>            card_checksum.to_string(),</span>
+<span class="line"><i>1702</i>            Self::aggregated_local_card(),</span>
+<span class="line"><i>1703</i>        );</span>
+<span class="line"><i>1704</i>        ws.chat_engine = Some(engine);</span>
+<span class="line"><i>1705</i>        model_entry.add_worker_set(namespace, Arc::new(ws));</span>
+<span class="line"><i>1706</i>        self.publish_catalog_locked();</span>
+<span class="line"><i>1707</i>        Ok(())</span>
+<span class="line"><i>1708</i>    }</span>
+<span class="line"><i>1709</i></span>
+<span class="line"><i>1710</i>    pub fn add_completions_model(</span>
+<span class="line"><i>1711</i>        &amp;self,</span>
+<span class="line"><i>1712</i>        model: &amp;str,</span>
+<span class="line"><i>1713</i>        card_checksum: &amp;str,</span>
+<span class="line"><i>1714</i>        engine: OpenAICompletionsStreamingEngine,</span>
+<span class="line"><i>1715</i>    ) -&gt; Result&lt;(), ModelManagerError&gt; {</span>
+<span class="line"><i>1716</i>        let _reservation = self.reservation_lock.lock();</span>
+<span class="line"><i>1717</i>        self.ensure_name_not_alias(model)?;</span>
+<span class="line"><i>1718</i>        let model_entry = self.get_or_create_model(model);</span>
+<span class="line"><i>1719</i>        if model_entry.has_completions_engine() {</span>
+<span class="line"><i>1720</i>            return Err(ModelManagerError::ModelAlreadyExists(model.to_string()));</span>
+<span class="line"><i>1721</i>        }</span>
+<span class="line"><i>1722</i>        let namespace = format!(&quot;__local_completions_{}&quot;, model);</span>
+<span class="line"><i>1723</i>        let mut ws = WorkerSet::new(</span>
+<span class="line"><i>1724</i>            namespace.clone(),</span>
+<span class="line"><i>1725</i>            card_checksum.to_string(),</span>
+<span class="line"><i>1726</i>            Self::aggregated_local_card(),</span>
+<span class="line"><i>1727</i>        );</span>
+<span class="line"><i>1728</i>        ws.completions_engine = Some(engine);</span>
+<span class="line"><i>1729</i>        model_entry.add_worker_set(namespace, Arc::new(ws));</span>
+<span class="line"><i>1730</i>        self.publish_catalog_locked();</span>
+<span class="line"><i>1731</i>        Ok(())</span>
+<span class="line"><i>1732</i>    }</span></code></pre></details><p>ModelManager 为 chat、completions、embedding 等维护引擎入口。WorkerSet 以 namespace/component/endpoint/model/worker type 区分，当前准入要求边界规范化与 tokenizer overrides 后的 MDC checksum 相等。首个有效配置保留为 incumbent，冲突 worker 不得污染已有流水线；旧成员全部消失后才允许后继 cohort。</p><aside class="note ">这是 frontend-local 的接纳视图，不是集群一致选举。进程 ready、模型 serving ready、Discovery 可见与 Relay 视图就绪可有不同结果；详见控制面专题。</aside></section><section id="frontend-http" class="lesson"><div class="sectionhead"><h2>05 / HTTP 入口：解析、生命周期与 readiness</h2><label class="done"><input type="checkbox" data-read="frontend-http"> 已读</label></div><details class="source" id="src-frontend-4"><summary><b>源码 · chat handler 的 request lifecycle 与前置 ready gate</b><small>lib/llm/src/http/service/openai.rs:2486–2535</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/openai.rs#L2486-L2535" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2486</i>async fn handler_chat_completions(</span>
+<span class="line"><i>2487</i>    State((state, template)): State&lt;(Arc&lt;service_v2::State&gt;, Option&lt;RequestTemplate&gt;)&gt;,</span>
+<span class="line"><i>2488</i>    headers: HeaderMap,</span>
+<span class="line"><i>2489</i>    body: Body,</span>
+<span class="line"><i>2490</i>) -&gt; Result&lt;Response, ErrorResponse&gt; {</span>
+<span class="line"><i>2491</i>    let request_id = get_or_create_request_id(&amp;headers);</span>
+<span class="line"><i>2492</i>    let lifecycle = LifecycleTrace::frontend_request_without_session(request_id.as_str());</span>
+<span class="line"><i>2493</i>    let lifecycle_request = lifecycle.start_request();</span>
+<span class="line"><i>2494</i>    lifecycle_request.record_session(&amp;request_id, None);</span>
+<span class="line"><i>2495</i>    let request_lifecycle = lifecycle_request.span();</span>
+<span class="line"><i>2496</i>    let terminal = lifecycle_request.terminal();</span>
+<span class="line"><i>2497</i>    let mut handler_terminal = TaskLifecycleTerminal(Some(terminal.clone()));</span>
+<span class="line"><i>2498</i>    let body = match read_json_request_body(&amp;headers, body).await {</span>
+<span class="line"><i>2499</i>        Ok(body) =&gt; body,</span>
+<span class="line"><i>2500</i>        Err(error) =&gt; {</span>
+<span class="line"><i>2501</i>            lifecycle_request.record_session(&amp;request_id, None);</span>
+<span class="line"><i>2502</i>            terminal.finish(terminal_outcome_for_error_response(&amp;error));</span>
+<span class="line"><i>2503</i>            return Err(error);</span>
+<span class="line"><i>2504</i>        }</span>
+<span class="line"><i>2505</i>    };</span>
+<span class="line"><i>2506</i>    let mut request: NvCreateChatCompletionRequest =</span>
+<span class="line"><i>2507</i>        match parse_json_request(&quot;chat completions&quot;, &amp;body) {</span>
+<span class="line"><i>2508</i>            Ok(request) =&gt; request,</span>
+<span class="line"><i>2509</i>            Err(error) =&gt; {</span>
+<span class="line"><i>2510</i>                lifecycle_request.record_session(&amp;request_id, None);</span>
+<span class="line"><i>2511</i>                terminal.finish(terminal_outcome_for_error_response(&amp;error));</span>
+<span class="line"><i>2512</i>                return Err(error);</span>
+<span class="line"><i>2513</i>            }</span>
+<span class="line"><i>2514</i>        };</span>
+<span class="line"><i>2515</i>    if *FORCE_INCLUDE_USAGE &amp;&amp; request.inner.stream.unwrap_or(false) {</span>
+<span class="line"><i>2516</i>        delta_common::force_include_usage(&amp;mut request.inner.stream_options);</span>
+<span class="line"><i>2517</i>    }</span>
+<span class="line"><i>2518</i></span>
+<span class="line"><i>2519</i>    // return a 503 if the service is not ready (process-level + per-model</span>
+<span class="line"><i>2520</i>    // serving readiness). An aggregated request to a decode-only namespace</span>
+<span class="line"><i>2521</i>    // would otherwise hang/crash on the decode worker. Resolve the templated</span>
+<span class="line"><i>2522</i>    // model first so empty/missing `model` fields don&#x27;t bypass the gate.</span>
+<span class="line"><i>2523</i>    if let Err(error) = check_ready(&amp;state) {</span>
+<span class="line"><i>2524</i>        lifecycle_request.record_session(&amp;request_id, None);</span>
+<span class="line"><i>2525</i>        terminal.finish(terminal_outcome_for_error_response(&amp;error));</span>
+<span class="line"><i>2526</i>        return Err(error);</span>
+<span class="line"><i>2527</i>    }</span>
+<span class="line"><i>2528</i>    let resolved_model = resolve_request_model(&amp;request.inner.model, template.as_ref());</span>
+<span class="line"><i>2529</i>    if !resolved_model.is_empty()</span>
+<span class="line"><i>2530</i>        &amp;&amp; let Err(error) = check_model_serving_ready(&amp;state, resolved_model)</span>
+<span class="line"><i>2531</i>    {</span>
+<span class="line"><i>2532</i>        lifecycle_request.record_session(&amp;request_id, None);</span>
+<span class="line"><i>2533</i>        terminal.finish(terminal_outcome_for_error_response(&amp;error));</span>
+<span class="line"><i>2534</i>        return Err(error);</span>
+<span class="line"><i>2535</i>    }</span></code></pre></details><details class="source" id="src-frontend-5"><summary><b>源码 · State 持有模型、Metrics 与 API 开关</b><small>lib/llm/src/http/service/service_v2.rs:542–576</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/service_v2.rs#L542-L576" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>542</i>    fn new(</span>
+<span class="line"><i>543</i>        manager: Arc&lt;ModelManager&gt;,</span>
+<span class="line"><i>544</i>        discovery_client: Arc&lt;dyn Discovery&gt;,</span>
+<span class="line"><i>545</i>        cancel_token: CancellationToken,</span>
+<span class="line"><i>546</i>        config: StateConfig,</span>
+<span class="line"><i>547</i>    ) -&gt; Self {</span>
+<span class="line"><i>548</i>        Self {</span>
+<span class="line"><i>549</i>            manager,</span>
+<span class="line"><i>550</i>            metrics: Arc::new(Metrics::new_with_prefix(config.metrics_config.prefix())),</span>
+<span class="line"><i>551</i>            discovery_client,</span>
+<span class="line"><i>552</i>            service_observer: Arc::new(ServiceObserver::default()),</span>
+<span class="line"><i>553</i>            nvext_enabled: config.nvext_enabled,</span>
+<span class="line"><i>554</i>            flags: StateFlags {</span>
+<span class="line"><i>555</i>                chat_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>556</i>                cmpl_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>557</i>                embeddings_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>558</i>                classify_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>559</i>                rerank_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>560</i>                pooling_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>561</i>                images_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>562</i>                videos_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>563</i>                audios_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>564</i>                realtime_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>565</i>                responses_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>566</i>                anthropic_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>567</i>                generate_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>568</i>                batch_endpoints_enabled: AtomicBool::new(false),</span>
+<span class="line"><i>569</i>            },</span>
+<span class="line"><i>570</i>            cancel_token,</span>
+<span class="line"><i>571</i>            frontend_api_config: config.frontend_api_config,</span>
+<span class="line"><i>572</i>            responses_api_enabled: config.responses_api_enabled,</span>
+<span class="line"><i>573</i>            sse_keep_alive: config.sse_keep_alive,</span>
+<span class="line"><i>574</i>            streaming_backend_error_check: config.streaming_backend_error_check,</span>
+<span class="line"><i>575</i>        }</span>
+<span class="line"><i>576</i>    }</span></code></pre></details><p>body/JSON 解析失败在 handler 生命周期收口；模型名可来自请求模板，所以 ready gate 需要先解析目标。typed handler 内还有请求级 guard。不要把 metrics guard 之前的所有 HTTP 错误都假设成相同业务请求样本。</p></section><section id="frontend-identity" class="lesson"><div class="sectionhead"><h2>06 / 模型别名、标签基数和请求指标归属</h2><label class="done"><input type="checkbox" data-read="frontend-identity"> 已读</label></div><details class="source" id="src-frontend-6"><summary><b>源码 · canonical 模型名、metric_model 与 inflight guard</b><small>lib/llm/src/http/service/openai.rs:3520–3555</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/openai.rs#L3520-L3555" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>3520</i>    // todo - decide on default</span>
+<span class="line"><i>3521</i>    let streaming = request.inner.stream.unwrap_or(false);</span>
+<span class="line"><i>3522</i></span>
+<span class="line"><i>3523</i>    // Apply template values first to resolve the model before creating metrics guards</span>
+<span class="line"><i>3524</i>    apply_chat_completions_request_template(&amp;mut request.inner, template.as_ref());</span>
+<span class="line"><i>3525</i>    // Capture the resolved model after template application for metrics and engine lookup</span>
+<span class="line"><i>3526</i>    // todo - make the protocols be optional for model name</span>
+<span class="line"><i>3527</i>    // todo - when optional, if none, apply a default</span>
+<span class="line"><i>3528</i>    // todo - determine the proper error code for when a request model is not present</span>
+<span class="line"><i>3529</i>    // Resolve an alias to its primary served name and rewrite the request so</span>
+<span class="line"><i>3530</i>    // engine routing, metrics, and the OpenAI response.model all use the</span>
+<span class="line"><i>3531</i>    // canonical primary (matching vLLM/SGLang). Non-aliases pass through so</span>
+<span class="line"><i>3532</i>    // metric_model_for still applies its unknown-model cardinality guard.</span>
+<span class="line"><i>3533</i>    let canonical = state.manager().resolve_canonical_name(&amp;request.inner.model);</span>
+<span class="line"><i>3534</i>    if canonical != request.inner.model {</span>
+<span class="line"><i>3535</i>        request.inner.model = canonical;</span>
+<span class="line"><i>3536</i>    }</span>
+<span class="line"><i>3537</i>    let model = request.inner.model.clone();</span>
+<span class="line"><i>3538</i>    let metric_model = state.manager().metric_model_for(&amp;model).to_string();</span>
+<span class="line"><i>3539</i></span>
+<span class="line"><i>3540</i>    tracing::trace!(&quot;Received chat completions request: {:?}&quot;, request.content());</span>
+<span class="line"><i>3541</i></span>
+<span class="line"><i>3542</i>    // Create inflight_guard early to ensure all errors (including validation) are counted</span>
+<span class="line"><i>3543</i>    let mut inflight_guard = state.metrics_clone().create_inflight_guard(</span>
+<span class="line"><i>3544</i>        &amp;metric_model,</span>
+<span class="line"><i>3545</i>        Endpoint::ChatCompletions,</span>
+<span class="line"><i>3546</i>        streaming,</span>
+<span class="line"><i>3547</i>        &amp;request_id,</span>
+<span class="line"><i>3548</i>    );</span>
+<span class="line"><i>3549</i></span>
+<span class="line"><i>3550</i>    if let Err(err_response) = normalize_chat_reasoning_template_args(&amp;mut request) {</span>
+<span class="line"><i>3551</i>        inflight_guard.mark_error(extract_error_type_from_response(&amp;err_response));</span>
+<span class="line"><i>3552</i>        return Err(err_response);</span>
+<span class="line"><i>3553</i>    }</span>
+<span class="line"><i>3554</i></span>
+<span class="line"><i>3555</i>    // Handle unsupported fields - if Some(resp) is returned by</span></code></pre></details><p>别名先映射为 canonical served name，路由、response.model 与标签尽量保持一致；未知模型走 metric_model_for 的基数保护，不把任意外部字符串持续变成新指标序列。请求 ID 适合 Trace / 日志关联，不适合做高基数 Prometheus 标签。</p></section><section id="frontend-validation" class="lesson"><div class="sectionhead"><h2>07 / 字段准入、值校验与 owner 必须分开</h2><label class="done"><input type="checkbox" data-read="frontend-validation"> 已读</label></div><details class="source" id="src-frontend-7"><summary><b>源码 · unsupported / required / generic validation 与 engine 查找</b><small>lib/llm/src/http/service/openai.rs:3550–3615</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/openai.rs#L3550-L3615" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>3550</i>    if let Err(err_response) = normalize_chat_reasoning_template_args(&amp;mut request) {</span>
+<span class="line"><i>3551</i>        inflight_guard.mark_error(extract_error_type_from_response(&amp;err_response));</span>
+<span class="line"><i>3552</i>        return Err(err_response);</span>
+<span class="line"><i>3553</i>    }</span>
+<span class="line"><i>3554</i></span>
+<span class="line"><i>3555</i>    // Handle unsupported fields - if Some(resp) is returned by</span>
+<span class="line"><i>3556</i>    // validate_chat_completion_unsupported_fields,</span>
+<span class="line"><i>3557</i>    // then a field was used that is unsupported. We will log an error message</span>
+<span class="line"><i>3558</i>    // and early return a 501 NOT_IMPLEMENTED status code. Otherwise, proceeed.</span>
+<span class="line"><i>3559</i>    if let Err(err_response) = validate_chat_completion_unsupported_fields(&amp;request) {</span>
+<span class="line"><i>3560</i>        inflight_guard.mark_error(extract_error_type_from_response(&amp;err_response));</span>
+<span class="line"><i>3561</i>        return Err(err_response);</span>
+<span class="line"><i>3562</i>    }</span>
+<span class="line"><i>3563</i></span>
+<span class="line"><i>3564</i>    // Handle required fields like messages shouldn&#x27;t be empty.</span>
+<span class="line"><i>3565</i>    if let Err(err_response) = validate_chat_completion_required_fields(&amp;request) {</span>
+<span class="line"><i>3566</i>        inflight_guard.mark_error(extract_error_type_from_response(&amp;err_response));</span>
+<span class="line"><i>3567</i>        return Err(err_response);</span>
+<span class="line"><i>3568</i>    }</span>
+<span class="line"><i>3569</i></span>
+<span class="line"><i>3570</i>    // Validate stream_options is only used when streaming (NVBug 5662680)</span>
+<span class="line"><i>3571</i>    if let Err(err_response) = validate_chat_completion_stream_options(&amp;request) {</span>
+<span class="line"><i>3572</i>        inflight_guard.mark_error(extract_error_type_from_response(&amp;err_response));</span>
+<span class="line"><i>3573</i>        return Err(err_response);</span>
+<span class="line"><i>3574</i>    }</span>
+<span class="line"><i>3575</i></span>
+<span class="line"><i>3576</i>    // Handle Rest of Validation Errors</span>
+<span class="line"><i>3577</i>    if let Err(err_response) = validate_chat_completion_fields_generic(&amp;request) {</span>
+<span class="line"><i>3578</i>        inflight_guard.mark_error(extract_error_type_from_response(&amp;err_response));</span>
+<span class="line"><i>3579</i>        return Err(err_response);</span>
+<span class="line"><i>3580</i>    }</span>
+<span class="line"><i>3581</i></span>
+<span class="line"><i>3582</i>    // Create HTTP queue guard after template resolution so labels are correct</span>
+<span class="line"><i>3583</i>    let http_queue_guard = state.metrics_clone().create_http_queue_guard(&amp;metric_model);</span>
+<span class="line"><i>3584</i></span>
+<span class="line"><i>3585</i>    // Let backend adapters apply their own generation default (e.g. --override-generation-config).</span>
+<span class="line"><i>3586</i>    if request.inner.max_completion_tokens.is_none() {</span>
+<span class="line"><i>3587</i>        request.insert(PRESERVE_OMITTED_MAX_TOKENS_CONTEXT_KEY, true);</span>
+<span class="line"><i>3588</i>    }</span>
+<span class="line"><i>3589</i></span>
+<span class="line"><i>3590</i>    tracing::trace!(&quot;Getting chat completions engine for model: {}&quot;, model);</span>
+<span class="line"><i>3591</i></span>
+<span class="line"><i>3592</i>    let (engine, parsing_options) = state</span>
+<span class="line"><i>3593</i>        .manager()</span>
+<span class="line"><i>3594</i>        .get_chat_completions_engine_with_parsing(&amp;model)</span>
+<span class="line"><i>3595</i>        .map_err(|e| {</span>
+<span class="line"><i>3596</i>            let err_response = ErrorMessage::from_model_error(&amp;e);</span>
+<span class="line"><i>3597</i>            inflight_guard.mark_error(extract_error_type_from_response(&amp;err_response));</span>
+<span class="line"><i>3598</i>            err_response</span>
+<span class="line"><i>3599</i>        })?;</span>
+<span class="line"><i>3600</i></span>
+<span class="line"><i>3601</i>    // Request policy controls whether parser-produced tool calls may be exposed.</span>
+<span class="line"><i>3602</i>    // Assistant response/guided constraints are handled separately during</span>
+<span class="line"><i>3603</i>    // preprocessing and do not revoke an auto request&#x27;s tool-call permission.</span>
+<span class="line"><i>3604</i>    let parsing_options = apply_request_tool_call_parsing_options(parsing_options, &amp;request)</span>
+<span class="line"><i>3605</i>        .map_err(|e| {</span>
+<span class="line"><i>3606</i>            let err_response = ErrorMessage::from_anyhow(e.into(), &quot;Invalid tool_choice&quot;);</span>
+<span class="line"><i>3607</i>            inflight_guard.mark_error(extract_error_type_from_response(&amp;err_response));</span>
+<span class="line"><i>3608</i>            err_response</span>
+<span class="line"><i>3609</i>        })?;</span>
+<span class="line"><i>3610</i></span>
+<span class="line"><i>3611</i>    // When parallel_tool_calls is false, limit the response to a single tool call.</span>
+<span class="line"><i>3612</i>    let parsing_options =</span>
+<span class="line"><i>3613</i>        parsing_options.with_parallel_tool_calls(request.inner.parallel_tool_calls);</span>
+<span class="line"><i>3614</i>    let enforce_single_tool_call = request.inner.parallel_tool_calls == Some(false);</span>
+<span class="line"><i>3615</i></span></code></pre></details><div class="tablewrap"><table><thead><tr><th>问题</th><th>源码分析方法</th><th>避免误解</th></tr></thead><tbody><tr><td>是否属于公共 API</td><td>先查 endpoint 的 source contract</td><td>内部 extra_args 不是公开 wire 协议</td></tr><tr><td>此 backend 接受吗</td><td>追 unsupported policy 与 adapter 能力</td><td>反序列化成功不表示实现语义</td></tr><tr><td>值是否有效</td><td>范围、互斥、n/stream/budget 等校验</td><td>不把 0 / false / omitted 当相同值</td></tr><tr><td>由谁实施</td><td>Dynamo-handled / backend-handled / jointly handled</td><td>typed 字段不代表前端执行全部功能</td></tr></tbody></table></div><p>例如 max token 省略时可能保留 omission，让 backend 使用 generation defaults；提前填入一个默认值可能改变契约。相同字段在 Chat、Responses、原生 Generate 上需要分别验证。</p></section><section id="frontend-preprocess" class="lesson"><div class="sectionhead"><h2>08 / 预处理：模板、tokenization、多模态和路由信息</h2><label class="done"><input type="checkbox" data-read="frontend-preprocess"> 已读</label></div><details class="source" id="src-frontend-8"><summary><b>源码 · 模板与 tokenization 打点、MM 数据与 builder</b><small>lib/llm/src/preprocessor.rs:3255–3300</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/preprocessor.rs#L3255-L3300" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>3255</i>        let preprocess_start = Instant::now();</span>
+<span class="line"><i>3256</i>        let mut builder = self.builder_with_lora(request, lora_name)?;</span>
+<span class="line"><i>3257</i></span>
+<span class="line"><i>3258</i>        let template_start = Instant::now();</span>
+<span class="line"><i>3259</i>        let (formatted_prompt, prompt_injected_reasoning) = {</span>
+<span class="line"><i>3260</i>            let _nvtx = dynamo_nvtx_range!(&quot;preprocess.template&quot;);</span>
+<span class="line"><i>3261</i>            off_runtime(|| self.apply_template_and_prefill(request))</span>
+<span class="line"><i>3262</i>                .with_context(|| &quot;Failed to apply prompt template&quot;)?</span>
+<span class="line"><i>3263</i>        };</span>
+<span class="line"><i>3264</i>        TEMPLATE_SECONDS.observe(template_start.elapsed().as_secs_f64());</span>
+<span class="line"><i>3265</i></span>
+<span class="line"><i>3266</i>        let tokenize_start = Instant::now();</span>
+<span class="line"><i>3267</i>        let (token_ids, annotations) = {</span>
+<span class="line"><i>3268</i>            let _nvtx = dynamo_nvtx_range!(&quot;preprocess.tokenize&quot;);</span>
+<span class="line"><i>3269</i>            self.gather_tokens(request, formatted_prompt.as_ref(), tracker)</span>
+<span class="line"><i>3270</i>                .await</span>
+<span class="line"><i>3271</i>                .with_context(|| &quot;Failed to gather tokens&quot;)?</span>
+<span class="line"><i>3272</i>        };</span>
+<span class="line"><i>3273</i>        TOKENIZE_SECONDS.observe(tokenize_start.elapsed().as_secs_f64());</span>
+<span class="line"><i>3274</i></span>
+<span class="line"><i>3275</i>        let (_mm_routing_entries, image_tokens) = self</span>
+<span class="line"><i>3276</i>            .gather_multi_modal_data_with_image_tokens(</span>
+<span class="line"><i>3277</i>                request,</span>
+<span class="line"><i>3278</i>                &amp;mut builder,</span>
+<span class="line"><i>3279</i>                formatted_prompt.as_ref().map(RenderedPrompt::as_str),</span>
+<span class="line"><i>3280</i>                &amp;token_ids,</span>
+<span class="line"><i>3281</i>            )</span>
+<span class="line"><i>3282</i>            .await</span>
+<span class="line"><i>3283</i>            .with_context(|| &quot;Failed to gather multimodal data&quot;)?;</span>
+<span class="line"><i>3284</i></span>
+<span class="line"><i>3285</i>        // Install tokens on the builder. Done after MM routing built its</span>
+<span class="line"><i>3286</i>        // view so the routing-side borrow stays cheap and builder ownership</span>
+<span class="line"><i>3287</i>        // moves once.</span>
+<span class="line"><i>3288</i>        builder.token_ids(token_ids);</span>
+<span class="line"><i>3289</i></span>
+<span class="line"><i>3290</i>        STAGE_DURATION_SECONDS</span>
+<span class="line"><i>3291</i>            .with_label_values(&amp;[STAGE_PREPROCESS])</span>
+<span class="line"><i>3292</i>            .observe(preprocess_start.elapsed().as_secs_f64());</span>
+<span class="line"><i>3293</i></span>
+<span class="line"><i>3294</i>        if let Some(nvext) = request.nvext()</span>
+<span class="line"><i>3295</i>            &amp;&amp; let Some(router_params) = &amp;nvext.router</span>
+<span class="line"><i>3296</i>        {</span>
+<span class="line"><i>3297</i>            builder.router(Some(router_params.clone()));</span>
+<span class="line"><i>3298</i>        }</span>
+<span class="line"><i>3299</i></span>
+<span class="line"><i>3300</i>        let mut preprocessed = builder.build()?;</span></code></pre></details><details class="source" id="src-frontend-9"><summary><b>源码 · extra_args、token budget 与省略上限</b><small>lib/llm/src/preprocessor.rs:3300–3351</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/preprocessor.rs#L3300-L3351" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>3300</i>        let mut preprocessed = builder.build()?;</span>
+<span class="line"><i>3301</i>        if let Some(reasoning_ended) = Self::prompt_injected_reasoning_ended_arg(</span>
+<span class="line"><i>3302</i>            self.runtime_config.reasoning_parser.as_deref(),</span>
+<span class="line"><i>3303</i>            formatted_prompt.as_ref().map(RenderedPrompt::as_str),</span>
+<span class="line"><i>3304</i>        ) {</span>
+<span class="line"><i>3305</i>            let extra_args = preprocessed</span>
+<span class="line"><i>3306</i>                .extra_args</span>
+<span class="line"><i>3307</i>                .get_or_insert_with(|| serde_json::json!({}));</span>
+<span class="line"><i>3308</i>            let extra_args = extra_args</span>
+<span class="line"><i>3309</i>                .as_object_mut()</span>
+<span class="line"><i>3310</i>                .context(&quot;preprocessed extra_args must be an object&quot;)?;</span>
+<span class="line"><i>3311</i>            extra_args.insert(&quot;reasoning_ended&quot;.to_string(), reasoning_ended.into());</span>
+<span class="line"><i>3312</i>        }</span>
+<span class="line"><i>3313</i></span>
+<span class="line"><i>3314</i>        // If omitted, allow generation up to the remaining context length. Responses requests</span>
+<span class="line"><i>3315</i>        // preserve omission so backend adapters can compute the dynamic cap from their</span>
+<span class="line"><i>3316</i>        // effective prompt length/tokenization.</span>
+<span class="line"><i>3317</i>        //</span>
+<span class="line"><i>3318</i>        // Multimodal `token_ids` carry unexpanded image placeholders, so prefer</span>
+<span class="line"><i>3319</i>        // the MM-expanded length when available, else defer to the backend.</span>
+<span class="line"><i>3320</i>        let exact_prompt_len =</span>
+<span class="line"><i>3321</i>            Self::validate_preprocessed_token_budget(&amp;preprocessed, self.token_budget.as_ref())?;</span>
+<span class="line"><i>3322</i>        if preprocessed.stop_conditions.max_tokens.is_none()</span>
+<span class="line"><i>3323</i>            &amp;&amp; let Some(prompt_len) = exact_prompt_len</span>
+<span class="line"><i>3324</i>            // Preserve omission when the prompt itself is backend-owned. In</span>
+<span class="line"><i>3325</i>            // particular, setting a saturating zero here would interfere with</span>
+<span class="line"><i>3326</i>            // SGLang&#x27;s auto-truncation before the backend sees the request.</span>
+<span class="line"><i>3327</i>            &amp;&amp; !self.token_budget.is_some_and(|token_budget| {</span>
+<span class="line"><i>3328</i>                prompt_len &gt;= token_budget.combined_limit as usize</span>
+<span class="line"><i>3329</i>                    &amp;&amp; !token_budget.reject_prompt_overflow</span>
+<span class="line"><i>3330</i>            })</span>
+<span class="line"><i>3331</i>            &amp;&amp; let Some(max_tokens) = Self::omitted_max_tokens_default(</span>
+<span class="line"><i>3332</i>                prompt_len,</span>
+<span class="line"><i>3333</i>                self.token_budget</span>
+<span class="line"><i>3334</i>                    .map(|token_budget| token_budget.combined_limit),</span>
+<span class="line"><i>3335</i>                options,</span>
+<span class="line"><i>3336</i>            )</span>
+<span class="line"><i>3337</i>        {</span>
+<span class="line"><i>3338</i>            preprocessed.stop_conditions.max_tokens = Some(max_tokens);</span>
+<span class="line"><i>3339</i>            // A strict limit may be smaller than the raw context window because</span>
+<span class="line"><i>3340</i>            // the engine reserves tokens. Revalidate the derived budget so an</span>
+<span class="line"><i>3341</i>            // already-over-limit prompt fails before streaming begins.</span>
+<span class="line"><i>3342</i>            Self::validate_preprocessed_token_budget(&amp;preprocessed, self.token_budget.as_ref())?;</span>
+<span class="line"><i>3343</i>        }</span>
+<span class="line"><i>3344</i></span>
+<span class="line"><i>3345</i>        Ok((</span>
+<span class="line"><i>3346</i>            preprocessed,</span>
+<span class="line"><i>3347</i>            annotations,</span>
+<span class="line"><i>3348</i>            prompt_injected_reasoning,</span>
+<span class="line"><i>3349</i>            image_tokens,</span>
+<span class="line"><i>3350</i>        ))</span>
+<span class="line"><i>3351</i>    }</span></code></pre></details><p>模板渲染、token 收集和多模态处理不是一个步骤。图像占位 token 长度不一定等于引擎展开后的长度；预算要在可获得精确信息的边界计算，必要时交给 backend。nvext.router 等字段进入 PreprocessedRequest 后才成为路由输入。</p></section><section id="frontend-preprocess-observe" class="lesson"><div class="sectionhead"><h2>09 / 预处理观测：测的是哪个区间</h2><label class="done"><input type="checkbox" data-read="frontend-preprocess-observe"> 已读</label></div><p>preprocess_request_with_options 中 StageGuard 标记 STAGE_PREPROCESS；TEMPLATE_SECONDS 包围模板处理，TOKENIZE_SECONDS 包围 gather_tokens；STAGE_DURATION_SECONDS 的 preprocess 观察点在 token/MM 收集之后、部分 builder/budget 收尾之前。不能拿这些区间简单相加等同 HTTP TTFT，也不能把其中异步媒体加载时间归为 tokenizer CPU 成本。</p><p>dynamo_nvtx_range 标记模板/tokenization 等范围，适合结合 CPU/GPU profiler；NVTX 范围不是自动导出的 OpenTelemetry span。开启日志、Trace、NVTX 或 Prometheus 各有独立路径。</p><details class="source" id="src-frontend-10"><summary><b>源码 · 后处理 detokenization 累积计数在 guard Drop 收口</b><small>lib/llm/src/preprocessor.rs:5886–5923</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/preprocessor.rs#L5886-L5923" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>5886</i>    fn transform_postprocessor_stream_with_image_tokens&lt;S, Resp&gt;(</span>
+<span class="line"><i>5887</i>        stream: S,</span>
+<span class="line"><i>5888</i>        generator: Box&lt;dyn DeltaGeneratorExt&lt;Resp&gt;&gt;,</span>
+<span class="line"><i>5889</i>        context: Arc&lt;dyn AsyncEngineContext&gt;,</span>
+<span class="line"><i>5890</i>        emit_payload_usage_chunk: bool,</span>
+<span class="line"><i>5891</i>        trace_tokens_enabled: bool,</span>
+<span class="line"><i>5892</i>        trace_finish_reason_metadata: Option&lt;crate::request_trace::SharedFinishReasonMetadata&gt;,</span>
+<span class="line"><i>5893</i>        mm_counts: MultimodalCounts,</span>
+<span class="line"><i>5894</i>        image_tokens: Option&lt;usize&gt;,</span>
+<span class="line"><i>5895</i>    ) -&gt; impl Stream&lt;Item = Annotated&lt;Resp&gt;&gt; + Send</span>
+<span class="line"><i>5896</i>    where</span>
+<span class="line"><i>5897</i>        S: Stream&lt;Item = Annotated&lt;BackendOutput&gt;&gt; + Send + &#x27;static,</span>
+<span class="line"><i>5898</i>        Resp: Send + Sync + Clone + &#x27;static + std::fmt::Debug,</span>
+<span class="line"><i>5899</i>    {</span>
+<span class="line"><i>5900</i>        struct DetokenizeMetricsGuard {</span>
+<span class="line"><i>5901</i>            tracker: Option&lt;Arc&lt;RequestTracker&gt;&gt;,</span>
+<span class="line"><i>5902</i>        }</span>
+<span class="line"><i>5903</i></span>
+<span class="line"><i>5904</i>        impl DetokenizeMetricsGuard {</span>
+<span class="line"><i>5905</i>            #[inline]</span>
+<span class="line"><i>5906</i>            fn tracker(&amp;self) -&gt; Option&lt;&amp;RequestTracker&gt; {</span>
+<span class="line"><i>5907</i>                self.tracker.as_deref()</span>
+<span class="line"><i>5908</i>            }</span>
+<span class="line"><i>5909</i>        }</span>
+<span class="line"><i>5910</i></span>
+<span class="line"><i>5911</i>        impl Drop for DetokenizeMetricsGuard {</span>
+<span class="line"><i>5912</i>            fn drop(&amp;mut self) {</span>
+<span class="line"><i>5913</i>                let Some(tracker) = self.tracker() else {</span>
+<span class="line"><i>5914</i>                    return;</span>
+<span class="line"><i>5915</i>                };</span>
+<span class="line"><i>5916</i>                if let Some(total) = tracker.detokenize_total_latency() {</span>
+<span class="line"><i>5917</i>                    DETOKENIZE_TOTAL_US.inc_by(total.as_micros() as f64);</span>
+<span class="line"><i>5918</i>                }</span>
+<span class="line"><i>5919</i>                DETOKENIZE_TOKEN_COUNT.inc_by(tracker.detokenize_count() as f64);</span>
+<span class="line"><i>5920</i>            }</span>
+<span class="line"><i>5921</i>        }</span>
+<span class="line"><i>5922</i></span>
+<span class="line"><i>5923</i>        struct State&lt;Resp&gt;</span></code></pre></details></section><section id="frontend-postprocess" class="lesson"><div class="sectionhead"><h2>10 / 后处理：token 流不等于 SSE 帧</h2><label class="done"><input type="checkbox" data-read="frontend-postprocess"> 已读</label></div><details class="source" id="src-frontend-11"><summary><b>源码 · 后处理流持有 generator、context 与取消状态</b><small>lib/llm/src/preprocessor.rs:5925–5964</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/preprocessor.rs#L5925-L5964" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>5925</i>            Resp: Send + Sync + Clone + &#x27;static + std::fmt::Debug,</span>
+<span class="line"><i>5926</i>        {</span>
+<span class="line"><i>5927</i>            response_stream: Pin&lt;Box&lt;dyn Stream&lt;Item = Annotated&lt;BackendOutput&gt;&gt; + Send&gt;&gt;,</span>
+<span class="line"><i>5928</i>            response_generator: Box&lt;dyn DeltaGeneratorExt&lt;Resp&gt;&gt;,</span>
+<span class="line"><i>5929</i>            detokenize_metrics: DetokenizeMetricsGuard,</span>
+<span class="line"><i>5930</i>            context: Arc&lt;dyn AsyncEngineContext&gt;,</span>
+<span class="line"><i>5931</i>            cancelled: bool,</span>
+<span class="line"><i>5932</i>            cumulative_output_tokens: usize,</span>
+<span class="line"><i>5933</i>            finish_reason_sent: bool,</span>
+<span class="line"><i>5934</i>            usage_chunk_sent: bool,</span>
+<span class="line"><i>5935</i>            /// Buffered plain usage chunk to send to the client after the payload</span>
+<span class="line"><i>5936</i>            /// chunk (ANNOTATION_PAYLOAD_USAGE). Only Some when is_usage_enabled().</span>
+<span class="line"><i>5937</i>            pending_client_usage: Option&lt;Annotated&lt;Resp&gt;&gt;,</span>
+<span class="line"><i>5938</i>            finished: bool,</span>
+<span class="line"><i>5939</i>            emit_payload_usage_chunk: bool,</span>
+<span class="line"><i>5940</i>            trace_tokens_enabled: bool,</span>
+<span class="line"><i>5941</i>            trace_finish_reason_metadata: Option&lt;crate::request_trace::SharedFinishReasonMetadata&gt;,</span>
+<span class="line"><i>5942</i>            mm_counts: MultimodalCounts,</span>
+<span class="line"><i>5943</i>            image_tokens: Option&lt;usize&gt;,</span>
+<span class="line"><i>5944</i>        }</span>
+<span class="line"><i>5945</i></span>
+<span class="line"><i>5946</i>        let tracker = generator.tracker();</span>
+<span class="line"><i>5947</i>        let state = State {</span>
+<span class="line"><i>5948</i>            response_stream: Box::pin(stream),</span>
+<span class="line"><i>5949</i>            response_generator: generator,</span>
+<span class="line"><i>5950</i>            detokenize_metrics: DetokenizeMetricsGuard { tracker },</span>
+<span class="line"><i>5951</i>            context: context.clone(),</span>
+<span class="line"><i>5952</i>            cancelled: false,</span>
+<span class="line"><i>5953</i>            cumulative_output_tokens: 0,</span>
+<span class="line"><i>5954</i>            finish_reason_sent: false,</span>
+<span class="line"><i>5955</i>            usage_chunk_sent: false,</span>
+<span class="line"><i>5956</i>            pending_client_usage: None,</span>
+<span class="line"><i>5957</i>            finished: false,</span>
+<span class="line"><i>5958</i>            emit_payload_usage_chunk,</span>
+<span class="line"><i>5959</i>            trace_tokens_enabled,</span>
+<span class="line"><i>5960</i>            trace_finish_reason_metadata,</span>
+<span class="line"><i>5961</i>            mm_counts,</span>
+<span class="line"><i>5962</i>            image_tokens,</span>
+<span class="line"><i>5963</i>        };</span>
+<span class="line"><i>5964</i></span></code></pre></details><details class="source" id="src-frontend-12"><summary><b>源码 · 空 chunk 丢弃前仍记录生成 token</b><small>lib/llm/src/http/service/openai.rs:3720–3763</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/openai.rs#L3720-L3763" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>3720</i>                    &amp;&amp; let Some(data) = response.data.as_mut()</span>
+<span class="line"><i>3721</i>                {</span>
+<span class="line"><i>3722</i>                    for choice in data.inner.choices.iter_mut() {</span>
+<span class="line"><i>3723</i>                        if let Some(tool_calls) = choice.delta.tool_calls.as_mut() {</span>
+<span class="line"><i>3724</i>                            tool_calls.retain(|tc| tc.index == 0);</span>
+<span class="line"><i>3725</i>                            if tool_calls.is_empty() {</span>
+<span class="line"><i>3726</i>                                choice.delta.tool_calls = None;</span>
+<span class="line"><i>3727</i>                            }</span>
+<span class="line"><i>3728</i>                        }</span>
+<span class="line"><i>3729</i>                    }</span>
+<span class="line"><i>3730</i>                }</span>
+<span class="line"><i>3731</i></span>
+<span class="line"><i>3732</i>                if let Some(data) = response.data.as_mut() {</span>
+<span class="line"><i>3733</i>                    deduplicate_stream_roles(data, &amp;mut emitted_roles);</span>
+<span class="line"><i>3734</i>                }</span>
+<span class="line"><i>3735</i></span>
+<span class="line"><i>3736</i>                // Drop empty chunks from multi-byte token assembly.</span>
+<span class="line"><i>3737</i>                // Empty chunks are transport artifacts, not a streaming boundary.</span>
+<span class="line"><i>3738</i>                if response.data.as_ref().is_some_and(is_empty_stream_response) {</span>
+<span class="line"><i>3739</i>                    let _ = activity_tx.send(());</span>
+<span class="line"><i>3740</i>                    // Not forwarded, but the engine still generated these tokens,</span>
+<span class="line"><i>3741</i>                    // so account for them before discarding. Otherwise the</span>
+<span class="line"><i>3742</i>                    // real-time output-token counter undercounts and TTFT is</span>
+<span class="line"><i>3743</i>                    // attributed to the first *renderable* chunk rather than the</span>
+<span class="line"><i>3744</i>                    // first generated one. This already affected multi-byte token</span>
+<span class="line"><i>3745</i>                    // assembly; the Nemotron force_nonempty_content deferral makes</span>
+<span class="line"><i>3746</i>                    // empty chunks common enough to matter.</span>
+<span class="line"><i>3747</i>                    process_chat_response_and_observe_metrics(</span>
+<span class="line"><i>3748</i>                        &amp;response,</span>
+<span class="line"><i>3749</i>                        &amp;mut response_collector,</span>
+<span class="line"><i>3750</i>                        &amp;mut http_queue_guard,</span>
+<span class="line"><i>3751</i>                    );</span>
+<span class="line"><i>3752</i>                    continue;</span>
+<span class="line"><i>3753</i>                }</span>
+<span class="line"><i>3754</i></span>
+<span class="line"><i>3755</i>                if tool_dispatch_enabled {</span>
+<span class="line"><i>3756</i>                    streaming_tool_dispatch_events(</span>
+<span class="line"><i>3757</i>                        &amp;response,</span>
+<span class="line"><i>3758</i>                        &amp;mut dispatched_tool_ids,</span>
+<span class="line"><i>3759</i>                        &amp;mut events,</span>
+<span class="line"><i>3760</i>                    );</span>
+<span class="line"><i>3761</i>                }</span>
+<span class="line"><i>3762</i>                if reasoning_dispatch_enabled {</span>
+<span class="line"><i>3763</i>                    accumulate_reasoning_dispatch(</span></code></pre></details><p>增量 detokenizer、reasoning/tool parser 与 response generator 可能暂存内容。多字节 token 组装可产生空 chunk，模型已生成 token 而客户端尚无可渲染文字；因此首 token、首内容、首 SSE 字节是不同观测。不要用 SSE 帧数估算 token 数。</p></section><section id="frontend-sse" class="lesson"><div class="sectionhead"><h2>11 / 流式投影：错误与扩展事件</h2><label class="done"><input type="checkbox" data-read="frontend-sse"> 已读</label></div><details class="source" id="src-frontend-13"><summary><b>源码 · tool/reasoning side-channel 与 SSE error 传播</b><small>lib/llm/src/http/service/openai.rs:3764–3800</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/openai.rs#L3764-L3800" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>3764</i>                        &amp;response,</span>
+<span class="line"><i>3765</i>                        &amp;mut reasoning_buffer,</span>
+<span class="line"><i>3766</i>                        &amp;mut events,</span>
+<span class="line"><i>3767</i>                    );</span>
+<span class="line"><i>3768</i>                }</span>
+<span class="line"><i>3769</i></span>
+<span class="line"><i>3770</i>                // Convert to SSE event (this consumes the response).</span>
+<span class="line"><i>3771</i>                // EventConverter will detect `event: &quot;error&quot;` and convert to SSE error events.</span>
+<span class="line"><i>3772</i>                let sse_result = process_chat_response_using_event_converter_and_observe_metrics(</span>
+<span class="line"><i>3773</i>                    EventConverter::from(response),</span>
+<span class="line"><i>3774</i>                    &amp;mut response_collector,</span>
+<span class="line"><i>3775</i>                    &amp;mut http_queue_guard,</span>
+<span class="line"><i>3776</i>                    reasoning_field,</span>
+<span class="line"><i>3777</i>                );</span>
+<span class="line"><i>3778</i></span>
+<span class="line"><i>3779</i>                if semantic_error &amp;&amp; matches!(&amp;sse_result, Ok(Some(_))) {</span>
+<span class="line"><i>3780</i>                    producer_error_signal.mark_terminal_event_emitted();</span>
+<span class="line"><i>3781</i>                }</span>
+<span class="line"><i>3782</i></span>
+<span class="line"><i>3783</i>                // Side-channel events come first, then the regular data event.</span>
+<span class="line"><i>3784</i>                match sse_result {</span>
+<span class="line"><i>3785</i>                    Ok(Some(ev)) =&gt; events.push(Ok(ev)),</span>
+<span class="line"><i>3786</i>                    Ok(None) =&gt; {}</span>
+<span class="line"><i>3787</i>                    Err(e) =&gt; {</span>
+<span class="line"><i>3788</i>                        if let Some(error_type) = response_error_type {</span>
+<span class="line"><i>3789</i>                            producer_error_signal.set(error_type);</span>
+<span class="line"><i>3790</i>                        }</span>
+<span class="line"><i>3791</i>                        events.push(Err(e));</span>
+<span class="line"><i>3792</i>                    }</span>
+<span class="line"><i>3793</i>                }</span>
+<span class="line"><i>3794</i></span>
+<span class="line"><i>3795</i>                events.reverse();</span>
+<span class="line"><i>3796</i>                while let Some(event) = events.pop() {</span>
+<span class="line"><i>3797</i>                    yield event;</span>
+<span class="line"><i>3798</i>                }</span>
+<span class="line"><i>3799</i>            }</span>
+<span class="line"><i>3800</i>        };</span></code></pre></details><p>HTTP 响应头发出前可返回结构化状态码；进入 SSE 后使用流内语义错误与终态。side-channel 事件、role 去重、usage 和标准 chunk 都有独立投影逻辑。客户端断连、流 EOF 和成功终态不能互相替代；完整边界见可靠性章节。</p></section><section id="frontend-live-metrics" class="lesson"><div class="sectionhead"><h2>12 / 活跃负载：从 tokenization 更新到首 token 状态迁移</h2><label class="done"><input type="checkbox" data-read="frontend-live-metrics"> 已读</label></div><details class="source" id="src-frontend-14"><summary><b>源码 · RequestMetrics 跨 Context 共享与输入 token 增量</b><small>lib/llm/src/http/service/metrics.rs:800–845</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/metrics.rs#L800-L845" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>800</i></span>
+<span class="line"><i>801</i>    pub(crate) fn attach_to&lt;T: Data&gt;(self: &amp;Arc&lt;Self&gt;, context: &amp;mut Context&lt;T&gt;) {</span>
+<span class="line"><i>802</i>        context.insert_arc(REQUEST_METRICS_KEY, self.clone());</span>
+<span class="line"><i>803</i>    }</span>
+<span class="line"><i>804</i></span>
+<span class="line"><i>805</i>    pub(crate) fn from_context&lt;T: Data&gt;(context: &amp;Context&lt;T&gt;) -&gt; Option&lt;Arc&lt;Self&gt;&gt; {</span>
+<span class="line"><i>806</i>        context</span>
+<span class="line"><i>807</i>            .get_optional(REQUEST_METRICS_KEY)</span>
+<span class="line"><i>808</i>            .expect(&quot;request metrics have a fixed registry type&quot;)</span>
+<span class="line"><i>809</i>    }</span>
+<span class="line"><i>810</i></span>
+<span class="line"><i>811</i>    /// Count a prompt of `tokens` tokens as soon as it is tokenized. A batched</span>
+<span class="line"><i>812</i>    /// completion request reports each of its prompts.</span>
+<span class="line"><i>813</i>    pub(crate) fn add_input_tokens(&amp;self, tokens: usize) {</span>
+<span class="line"><i>814</i>        self.update_input_tokens(|known| known.saturating_add(tokens as u64));</span>
+<span class="line"><i>815</i>    }</span>
+<span class="line"><i>816</i></span>
+<span class="line"><i>817</i>    /// Report the request&#x27;s whole prompt size from a response annotation, which</span>
+<span class="line"><i>818</i>    /// repeats it on every chunk. Never lowers the known size, so it neither</span>
+<span class="line"><i>819</i>    /// double counts nor undoes [`add_input_tokens`](Self::add_input_tokens).</span>
+<span class="line"><i>820</i>    pub(crate) fn observe_input_tokens(&amp;self, tokens: usize) {</span>
+<span class="line"><i>821</i>        self.update_input_tokens(|known| known.max(tokens as u64));</span>
+<span class="line"><i>822</i>    }</span>
+<span class="line"><i>823</i></span>
+<span class="line"><i>824</i>    fn update_input_tokens(&amp;self, input_tokens: impl Fn(u64) -&gt; u64) {</span>
+<span class="line"><i>825</i>        let mut added = 0;</span>
+<span class="line"><i>826</i>        let Ok(previous) = self.state.fetch_update(Relaxed, Relaxed, |state| {</span>
+<span class="line"><i>827</i>            if state &amp; FINISHED != 0 {</span>
+<span class="line"><i>828</i>                return None;</span>
+<span class="line"><i>829</i>            }</span>
+<span class="line"><i>830</i>            let known = state &amp; INPUT_TOKENS;</span>
+<span class="line"><i>831</i>            added = input_tokens(known).min(INPUT_TOKENS).saturating_sub(known);</span>
+<span class="line"><i>832</i>            (added &gt; 0).then_some(state + added)</span>
+<span class="line"><i>833</i>        }) else {</span>
+<span class="line"><i>834</i>            return;</span>
+<span class="line"><i>835</i>        };</span>
+<span class="line"><i>836</i>        self.input_tokens.inc_by(added);</span>
+<span class="line"><i>837</i>        let added = added as i64;</span>
+<span class="line"><i>838</i>        if previous &amp; GENERATING == 0 {</span>
+<span class="line"><i>839</i>            self.awaiting_first_token_input_tokens.add(added);</span>
+<span class="line"><i>840</i>        } else {</span>
+<span class="line"><i>841</i>            self.generating_input_tokens.add(added);</span>
+<span class="line"><i>842</i>        }</span>
+<span class="line"><i>843</i>    }</span>
+<span class="line"><i>844</i></span>
+<span class="line"><i>845</i>    /// Count `tokens` newly generated output tokens (a delta, not a total). The</span></code></pre></details><details class="source" id="src-frontend-15"><summary><b>源码 · 首输出 token 转换状态与一次性 finish</b><small>lib/llm/src/http/service/metrics.rs:847–891</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/metrics.rs#L847-L891" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>847</i>    pub(crate) fn add_output_tokens(&amp;self, tokens: usize) {</span>
+<span class="line"><i>848</i>        let state = self.state.load(Relaxed);</span>
+<span class="line"><i>849</i>        if tokens == 0 || state &amp; FINISHED != 0 {</span>
+<span class="line"><i>850</i>            return;</span>
+<span class="line"><i>851</i>        }</span>
+<span class="line"><i>852</i>        let tokens = tokens as u64;</span>
+<span class="line"><i>853</i>        let pending = self.pending_output_tokens.fetch_add(tokens, Relaxed) + tokens;</span>
+<span class="line"><i>854</i>        if pending &gt;= LOCAL_FLUSH_TOKENS {</span>
+<span class="line"><i>855</i>            self.flush_output_tokens();</span>
+<span class="line"><i>856</i>        }</span>
+<span class="line"><i>857</i>        if state &amp; GENERATING != 0 {</span>
+<span class="line"><i>858</i>            return;</span>
+<span class="line"><i>859</i>        }</span>
+<span class="line"><i>860</i>        let previous = self.state.fetch_or(GENERATING, Relaxed);</span>
+<span class="line"><i>861</i>        if previous &amp; (GENERATING | FINISHED) != 0 {</span>
+<span class="line"><i>862</i>            return;</span>
+<span class="line"><i>863</i>        }</span>
+<span class="line"><i>864</i>        let input = (previous &amp; INPUT_TOKENS) as i64;</span>
+<span class="line"><i>865</i>        self.awaiting_first_token_requests.dec();</span>
+<span class="line"><i>866</i>        self.awaiting_first_token_input_tokens.sub(input);</span>
+<span class="line"><i>867</i>        self.generating_input_tokens.add(input);</span>
+<span class="line"><i>868</i>    }</span>
+<span class="line"><i>869</i></span>
+<span class="line"><i>870</i>    fn flush_output_tokens(&amp;self) {</span>
+<span class="line"><i>871</i>        let tokens = self.pending_output_tokens.swap(0, Relaxed);</span>
+<span class="line"><i>872</i>        if tokens &gt; 0 {</span>
+<span class="line"><i>873</i>            self.output_tokens.inc_by(tokens);</span>
+<span class="line"><i>874</i>        }</span>
+<span class="line"><i>875</i>    }</span>
+<span class="line"><i>876</i></span>
+<span class="line"><i>877</i>    /// Stop tracking the request. Only the first call on any clone counts.</span>
+<span class="line"><i>878</i>    fn finish(&amp;self) {</span>
+<span class="line"><i>879</i>        let previous = self.state.fetch_or(FINISHED, Relaxed);</span>
+<span class="line"><i>880</i>        if previous &amp; FINISHED != 0 {</span>
+<span class="line"><i>881</i>            return;</span>
+<span class="line"><i>882</i>        }</span>
+<span class="line"><i>883</i>        self.flush_output_tokens();</span>
+<span class="line"><i>884</i>        let input = (previous &amp; INPUT_TOKENS) as i64;</span>
+<span class="line"><i>885</i>        if previous &amp; GENERATING != 0 {</span>
+<span class="line"><i>886</i>            self.generating_input_tokens.sub(input);</span>
+<span class="line"><i>887</i>        } else {</span>
+<span class="line"><i>888</i>            self.awaiting_first_token_requests.dec();</span>
+<span class="line"><i>889</i>            self.awaiting_first_token_input_tokens.sub(input);</span>
+<span class="line"><i>890</i>        }</span>
+<span class="line"><i>891</i>    }</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>信号</th><th>更新者 / 语义</th><th>诊断用途</th></tr></thead><tbody><tr><td>awaiting_first_token_requests</td><td>RequestMetrics 首个非零 output token 前</td><td>准入后等待积压，区别生成中请求</td></tr><tr><td>inflight_input_tokens{state}</td><td>已知 prompt token 按 awaiting/generating 移动</td><td>同时看请求数与输入规模，未知长度不能当零工作量</td></tr><tr><td>input_tokens_total</td><td>tokenization/annotation 增量去重更新</td><td>用 rate 看流入输入规模</td></tr><tr><td>output_tokens_total</td><td>新生成 token 增量，可本地缓冲后 flush</td><td>吞吐计数不对应每个 SSE 帧</td></tr></tbody></table></div></section><section id="frontend-end-metrics" class="lesson"><div class="sectionhead"><h2>13 / 结束时的 Histogram 与 span 摘要</h2><label class="done"><input type="checkbox" data-read="frontend-end-metrics"> 已读</label></div><details class="source" id="src-frontend-16"><summary><b>源码 · collector Drop：OSL、detokenize 与当前 span 字段</b><small>lib/llm/src/http/service/metrics.rs:2674–2725</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/metrics.rs#L2674-L2725" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2674</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>2675</i>        if let Some(histogram) = &amp;self.inter_token_latency {</span>
+<span class="line"><i>2676</i>            histogram.flush();</span>
+<span class="line"><i>2677</i>        }</span>
+<span class="line"><i>2678</i></span>
+<span class="line"><i>2679</i>        if !self.detokenize_latency_total.is_zero() &amp;&amp; self.detokenize_count_total &gt; 0 {</span>
+<span class="line"><i>2680</i>            let avg_detokenize_latency_ms = (self.detokenize_latency_total.as_secs_f64() * 1000.0)</span>
+<span class="line"><i>2681</i>                / self.detokenize_count_total as f64;</span>
+<span class="line"><i>2682</i>            self.metrics</span>
+<span class="line"><i>2683</i>                .tokenizer_latency</span>
+<span class="line"><i>2684</i>                .with_label_values(&amp;[frontend_service::operation::DETOKENIZE])</span>
+<span class="line"><i>2685</i>                .observe(avg_detokenize_latency_ms);</span>
+<span class="line"><i>2686</i>        }</span>
+<span class="line"><i>2687</i></span>
+<span class="line"><i>2688</i>        // Publish final OSL when the collector is dropped, but only for</span>
+<span class="line"><i>2689</i>        // requests that actually produced output tokens. Recording zero for</span>
+<span class="line"><i>2690</i>        // failed/cancelled requests would corrupt histogram averages (sum/count)</span>
+<span class="line"><i>2691</i>        // and percentiles. Failures are already tracked by requests_total with</span>
+<span class="line"><i>2692</i>        // status and error_type labels.</span>
+<span class="line"><i>2693</i>        if self.osl &gt; 0 {</span>
+<span class="line"><i>2694</i>            self.metrics</span>
+<span class="line"><i>2695</i>                .output_sequence_length</span>
+<span class="line"><i>2696</i>                .with_label_values(&amp;[&amp;self.model])</span>
+<span class="line"><i>2697</i>                .observe(self.osl as f64);</span>
+<span class="line"><i>2698</i>        }</span>
+<span class="line"><i>2699</i></span>
+<span class="line"><i>2700</i>        // Record request summary on the enclosing span.</span>
+<span class="line"><i>2701</i>        // InflightGuard::Drop and on_response logs will inherit these.</span>
+<span class="line"><i>2702</i>        let span = tracing::Span::current();</span>
+<span class="line"><i>2703</i>        span.record(&quot;input_tokens&quot;, self.isl as u32);</span>
+<span class="line"><i>2704</i>        span.record(&quot;output_tokens&quot;, self.osl as u32);</span>
+<span class="line"><i>2705</i>        // Only record once observed, so requests that never carried a metrics</span>
+<span class="line"><i>2706</i>        // annotation (e.g. errored before the first chunk) don&#x27;t stamp a false zero.</span>
+<span class="line"><i>2707</i>        if self.multimodal_counts_observed {</span>
+<span class="line"><i>2708</i>            span.record(&quot;image_count&quot;, self.image_count_val as u32);</span>
+<span class="line"><i>2709</i>            span.record(&quot;video_count&quot;, self.video_count_val as u32);</span>
+<span class="line"><i>2710</i>            span.record(&quot;audio_count&quot;, self.audio_count_val as u32);</span>
+<span class="line"><i>2711</i>        }</span>
+<span class="line"><i>2712</i>        if let Some(ttft_ms) = self.ttft_ms {</span>
+<span class="line"><i>2713</i>            span.record(&quot;ttft_ms&quot;, format!(&quot;{:.2}&quot;, ttft_ms).as_str());</span>
+<span class="line"><i>2714</i>        }</span>
+<span class="line"><i>2715</i>        if self.itl_count &gt; 0 {</span>
+<span class="line"><i>2716</i>            let avg_ms = (self.itl_sum_secs / self.itl_count as f64) * 1000.0;</span>
+<span class="line"><i>2717</i>            span.record(&quot;avg_itl_ms&quot;, format!(&quot;{:.2}&quot;, avg_ms).as_str());</span>
+<span class="line"><i>2718</i>        }</span>
+<span class="line"><i>2719</i>        if let Some(worker_id) = self.prefill_worker_id {</span>
+<span class="line"><i>2720</i>            span.record(&quot;prefill_worker_id&quot;, worker_id);</span>
+<span class="line"><i>2721</i>        }</span>
+<span class="line"><i>2722</i>        if let Some(worker_id) = self.decode_worker_id {</span>
+<span class="line"><i>2723</i>            span.record(&quot;decode_worker_id&quot;, worker_id);</span>
+<span class="line"><i>2724</i>        }</span>
+<span class="line"><i>2725</i>    }</span></code></pre></details><p>OSL 只有产生过输出 token 才观察，避免失败/取消的零值污染均值；请求失败仍通过状态/错误指标记录。detokenize 汇总按实际次数计算，Trace 中 input/output、TTFT/ITL、worker attribution 只有观察到时才填。请以当时生命周期 span 是否仍附着和 exporter 采样结果判断可见性。</p></section><section id="frontend-relay" class="lesson"><div class="sectionhead"><h2>14 / 观测数据也是控制输入：FrontendLoad 发布</h2><label class="done"><input type="checkbox" data-read="frontend-relay"> 已读</label></div><details class="source" id="src-frontend-17"><summary><b>源码 · FrontendLoadFrame 数据形态</b><small>lib/llm/src/frontend_load.rs:36–45</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/frontend_load.rs#L36-L45" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>36</i>pub(crate) struct FrontendLoadFrame {</span>
+<span class="line"><i>37</i>    /// Stable across event-publisher reconnects.</span>
+<span class="line"><i>38</i>    pub(crate) frontend_instance_id: u64,</span>
+<span class="line"><i>39</i>    /// Identifies the lifetime of the counters; reconnecting does not reset it.</span>
+<span class="line"><i>40</i>    pub(crate) incarnation: u64,</span>
+<span class="line"><i>41</i>    /// Starts at 1 and strictly increases within one incarnation.</span>
+<span class="line"><i>42</i>    pub(crate) sequence: u64,</span>
+<span class="line"><i>43</i>    pub(crate) is_serving_ready: bool,</span>
+<span class="line"><i>44</i>    pub(crate) models: Vec&lt;FrontendModelLoad&gt;,</span>
+<span class="line"><i>45</i>}</span></code></pre></details><details class="source" id="src-frontend-18"><summary><b>源码 · 周期读取同一 Metrics 与 committed model views</b><small>lib/llm/src/frontend_load.rs:130–175</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/frontend_load.rs#L130-L175" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>130</i>pub(crate) fn start_frontend_load_publisher(</span>
+<span class="line"><i>131</i>    runtime: DistributedRuntime,</span>
+<span class="line"><i>132</i>    namespace: String,</span>
+<span class="line"><i>133</i>    manager: Arc&lt;ModelManager&gt;,</span>
+<span class="line"><i>134</i>    metrics: Arc&lt;Metrics&gt;,</span>
+<span class="line"><i>135</i>    is_ready: impl Fn() -&gt; bool + Send + &#x27;static,</span>
+<span class="line"><i>136</i>    cancel: CancellationToken,</span>
+<span class="line"><i>137</i>) {</span>
+<span class="line"><i>138</i>    runtime.runtime().secondary().spawn(async move {</span>
+<span class="line"><i>139</i>        let namespace_handle = match runtime.namespace(namespace.clone()) {</span>
+<span class="line"><i>140</i>            Ok(namespace) =&gt; namespace,</span>
+<span class="line"><i>141</i>            Err(error) =&gt; {</span>
+<span class="line"><i>142</i>                tracing::error!(%namespace, %error, &quot;cannot create frontend load event namespace&quot;);</span>
+<span class="line"><i>143</i>                return;</span>
+<span class="line"><i>144</i>            }</span>
+<span class="line"><i>145</i>        };</span>
+<span class="line"><i>146</i>        let frontend_instance_id = runtime.connection_id();</span>
+<span class="line"><i>147</i>        // Publish on the first tick, matching the scheduler-load publisher.</span>
+<span class="line"><i>148</i>        let mut interval = tokio::time::interval(FRONTEND_LOAD_PUBLISH_INTERVAL);</span>
+<span class="line"><i>149</i>        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);</span>
+<span class="line"><i>150</i>        let mut retry = Backoff::new(PUBLISHER_RETRY_INITIAL, PUBLISHER_RETRY_MAX);</span>
+<span class="line"><i>151</i>        let mut failures = FailureStreak::default();</span>
+<span class="line"><i>152</i></span>
+<span class="line"><i>153</i>        // Reconnect loop: a publish failure drops the publisher and builds a new one.</span>
+<span class="line"><i>154</i>        loop {</span>
+<span class="line"><i>155</i>            let publisher = tokio::select! {</span>
+<span class="line"><i>156</i>                _ = cancel.cancelled() =&gt; return,</span>
+<span class="line"><i>157</i>                result = EventPublisher::for_namespace(&amp;namespace_handle, FRONTEND_LOAD_TOPIC) =&gt; result,</span>
+<span class="line"><i>158</i>            };</span>
+<span class="line"><i>159</i>            let error = match publisher {</span>
+<span class="line"><i>160</i>                Ok(publisher) =&gt; loop {</span>
+<span class="line"><i>161</i>                    tokio::select! {</span>
+<span class="line"><i>162</i>                        _ = cancel.cancelled() =&gt; return,</span>
+<span class="line"><i>163</i>                        _ = interval.tick() =&gt; {}</span>
+<span class="line"><i>164</i>                    }</span>
+<span class="line"><i>165</i>                    let frame = metrics.frontend_load(</span>
+<span class="line"><i>166</i>                        frontend_instance_id,</span>
+<span class="line"><i>167</i>                        is_ready(),</span>
+<span class="line"><i>168</i>                        manager.committed_model_views(),</span>
+<span class="line"><i>169</i>                    );</span>
+<span class="line"><i>170</i>                    let result = tokio::select! {</span>
+<span class="line"><i>171</i>                        biased;</span>
+<span class="line"><i>172</i>                        _ = cancel.cancelled() =&gt; return,</span>
+<span class="line"><i>173</i>                        result = publisher.publish(&amp;frame) =&gt; result,</span>
+<span class="line"><i>174</i>                    };</span>
+<span class="line"><i>175</i>                    match result {</span></code></pre></details><p>发布器从同一 metrics 对象读取快照，避免另做一套请求计数。它还结合模型 committed views 与 readiness，经 Event Plane 发布给 Pool Relay；下游的采样频率、重连和 stale 判断决定全局视图新鲜度。Prometheus 能抓到与 Relay 收到并不保证同一时刻或同一就绪视图。</p></section><section id="frontend-practice" class="lesson"><div class="sectionhead"><h2>15 / 接入与排查顺序</h2><label class="done"><input type="checkbox" data-read="frontend-practice"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>步骤</th><th>验证证据</th></tr></thead><tbody><tr><td>确认 processor 与版本</td><td>Rust 默认 / vLLM / SGLang factory、frontend/worker 支持窗口</td></tr><tr><td>检查模型准入</td><td>canonical model、MDC 冲突日志、committed workers 与 serving readiness</td></tr><tr><td>检查字段映射</td><td>endpoint → typed request → PreprocessedRequest → adapter → response</td></tr><tr><td>比较时延区间</td><td>HTTP queue / preprocess / Router / backend / postprocess / SSE；不可混用单位</td></tr><tr><td>验证边界</td><td>stream 与 nonstream、工具与 reasoning、多模态、取消和错误分开用例</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>同版本官方仓库文档</th><th>阅读用途</th></tr></thead><tbody><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/docs/fern/pages/developer-guide/knowledge-base/modular-components/frontend/protocol-field-handling.md">Protocol Field Handling</a></td><td>字段契约、语义 owner 与完整生命周期</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/docs/fern/pages/reference/components/frontend-configuration.mdx">Frontend configuration</a></td><td>端点、processor 与 CLI 配置</td></tr></tbody></table></div><p>继续阅读：<a href="runtime.html">Runtime</a> · <a href="router.html">KV Router</a> · <a href="backends.html">引擎适配</a> · <a href="reliability.html">可靠性</a>。本章未执行接口回归或负载测试。</p></section><section id="frontend-diagram" class="lesson"><div class="sectionhead"><h2>16 / 架构分层图与交叉阅读</h2><label class="done"><input type="checkbox" data-read="frontend-diagram"> 已读</label></div><div class="diagram"><div class="lane"><b>HTTP / 模型</b><span>Request → lifecycle / ready gate → canonical model → validate</span></div><div class="lane"><b>请求向下</b><span>processor → token / MM → Router → backend / engine</span></div><div class="lane"><b>输出向上</b><span>token stream → incremental parser / detokenizer → protocol / SSE</span></div><div class="lane"><b>观测与反馈</b><span>RequestMetrics → registry / Trace summary；同源 frame → Pool Relay</span></div></div><p><a href="frontend-architecture.mmd">Mermaid 图源</a>按职责分泳道；泳道之间不暗示已经实现自动接线。离线 HTML 无外部渲染依赖。<a href="system-map.html">系统地图</a> / <a href="index.html">全部章节</a>。</p></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 9734418e5bc71027e6bd04a09314bf1765208c72。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

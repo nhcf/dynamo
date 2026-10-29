@@ -1,0 +1,409 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>系统地图：运行形态与跨模块边界 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#system-map-scope">01 / 阅读范围与证据版本</a><a href="#system-map-layers">02 / Rust、Python 与 Kubernetes 三层如何协作</a><a href="#system-map-five-flows">03 / 同一系统至少有五条独立流</a><a href="#system-map-startup">04 / 一条模型注册如何变为可服务流水线</a><a href="#system-map-pipeline">05 / 默认 Rust token 流水线：向下处理，向上投影</a><a href="#system-map-custom-processor">06 / 自带处理器时少掉哪些 Rust stages</a><a href="#system-map-modes">07 / 四种常用运行形态</a><a href="#system-map-state-owners">08 / 每份状态的权威 owner 与一致性</a><a href="#system-map-observability">09 / 跨模块可观测：记录、传播、导出、消费</a><a href="#system-map-reliability">10 / 资源释放贯穿所有模块</a><a href="#system-map-reading">11 / 00–12 的系统阅读顺序与产出</a><a href="#system-map-fieldwork">12 / 用真实部署反查源码的工作顺序</a><a href="#system-map-diagram">13 / 架构分层图与交叉阅读</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 9734418e5</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>系统地图：运行形态与跨模块边界</h1><p class="lede">用实际流水线组装和所有权模型连接 00–12 章，按请求、KV、状态事件、观测与控制反馈五条路径理解整个仓库。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 9734418e5</span><span class="pill ">系统源码专题 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="system-map-scope" class="lesson"><div class="sectionhead"><h2>01 / 阅读范围与证据版本</h2><label class="done"><input type="checkbox" data-read="system-map-scope"> 已读</label></div><p>用实际流水线组装和所有权模型连接 00–12 章，按请求、KV、状态事件、观测与控制反馈五条路径理解整个仓库。</p><aside class="note ">源码固定于 9734418e5bc71027e6bd04a09314bf1765208c72（workspace 1.7.0），与 PD / 可靠性等新专题使用同一代码基线。本文分析实现和配置边界，未运行推理、性能实验或集群修改。历史部署与旧版章节须按版本对照。</aside></section><section id="system-map-layers" class="lesson"><div class="sectionhead"><h2>02 / Rust、Python 与 Kubernetes 三层如何协作</h2><label class="done"><input type="checkbox" data-read="system-map-layers"> 已读</label></div><details class="source" id="src-system-map-1"><summary><b>源码 · workspace 边界、版本与独立 AISimulate core 依赖</b><small>Cargo.toml:5–62</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/Cargo.toml#L5-L62" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>5</i>members = [</span>
+<span class="line"><i>6</i>    &quot;lib/llm&quot;,</span>
+<span class="line"><i>7</i>    &quot;lib/rl&quot;,</span>
+<span class="line"><i>8</i>    &quot;lib/runtime&quot;,</span>
+<span class="line"><i>9</i>    &quot;lib/tokens&quot;,</span>
+<span class="line"><i>10</i>    &quot;lib/truthy&quot;,</span>
+<span class="line"><i>11</i>    &quot;lib/data-gen&quot;,</span>
+<span class="line"><i>12</i>    &quot;lib/kv-hashing&quot;,</span>
+<span class="line"><i>13</i>    &quot;lib/mocker&quot;,</span>
+<span class="line"><i>14</i>    &quot;lib/kv-router&quot;,</span>
+<span class="line"><i>15</i>    &quot;lib/global-common&quot;,</span>
+<span class="line"><i>16</i>    &quot;lib/global-discovery-client&quot;,</span>
+<span class="line"><i>17</i>    &quot;lib/global-discovery-service&quot;,</span>
+<span class="line"><i>18</i>    &quot;lib/global-frontend&quot;,</span>
+<span class="line"><i>19</i>    &quot;lib/global-router&quot;,</span>
+<span class="line"><i>20</i>    &quot;lib/global-view-broadcaster&quot;,</span>
+<span class="line"><i>21</i>    &quot;lib/global-view-receiver&quot;,</span>
+<span class="line"><i>22</i>    &quot;lib/router-plugins/catalog&quot;,</span>
+<span class="line"><i>23</i>    &quot;lib/router-plugins/builtin&quot;,</span>
+<span class="line"><i>24</i>    &quot;examples/router/custom-policy-example/soft-pin-repin&quot;,</span>
+<span class="line"><i>25</i>    &quot;examples/router/custom-policy-example/simple-filter-score-pick&quot;,</span>
+<span class="line"><i>26</i>    &quot;examples/router/custom-policy-example/catalog&quot;,</span>
+<span class="line"><i>27</i>    &quot;examples/router/custom-policy-example/disagg-filter-score-pick&quot;,</span>
+<span class="line"><i>28</i>    &quot;examples/router/custom-policy-example/epp&quot;,</span>
+<span class="line"><i>29</i>    &quot;examples/router/custom-policy-example/simple-stacked-score-pick&quot;,</span>
+<span class="line"><i>30</i>    &quot;lib/memory&quot;,</span>
+<span class="line"><i>31</i>    &quot;lib/bench&quot;,</span>
+<span class="line"><i>32</i>    &quot;lib/backend-common&quot;,</span>
+<span class="line"><i>33</i>    &quot;lib/backend-common/examples/mocker&quot;,</span>
+<span class="line"><i>34</i>    &quot;lib/sidecar/common&quot;,</span>
+<span class="line"><i>35</i>    &quot;lib/sidecar/testkit&quot;,</span>
+<span class="line"><i>36</i>    &quot;lib/sidecar/vllm&quot;,</span>
+<span class="line"><i>37</i>    &quot;lib/mocker/servers/vllm&quot;,</span>
+<span class="line"><i>38</i>    &quot;lib/sidecar/sglang&quot;,</span>
+<span class="line"><i>39</i>    &quot;lib/mocker/servers/sglang&quot;,</span>
+<span class="line"><i>40</i>    &quot;lib/sidecar/trtllm&quot;,</span>
+<span class="line"><i>41</i>    &quot;lib/sidecar/lpx&quot;,</span>
+<span class="line"><i>42</i>    &quot;lib/mocker/servers/trtllm&quot;,</span>
+<span class="line"><i>43</i>    &quot;lib/bindings/c&quot;,</span>
+<span class="line"><i>44</i>    &quot;lib/bindings/python/codegen&quot;,</span>
+<span class="line"><i>45</i>    &quot;deploy/inference-gateway/ext-proc&quot;,</span>
+<span class="line"><i>46</i>    &quot;deploy/inference-gateway/sidecar&quot;,</span>
+<span class="line"><i>47</i>]</span>
+<span class="line"><i>48</i>resolver = &quot;3&quot;</span>
+<span class="line"><i>49</i></span>
+<span class="line"><i>50</i>[workspace.package]</span>
+<span class="line"><i>51</i>version = &quot;1.7.0&quot;</span>
+<span class="line"><i>52</i>edition = &quot;2024&quot;</span>
+<span class="line"><i>53</i>description = &quot;Dynamo Inference Framework&quot;</span>
+<span class="line"><i>54</i>authors = [&quot;NVIDIA Inc. &lt;sw-dl-dynamo@nvidia.com&gt;&quot;]</span>
+<span class="line"><i>55</i>license = &quot;Apache-2.0&quot;</span>
+<span class="line"><i>56</i>homepage = &quot;https://github.com/ai-dynamo/dynamo&quot;</span>
+<span class="line"><i>57</i>repository = &quot;https://github.com/ai-dynamo/dynamo.git&quot;</span>
+<span class="line"><i>58</i>keywords = [&quot;llm&quot;, &quot;genai&quot;, &quot;inference&quot;, &quot;nvidia&quot;, &quot;distributed&quot;]</span>
+<span class="line"><i>59</i></span>
+<span class="line"><i>60</i>[workspace.dependencies]</span>
+<span class="line"><i>61</i>dynamo-custom-policy-builtin = { path = &quot;lib/router-plugins/builtin&quot;, version = &quot;1.7.0&quot; }</span>
+<span class="line"><i>62</i># Published separately by https://github.com/ai-dynamo/aisimulate.</span></code></pre></details><details class="source" id="src-system-map-2"><summary><b>源码 · Python wheel 的 runtime、AISimulate 与平台依赖</b><small>pyproject.toml:5–30</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/pyproject.toml#L5-L30" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>5</i>name = &quot;ai-dynamo&quot;</span>
+<span class="line"><i>6</i>version = &quot;1.7.0&quot;</span>
+<span class="line"><i>7</i>description = &quot;Distributed Inference Framework&quot;</span>
+<span class="line"><i>8</i>readme = &quot;README.md&quot;</span>
+<span class="line"><i>9</i>authors = [</span>
+<span class="line"><i>10</i>    { name = &quot;NVIDIA Inc.&quot;, email = &quot;sw-dl-dynamo@nvidia.com&quot; },</span>
+<span class="line"><i>11</i>]</span>
+<span class="line"><i>12</i>license = { text = &quot;Apache-2.0&quot; }</span>
+<span class="line"><i>13</i>license-files = [&quot;LICENSE&quot;]</span>
+<span class="line"><i>14</i>requires-python = &quot;&gt;=3.11&quot;</span>
+<span class="line"><i>15</i>dependencies = [</span>
+<span class="line"><i>16</i>    &quot;ai-dynamo-runtime==1.7.0&quot;,</span>
+<span class="line"><i>17</i>    &quot;aisimulate==0.13.0.dev202610280000000086 ; python_version &gt;= &#x27;3.11&#x27; and python_version &lt; &#x27;3.14&#x27;&quot;,</span>
+<span class="line"><i>18</i>    &quot;aiohttp&gt;=3.14.3,&lt;4.0&quot;,</span>
+<span class="line"><i>19</i>    # Set the CA bundle floor for transitive HTTP clients outside containers too.</span>
+<span class="line"><i>20</i>    &quot;certifi&gt;=2026.10.23&quot;,</span>
+<span class="line"><i>21</i>    &quot;transformers&gt;=4.56.0&quot;,</span>
+<span class="line"><i>22</i>    &quot;kubernetes&gt;=32.0.1,&lt;33.0.0&quot;,</span>
+<span class="line"><i>23</i>    &quot;prometheus_client&gt;=0.23.1,&lt;1.0&quot;,</span>
+<span class="line"><i>24</i>    &quot;msgspec&gt;=0.19.0&quot;,</span>
+<span class="line"><i>25</i>    &quot;redis&gt;=6.2.0,&lt;9.0.0&quot;,</span>
+<span class="line"><i>26</i>    &quot;zstandard&gt;=0.23.0,&lt;1.0&quot;,</span>
+<span class="line"><i>27</i>    &quot;pyzmq&gt;=26.0.0&quot;,</span>
+<span class="line"><i>28</i>    &quot;typing_extensions&gt;=4.10.0&quot;,</span>
+<span class="line"><i>29</i>    &quot;tqdm&gt;=4.0.0&quot;,</span>
+<span class="line"><i>30</i>]</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>层</th><th>常见入口</th><th>主要职责</th></tr></thead><tbody><tr><td>Python 组装</td><td>python -m dynamo.frontend / sglang / vllm / trtllm / planner</td><td>CLI、工厂、引擎绑定与运维/规划</td></tr><tr><td>Rust 核心</td><td>lib/runtime、llm、kv-router、backend-common</td><td>网络、typed pipeline、选择/准入、流与生命周期</td></tr><tr><td>内存与传输</td><td>KVBM、GPU Memory Service、NIXL integration</td><td>块所有权、分层搬运、共享分配与数据面</td></tr><tr><td>Kubernetes</td><td>deploy/operator 与 Helm</td><td>声明式拓扑、Pod/Service/探针与监控接入</td></tr></tbody></table></div><p>目录存在不等于纳入当前根 workspace 或已实现；外部依赖也不是本仓库 vendored 源码。Python wheel 与 native extension 需要匹配版本，模型引擎自身还有独立依赖与设备要求。</p></section><section id="system-map-five-flows" class="lesson"><div class="sectionhead"><h2>03 / 同一系统至少有五条独立流</h2><label class="done"><input type="checkbox" data-read="system-map-five-flows"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>流</th><th>路径</th><th>排障问题</th></tr></thead><tbody><tr><td>Request / response</td><td>Client → Frontend → Router → Worker → engine → stream</td><td>被谁接受、派到谁、终态是什么</td></tr><tr><td>KV data</td><td>engine / KVBM → connector / device / network / storage</td><td>真实字节在哪里、何时可用、谁保护源块</td></tr><tr><td>State events</td><td>engine KV / metrics → indexer / active sequences / Relay</td><td>状态是否陈旧、丢失、重建或近似</td></tr><tr><td>Observability</td><td>日志/Trace/Metrics → exporters → Collector/Prometheus</td><td>记录了哪个边界、是否采样/抓取</td></tr><tr><td>Control feedback</td><td>Planner / Operator → 目标容量/拓扑 → runtime 新成员</td><td>谁决定、谁执行、何时就绪</td></tr></tbody></table></div><p>状态事件不是 Prometheus scrape；Trace span 不是 KV transfer；伸缩目标不是当前可用容量。跨图阅读时先写清当前讨论的是哪条流。</p></section><section id="system-map-startup" class="lesson"><div class="sectionhead"><h2>04 / 一条模型注册如何变为可服务流水线</h2><label class="done"><input type="checkbox" data-read="system-map-startup"> 已读</label></div><details class="source" id="src-system-map-3"><summary><b>源码 · LocalModel attach 发布模型、输入模态、角色与依赖</b><small>lib/llm/src/local_model.rs:674–709</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/local_model.rs#L674-L709" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>674</i>    pub async fn attach(</span>
+<span class="line"><i>675</i>        &amp;mut self,</span>
+<span class="line"><i>676</i>        endpoint: &amp;Endpoint,</span>
+<span class="line"><i>677</i>        model_type: ModelType,</span>
+<span class="line"><i>678</i>        model_input: ModelInput,</span>
+<span class="line"><i>679</i>        lora_info: Option&lt;crate::model_card::LoraInfo&gt;,</span>
+<span class="line"><i>680</i>        worker_type: Option&lt;crate::worker_type::WorkerType&gt;,</span>
+<span class="line"><i>681</i>        needs: Vec&lt;Vec&lt;crate::worker_type::WorkerType&gt;&gt;,</span>
+<span class="line"><i>682</i>    ) -&gt; anyhow::Result&lt;()&gt; {</span>
+<span class="line"><i>683</i>        self.card.model_type = model_type;</span>
+<span class="line"><i>684</i>        self.card.model_input = model_input;</span>
+<span class="line"><i>685</i>        self.card.worker_type = worker_type;</span>
+<span class="line"><i>686</i>        self.card.needs = needs;</span>
+<span class="line"><i>687</i>        self.card.lora = lora_info.clone();</span>
+<span class="line"><i>688</i></span>
+<span class="line"><i>689</i>        let lora_name = self.card.lora.as_ref().map(|info| info.name.as_str());</span>
+<span class="line"><i>690</i>        let model_suffix = derive_lora_suffix(lora_name);</span>
+<span class="line"><i>691</i></span>
+<span class="line"><i>692</i>        let suffix_for_log = model_suffix</span>
+<span class="line"><i>693</i>            .as_ref()</span>
+<span class="line"><i>694</i>            .map(|s| format!(&quot;/{}&quot;, s))</span>
+<span class="line"><i>695</i>            .unwrap_or_default();</span>
+<span class="line"><i>696</i>        tracing::debug!(</span>
+<span class="line"><i>697</i>            &quot;Registering MDC at path: {}/{}/{}/{:x}{}&quot;,</span>
+<span class="line"><i>698</i>            endpoint.component().namespace().name(),</span>
+<span class="line"><i>699</i>            endpoint.component().name(),</span>
+<span class="line"><i>700</i>            endpoint.name(),</span>
+<span class="line"><i>701</i>            endpoint.drt().connection_id(),</span>
+<span class="line"><i>702</i>            suffix_for_log</span>
+<span class="line"><i>703</i>        );</span>
+<span class="line"><i>704</i></span>
+<span class="line"><i>705</i>        if self.self_host_metadata {</span>
+<span class="line"><i>706</i>            self.move_to_self_host(endpoint, model_suffix.as_deref())</span>
+<span class="line"><i>707</i>                .context(&quot;move_to_self_host&quot;)?;</span>
+<span class="line"><i>708</i>        }</span>
+<span class="line"><i>709</i></span></code></pre></details><details class="source" id="src-system-map-4"><summary><b>源码 · 构建结果按 checksum 与 generation fencing</b><small>lib/llm/src/discovery/controller.rs:968–1005</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/discovery/controller.rs#L968-L1005" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>968</i>    fn apply_build_result_inner(&amp;mut self, result: BuildResult&lt;H::Prepared&gt;) {</span>
+<span class="line"><i>969</i>        let Some(mut group) = self.groups.remove(&amp;result.spec.key) else {</span>
+<span class="line"><i>970</i>            if let BuildOutcome::Prepared(prepared) = result.outcome {</span>
+<span class="line"><i>971</i>                self.host.discard_prepared(prepared);</span>
+<span class="line"><i>972</i>            }</span>
+<span class="line"><i>973</i>            return;</span>
+<span class="line"><i>974</i>        };</span>
+<span class="line"><i>975</i>        let is_current = matches!(</span>
+<span class="line"><i>976</i>            &amp;group.status,</span>
+<span class="line"><i>977</i>            GroupStatus::Building {</span>
+<span class="line"><i>978</i>                mdc_checksum,</span>
+<span class="line"><i>979</i>                generation,</span>
+<span class="line"><i>980</i>                ..</span>
+<span class="line"><i>981</i>            } if mdc_checksum == &amp;result.spec.fingerprint &amp;&amp; *generation == result.spec.generation</span>
+<span class="line"><i>982</i>        ) &amp;&amp; group.selected_checksum() == Some(result.spec.mdc_checksum.as_str())</span>
+<span class="line"><i>983</i>            &amp;&amp; group.cohorts.contains_key(&amp;result.spec.mdc_checksum)</span>
+<span class="line"><i>984</i>            &amp;&amp; group</span>
+<span class="line"><i>985</i>                .cohorts</span>
+<span class="line"><i>986</i>                .get(&amp;result.spec.mdc_checksum)</span>
+<span class="line"><i>987</i>                .is_some_and(|member_keys| {</span>
+<span class="line"><i>988</i>                    cohort_fingerprint(</span>
+<span class="line"><i>989</i>                        &amp;result.spec.mdc_checksum,</span>
+<span class="line"><i>990</i>                        cohort_video_contract(&amp;self.members(member_keys)).as_deref(),</span>
+<span class="line"><i>991</i>                    ) == result.spec.fingerprint</span>
+<span class="line"><i>992</i>                });</span>
+<span class="line"><i>993</i>        let committed_members = match &amp;group.status {</span>
+<span class="line"><i>994</i>            GroupStatus::Building {</span>
+<span class="line"><i>995</i>                committed_members, ..</span>
+<span class="line"><i>996</i>            } =&gt; committed_members.clone(),</span>
+<span class="line"><i>997</i>            _ =&gt; None,</span>
+<span class="line"><i>998</i>        };</span>
+<span class="line"><i>999</i>        if !is_current {</span>
+<span class="line"><i>1000</i>            if let BuildOutcome::Prepared(prepared) = result.outcome {</span>
+<span class="line"><i>1001</i>                self.host.discard_prepared(prepared);</span>
+<span class="line"><i>1002</i>            }</span>
+<span class="line"><i>1003</i>            self.groups.insert(result.spec.key, group);</span>
+<span class="line"><i>1004</i>            return;</span>
+<span class="line"><i>1005</i>        }</span></code></pre></details><div class="flow"><div><b>01</b>engine ready 后解析事实</div><div><b>02</b>注册 endpoint / MDC</div><div><b>03</b>Frontend 接纳 WorkerSet</div><div><b>04</b>异步构建匹配 pipeline</div><div><b>05</b>校验 generation 再 commit</div><div><b>06</b>模型 serving ready</div></div><p>静态 architectural limit、engine runtime limit、声明式 router policy 和瞬时负载不属于同一个 owner。Discovery 反复事件/重连可能产生晚到构建，generation fencing 防止旧结果复活已退役服务；同名模型也可能同时存在多个部署世代。</p></section><section id="system-map-pipeline" class="lesson"><div class="sectionhead"><h2>05 / 默认 Rust token 流水线：向下处理，向上投影</h2><label class="done"><input type="checkbox" data-read="system-map-pipeline"> 已读</label></div><details class="source" id="src-system-map-5"><summary><b>源码 · Preprocessor → Migration → token backend → Encoder → Prefill → backend 及 backward edges</b><small>lib/llm/src/entrypoint/input/common.rs:472–515</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/entrypoint/input/common.rs#L472-L515" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>472</i>    pub fn build_pipeline&lt;Req, Resp&gt;(</span>
+<span class="line"><i>473</i>        &amp;self,</span>
+<span class="line"><i>474</i>        card: &amp;ModelDeploymentCard,</span>
+<span class="line"><i>475</i>        preprocessor: Arc&lt;OpenAIPreprocessor&gt;,</span>
+<span class="line"><i>476</i>        tokenizer: crate::tokenizers::Tokenizer,</span>
+<span class="line"><i>477</i>        migration_limit: u32,</span>
+<span class="line"><i>478</i>        migration_max_seq_len: Option&lt;u32&gt;,</span>
+<span class="line"><i>479</i>        metrics: Arc&lt;Metrics&gt;,</span>
+<span class="line"><i>480</i>    ) -&gt; anyhow::Result&lt;ServiceEngine&lt;SingleIn&lt;Req&gt;, ManyOut&lt;Annotated&lt;Resp&gt;&gt;&gt;&gt;</span>
+<span class="line"><i>481</i>    where</span>
+<span class="line"><i>482</i>        Req: Data,</span>
+<span class="line"><i>483</i>        Resp: Data,</span>
+<span class="line"><i>484</i>        OpenAIPreprocessor: Operator&lt;</span>
+<span class="line"><i>485</i>                Context&lt;Req&gt;,</span>
+<span class="line"><i>486</i>                Pin&lt;Box&lt;dyn AsyncEngineStream&lt;Annotated&lt;Resp&gt;&gt;&gt;&gt;,</span>
+<span class="line"><i>487</i>                Context&lt;PreprocessedRequest&gt;,</span>
+<span class="line"><i>488</i>                Pin&lt;Box&lt;dyn AsyncEngineStream&lt;Annotated&lt;BackendOutput&gt;&gt;&gt;&gt;,</span>
+<span class="line"><i>489</i>            &gt;,</span>
+<span class="line"><i>490</i>    {</span>
+<span class="line"><i>491</i>        let frontend = SegmentSource::&lt;SingleIn&lt;Req&gt;, ManyOut&lt;Annotated&lt;Resp&gt;&gt;&gt;::new();</span>
+<span class="line"><i>492</i>        let preprocessor_op = preprocessor.into_operator();</span>
+<span class="line"><i>493</i>        let token_backend = Backend::from_tokenizer(tokenizer).into_operator();</span>
+<span class="line"><i>494</i>        let migration = Migration::from_mdc(card, migration_limit, migration_max_seq_len, metrics)</span>
+<span class="line"><i>495</i>            .into_operator_for::&lt;BackendOutput&gt;();</span>
+<span class="line"><i>496</i>        let prefill_op = self.prefill_router.into_operator();</span>
+<span class="line"><i>497</i>        let encoder_op = self.encoder_router.into_operator();</span>
+<span class="line"><i>498</i>        let backend = ServiceBackend::from_engine(self.backend_engine.clone());</span>
+<span class="line"><i>499</i></span>
+<span class="line"><i>500</i>        let engine = frontend</span>
+<span class="line"><i>501</i>            .link(preprocessor_op.forward_edge())?</span>
+<span class="line"><i>502</i>            .link(migration.forward_edge())?</span>
+<span class="line"><i>503</i>            .link(token_backend.forward_edge())?</span>
+<span class="line"><i>504</i>            .link(encoder_op.forward_edge())?</span>
+<span class="line"><i>505</i>            .link(prefill_op.forward_edge())?</span>
+<span class="line"><i>506</i>            .link(backend)?</span>
+<span class="line"><i>507</i>            .link(prefill_op.backward_edge())?</span>
+<span class="line"><i>508</i>            .link(encoder_op.backward_edge())?</span>
+<span class="line"><i>509</i>            .link(token_backend.backward_edge())?</span>
+<span class="line"><i>510</i>            .link(migration.backward_edge())?</span>
+<span class="line"><i>511</i>            .link(preprocessor_op.backward_edge())?</span>
+<span class="line"><i>512</i>            .link_terminal(frontend)?;</span>
+<span class="line"><i>513</i></span>
+<span class="line"><i>514</i>        Ok(engine)</span>
+<span class="line"><i>515</i>    }</span></code></pre></details><p>这里的 segment link 是 typed operator 的双向组装，不是每个 edge 都跨进程。preprocessor 负责模板和响应投影，token backend 处理 token 流，encoder/prefill 可按需求激活，最终 backend 路由到生成 worker。Migration 包住可重试 attempt 的状态；Router 选择、Runtime 传输与 engine 执行分别追踪。</p></section><section id="system-map-custom-processor" class="lesson"><div class="sectionhead"><h2>06 / 自带处理器时少掉哪些 Rust stages</h2><label class="done"><input type="checkbox" data-read="system-map-custom-processor"> 已读</label></div><details class="source" id="src-system-map-6"><summary><b>源码 · build_preprocessed_pipeline 的差异</b><small>lib/llm/src/entrypoint/input/common.rs:517–549</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/entrypoint/input/common.rs#L517-L549" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>517</i>    /// Bring your own pre/post processor. Used when frontend has `--dyn-chat-processor</span>
+<span class="line"><i>518</i>    /// vllm|sglang`.</span>
+<span class="line"><i>519</i>    pub fn build_preprocessed_pipeline(</span>
+<span class="line"><i>520</i>        &amp;self,</span>
+<span class="line"><i>521</i>        card: &amp;ModelDeploymentCard,</span>
+<span class="line"><i>522</i>        migration_limit: u32,</span>
+<span class="line"><i>523</i>        migration_max_seq_len: Option&lt;u32&gt;,</span>
+<span class="line"><i>524</i>        metrics: Arc&lt;Metrics&gt;,</span>
+<span class="line"><i>525</i>    ) -&gt; anyhow::Result&lt;</span>
+<span class="line"><i>526</i>        ServiceEngine&lt;SingleIn&lt;PreprocessedRequest&gt;, ManyOut&lt;Annotated&lt;LLMEngineOutput&gt;&gt;&gt;,</span>
+<span class="line"><i>527</i>    &gt; {</span>
+<span class="line"><i>528</i>        let frontend = SegmentSource::&lt;</span>
+<span class="line"><i>529</i>            SingleIn&lt;PreprocessedRequest&gt;,</span>
+<span class="line"><i>530</i>            ManyOut&lt;Annotated&lt;LLMEngineOutput&gt;&gt;,</span>
+<span class="line"><i>531</i>        &gt;::new();</span>
+<span class="line"><i>532</i>        let migration = Migration::from_mdc(card, migration_limit, migration_max_seq_len, metrics)</span>
+<span class="line"><i>533</i>            .into_operator_for::&lt;LLMEngineOutput&gt;();</span>
+<span class="line"><i>534</i>        let prefill_op = self.prefill_router.into_operator();</span>
+<span class="line"><i>535</i>        let encoder_op = self.encoder_router.into_operator();</span>
+<span class="line"><i>536</i>        let backend = ServiceBackend::from_engine(self.backend_engine.clone());</span>
+<span class="line"><i>537</i></span>
+<span class="line"><i>538</i>        let engine = frontend</span>
+<span class="line"><i>539</i>            .link(migration.forward_edge())?</span>
+<span class="line"><i>540</i>            .link(encoder_op.forward_edge())?</span>
+<span class="line"><i>541</i>            .link(prefill_op.forward_edge())?</span>
+<span class="line"><i>542</i>            .link(backend)?</span>
+<span class="line"><i>543</i>            .link(prefill_op.backward_edge())?</span>
+<span class="line"><i>544</i>            .link(encoder_op.backward_edge())?</span>
+<span class="line"><i>545</i>            .link(migration.backward_edge())?</span>
+<span class="line"><i>546</i>            .link_terminal(frontend)?;</span>
+<span class="line"><i>547</i></span>
+<span class="line"><i>548</i>        Ok(engine)</span>
+<span class="line"><i>549</i>    }</span></code></pre></details><p>vLLM/SGLang processor 可以送入 PreprocessedRequest 并自行处理公共协议，这条链不再重复装默认 preprocessor/token backend。字段 owner、指标产生位置和 Trace 路径都随形态变化；不能仅看 Frontend 命令名称就确定所有步骤在 Rust 内。</p></section><section id="system-map-modes" class="lesson"><div class="sectionhead"><h2>07 / 四种常用运行形态</h2><label class="done"><input type="checkbox" data-read="system-map-modes"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>形态</th><th>主路径</th><th>需要额外判断</th></tr></thead><tbody><tr><td>聚合</td><td>一个 generation worker 同时执行上下文与生成</td><td>chunked Prefill、缓存、批量与 ITL 干扰</td></tr><tr><td>PD</td><td>PrefillRouter → Prefill + Decode，engine 协调 KV</td><td>Completed / Bootstrap、拓扑兼容、staged KV 清理</td></tr><tr><td>Sidecar</td><td>Dynamo planes → native engine RPC</td><td>proto 能力、独立启动、指标采集与实验支持矩阵</td></tr><tr><td>分层 / global</td><td>Global Router 选 pool → local Router 选 worker</td><td>当前 grid 策略和 Relay consumer 是否实际接线</td></tr></tbody></table></div><p>多节点 TP 是单个模型引擎的并行分片；DP 是多个请求副本/秩组；Prefill/Decode 是职责划分。三者可以组合，不能用‘有多个 Pod’推断是 PD 或跨 DC。混合聚合/PD 拓扑需按真实请求 worker attribution 验证。</p></section><section id="system-map-state-owners" class="lesson"><div class="sectionhead"><h2>08 / 每份状态的权威 owner 与一致性</h2><label class="done"><input type="checkbox" data-read="system-map-state-owners"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>状态</th><th>主要 owner</th><th>读取语义</th></tr></thead><tbody><tr><td>模型接纳/流水线</td><td>Frontend-local discovery controller</td><td>不同 Frontend 可选择不同先到 incumbent</td></tr><tr><td>engine KV</td><td>engine / connector / KVBM 强引用</td><td>索引可见不等于实际块永久可用</td></tr><tr><td>Router active lifecycle</td><td>owning Frontend ActiveSequences</td><td>peer replica 与 PromptRegistry 可延迟</td></tr><tr><td>Pool Relay facts</td><td>DC-local advertised producers</td><td>snapshot / generation / freshness / coverage</td></tr><tr><td>Kubernetes desired state</td><td>DGD/DCD 与 controller</td><td>spec、status、实际 ready Pod 分开</td></tr><tr><td>GPU shared allocations</td><td>GMS server 与 client session</td><td>layout commit 与内容 commit 分开</td></tr></tbody></table></div><p>不要通过增加一个全局锁想当然地统一所有事实；各层故意使用不同一致性/可用性边界。排障先确认你看到的是权威状态、派生快照、近似索引还是历史计数。</p></section><section id="system-map-observability" class="lesson"><div class="sectionhead"><h2>09 / 跨模块可观测：记录、传播、导出、消费</h2><label class="done"><input type="checkbox" data-read="system-map-observability"> 已读</label></div><details class="source" id="src-system-map-7"><summary><b>源码 · Runtime 层级化 metric 来源</b><small>lib/runtime/src/metrics.rs:694–731</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/metrics.rs#L694-L731" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>694</i>pub trait MetricsHierarchy: Send + Sync {</span>
+<span class="line"><i>695</i>    // ========================================================================</span>
+<span class="line"><i>696</i>    // Required methods - must be implemented by all types</span>
+<span class="line"><i>697</i>    // ========================================================================</span>
+<span class="line"><i>698</i></span>
+<span class="line"><i>699</i>    /// Get the name of this hierarchy (without any hierarchy prefix)</span>
+<span class="line"><i>700</i>    fn basename(&amp;self) -&gt; String;</span>
+<span class="line"><i>701</i></span>
+<span class="line"><i>702</i>    /// Get the parent hierarchies as actual objects (not strings)</span>
+<span class="line"><i>703</i>    /// Returns a vector of hierarchy references, ordered from root to immediate parent.</span>
+<span class="line"><i>704</i>    /// For example, an Endpoint would return [DRT, Namespace, Component].</span>
+<span class="line"><i>705</i>    fn parent_hierarchies(&amp;self) -&gt; Vec&lt;&amp;dyn MetricsHierarchy&gt;;</span>
+<span class="line"><i>706</i></span>
+<span class="line"><i>707</i>    /// Get a reference to this hierarchy&#x27;s metrics registry</span>
+<span class="line"><i>708</i>    fn get_metrics_registry(&amp;self) -&gt; &amp;MetricsRegistry;</span>
+<span class="line"><i>709</i></span>
+<span class="line"><i>710</i>    // ========================================================================</span>
+<span class="line"><i>711</i>    // Provided methods - have default implementations</span>
+<span class="line"><i>712</i>    // ========================================================================</span>
+<span class="line"><i>713</i></span>
+<span class="line"><i>714</i>    /// Get the connection ID (discovery instance ID) for this hierarchy level.</span>
+<span class="line"><i>715</i>    ///</span>
+<span class="line"><i>716</i>    /// Returns `Some(id)` when the hierarchy has access to the DistributedRuntime</span>
+<span class="line"><i>717</i>    /// (e.g. Namespace, Component, Endpoint). Used by `create_metric()` to auto-inject</span>
+<span class="line"><i>718</i>    /// the `worker_id` label. Returns `None` by default.</span>
+<span class="line"><i>719</i>    fn connection_id(&amp;self) -&gt; Option&lt;u64&gt; {</span>
+<span class="line"><i>720</i>        None</span>
+<span class="line"><i>721</i>    }</span>
+<span class="line"><i>722</i></span>
+<span class="line"><i>723</i>    /// Access the metrics interface for this hierarchy</span>
+<span class="line"><i>724</i>    /// This is a provided method that works for any type implementing MetricsHierarchy</span>
+<span class="line"><i>725</i>    fn metrics(&amp;self) -&gt; Metrics&lt;&amp;Self&gt;</span>
+<span class="line"><i>726</i>    where</span>
+<span class="line"><i>727</i>        Self: Sized,</span>
+<span class="line"><i>728</i>    {</span>
+<span class="line"><i>729</i>        Metrics::new(self)</span>
+<span class="line"><i>730</i>    }</span>
+<span class="line"><i>731</i>}</span></code></pre></details><details class="source" id="src-system-map-8"><summary><b>源码 · Frontend metrics 同时作为 Relay load frame 来源</b><small>lib/llm/src/frontend_load.rs:130–175</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/frontend_load.rs#L130-L175" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>130</i>pub(crate) fn start_frontend_load_publisher(</span>
+<span class="line"><i>131</i>    runtime: DistributedRuntime,</span>
+<span class="line"><i>132</i>    namespace: String,</span>
+<span class="line"><i>133</i>    manager: Arc&lt;ModelManager&gt;,</span>
+<span class="line"><i>134</i>    metrics: Arc&lt;Metrics&gt;,</span>
+<span class="line"><i>135</i>    is_ready: impl Fn() -&gt; bool + Send + &#x27;static,</span>
+<span class="line"><i>136</i>    cancel: CancellationToken,</span>
+<span class="line"><i>137</i>) {</span>
+<span class="line"><i>138</i>    runtime.runtime().secondary().spawn(async move {</span>
+<span class="line"><i>139</i>        let namespace_handle = match runtime.namespace(namespace.clone()) {</span>
+<span class="line"><i>140</i>            Ok(namespace) =&gt; namespace,</span>
+<span class="line"><i>141</i>            Err(error) =&gt; {</span>
+<span class="line"><i>142</i>                tracing::error!(%namespace, %error, &quot;cannot create frontend load event namespace&quot;);</span>
+<span class="line"><i>143</i>                return;</span>
+<span class="line"><i>144</i>            }</span>
+<span class="line"><i>145</i>        };</span>
+<span class="line"><i>146</i>        let frontend_instance_id = runtime.connection_id();</span>
+<span class="line"><i>147</i>        // Publish on the first tick, matching the scheduler-load publisher.</span>
+<span class="line"><i>148</i>        let mut interval = tokio::time::interval(FRONTEND_LOAD_PUBLISH_INTERVAL);</span>
+<span class="line"><i>149</i>        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);</span>
+<span class="line"><i>150</i>        let mut retry = Backoff::new(PUBLISHER_RETRY_INITIAL, PUBLISHER_RETRY_MAX);</span>
+<span class="line"><i>151</i>        let mut failures = FailureStreak::default();</span>
+<span class="line"><i>152</i></span>
+<span class="line"><i>153</i>        // Reconnect loop: a publish failure drops the publisher and builds a new one.</span>
+<span class="line"><i>154</i>        loop {</span>
+<span class="line"><i>155</i>            let publisher = tokio::select! {</span>
+<span class="line"><i>156</i>                _ = cancel.cancelled() =&gt; return,</span>
+<span class="line"><i>157</i>                result = EventPublisher::for_namespace(&amp;namespace_handle, FRONTEND_LOAD_TOPIC) =&gt; result,</span>
+<span class="line"><i>158</i>            };</span>
+<span class="line"><i>159</i>            let error = match publisher {</span>
+<span class="line"><i>160</i>                Ok(publisher) =&gt; loop {</span>
+<span class="line"><i>161</i>                    tokio::select! {</span>
+<span class="line"><i>162</i>                        _ = cancel.cancelled() =&gt; return,</span>
+<span class="line"><i>163</i>                        _ = interval.tick() =&gt; {}</span>
+<span class="line"><i>164</i>                    }</span>
+<span class="line"><i>165</i>                    let frame = metrics.frontend_load(</span>
+<span class="line"><i>166</i>                        frontend_instance_id,</span>
+<span class="line"><i>167</i>                        is_ready(),</span>
+<span class="line"><i>168</i>                        manager.committed_model_views(),</span>
+<span class="line"><i>169</i>                    );</span>
+<span class="line"><i>170</i>                    let result = tokio::select! {</span>
+<span class="line"><i>171</i>                        biased;</span>
+<span class="line"><i>172</i>                        _ = cancel.cancelled() =&gt; return,</span>
+<span class="line"><i>173</i>                        result = publisher.publish(&amp;frame) =&gt; result,</span>
+<span class="line"><i>174</i>                    };</span>
+<span class="line"><i>175</i>                    match result {</span></code></pre></details><details class="source" id="src-system-map-9"><summary><b>源码 · Worker 生命周期观测的明确更新点</b><small>lib/backend-common/src/metrics.rs:136–164</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/metrics.rs#L136-L164" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>136</i>        let drain = build(</span>
+<span class="line"><i>137</i>            &quot;drain_time_seconds&quot;,</span>
+<span class="line"><i>138</i>            &quot;Time spent draining in-flight work before cleanup. Stays at \</span>
+<span class="line"><i>139</i>             0 for engines without a drain hook.&quot;,</span>
+<span class="line"><i>140</i>        )?;</span>
+<span class="line"><i>141</i>        let model_load = build(</span>
+<span class="line"><i>142</i>            &quot;model_load_time_seconds&quot;,</span>
+<span class="line"><i>143</i>            &quot;Time engine.start() took to return. Set once at Worker setup.&quot;,</span>
+<span class="line"><i>144</i>        )?;</span>
+<span class="line"><i>145</i>        model_load.set(model_load_time_seconds);</span>
+<span class="line"><i>146</i>        Ok(Self {</span>
+<span class="line"><i>147</i>            cleanup_time_seconds: cleanup,</span>
+<span class="line"><i>148</i>            drain_time_seconds: drain,</span>
+<span class="line"><i>149</i>            model_load_time_seconds: model_load,</span>
+<span class="line"><i>150</i>        })</span>
+<span class="line"><i>151</i>    }</span>
+<span class="line"><i>152</i></span>
+<span class="line"><i>153</i>    /// Record cleanup latency. `Worker` calls this exactly once during</span>
+<span class="line"><i>154</i>    /// shutdown after `engine.cleanup()` returns.</span>
+<span class="line"><i>155</i>    pub fn observe_cleanup_time(&amp;self, seconds: f64) {</span>
+<span class="line"><i>156</i>        self.cleanup_time_seconds.set(seconds);</span>
+<span class="line"><i>157</i>    }</span>
+<span class="line"><i>158</i></span>
+<span class="line"><i>159</i>    /// Record drain latency. `Worker` calls this exactly once during</span>
+<span class="line"><i>160</i>    /// graceful shutdown after the `engine.is_quiescent()` drain loop returns.</span>
+<span class="line"><i>161</i>    pub fn observe_drain_time(&amp;self, seconds: f64) {</span>
+<span class="line"><i>162</i>        self.drain_time_seconds.set(seconds);</span>
+<span class="line"><i>163</i>    }</span>
+<span class="line"><i>164</i>}</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>信号</th><th>核心追踪链</th></tr></thead><tbody><tr><td>Metrics</td><td>定义/单位/标签 → 更新点 → registry/bridge → exporter → scrape/query</td></tr><tr><td>Trace</td><td>入口 parent → metadata/header → worker span → engine span/link → exporter</td></tr><tr><td>Logs</td><td>阶段状态/结构化 ID → 级别过滤 → 采集 → 与请求/worker 关联</td></tr><tr><td>控制信号</td><td>自然生产者 → event topic/RPC → freshness/coverage → 决策 → 执行</td></tr></tbody></table></div><p>客户端、Frontend、Router、backend、engine 的 TTFT/ITL 与计数分母不同；秒/毫秒/微秒也不能凭名字猜。章节分别给出实际源码采样位置，不承诺全链路所有数据面已有 span。</p></section><section id="system-map-reliability" class="lesson"><div class="sectionhead"><h2>10 / 资源释放贯穿所有模块</h2><label class="done"><input type="checkbox" data-read="system-map-reliability"> 已读</label></div><details class="source" id="src-system-map-10"><summary><b>源码 · abort 与 Prefill drain 的边界</b><small>lib/backend-common/src/engine.rs:252–281</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/engine.rs#L252-L281" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>252</i>    /// Abort an in-flight request (optional, default no-op).</span>
+<span class="line"><i>253</i>    ///</span>
+<span class="line"><i>254</i>    /// Called by the framework only when `ctx.stopped()` or `ctx.killed()`</span>
+<span class="line"><i>255</i>    /// fires — i.e. when the client or operator explicitly cancels. It is</span>
+<span class="line"><i>256</i>    /// NOT called when the response stream is simply dropped (e.g. TCP</span>
+<span class="line"><i>257</i>    /// reset, consumer-side timeout without cancellation).</span>
+<span class="line"><i>258</i>    ///</span>
+<span class="line"><i>259</i>    /// For cleanup that must happen on ANY drop path (releasing an</span>
+<span class="line"><i>260</i>    /// accelerator slot, freeing a request handle), put the release logic</span>
+<span class="line"><i>261</i>    /// inside the `generate` stream body using RAII — a guard whose</span>
+<span class="line"><i>262</i>    /// `Drop` runs when the stream is dropped, however that happens. Use</span>
+<span class="line"><i>263</i>    /// `abort` only for out-of-band notifications (e.g. telling a remote</span>
+<span class="line"><i>264</i>    /// scheduler to cancel compute early).</span>
+<span class="line"><i>265</i>    async fn abort(&amp;self, _ctx: Arc&lt;dyn AsyncEngineContext&gt;) {}</span>
+<span class="line"><i>266</i></span>
+<span class="line"><i>267</i>    /// Whether in-flight KV transfers are done, so `cleanup` may release GPU</span>
+<span class="line"><i>268</i>    /// memory. The `Worker` polls this on prefill workers between the grace</span>
+<span class="line"><i>269</i>    /// period and [`cleanup`](LLMEngine::cleanup):</span>
+<span class="line"><i>270</i>    ///</span>
+<span class="line"><i>271</i>    /// - `Ok(Some(true))`  — quiescent; exit the drain loop now.</span>
+<span class="line"><i>272</i>    /// - `Ok(Some(false))` — busy; poll again next tick.</span>
+<span class="line"><i>273</i>    /// - `Ok(None)`        — no introspection (default); poll until the drain</span>
+<span class="line"><i>274</i>    ///   budget expires, then cleanup. Never frees KV early.</span>
+<span class="line"><i>275</i>    /// - `Err(_)`          — logged and treated as `Ok(None)`.</span>
+<span class="line"><i>276</i>    ///</span>
+<span class="line"><i>277</i>    /// Aggregated/decode workers are never polled. Override only if the engine</span>
+<span class="line"><i>278</i>    /// can observe transfer completion (e.g. a connector or scheduler).</span>
+<span class="line"><i>279</i>    async fn is_quiescent(&amp;self) -&gt; Result&lt;Option&lt;bool&gt;, DynamoError&gt; {</span>
+<span class="line"><i>280</i>        Ok(None)</span>
+<span class="line"><i>281</i>    }</span></code></pre></details><details class="source" id="src-system-map-11"><summary><b>源码 · type state / Drop 保护内存所有权</b><small>lib/kvbm-logical/src/blocks/mutable.rs:96–119</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/kvbm-logical/src/blocks/mutable.rs#L96-L119" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>96</i>    pub fn complete(</span>
+<span class="line"><i>97</i>        self,</span>
+<span class="line"><i>98</i>        token_block: &amp;TokenBlock,</span>
+<span class="line"><i>99</i>    ) -&gt; Result&lt;CompleteBlock&lt;T&gt;, BlockError&lt;MutableBlock&lt;T&gt;&gt;&gt; {</span>
+<span class="line"><i>100</i>        let actual = token_block.block_size();</span>
+<span class="line"><i>101</i>        if actual != self.block_size {</span>
+<span class="line"><i>102</i>            return Err(BlockError::BlockSizeMismatch {</span>
+<span class="line"><i>103</i>                expected: self.block_size,</span>
+<span class="line"><i>104</i>                actual,</span>
+<span class="line"><i>105</i>                block: self,</span>
+<span class="line"><i>106</i>            });</span>
+<span class="line"><i>107</i>        }</span>
+<span class="line"><i>108</i>        let seq_hash = token_block.kvbm_sequence_hash();</span>
+<span class="line"><i>109</i>        self.stage(seq_hash, actual)</span>
+<span class="line"><i>110</i>    }</span>
+<span class="line"><i>111</i>}</span>
+<span class="line"><i>112</i></span>
+<span class="line"><i>113</i>impl&lt;T: BlockMetadata&gt; Drop for MutableBlock&lt;T&gt; {</span>
+<span class="line"><i>114</i>    #[inline]</span>
+<span class="line"><i>115</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>116</i>        if self.armed {</span>
+<span class="line"><i>117</i>            self.store.release_mutable(self.block_id);</span>
+<span class="line"><i>118</i>        }</span>
+<span class="line"><i>119</i>    }</span></code></pre></details><p>HTTP disconnect 触发 Context 状态，Router 释放/转交 lease，adapter 通知 engine，Prefill/Decode 为 staged KV 可能继续独立清理。block RAII 与远端 async cleanup 又属于不同时间点。正常终态、Drop、网络 EOF 与设备静默不等价，失败和重试也不是无条件重新发一次相同请求。</p></section><section id="system-map-reading" class="lesson"><div class="sectionhead"><h2>11 / 00–12 的系统阅读顺序与产出</h2><label class="done"><input type="checkbox" data-read="system-map-reading"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>模块</th><th>应掌握的可检查产出</th></tr></thead><tbody><tr><td><a href="observability.html">01 可观测性</a></td><td>一个指标/Trace 从产生到消费的完整路径</td></tr><tr><td><a href="frontend.html">02 Frontend</a> / <a href="runtime.html">03 Runtime</a></td><td>协议 owner、typed pipeline 与跨进程边界</td></tr><tr><td><a href="router.html">04 Router</a> / <a href="backends.html">05 引擎与 Sidecar</a></td><td>worker 选择理由、引擎请求/响应契约</td></tr><tr><td><a href="pd-serving.html">06 PD</a> / <a href="kv-cache.html">07 KV 内存</a></td><td>控制与数据时序、块保护和传输完成点</td></tr><tr><td><a href="planner.html">08 Planner</a> / <a href="control-plane.html">09 控制面</a></td><td>观测到容量目标，再到 ready 资源的闭环</td></tr><tr><td><a href="reliability.html">10 可靠性</a> / <a href="global-routing.html">11 全局路由</a></td><td>终态与故障域、分层状态和实施现状</td></tr><tr><td><a href="validation.html">12 验证与回放</a></td><td>区分语义证据、预测与真实测量的实验方案</td></tr></tbody></table></div><p>Storage &amp; Events、PD Trace、部署记录作为跨模块专题保留。‘已展开’代表该主题的教程已提供架构和关键源码路径，不代表逐文件全量审计、所有功能完成或生产能力都经过验证。</p></section><section id="system-map-fieldwork" class="lesson"><div class="sectionhead"><h2>12 / 用真实部署反查源码的工作顺序</h2><label class="done"><input type="checkbox" data-read="system-map-fieldwork"> 已读</label></div><div class="flow"><div><b>01</b>镜像 / tag / digest / engine 版本</div><div><b>02</b>逻辑 namespace / role / model card</div><div><b>03</b>实际请求 / worker / pool 归因</div><div><b>04</b>配置与源码对应路径</div><div><b>05</b>观测采样与 exporter</div><div><b>06</b>以可复现实验确认行为</div></div><p>ACK 的历史快照与 maas-dev 审计分别保留，不把源码版本 1.7.0 的能力直接外推到私有 1.4.1 镜像。先从<a href="ack-LB97i2CZNR/index.html">ACK 部署入口</a>识别事实，再依各专题验证版本差异。本文只完成离线分析与文档检查。</p></section><section id="system-map-diagram" class="lesson"><div class="sectionhead"><h2>13 / 架构分层图与交叉阅读</h2><label class="done"><input type="checkbox" data-read="system-map-diagram"> 已读</label></div><div class="diagram"><div class="lane"><b>请求</b><span>Client → Frontend / pipeline → Router → backend → engine → stream</span></div><div class="lane"><b>KV 数据</b><span>engine / logical ownership → connector / layout → physical transfer / storage</span></div><div class="lane"><b>状态</b><span>Discovery / KV / load events → indexes / projections / Pool Relay facts</span></div><div class="lane"><b>控制与观测</b><span>metrics / Trace → diagnosis or Planner → desired capacity → Operator / ready workers</span></div></div><p><a href="system-map-architecture.mmd">Mermaid 图源</a>按职责分泳道；泳道之间不暗示已经实现自动接线。离线 HTML 无外部渲染依赖。<a href="system-map.html">系统地图</a> / <a href="index.html">全部章节</a>。</p></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 9734418e5bc71027e6bd04a09314bf1765208c72。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

@@ -1,0 +1,160 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "区分既有 Python backend、共享 Backend SDK 与原生引擎 Sidecar；深入流式契约、生命周期和指标桥接。",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "backends-1",
+      "path": "lib/backend-common/src/engine.rs",
+      "start": 196,
+      "end": 250,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "30aea38ca7a5ba86058f45a7951ed82030b41049880b33b693e828bd020b4385"
+    },
+    {
+      "id": "backends-2",
+      "path": "lib/backend-common/src/engine.rs",
+      "start": 439,
+      "end": 487,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "30aea38ca7a5ba86058f45a7951ed82030b41049880b33b693e828bd020b4385"
+    },
+    {
+      "id": "backends-3",
+      "path": "components/src/dynamo/common/backend/worker.py",
+      "start": 220,
+      "end": 260,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "9327ada3f7349f90d438fda724a333b09db19a0e8cadb73fa7d10735cc7621e7"
+    },
+    {
+      "id": "backends-4",
+      "path": "lib/backend-common/src/engine.rs",
+      "start": 218,
+      "end": 250,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "30aea38ca7a5ba86058f45a7951ed82030b41049880b33b693e828bd020b4385"
+    },
+    {
+      "id": "backends-5",
+      "path": "lib/backend-common/src/engine.rs",
+      "start": 252,
+      "end": 304,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "30aea38ca7a5ba86058f45a7951ed82030b41049880b33b693e828bd020b4385"
+    },
+    {
+      "id": "backends-6",
+      "path": "lib/backend-common/src/adapter.rs",
+      "start": 350,
+      "end": 411,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7a0bb657693f89cf92ddc2d1e82b6f838f005255e28a25b2097e24de80f89eaa"
+    },
+    {
+      "id": "backends-7",
+      "path": "lib/backend-common/src/adapter.rs",
+      "start": 227,
+      "end": 285,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7a0bb657693f89cf92ddc2d1e82b6f838f005255e28a25b2097e24de80f89eaa"
+    },
+    {
+      "id": "backends-8",
+      "path": "lib/sidecar/vllm/src/engine.rs",
+      "start": 835,
+      "end": 885,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "bc1784d6c0380911a47169f05b28b503c2ae3d883b33fd9c38f59b0ec25a8fd9"
+    },
+    {
+      "id": "backends-9",
+      "path": "lib/sidecar/vllm/src/engine.rs",
+      "start": 1014,
+      "end": 1027,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "bc1784d6c0380911a47169f05b28b503c2ae3d883b33fd9c38f59b0ec25a8fd9"
+    },
+    {
+      "id": "backends-10",
+      "path": "lib/sidecar/sglang/src/engine.rs",
+      "start": 348,
+      "end": 383,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "e51c4b3add1fe19aadf910240fd404c7a06fc4815f76fe88874182de125dd7ea"
+    },
+    {
+      "id": "backends-11",
+      "path": "lib/sidecar/trtllm/src/engine.rs",
+      "start": 699,
+      "end": 750,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "a4ca60d068b120e7fa03ec70f28676bcbdc5e59458404b6963df069e47ab3cae"
+    },
+    {
+      "id": "backends-12",
+      "path": "lib/backend-common/src/engine.rs",
+      "start": 313,
+      "end": 338,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "30aea38ca7a5ba86058f45a7951ed82030b41049880b33b693e828bd020b4385"
+    },
+    {
+      "id": "backends-13",
+      "path": "lib/backend-common/src/worker.rs",
+      "start": 710,
+      "end": 750,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "49298b3a14daeb718ad1a3b077dd040892f47c3c5d14ba236151f822d5b1ab23"
+    },
+    {
+      "id": "backends-14",
+      "path": "lib/backend-common/src/worker.rs",
+      "start": 753,
+      "end": 795,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "49298b3a14daeb718ad1a3b077dd040892f47c3c5d14ba236151f822d5b1ab23"
+    },
+    {
+      "id": "backends-15",
+      "path": "components/src/dynamo/common/backend/metrics.py",
+      "start": 63,
+      "end": 101,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7384509ddbe98142bdb16c8342e60d6736a258e761da7e3d16b0ccf40916a372"
+    },
+    {
+      "id": "backends-16",
+      "path": "components/src/dynamo/common/backend/metrics.py",
+      "start": 104,
+      "end": 153,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7384509ddbe98142bdb16c8342e60d6736a258e761da7e3d16b0ccf40916a372"
+    },
+    {
+      "id": "backends-17",
+      "path": "components/src/dynamo/common/backend/publisher.py",
+      "start": 39,
+      "end": 60,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "61810688c22658b66fa69634869e3a8a830ab121bb3062e48edf1a9130bb1336"
+    },
+    {
+      "id": "backends-18",
+      "path": "lib/backend-common/src/snapshot_publisher.rs",
+      "start": 43,
+      "end": 80,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2bfa8023fcaf704b104845d27f78f75456a134153a4c16c9143f76ba6e0dbed6"
+    },
+    {
+      "id": "backends-19",
+      "path": "lib/backend-common/src/metrics.rs",
+      "start": 235,
+      "end": 258,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "55d0302b02eb7b4f49ac596ab36e39f772912b90aca2a4b9e65fe3d67c4a162d"
+    }
+  ]
+}

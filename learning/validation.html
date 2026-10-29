@@ -1,0 +1,631 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>验证、回放与性能实验 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#validation-scope">01 / 阅读范围与证据版本</a><a href="#validation-ladder">02 / 不同工具回答不同问题</a><a href="#validation-conformance">03 / Backend 契约验证：先确认 terminal 与取消</a><a href="#validation-timing">04 / Mocker 使用性能模型，不计算真实模型 token</a><a href="#validation-input">05 / 输入 trace：时间、长度、前缀与会话</a><a href="#validation-api">06 / Python API：显式选择 offline / live、拓扑与输出</a><a href="#validation-offline">07 / Offline 主循环属于 AISimulate core，Dynamo 做适配</a><a href="#validation-determinism">08 / 确定性有多个层级：arrival seed 还不够</a><a href="#validation-kv-lag">09 / KV 事件 lag 可以和请求完成分开建模</a><a href="#validation-online">10 / Online replay：每次调用拥有新 Tokio runtime</a><a href="#validation-settlement">11 / 成功路径先完成生命周期，再出完整报告</a><a href="#validation-recorder">12 / Recorder 从结构化事件构成报告</a><a href="#validation-telemetry">13 / 观测源码：采样 cadence 与策略 cadence 独立</a><a href="#validation-units">14 / 时钟、throughput 与 goodput 的分母</a><a href="#validation-aiperf">15 / AIPerf 真实测量：先冻结 workload 与参考配置</a><a href="#validation-experiments">16 / 给本教程各模块设计有判别力的实验</a><a href="#validation-diagram">17 / 架构分层图与交叉阅读</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 9734418e5</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>验证、回放与性能实验</h1><p class="lede">把单元/契约测试、Mocker、offline/online replay 与真实 AIPerf 测量分开，追踪输入、确定性、telemetry 和报告的证据边界。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 9734418e5</span><span class="pill ">系统源码专题 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="validation-scope" class="lesson"><div class="sectionhead"><h2>01 / 阅读范围与证据版本</h2><label class="done"><input type="checkbox" data-read="validation-scope"> 已读</label></div><p>把单元/契约测试、Mocker、offline/online replay 与真实 AIPerf 测量分开，追踪输入、确定性、telemetry 和报告的证据边界。</p><aside class="note ">源码固定于 9734418e5bc71027e6bd04a09314bf1765208c72（workspace 1.7.0），与 PD / 可靠性等新专题使用同一代码基线。本文分析实现和配置边界，未运行推理、性能实验或集群修改。历史部署与旧版章节须按版本对照。</aside></section><section id="validation-ladder" class="lesson"><div class="sectionhead"><h2>02 / 不同工具回答不同问题</h2><label class="done"><input type="checkbox" data-read="validation-ladder"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>层</th><th>能验证</th><th>不能由此证明</th></tr></thead><tbody><tr><td>单元 / property / paused-clock</td><td>纯函数、状态迁移、排序、不变量</td><td>跨进程 GPU 推理正确性或吞吐</td></tr><tr><td>Backend conformance / fake RPC</td><td>流式契约、取消、指标声明、wire 转换</td><td>真实引擎所有能力和数据面</td></tr><tr><td>Mocker live serving</td><td>Frontend / Router / Runtime 的实际请求路径和模拟 engine 行为</td><td>真实模型输出质量、CUDA 或 RDMA 性能</td></tr><tr><td>Offline replay</td><td>虚拟时间下策略、缓存和 workload 的可比行为</td><td>完整线上墙钟开销</td></tr><tr><td>Online/live replay</td><td>真实 Tokio 任务与等待下的 Mocker 模拟</td><td>自动包括 HTTP / WAN / 真实 GPU</td></tr><tr><td>AIPerf + real backend</td><td>客户端测得的实际部署延迟与吞吐</td><td>仅凭总时延定位某一源码函数</td></tr></tbody></table></div><p>本章分析验证工具实现并提供实验设计；本次没有执行推理、replay、故障注入或 GPU benchmark。文档浏览器校验不替代这些行为验证。</p></section><section id="validation-conformance" class="lesson"><div class="sectionhead"><h2>03 / Backend 契约验证：先确认 terminal 与取消</h2><label class="done"><input type="checkbox" data-read="validation-conformance"> 已读</label></div><details class="source" id="src-validation-1"><summary><b>源码 · setup_metrics 的声明与 opt-in 验证</b><small>lib/backend-common/src/testing.rs:532–562</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/testing.rs#L532-L562" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>532</i>async fn check_setup_metrics&lt;E: LLMEngine&gt;(engine: &amp;E) -&gt; Result&lt;(), ConformanceFailure&gt; {</span>
+<span class="line"><i>533</i>    let make_ctx = |metrics: &amp;&#x27;static EngineMetrics| crate::engine::MetricsCtx {</span>
+<span class="line"><i>534</i>        model: &quot;test-model&quot;,</span>
+<span class="line"><i>535</i>        component: &quot;test&quot;,</span>
+<span class="line"><i>536</i>        model_load_time_seconds: 0.0,</span>
+<span class="line"><i>537</i>        metrics,</span>
+<span class="line"><i>538</i>    };</span>
+<span class="line"><i>539</i>    // Leaking is fine in a test — the EngineMetrics handle is short-lived</span>
+<span class="line"><i>540</i>    // and we need a &#x27;static borrow for both calls. Alternative would be</span>
+<span class="line"><i>541</i>    // separate `EngineMetrics` per call with a thread_local; cleaner to leak.</span>
+<span class="line"><i>542</i>    let metrics: &amp;&#x27;static EngineMetrics = Box::leak(Box::new(EngineMetrics::from_hierarchy(</span>
+<span class="line"><i>543</i>        TestHierarchy::new(),</span>
+<span class="line"><i>544</i>    )));</span>
+<span class="line"><i>545</i></span>
+<span class="line"><i>546</i>    let bindings_a = engine</span>
+<span class="line"><i>547</i>        .setup_metrics(make_ctx(metrics))</span>
+<span class="line"><i>548</i>        .await</span>
+<span class="line"><i>549</i>        .map_err(|e| SetupMetricsFailed(e.to_string()))?;</span>
+<span class="line"><i>550</i>    let bindings_b = engine</span>
+<span class="line"><i>551</i>        .setup_metrics(make_ctx(metrics))</span>
+<span class="line"><i>552</i>        .await</span>
+<span class="line"><i>553</i>        .map_err(|e| SetupMetricsFailed(e.to_string()))?;</span>
+<span class="line"><i>554</i></span>
+<span class="line"><i>555</i>    if bindings_a.dp_ranks != bindings_b.dp_ranks {</span>
+<span class="line"><i>556</i>        return Err(ComponentMetricsNotIdempotent);</span>
+<span class="line"><i>557</i>    }</span>
+<span class="line"><i>558</i>    // `on_publisher_ready` callbacks from both bindings are dropped without</span>
+<span class="line"><i>559</i>    // invocation — they&#x27;re FnOnce, so this just confirms engines aren&#x27;t</span>
+<span class="line"><i>560</i>    // capturing side-effects we&#x27;d inadvertently fire twice.</span>
+<span class="line"><i>561</i>    Ok(())</span>
+<span class="line"><i>562</i>}</span></code></pre></details><details class="source" id="src-validation-2"><summary><b>源码 · 取消后要求 Cancelled terminal</b><small>lib/backend-common/src/testing.rs:564–606</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/testing.rs#L564-L606" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>564</i>async fn check_cancellation&lt;E: LLMEngine&gt;(</span>
+<span class="line"><i>565</i>    engine: &amp;E,</span>
+<span class="line"><i>566</i>    model: &amp;str,</span>
+<span class="line"><i>567</i>    mode: LlmConformanceMode,</span>
+<span class="line"><i>568</i>    deadline: Duration,</span>
+<span class="line"><i>569</i>) -&gt; Result&lt;(), ConformanceFailure&gt; {</span>
+<span class="line"><i>570</i>    // Request enough tokens that an engine which ignores cancellation</span>
+<span class="line"><i>571</i>    // can&#x27;t finish naturally before the deadline fires.</span>
+<span class="line"><i>572</i>    const LONG_MAX_TOKENS: u32 = 10_000;</span>
+<span class="line"><i>573</i></span>
+<span class="line"><i>574</i>    let ctx = mock_context();</span>
+<span class="line"><i>575</i>    let request = match mode {</span>
+<span class="line"><i>576</i>        LlmConformanceMode::Token =&gt; request_with_max_tokens(model, Some(LONG_MAX_TOKENS)),</span>
+<span class="line"><i>577</i>        LlmConformanceMode::Encode =&gt; encode_request(model),</span>
+<span class="line"><i>578</i>    };</span>
+<span class="line"><i>579</i>    let stream = engine</span>
+<span class="line"><i>580</i>        .generate(request, GenerateContext::new(ctx.clone(), None))</span>
+<span class="line"><i>581</i>        .await</span>
+<span class="line"><i>582</i>        .map_err(|e| GenerateFailed(e.to_string()))?;</span>
+<span class="line"><i>583</i></span>
+<span class="line"><i>584</i>    // Cancel as soon as the stream is live. The engine&#x27;s body hasn&#x27;t been</span>
+<span class="line"><i>585</i>    // polled yet, so its first `is_stopped()` check will observe the flag</span>
+<span class="line"><i>586</i>    // regardless of engine speed — no timer race.</span>
+<span class="line"><i>587</i>    ctx.stop_generating();</span>
+<span class="line"><i>588</i></span>
+<span class="line"><i>589</i>    let items = tokio::time::timeout(deadline, async {</span>
+<span class="line"><i>590</i>        let mut s = stream;</span>
+<span class="line"><i>591</i>        let mut out = Vec::new();</span>
+<span class="line"><i>592</i>        while let Some(c) = s.next().await {</span>
+<span class="line"><i>593</i>            out.push(c);</span>
+<span class="line"><i>594</i>        }</span>
+<span class="line"><i>595</i>        out</span>
+<span class="line"><i>596</i>    })</span>
+<span class="line"><i>597</i>    .await</span>
+<span class="line"><i>598</i>    .map_err(|_| CancellationNotObserved { after: deadline })?;</span>
+<span class="line"><i>599</i></span>
+<span class="line"><i>600</i>    match items.last() {</span>
+<span class="line"><i>601</i>        Some(Ok(c)) if matches!(c.finish_reason, Some(FinishReason::Cancelled)) =&gt; Ok(()),</span>
+<span class="line"><i>602</i>        Some(Ok(_)) =&gt; Err(CancellationIgnored),</span>
+<span class="line"><i>603</i>        Some(Err(e)) =&gt; Err(StreamYieldedError(e.to_string())),</span>
+<span class="line"><i>604</i>        None =&gt; Err(NoChunksYielded),</span>
+<span class="line"><i>605</i>    }</span>
+<span class="line"><i>606</i>}</span></code></pre></details><p>conformance 检查 start/generate、并发、KV sources、metrics ranks、cleanup 和取消；应该优先断言结构化输出/错误，而不是用易变日志文字代替语义。缺失 terminal、终态后继续 yield、取消被当 Length 等都可能让上层统计看似正常而实际不正确。</p></section><section id="validation-timing" class="lesson"><div class="sectionhead"><h2>04 / Mocker 使用性能模型，不计算真实模型 token</h2><label class="done"><input type="checkbox" data-read="validation-timing"> 已读</label></div><details class="source" id="src-validation-3"><summary><b>源码 · DynamoPerfTimingModel 将批量/前缀/上下文输入交给模型</b><small>lib/mocker/src/engine_adapter.rs:144–172</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/engine_adapter.rs#L144-L172" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>144</i>struct DynamoPerfTimingModel {</span>
+<span class="line"><i>145</i>    inner: Arc&lt;PerfModel&gt;,</span>
+<span class="line"><i>146</i>}</span>
+<span class="line"><i>147</i></span>
+<span class="line"><i>148</i>impl TimingModel for DynamoPerfTimingModel {</span>
+<span class="line"><i>149</i>    fn predict_prefill_ms(</span>
+<span class="line"><i>150</i>        &amp;self,</span>
+<span class="line"><i>151</i>        batch_size: usize,</span>
+<span class="line"><i>152</i>        mean_isl: usize,</span>
+<span class="line"><i>153</i>        mean_prefix: usize,</span>
+<span class="line"><i>154</i>    ) -&gt; Result&lt;f64&gt; {</span>
+<span class="line"><i>155</i>        self.inner</span>
+<span class="line"><i>156</i>            .predict_prefill_time(batch_size, mean_isl, mean_prefix)</span>
+<span class="line"><i>157</i>    }</span>
+<span class="line"><i>158</i></span>
+<span class="line"><i>159</i>    fn predict_decode_ms(</span>
+<span class="line"><i>160</i>        &amp;self,</span>
+<span class="line"><i>161</i>        batch_size: usize,</span>
+<span class="line"><i>162</i>        active_kv_tokens: usize,</span>
+<span class="line"><i>163</i>        mean_context_length: usize,</span>
+<span class="line"><i>164</i>        total_kv_tokens: usize,</span>
+<span class="line"><i>165</i>    ) -&gt; Result&lt;f64&gt; {</span>
+<span class="line"><i>166</i>        self.inner.predict_decode_time(</span>
+<span class="line"><i>167</i>            batch_size,</span>
+<span class="line"><i>168</i>            active_kv_tokens,</span>
+<span class="line"><i>169</i>            mean_context_length,</span>
+<span class="line"><i>170</i>            total_kv_tokens,</span>
+<span class="line"><i>171</i>        )</span>
+<span class="line"><i>172</i>    }</span></code></pre></details><details class="source" id="src-validation-4"><summary><b>源码 · 模拟 scheduler rank 的运行状态与缓存比例</b><small>lib/mocker/src/scheduler/metrics.rs:5–56</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/scheduler/metrics.rs#L5-L56" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>5</i></span>
+<span class="line"><i>6</i>/// Latest observable state for one Mocker scheduler rank.</span>
+<span class="line"><i>7</i>#[derive(Clone, Default, Debug, PartialEq)]</span>
+<span class="line"><i>8</i>pub struct MockerMetrics {</span>
+<span class="line"><i>9</i>    pub dp_rank: dynamo_kv_router::protocols::DpRank,</span>
+<span class="line"><i>10</i>    pub active_decode_blocks: u64,</span>
+<span class="line"><i>11</i>    pub total_blocks: u64,</span>
+<span class="line"><i>12</i>    pub gpu_cache_usage_perc: f64,</span>
+<span class="line"><i>13</i>    pub running_requests: u64,</span>
+<span class="line"><i>14</i>    pub waiting_requests: u64,</span>
+<span class="line"><i>15</i>    pub vllm_preemptions_total: u64,</span>
+<span class="line"><i>16</i>    pub sglang_cache_hit_tokens: u64,</span>
+<span class="line"><i>17</i>    pub sglang_cache_total_tokens: u64,</span>
+<span class="line"><i>18</i>}</span>
+<span class="line"><i>19</i></span>
+<span class="line"><i>20</i>impl MockerMetrics {</span>
+<span class="line"><i>21</i>    pub fn new(</span>
+<span class="line"><i>22</i>        dp_rank: dynamo_kv_router::protocols::DpRank,</span>
+<span class="line"><i>23</i>        active_decode_blocks: u64,</span>
+<span class="line"><i>24</i>        total_blocks: u64,</span>
+<span class="line"><i>25</i>    ) -&gt; Self {</span>
+<span class="line"><i>26</i>        Self::from_parts(dp_rank, active_decode_blocks, total_blocks, 0, 0, 0, 0, 0)</span>
+<span class="line"><i>27</i>    }</span>
+<span class="line"><i>28</i></span>
+<span class="line"><i>29</i>    #[allow(clippy::too_many_arguments)]</span>
+<span class="line"><i>30</i>    pub fn from_parts(</span>
+<span class="line"><i>31</i>        dp_rank: dynamo_kv_router::protocols::DpRank,</span>
+<span class="line"><i>32</i>        active_decode_blocks: u64,</span>
+<span class="line"><i>33</i>        total_blocks: u64,</span>
+<span class="line"><i>34</i>        running_requests: u64,</span>
+<span class="line"><i>35</i>        waiting_requests: u64,</span>
+<span class="line"><i>36</i>        vllm_preemptions_total: u64,</span>
+<span class="line"><i>37</i>        sglang_cache_hit_tokens: u64,</span>
+<span class="line"><i>38</i>        sglang_cache_total_tokens: u64,</span>
+<span class="line"><i>39</i>    ) -&gt; Self {</span>
+<span class="line"><i>40</i>        let gpu_cache_usage_perc = if total_blocks == 0 {</span>
+<span class="line"><i>41</i>            0.0</span>
+<span class="line"><i>42</i>        } else {</span>
+<span class="line"><i>43</i>            active_decode_blocks as f64 / total_blocks as f64</span>
+<span class="line"><i>44</i>        };</span>
+<span class="line"><i>45</i>        Self {</span>
+<span class="line"><i>46</i>            dp_rank,</span>
+<span class="line"><i>47</i>            active_decode_blocks,</span>
+<span class="line"><i>48</i>            total_blocks,</span>
+<span class="line"><i>49</i>            gpu_cache_usage_perc,</span>
+<span class="line"><i>50</i>            running_requests,</span>
+<span class="line"><i>51</i>            waiting_requests,</span>
+<span class="line"><i>52</i>            vllm_preemptions_total,</span>
+<span class="line"><i>53</i>            sglang_cache_hit_tokens,</span>
+<span class="line"><i>54</i>            sglang_cache_total_tokens,</span>
+<span class="line"><i>55</i>        }</span>
+<span class="line"><i>56</i>    }</span></code></pre></details><p>Prefill 时间由 batch_size、mean ISL/prefix 等预测，Decode 时间还看活跃 KV 与上下文。模型参数来自配置/校准，不能把其预测直接当某 GPU 实测。gpu_cache_usage_perc 字段在本实现中计算 active_blocks / total_blocks，范围通常为比例，不能因为字段名有 perc 就额外假定已经乘以 100。</p></section><section id="validation-input" class="lesson"><div class="sectionhead"><h2>05 / 输入 trace：时间、长度、前缀与会话</h2><label class="done"><input type="checkbox" data-read="validation-input"> 已读</label></div><details class="source" id="src-validation-5"><summary><b>源码 · Dynamo request trace schema 与可选阶段指标</b><small>lib/data-gen/src/request_trace/load.rs:27–89</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/data-gen/src/request_trace/load.rs#L27-L89" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>27</i>pub(crate) struct RequestTraceRecord {</span>
+<span class="line"><i>28</i>    pub(crate) schema: TraceSchema,</span>
+<span class="line"><i>29</i>    pub(crate) event_type: String,</span>
+<span class="line"><i>30</i>    pub(crate) event_time_unix_ms: u64,</span>
+<span class="line"><i>31</i>    #[serde(default)]</span>
+<span class="line"><i>32</i>    pub(crate) agent_context: Option&lt;AgentContextFields&gt;,</span>
+<span class="line"><i>33</i>    #[serde(default)]</span>
+<span class="line"><i>34</i>    pub(crate) request: Option&lt;RequestTraceRequestMetrics&gt;,</span>
+<span class="line"><i>35</i>    #[serde(default)]</span>
+<span class="line"><i>36</i>    pub(crate) tool: Option&lt;RequestTraceToolEventMetrics&gt;,</span>
+<span class="line"><i>37</i>}</span>
+<span class="line"><i>38</i></span>
+<span class="line"><i>39</i>#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]</span>
+<span class="line"><i>40</i>pub(crate) enum TraceSchema {</span>
+<span class="line"><i>41</i>    #[serde(rename = &quot;dynamo.request.trace.v1&quot;)]</span>
+<span class="line"><i>42</i>    RequestV1,</span>
+<span class="line"><i>43</i>}</span>
+<span class="line"><i>44</i></span>
+<span class="line"><i>45</i>#[derive(Debug, Clone, Default, Deserialize)]</span>
+<span class="line"><i>46</i>pub(crate) struct AgentContextFields {</span>
+<span class="line"><i>47</i>    pub(crate) session_id: String,</span>
+<span class="line"><i>48</i>    #[serde(default)]</span>
+<span class="line"><i>49</i>    pub(crate) parent_session_id: Option&lt;String&gt;,</span>
+<span class="line"><i>50</i>}</span>
+<span class="line"><i>51</i></span>
+<span class="line"><i>52</i>#[derive(Debug, Clone, Default, Deserialize)]</span>
+<span class="line"><i>53</i>pub(crate) struct RequestTraceRequestMetrics {</span>
+<span class="line"><i>54</i>    pub(crate) request_id: String,</span>
+<span class="line"><i>55</i>    #[serde(default)]</span>
+<span class="line"><i>56</i>    pub(crate) x_request_id: Option&lt;String&gt;,</span>
+<span class="line"><i>57</i>    #[serde(default)]</span>
+<span class="line"><i>58</i>    pub(crate) model: Option&lt;String&gt;,</span>
+<span class="line"><i>59</i>    #[serde(default)]</span>
+<span class="line"><i>60</i>    pub(crate) input_tokens: Option&lt;u64&gt;,</span>
+<span class="line"><i>61</i>    #[serde(default)]</span>
+<span class="line"><i>62</i>    pub(crate) output_tokens: Option&lt;u64&gt;,</span>
+<span class="line"><i>63</i>    #[serde(default)]</span>
+<span class="line"><i>64</i>    pub(crate) cached_tokens: Option&lt;u64&gt;,</span>
+<span class="line"><i>65</i>    #[serde(default)]</span>
+<span class="line"><i>66</i>    pub(crate) request_received_ms: Option&lt;u64&gt;,</span>
+<span class="line"><i>67</i>    #[serde(default)]</span>
+<span class="line"><i>68</i>    pub(crate) prefill_wait_time_ms: Option&lt;f64&gt;,</span>
+<span class="line"><i>69</i>    #[serde(default)]</span>
+<span class="line"><i>70</i>    pub(crate) prefill_time_ms: Option&lt;f64&gt;,</span>
+<span class="line"><i>71</i>    #[serde(default)]</span>
+<span class="line"><i>72</i>    pub(crate) ttft_ms: Option&lt;f64&gt;,</span>
+<span class="line"><i>73</i>    #[serde(default)]</span>
+<span class="line"><i>74</i>    pub(crate) total_time_ms: Option&lt;f64&gt;,</span>
+<span class="line"><i>75</i>    #[serde(default)]</span>
+<span class="line"><i>76</i>    pub(crate) avg_itl_ms: Option&lt;f64&gt;,</span>
+<span class="line"><i>77</i>    #[serde(default)]</span>
+<span class="line"><i>78</i>    pub(crate) kv_hit_rate: Option&lt;f64&gt;,</span>
+<span class="line"><i>79</i>    #[serde(default)]</span>
+<span class="line"><i>80</i>    pub(crate) kv_transfer_estimated_latency_ms: Option&lt;f64&gt;,</span>
+<span class="line"><i>81</i>    #[serde(default)]</span>
+<span class="line"><i>82</i>    pub(crate) queue_depth: Option&lt;u64&gt;,</span>
+<span class="line"><i>83</i>    #[serde(default)]</span>
+<span class="line"><i>84</i>    pub(crate) worker: Option&lt;RequestTraceWorkerInfo&gt;,</span>
+<span class="line"><i>85</i>    #[serde(default)]</span>
+<span class="line"><i>86</i>    pub(crate) replay: Option&lt;RequestTraceReplayMetrics&gt;,</span>
+<span class="line"><i>87</i>    #[serde(default)]</span>
+<span class="line"><i>88</i>    pub(crate) finish_reason_metadata: Option&lt;RequestTraceFinishReasonMetadata&gt;,</span>
+<span class="line"><i>89</i>}</span></code></pre></details><p>trace replay 可以保留 arrival、输出长度、session/tool/workload 等关系；纯长度输入并不能还原原文 tokenizer 或真实 prefix hashes。比较 KV 路由时必须记录 trace_format、block size、prefix 重建策略、arrival speedup 和 agentic 依赖。结构化 request trace 用于 workload/replay，不等价于 OTel span 全量导出。</p></section><section id="validation-api" class="lesson"><div class="sectionhead"><h2>06 / Python API：显式选择 offline / live、拓扑与输出</h2><label class="done"><input type="checkbox" data-read="validation-api"> 已读</label></div><details class="source" id="src-validation-6"><summary><b>源码 · run_trace_replay 配置面</b><small>components/src/dynamo/replay/api.py:380–422</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/replay/api.py#L380-L422" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>380</i>def run_trace_replay(</span>
+<span class="line"><i>381</i>    trace_files,</span>
+<span class="line"><i>382</i>    *,</span>
+<span class="line"><i>383</i>    extra_engine_args=None,</span>
+<span class="line"><i>384</i>    prefill_engine_args=None,</span>
+<span class="line"><i>385</i>    decode_engine_args=None,</span>
+<span class="line"><i>386</i>    router_config=None,</span>
+<span class="line"><i>387</i>    ais_perf_config=None,</span>
+<span class="line"><i>388</i>    num_workers=1,</span>
+<span class="line"><i>389</i>    num_prefill_workers=1,</span>
+<span class="line"><i>390</i>    num_decode_workers=1,</span>
+<span class="line"><i>391</i>    replay_concurrency=None,</span>
+<span class="line"><i>392</i>    agentic_lanes=None,</span>
+<span class="line"><i>393</i>    agentic_snapshot=None,</span>
+<span class="line"><i>394</i>    agentic_warmup=False,</span>
+<span class="line"><i>395</i>    agentic_profile=None,</span>
+<span class="line"><i>396</i>    replay_mode=&quot;offline&quot;,</span>
+<span class="line"><i>397</i>    router_mode=&quot;round_robin&quot;,</span>
+<span class="line"><i>398</i>    arrival_speedup_ratio=1.0,</span>
+<span class="line"><i>399</i>    trace_block_size=None,</span>
+<span class="line"><i>400</i>    trace_format=&quot;mooncake&quot;,</span>
+<span class="line"><i>401</i>    trace_shared_prefix_ratio=0.0,</span>
+<span class="line"><i>402</i>    trace_num_prefix_groups=0,</span>
+<span class="line"><i>403</i>    report_jsonl_path=None,</span>
+<span class="line"><i>404</i>    max_sim_time_ms=None,</span>
+<span class="line"><i>405</i>    model_name=None,</span>
+<span class="line"><i>406</i>    sla_ttft_ms=None,</span>
+<span class="line"><i>407</i>    sla_itl_ms=None,</span>
+<span class="line"><i>408</i>    sla_e2e_ms=None,</span>
+<span class="line"><i>409</i>    planner_config=None,</span>
+<span class="line"><i>410</i>    performance_model_metadata=None,</span>
+<span class="line"><i>411</i>    benchmark_granularity=8,</span>
+<span class="line"><i>412</i>    capture_per_request=False,</span>
+<span class="line"><i>413</i>    capture_planner_details=True,</span>
+<span class="line"><i>414</i>    execution_model=None,</span>
+<span class="line"><i>415</i>    weka_nested_timestamp_basis=None,</span>
+<span class="line"><i>416</i>    telemetry_options=None,</span>
+<span class="line"><i>417</i>    kv_event_lag_ms=None,</span>
+<span class="line"><i>418</i>    # Internal: a retune sweep&#x27;s inner planner is warmed with the history it</span>
+<span class="line"><i>419</i>    # already bucketed instead of its load_predictor_warmup_trace.</span>
+<span class="line"><i>420</i>    _planner_warmup_observations=None,</span>
+<span class="line"><i>421</i>    # Internal: a retune sweep replays the baseline and every candidate with</span>
+<span class="line"><i>422</i>    # the canonical router seed and ordinal request ids (common random numbers).</span></code></pre></details><p>API 控制 worker 数、Prefill/Decode 参数、concurrency、router mode、SLA、性能模型、时间上限、per-request capture、planner 与 telemetry。agentic_lanes 与 concurrency/arrival trace 体现不同负载语义，不能只靠同一总请求数宣称等价。到达率变化与引擎速度变化也不是同一实验变量。</p></section><section id="validation-offline" class="lesson"><div class="sectionhead"><h2>07 / Offline 主循环属于 AISimulate core，Dynamo 做适配</h2><label class="done"><input type="checkbox" data-read="validation-offline"> 已读</label></div><details class="source" id="src-validation-7"><summary><b>源码 · ReplaySpec 的 topology、placement、scaling 与 workload 参数</b><small>lib/mocker/src/replay/offline/entrypoints.rs:119–154</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/replay/offline/entrypoints.rs#L119-L154" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>119</i>fn replay_spec(</span>
+<span class="line"><i>120</i>    topology: ReplayTopology,</span>
+<span class="line"><i>121</i>    engine: ReplayEngineConfig,</span>
+<span class="line"><i>122</i>    router_mode: ReplayRouterMode,</span>
+<span class="line"><i>123</i>    scaling_enabled: bool,</span>
+<span class="line"><i>124</i>    max_in_flight: Option&lt;usize&gt;,</span>
+<span class="line"><i>125</i>    record_per_request: bool,</span>
+<span class="line"><i>126</i>    max_sim_time_ms: Option&lt;f64&gt;,</span>
+<span class="line"><i>127</i>    sla: SlaThresholds,</span>
+<span class="line"><i>128</i>) -&gt; Result&lt;ReplaySpec&gt; {</span>
+<span class="line"><i>129</i>    Ok(ReplaySpec {</span>
+<span class="line"><i>130</i>        version: CURRENT_REPLAY_SPEC_VERSION,</span>
+<span class="line"><i>131</i>        topology,</span>
+<span class="line"><i>132</i>        engine: serde_json::to_value(engine)?,</span>
+<span class="line"><i>133</i>        adapters: ReplayAdapters {</span>
+<span class="line"><i>134</i>            placement: match router_mode {</span>
+<span class="line"><i>135</i>                ReplayRouterMode::RoundRobin =&gt; ProviderSpec::round_robin(),</span>
+<span class="line"><i>136</i>                ReplayRouterMode::KvRouter =&gt; provider_spec(),</span>
+<span class="line"><i>137</i>            },</span>
+<span class="line"><i>138</i>            scaling: if scaling_enabled {</span>
+<span class="line"><i>139</i>                ProviderSpec {</span>
+<span class="line"><i>140</i>                    provider: &quot;dynamo_planner&quot;.to_string(),</span>
+<span class="line"><i>141</i>                    config: serde_json::Value::Null,</span>
+<span class="line"><i>142</i>                }</span>
+<span class="line"><i>143</i>            } else {</span>
+<span class="line"><i>144</i>                ProviderSpec::no_scaling()</span>
+<span class="line"><i>145</i>            },</span>
+<span class="line"><i>146</i>        },</span>
+<span class="line"><i>147</i>        max_sim_time_ms,</span>
+<span class="line"><i>148</i>        max_in_flight,</span>
+<span class="line"><i>149</i>        record_per_request,</span>
+<span class="line"><i>150</i>        sla,</span>
+<span class="line"><i>151</i>        encoder: None,</span>
+<span class="line"><i>152</i>        requests: Vec::new(),</span>
+<span class="line"><i>153</i>    })</span>
+<span class="line"><i>154</i>}</span></code></pre></details><details class="source" id="src-validation-8"><summary><b>源码 · canonical engine config、capture 与 Replayer 调用</b><small>lib/mocker/src/replay/offline/entrypoints.rs:196–254</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/replay/offline/entrypoints.rs#L196-L254" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>196</i>fn run_aggregated_with_capture_options(</span>
+<span class="line"><i>197</i>    args: MockerConfig,</span>
+<span class="line"><i>198</i>    router_config: Option&lt;ReplayKvRouterConfig&gt;,</span>
+<span class="line"><i>199</i>    prefill_load_estimator: Option&lt;ReplayPrefillLoadEstimator&gt;,</span>
+<span class="line"><i>200</i>    input: ReplayRuntimeInput,</span>
+<span class="line"><i>201</i>    num_workers: usize,</span>
+<span class="line"><i>202</i>    max_in_flight: Option&lt;usize&gt;,</span>
+<span class="line"><i>203</i>    router_mode: ReplayRouterMode,</span>
+<span class="line"><i>204</i>    capture_options: ReplayCaptureOptions,</span>
+<span class="line"><i>205</i>    max_sim_time_ms: Option&lt;f64&gt;,</span>
+<span class="line"><i>206</i>    sla: SlaThresholds,</span>
+<span class="line"><i>207</i>    scaling_policy: Option&lt;Box&lt;dyn ReplayScalingPolicy&gt;&gt;,</span>
+<span class="line"><i>208</i>    telemetry: Option&lt;ReplayTelemetryOptions&gt;,</span>
+<span class="line"><i>209</i>) -&gt; Result&lt;TraceSimulationReport&gt; {</span>
+<span class="line"><i>210</i>    let args = args.normalized()?;</span>
+<span class="line"><i>211</i>    validate_agentic_host_offload(&amp;input, &amp;[(num_workers, &amp;args)], scaling_policy.is_some())?;</span>
+<span class="line"><i>212</i>    let (engine, factory) = aggregated_replay_setup(&amp;args)?;</span>
+<span class="line"><i>213</i>    let spec = replay_spec(</span>
+<span class="line"><i>214</i>        ReplayTopology::Aggregated {</span>
+<span class="line"><i>215</i>            workers: worker_pool(num_workers, &amp;args),</span>
+<span class="line"><i>216</i>        },</span>
+<span class="line"><i>217</i>        engine,</span>
+<span class="line"><i>218</i>        router_mode,</span>
+<span class="line"><i>219</i>        scaling_policy.is_some(),</span>
+<span class="line"><i>220</i>        max_in_flight,</span>
+<span class="line"><i>221</i>        capture_options.effective_per_request(),</span>
+<span class="line"><i>222</i>        max_sim_time_ms,</span>
+<span class="line"><i>223</i>        sla,</span>
+<span class="line"><i>224</i>    )?;</span>
+<span class="line"><i>225</i></span>
+<span class="line"><i>226</i>    match router_mode {</span>
+<span class="line"><i>227</i>        ReplayRouterMode::RoundRobin =&gt; {</span>
+<span class="line"><i>228</i>            let replayer = Replayer::with_composition(</span>
+<span class="line"><i>229</i>                spec,</span>
+<span class="line"><i>230</i>                factory,</span>
+<span class="line"><i>231</i>                RoundRobinReplayComposition::new(scaling_policy),</span>
+<span class="line"><i>232</i>            )?</span>
+<span class="line"><i>233</i>            .with_capture_options(capture_options)</span>
+<span class="line"><i>234</i>            .with_runtime_input(input);</span>
+<span class="line"><i>235</i>            Ok(with_telemetry(replayer, telemetry)?.run()?)</span>
+<span class="line"><i>236</i>        }</span>
+<span class="line"><i>237</i>        ReplayRouterMode::KvRouter =&gt; {</span>
+<span class="line"><i>238</i>            let replayer = Replayer::with_composition(</span>
+<span class="line"><i>239</i>                spec,</span>
+<span class="line"><i>240</i>                factory,</span>
+<span class="line"><i>241</i>                KvReplayComposition::aggregated(</span>
+<span class="line"><i>242</i>                    args,</span>
+<span class="line"><i>243</i>                    num_workers,</span>
+<span class="line"><i>244</i>                    router_config,</span>
+<span class="line"><i>245</i>                    prefill_load_estimator,</span>
+<span class="line"><i>246</i>                    scaling_policy,</span>
+<span class="line"><i>247</i>                ),</span>
+<span class="line"><i>248</i>            )?</span>
+<span class="line"><i>249</i>            .with_capture_options(capture_options)</span>
+<span class="line"><i>250</i>            .with_runtime_input(input);</span>
+<span class="line"><i>251</i>            Ok(with_telemetry(replayer, telemetry)?.run()?)</span>
+<span class="line"><i>252</i>        }</span>
+<span class="line"><i>253</i>    }</span>
+<span class="line"><i>254</i>}</span></code></pre></details><p>本仓库把 MockerConfig / workload 转为 canonical ReplaySpec，并为 Router / Planner / KV events 安装组合适配。虚拟时间事件循环与 Generalized Mocker Engine 驱动来自 aisimulate_core，本文不冒称该外部依赖的全部内部实现已在此仓库逐行核对。</p><p>调试时分清组合边界与引擎模型：相同 Router 可能因事件可见时点、KV eviction 模型或 performance model 不同而产生不同决策。</p></section><section id="validation-determinism" class="lesson"><div class="sectionhead"><h2>08 / 确定性有多个层级：arrival seed 还不够</h2><label class="done"><input type="checkbox" data-read="validation-determinism"> 已读</label></div><details class="source" id="src-validation-9"><summary><b>源码 · ReplayScope、determinism 与调用作用域</b><small>lib/mocker/src/replay/mod.rs:169–215</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/replay/mod.rs#L169-L215" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>169</i>pub struct ReplayScope {</span>
+<span class="line"><i>170</i>    /// Delays the KV cache events (blocks stored and removed) the router&#x27;s indexer observes by this</span>
+<span class="line"><i>171</i>    /// much simulated time. Prefill and request completions stay immediate, as a live router</span>
+<span class="line"><i>172</i>    /// observes them in-band on the response path. `0.0` keeps synchronous updates. Offline</span>
+<span class="line"><i>173</i>    /// KV-router replay only.</span>
+<span class="line"><i>174</i>    pub kv_event_lag_ms: f64,</span>
+<span class="line"><i>175</i>    /// Registry in which each offline KV-router placement registers its selector, so the host can</span>
+<span class="line"><i>176</i>    /// change router policy parameters during the replay. `None` registers nothing.</span>
+<span class="line"><i>177</i>    pub router_controls: Option&lt;ReplayRouterControls&gt;,</span>
+<span class="line"><i>178</i>    /// Request identity and KV-router selection semantics of offline replays that do not pass</span>
+<span class="line"><i>179</i>    /// their own [`ReplayCaptureOptions`]. [`ReplayDeterminism::CanonicalV1`] assigns ordinal</span>
+<span class="line"><i>180</i>    /// request IDs and seeds every KV-router selector, so two replays of the same input and</span>
+<span class="line"><i>181</i>    /// configuration produce the same report.</span>
+<span class="line"><i>182</i>    pub determinism: ReplayDeterminism,</span>
+<span class="line"><i>183</i>}</span>
+<span class="line"><i>184</i></span>
+<span class="line"><i>185</i>thread_local! {</span>
+<span class="line"><i>186</i>    static REPLAY_SCOPE: std::cell::RefCell&lt;ReplayScope&gt; = const {</span>
+<span class="line"><i>187</i>        std::cell::RefCell::new(ReplayScope {</span>
+<span class="line"><i>188</i>            kv_event_lag_ms: 0.0,</span>
+<span class="line"><i>189</i>            router_controls: None,</span>
+<span class="line"><i>190</i>            determinism: ReplayDeterminism::Random,</span>
+<span class="line"><i>191</i>        })</span>
+<span class="line"><i>192</i>    };</span>
+<span class="line"><i>193</i>}</span>
+<span class="line"><i>194</i></span>
+<span class="line"><i>195</i>/// Run `replay` with `scope` installed for the offline replays constructed on this thread.</span>
+<span class="line"><i>196</i>///</span>
+<span class="line"><i>197</i>/// The scope replaces any outer scope entirely, so a nested replay never registers into a router</span>
+<span class="line"><i>198</i>/// control registry it does not own. The previous scope is restored when `replay` returns or</span>
+<span class="line"><i>199</i>/// unwinds.</span>
+<span class="line"><i>200</i>pub fn with_replay_scope&lt;T&gt;(scope: ReplayScope, replay: impl FnOnce() -&gt; T) -&gt; anyhow::Result&lt;T&gt; {</span>
+<span class="line"><i>201</i>    let lag_ms = scope.kv_event_lag_ms;</span>
+<span class="line"><i>202</i>    anyhow::ensure!(</span>
+<span class="line"><i>203</i>        lag_ms.is_finite() &amp;&amp; lag_ms &gt;= 0.0,</span>
+<span class="line"><i>204</i>        &quot;kv_event_lag_ms must be finite and non-negative, got {lag_ms}&quot;</span>
+<span class="line"><i>205</i>    );</span>
+<span class="line"><i>206</i>    struct Restore(ReplayScope);</span>
+<span class="line"><i>207</i>    impl Drop for Restore {</span>
+<span class="line"><i>208</i>        fn drop(&amp;mut self) {</span>
+<span class="line"><i>209</i>            let previous = std::mem::take(&amp;mut self.0);</span>
+<span class="line"><i>210</i>            REPLAY_SCOPE.with(|current| *current.borrow_mut() = previous);</span>
+<span class="line"><i>211</i>        }</span>
+<span class="line"><i>212</i>    }</span>
+<span class="line"><i>213</i>    let _restore = Restore(REPLAY_SCOPE.with(|current| current.replace(scope)));</span>
+<span class="line"><i>214</i>    Ok(replay())</span>
+<span class="line"><i>215</i>}</span></code></pre></details><details class="source" id="src-validation-10"><summary><b>源码 · retune 内部 common random numbers 开关</b><small>components/src/dynamo/replay/api.py:415–422</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/replay/api.py#L415-L422" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>415</i>    weka_nested_timestamp_basis=None,</span>
+<span class="line"><i>416</i>    telemetry_options=None,</span>
+<span class="line"><i>417</i>    kv_event_lag_ms=None,</span>
+<span class="line"><i>418</i>    # Internal: a retune sweep&#x27;s inner planner is warmed with the history it</span>
+<span class="line"><i>419</i>    # already bucketed instead of its load_predictor_warmup_trace.</span>
+<span class="line"><i>420</i>    _planner_warmup_observations=None,</span>
+<span class="line"><i>421</i>    # Internal: a retune sweep replays the baseline and every candidate with</span>
+<span class="line"><i>422</i>    # the canonical router seed and ordinal request ids (common random numbers).</span></code></pre></details><p>确定性事件循环不自动固定 Router 相同成本的随机破平。arrival seed 只控制到达生成；回放需另记录 router seed、ordinal request IDs、engine/profile、哈希与候选顺序。retune 内层显式使用 canonical router seed 与 ordinal IDs 形成 common random numbers，不应把私有 _deterministic 参数宣传成通用稳定 CLI。</p></section><section id="validation-kv-lag" class="lesson"><div class="sectionhead"><h2>09 / KV 事件 lag 可以和请求完成分开建模</h2><label class="done"><input type="checkbox" data-read="validation-kv-lag"> 已读</label></div><details class="source" id="src-validation-11"><summary><b>源码 · kv_event_lag、wall-time 与同步 telemetry 文档契约</b><small>components/src/dynamo/replay/api.py:424–450</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/replay/api.py#L424-L450" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>424</i>) -&gt; ReplayReport | dict[str, Any]:</span>
+<span class="line"><i>425</i>    &quot;&quot;&quot;Run trace replay.</span>
+<span class="line"><i>426</i></span>
+<span class="line"><i>427</i>    ``wall_time_ms`` and derived throughput measure Rust runtime construction</span>
+<span class="line"><i>428</i>    and execution. Planner creation and bootstrap happen before that boundary.</span>
+<span class="line"><i>429</i>    ``weka_nested_timestamp_basis`` overrides Weka nested timestamp interpretation;</span>
+<span class="line"><i>430</i>    omitting it retains AISimulate&#x27;s automatic selection.</span>
+<span class="line"><i>431</i></span>
+<span class="line"><i>432</i>    ``kv_event_lag_ms`` delays the KV cache events (blocks stored and removed)</span>
+<span class="line"><i>433</i>    the router&#x27;s indexer observes by that much simulated time. Prefill and</span>
+<span class="line"><i>434</i>    request completions stay immediate, as a live router observes them in-band</span>
+<span class="line"><i>435</i>    on the response path. ``None`` or ``0`` keeps synchronous updates. Offline</span>
+<span class="line"><i>436</i>    KV-router replay only.</span>
+<span class="line"><i>437</i></span>
+<span class="line"><i>438</i>    ``agentic_snapshot``, ``agentic_warmup`` and ``agentic_profile`` use AISimulate</span>
+<span class="line"><i>439</i>    workload controls on the existing offline trace path. Native validation owns</span>
+<span class="line"><i>440</i>    their schemas and lifecycle constraints.</span>
+<span class="line"><i>441</i></span>
+<span class="line"><i>442</i>    Pass ``TelemetryOptions`` to enable policy-neutral sampling; omitting it</span>
+<span class="line"><i>443</i>    leaves telemetry disabled. Callbacks and JSONL writes run synchronously on</span>
+<span class="line"><i>444</i>    the replay loop, so their latency contributes to replay wall time. The</span>
+<span class="line"><i>445</i>    final buffered-file flush happens after the simulator finalizes</span>
+<span class="line"><i>446</i>    ``wall_time_ms``; time the outer API call when measuring end-to-end</span>
+<span class="line"><i>447</i>    persistence overhead. JSONL output is opened lazily on the first sample.</span>
+<span class="line"><i>448</i>    If a later write fails, replay fails; completed prior lines remain, and the</span>
+<span class="line"><i>449</i>    failing final line may be partial.</span>
+<span class="line"><i>450</i>    &quot;&quot;&quot;</span></code></pre></details><p>kv_event_lag_ms 在 offline KV-router replay 延迟 block store/remove 的索引可见时间；Prefill/请求完成仍按响应面的 in-band 语义立即观察。这能模拟缓存视图陈旧，不能当 WAN 传输、engine compute 或每条生命周期消息都被同等延迟。</p></section><section id="validation-online" class="lesson"><div class="sectionhead"><h2>10 / Online replay：每次调用拥有新 Tokio runtime</h2><label class="done"><input type="checkbox" data-read="validation-online"> 已读</label></div><details class="source" id="src-validation-12"><summary><b>源码 · 两种 live runtime 构造与 block_on</b><small>lib/mocker/src/replay/online/entrypoints.rs:68–99</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/replay/online/entrypoints.rs#L68-L99" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>68</i>fn run_live_runtime(</span>
+<span class="line"><i>69</i>    config: OnlineReplayConfig,</span>
+<span class="line"><i>70</i>    pending: VecDeque&lt;DirectRequest&gt;,</span>
+<span class="line"><i>71</i>    mode: LiveReplayMode,</span>
+<span class="line"><i>72</i>    cancel: CancellationToken,</span>
+<span class="line"><i>73</i>) -&gt; Result&lt;(TraceSimulationReport, LiveRuntimeStats)&gt; {</span>
+<span class="line"><i>74</i>    let runtime = tokio::runtime::Builder::new_multi_thread()</span>
+<span class="line"><i>75</i>        .enable_all()</span>
+<span class="line"><i>76</i>        .build()</span>
+<span class="line"><i>77</i>        .map_err(|e| anyhow!(&quot;failed to create online replay runtime: {e}&quot;))?;</span>
+<span class="line"><i>78</i></span>
+<span class="line"><i>79</i>    runtime.block_on(async move { LiveRuntime::new(config, pending, mode, cancel)?.run().await })</span>
+<span class="line"><i>80</i>}</span>
+<span class="line"><i>81</i></span>
+<span class="line"><i>82</i>fn run_live_workload_runtime(</span>
+<span class="line"><i>83</i>    config: OnlineReplayConfig,</span>
+<span class="line"><i>84</i>    driver: WorkloadDriver,</span>
+<span class="line"><i>85</i>    total_turns: usize,</span>
+<span class="line"><i>86</i>    mode: LiveReplayMode,</span>
+<span class="line"><i>87</i>    cancel: CancellationToken,</span>
+<span class="line"><i>88</i>) -&gt; Result&lt;(TraceSimulationReport, LiveRuntimeStats)&gt; {</span>
+<span class="line"><i>89</i>    let runtime = tokio::runtime::Builder::new_multi_thread()</span>
+<span class="line"><i>90</i>        .enable_all()</span>
+<span class="line"><i>91</i>        .build()</span>
+<span class="line"><i>92</i>        .map_err(|e| anyhow!(&quot;failed to create online replay runtime: {e}&quot;))?;</span>
+<span class="line"><i>93</i></span>
+<span class="line"><i>94</i>    runtime.block_on(async move {</span>
+<span class="line"><i>95</i>        LiveRuntime::new(config, VecDeque::new(), mode, cancel)?</span>
+<span class="line"><i>96</i>            .run_workload(driver, total_turns)</span>
+<span class="line"><i>97</i>            .await</span>
+<span class="line"><i>98</i>    })</span>
+<span class="line"><i>99</i>}</span></code></pre></details><p>它运行真实调度任务和等待，仍是模拟 engine 的 replay；是否经过网络/HTTP 取决于实际入口。内部 Err 首次观察后立即传播，task panic 以 JoinError 浮现；Drop replay-owned runtime 清理未完任务。失败不产完整部分报告，也不承诺恢复 Router 或结算所有 outstanding 请求。</p></section><section id="validation-settlement" class="lesson"><div class="sectionhead"><h2>11 / 成功路径先完成生命周期，再出完整报告</h2><label class="done"><input type="checkbox" data-read="validation-settlement"> 已读</label></div><details class="source" id="src-validation-13"><summary><b>源码 · 等待请求完成及 grouped completion boundary</b><small>lib/mocker/src/replay/online/live_runtime.rs:101–133</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/replay/online/live_runtime.rs#L101-L133" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>101</i>    async fn finish(mut self) -&gt; Result&lt;(TraceSimulationReport, LiveRuntimeStats)&gt; {</span>
+<span class="line"><i>102</i>        while !self.tasks.is_empty() {</span>
+<span class="line"><i>103</i>            tokio::select! {</span>
+<span class="line"><i>104</i>                biased;</span>
+<span class="line"><i>105</i>                _ = self.task_ctx.cancel.cancelled() =&gt; bail!(&quot;online replay cancelled&quot;),</span>
+<span class="line"><i>106</i>                joined = self.tasks.join_next() =&gt; {</span>
+<span class="line"><i>107</i>                    if let Some(joined) = joined {</span>
+<span class="line"><i>108</i>                        joined??;</span>
+<span class="line"><i>109</i>                    }</span>
+<span class="line"><i>110</i>                }</span>
+<span class="line"><i>111</i>            }</span>
+<span class="line"><i>112</i>        }</span>
+<span class="line"><i>113</i>        if self.task_ctx.cancel.is_cancelled() {</span>
+<span class="line"><i>114</i>            bail!(&quot;online replay cancelled&quot;);</span>
+<span class="line"><i>115</i>        }</span>
+<span class="line"><i>116</i></span>
+<span class="line"><i>117</i>        // A request task observes terminal output before the grouped effect</span>
+<span class="line"><i>118</i>        // dispatcher publishes the remaining completion effects and calls</span>
+<span class="line"><i>119</i>        // GroupedPassBoundary::finish(). Wait for that explicit acknowledgement</span>
+<span class="line"><i>120</i>        // before shutdown cancels the shared actor.</span>
+<span class="line"><i>121</i>        for engine in self.task_ctx.engines.iter() {</span>
+<span class="line"><i>122</i>            tokio::select! {</span>
+<span class="line"><i>123</i>                biased;</span>
+<span class="line"><i>124</i>                _ = self.task_ctx.cancel.cancelled() =&gt; bail!(&quot;online replay cancelled&quot;),</span>
+<span class="line"><i>125</i>                result = engine.drain_completion_boundary() =&gt; result?,</span>
+<span class="line"><i>126</i>            }</span>
+<span class="line"><i>127</i>        }</span>
+<span class="line"><i>128</i></span>
+<span class="line"><i>129</i>        let LiveRunSession {</span>
+<span class="line"><i>130</i>            task_ctx,</span>
+<span class="line"><i>131</i>            recorder_tx,</span>
+<span class="line"><i>132</i>            recorder,</span>
+<span class="line"><i>133</i>            admission_task,</span></code></pre></details><details class="source" id="src-validation-14"><summary><b>源码 · engine → admission forwarder → router → recorder 顺序</b><small>lib/mocker/src/replay/online/live_runtime.rs:153–189</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/replay/online/live_runtime.rs#L153-L189" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>153</i>            .iter()</span>
+<span class="line"><i>154</i>            .map(|engine| engine.metrics_receiver().borrow().vllm_preemptions_total)</span>
+<span class="line"><i>155</i>            .sum();</span>
+<span class="line"><i>156</i>        let stats_snapshot = task_ctx.stats.snapshot(vllm_preemptions_total);</span>
+<span class="line"><i>157</i>        let engines = Arc::clone(&amp;task_ctx.engines);</span>
+<span class="line"><i>158</i>        let router = Arc::clone(&amp;task_ctx.router);</span>
+<span class="line"><i>159</i>        let cancel = task_ctx.cancel.clone();</span>
+<span class="line"><i>160</i>        drop(task_ctx);</span>
+<span class="line"><i>161</i>        drop(recorder_tx);</span>
+<span class="line"><i>162</i></span>
+<span class="line"><i>163</i>        for engine in engines.iter() {</span>
+<span class="line"><i>164</i>            tokio::select! {</span>
+<span class="line"><i>165</i>                biased;</span>
+<span class="line"><i>166</i>                _ = cancel.cancelled() =&gt; bail!(&quot;online replay cancelled&quot;),</span>
+<span class="line"><i>167</i>                result = engine.shutdown() =&gt; result?,</span>
+<span class="line"><i>168</i>            }</span>
+<span class="line"><i>169</i>        }</span>
+<span class="line"><i>170</i>        tokio::select! {</span>
+<span class="line"><i>171</i>            biased;</span>
+<span class="line"><i>172</i>            _ = cancel.cancelled() =&gt; bail!(&quot;online replay cancelled&quot;),</span>
+<span class="line"><i>173</i>            result = admission_task =&gt; result??,</span>
+<span class="line"><i>174</i>        }</span>
+<span class="line"><i>175</i>        tokio::select! {</span>
+<span class="line"><i>176</i>            biased;</span>
+<span class="line"><i>177</i>            _ = cancel.cancelled() =&gt; bail!(&quot;online replay cancelled&quot;),</span>
+<span class="line"><i>178</i>            result = router.shutdown() =&gt; result?,</span>
+<span class="line"><i>179</i>        }</span>
+<span class="line"><i>180</i>        let report = tokio::select! {</span>
+<span class="line"><i>181</i>            biased;</span>
+<span class="line"><i>182</i>            _ = cancel.cancelled() =&gt; bail!(&quot;online replay cancelled&quot;),</span>
+<span class="line"><i>183</i>            result = recorder.finish(wall_time_ms, agentic_trajectory, agentic_graph) =&gt; result?,</span>
+<span class="line"><i>184</i>        };</span>
+<span class="line"><i>185</i>        if cancel.is_cancelled() {</span>
+<span class="line"><i>186</i>            bail!(&quot;online replay cancelled&quot;);</span>
+<span class="line"><i>187</i>        }</span>
+<span class="line"><i>188</i>        Ok((report, stats_snapshot))</span>
+<span class="line"><i>189</i>    }</span></code></pre></details><p>请求 task 看到终态后，grouped dispatcher 可能还未发布完成副作用，因此要等显式 completion boundary。成功关闭顺序保证报告与路由状态可结算；外部 cancellation 随时返回 online replay cancelled，不应把成功收口机械复制成内部失败恢复协议。</p></section><section id="validation-recorder" class="lesson"><div class="sectionhead"><h2>12 / Recorder 从结构化事件构成报告</h2><label class="done"><input type="checkbox" data-read="validation-recorder"> 已读</label></div><details class="source" id="src-validation-15"><summary><b>源码 · arrival、admission、Decode assignment、terminal 与 Finish 事件</b><small>lib/mocker/src/replay/online/recorder.rs:31–58</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/replay/online/recorder.rs#L31-L58" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>31</i>enum RecorderEvent {</span>
+<span class="line"><i>32</i>    Arrival(ArrivalEvent),</span>
+<span class="line"><i>33</i>    SessionMetadata {</span>
+<span class="line"><i>34</i>        uuid: Uuid,</span>
+<span class="line"><i>35</i>        session_id: String,</span>
+<span class="line"><i>36</i>        turn_index: usize,</span>
+<span class="line"><i>37</i>    },</span>
+<span class="line"><i>38</i>    AgenticMetadata {</span>
+<span class="line"><i>39</i>        uuid: Uuid,</span>
+<span class="line"><i>40</i>        request_id: String,</span>
+<span class="line"><i>41</i>        play_id: String,</span>
+<span class="line"><i>42</i>        dispatched_at_ms: f64,</span>
+<span class="line"><i>43</i>    },</span>
+<span class="line"><i>44</i>    DecodeAssigned {</span>
+<span class="line"><i>45</i>        uuid: Uuid,</span>
+<span class="line"><i>46</i>        worker_idx: usize,</span>
+<span class="line"><i>47</i>    },</span>
+<span class="line"><i>48</i>    Admission {</span>
+<span class="line"><i>49</i>        event: AdmissionEvent,</span>
+<span class="line"><i>50</i>        at_ms: f64,</span>
+<span class="line"><i>51</i>    },</span>
+<span class="line"><i>52</i>    Terminal(TerminalObservation),</span>
+<span class="line"><i>53</i>    Finish {</span>
+<span class="line"><i>54</i>        wall_time_ms: f64,</span>
+<span class="line"><i>55</i>        agentic_trajectory: Option&lt;AgenticTrajectorySnapshot&gt;,</span>
+<span class="line"><i>56</i>        agentic_graph: Option&lt;AgenticGraphIdentity&gt;,</span>
+<span class="line"><i>57</i>    },</span>
+<span class="line"><i>58</i>}</span></code></pre></details><details class="source" id="src-validation-16"><summary><b>源码 · 报告 finalize 等待与任务错误传播</b><small>lib/mocker/src/replay/online/recorder.rs:156–173</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/replay/online/recorder.rs#L156-L173" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>156</i>    pub(super) async fn finish(</span>
+<span class="line"><i>157</i>        self,</span>
+<span class="line"><i>158</i>        wall_time_ms: f64,</span>
+<span class="line"><i>159</i>        agentic_trajectory: Option&lt;AgenticTrajectorySnapshot&gt;,</span>
+<span class="line"><i>160</i>        agentic_graph: Option&lt;AgenticGraphIdentity&gt;,</span>
+<span class="line"><i>161</i>    ) -&gt; Result&lt;TraceSimulationReport&gt; {</span>
+<span class="line"><i>162</i>        self.tx</span>
+<span class="line"><i>163</i>            .send(RecorderEvent::Finish {</span>
+<span class="line"><i>164</i>                wall_time_ms,</span>
+<span class="line"><i>165</i>                agentic_trajectory,</span>
+<span class="line"><i>166</i>                agentic_graph,</span>
+<span class="line"><i>167</i>            })</span>
+<span class="line"><i>168</i>            .map_err(|_| anyhow!(&quot;online replay recorder closed before finalization&quot;))?;</span>
+<span class="line"><i>169</i>        drop(self.tx);</span>
+<span class="line"><i>170</i>        self.task</span>
+<span class="line"><i>171</i>            .await</span>
+<span class="line"><i>172</i>            .map_err(|error| anyhow!(&quot;online replay recorder task failed: {error}&quot;))?</span>
+<span class="line"><i>173</i>    }</span></code></pre></details><p>报告由明确事件构成，不是从散落日志正则拼出来。arrival、admission、first token、terminal 的时钟/序列关系应与 workload 对齐；失败与 pending 请求必须保留分类。per-request report、summary、telemetry 和原始事件的覆盖范围不同，比较时需先核对请求集合。</p></section><section id="validation-telemetry" class="lesson"><div class="sectionhead"><h2>13 / 观测源码：采样 cadence 与策略 cadence 独立</h2><label class="done"><input type="checkbox" data-read="validation-telemetry"> 已读</label></div><details class="source" id="src-validation-17"><summary><b>源码 · ReplayTelemetryOptions 与 policy-neutral observers</b><small>lib/mocker/src/replay/mod.rs:68–94</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/replay/mod.rs#L68-L94" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>68</i>pub use aisimulate_core::replay::TrafficStats;</span>
+<span class="line"><i>69</i>pub use aisimulate_core::replay::{</span>
+<span class="line"><i>70</i>    ReplayScalingDecision, ReplayScalingPolicy, ReplayScalingSnapshot,</span>
+<span class="line"><i>71</i>    ReplaySchedulerIntervalMetrics, ReplaySchedulerMetricsSnapshot, ReplayTelemetryObserver,</span>
+<span class="line"><i>72</i>    ReplayTelemetrySampleKind, ReplayTelemetrySnapshot, ReplayTrafficMetricsSnapshot,</span>
+<span class="line"><i>73</i>};</span>
+<span class="line"><i>74</i></span>
+<span class="line"><i>75</i>/// Optional policy-neutral telemetry sink for one offline replay.</span>
+<span class="line"><i>76</i>///</span>
+<span class="line"><i>77</i>/// Telemetry is deliberately configured independently from</span>
+<span class="line"><i>78</i>/// [`ReplayScalingPolicy`]: observing a replay must not change the planner</span>
+<span class="line"><i>79</i>/// callback contract or its decision cadence.</span>
+<span class="line"><i>80</i>pub struct ReplayTelemetryOptions {</span>
+<span class="line"><i>81</i>    pub sample_interval_ms: f64,</span>
+<span class="line"><i>82</i>    pub observer: Box&lt;dyn ReplayTelemetryObserver&gt;,</span>
+<span class="line"><i>83</i>}</span>
+<span class="line"><i>84</i></span>
+<span class="line"><i>85</i>/// Optional replay observers installed for one invocation.</span>
+<span class="line"><i>86</i>///</span>
+<span class="line"><i>87</i>/// Scaling and telemetry share an invocation without coupling their callback</span>
+<span class="line"><i>88</i>/// contracts or sampling cadence.</span>
+<span class="line"><i>89</i>#[derive(Default)]</span>
+<span class="line"><i>90</i>pub struct ReplayRuntimeObservers {</span>
+<span class="line"><i>91</i>    pub scaling_policy: Option&lt;Box&lt;dyn ReplayScalingPolicy&gt;&gt;,</span>
+<span class="line"><i>92</i>    pub telemetry: Option&lt;ReplayTelemetryOptions&gt;,</span>
+<span class="line"><i>93</i>}</span>
+<span class="line"><i>94</i>pub use entrypoints::{</span></code></pre></details><details class="source" id="src-validation-18"><summary><b>源码 · memory / callback / JSONL sink 与无 sink 校验</b><small>components/src/dynamo/replay/api.py:330–347</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/replay/api.py#L330-L347" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>330</i>def _telemetry_kwargs(options: TelemetryOptions | None) -&gt; dict[str, Any]:</span>
+<span class="line"><i>331</i>    if options is None:</span>
+<span class="line"><i>332</i>        return {}</span>
+<span class="line"><i>333</i>    capture_in_memory = options.capture_in_memory</span>
+<span class="line"><i>334</i>    if capture_in_memory is None:</span>
+<span class="line"><i>335</i>        capture_in_memory = options.callback is None and options.jsonl_path is None</span>
+<span class="line"><i>336</i>    if (</span>
+<span class="line"><i>337</i>        not capture_in_memory</span>
+<span class="line"><i>338</i>        and options.callback is None</span>
+<span class="line"><i>339</i>        and options.jsonl_path is None</span>
+<span class="line"><i>340</i>    ):</span>
+<span class="line"><i>341</i>        raise ValueError(&quot;TelemetryOptions needs at least one sink&quot;)</span>
+<span class="line"><i>342</i>    return {</span>
+<span class="line"><i>343</i>        &quot;capture_telemetry&quot;: capture_in_memory,</span>
+<span class="line"><i>344</i>        &quot;telemetry_sample_interval_ms&quot;: options.sample_interval_ms,</span>
+<span class="line"><i>345</i>        &quot;telemetry_callback&quot;: options.callback,</span>
+<span class="line"><i>346</i>        &quot;telemetry_jsonl_path&quot;: options.jsonl_path,</span>
+<span class="line"><i>347</i>    }</span></code></pre></details><p>telemetry 有独立 sample_interval_ms，不应通过打开观测改变 planner 决策调用频率。回调和 JSONL 写入同步运行在 replay loop，其延迟计入 replay wall time；最终 buffered flush 在 simulator 结束 wall_time_ms 后，若关心完整持久化开销要从外层 API 计时。写失败使 replay 失败，已写行仍存在且最后一行可能不完整，不能把有 JSONL 文件当完整成功报告。</p></section><section id="validation-units" class="lesson"><div class="sectionhead"><h2>14 / 时钟、throughput 与 goodput 的分母</h2><label class="done"><input type="checkbox" data-read="validation-units"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>口径</th><th>应记录</th><th>常见错误</th></tr></thead><tbody><tr><td>virtual time</td><td>模拟 arrival / terminal 与阶段耗时</td><td>用模拟时长评价代码 CPU 执行速度</td></tr><tr><td>replay wall time</td><td>Rust runtime 构建/执行边界，外层准备和最终 flush 单列</td><td>把模拟 throughput 与模拟器处理速度混同</td></tr><tr><td>client TTFT / ITL / E2E</td><td>请求发出、首响应与 token 计数语义、错误集合</td><td>把平均 latency 等于 p99；把 SSE 帧等于 token</td></tr><tr><td>output throughput</td><td>成功/总 token 数与测量窗口</td><td>混用输入+输出与纯输出吞吐</td></tr><tr><td>SLO goodput</td><td>同时满足哪些 SLO、成功请求/时间或 token/时间</td><td>只看最大吞吐忽略拒绝和尾延迟</td></tr><tr><td>cache hit</td><td>router estimate / engine reused / logical hash hit</td><td>把三种分母不一致的比率合并</td></tr></tbody></table></div></section><section id="validation-aiperf" class="lesson"><div class="sectionhead"><h2>15 / AIPerf 真实测量：先冻结 workload 与参考配置</h2><label class="done"><input type="checkbox" data-read="validation-aiperf"> 已读</label></div><p>AIPerf 是外部独立项目，向实际 endpoint 发流量；本仓库官方指南提供 live deployment 基准流程。一次可比实验至少冻结模型/权重/tokenizer、DGD/镜像/引擎参数、GPU/拓扑、输入输出分布、prefix reuse、并发或到达率、warmup、请求数、超时与错误策略、是否 streaming、SLO 和采样窗口。</p><div class="tablewrap"><table><thead><tr><th>阶段</th><th>验收</th></tr></thead><tbody><tr><td>Smoke</td><td>真实请求可完成、输出/usage/终态符合预期，PD 归因可见</td></tr><tr><td>Baseline</td><td>原始 AIPerf artifacts、manifest/hash、版本与 Collector 配置可追溯</td></tr><tr><td>Candidate</td><td>一次主要变量；相同 workload 与足够的重复/稳态窗口</td></tr><tr><td>Attribution</td><td>client + Frontend/Router/engine + GPU/NIXL 指标对齐时间与单位</td></tr><tr><td>Decision</td><td>按预先定义 SLO/goodput 判断，记录误差与失败样本</td></tr></tbody></table></div><p>不要把 port-forward 本地链路的网络开销归因于 GPU，也不要用 health probe 替代真实 PD KV 传输。真实负载测试需单独授权与资源预算，本章未启动任何测量。</p></section><section id="validation-experiments" class="lesson"><div class="sectionhead"><h2>16 / 给本教程各模块设计有判别力的实验</h2><label class="done"><input type="checkbox" data-read="validation-experiments"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>假设</th><th>最小有判别力的设计</th></tr></thead><tbody><tr><td>Frontend CPU 是瓶颈</td><td>固定 mocker capacity 与 workload，观察 CPU/preprocess/transport，比较重复稳态</td></tr><tr><td>KV 路由有益</td><td>相同 prefix trace / engine cache，比较 RR/KV；分开估计命中与真实 reuse</td></tr><tr><td>PD 改善 ITL</td><td>固定 GPU 总量和 workload，对照聚合/PD；同时检查 TTFT、队列和传输成本</td></tr><tr><td>新策略更稳</td><td>先 deterministic replay 看决策/生命周期，再真实 workload 看尾延迟和错误</td></tr><tr><td>分层缓存减少重算</td><td>固定内存容量和 cold/warm 条件，核对传输完成、GPU 等待和净收益</td></tr><tr><td>全局 stale 处理正确</td><td>fake source 断开/重连/缺 snapshot；检查旧 generation 不污染 replacement</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>同版本官方仓库文档</th><th>阅读用途</th></tr></thead><tbody><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/docs/fern/pages/reference/components/dynosim-replay-cli-reference.mdx">DynoSim replay reference</a></td><td>固定版本 CLI 与模式</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/mocker/src/replay/offline/README.md">Offline replay adapters</a></td><td>组合边界与随机性</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/docs/fern/pages/kubernetes/operations/benchmarking-with-aiperf.mdx">Benchmark with AIPerf</a></td><td>live workload 与可比性</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/docs/fern/pages/recipes/feature-benchmarks/benchmarking-guide.md">Benchmarking guide</a></td><td>实验配置与归因</td></tr></tbody></table></div></section><section id="validation-diagram" class="lesson"><div class="sectionhead"><h2>17 / 架构分层图与交叉阅读</h2><label class="done"><input type="checkbox" data-read="validation-diagram"> 已读</label></div><div class="diagram"><div class="lane"><b>语义验证</b><span>unit / state tests → conformance → fake RPC / native protocol tests</span></div><div class="lane"><b>模拟</b><span>workload + engine model + routing config → offline or live replay → report / telemetry</span></div><div class="lane"><b>真实测量</b><span>frozen workload + real deployment → AIPerf artifacts + engine / device evidence</span></div><div class="lane"><b>决策</b><span>classify success / error / pending → comparable SLO / goodput → explain limitations</span></div></div><p><a href="validation-architecture.mmd">Mermaid 图源</a>按职责分泳道；泳道之间不暗示已经实现自动接线。离线 HTML 无外部渲染依赖。<a href="system-map.html">系统地图</a> / <a href="index.html">全部章节</a>。</p></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 9734418e5bc71027e6bd04a09314bf1765208c72。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

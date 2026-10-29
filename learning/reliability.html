@@ -1,0 +1,1577 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>可靠性与流式生命周期：架构、原理与源码 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#rl-scope">01 / 可靠性保证来自多个边界</a><a href="#rl-architecture">02 / 请求状态与所有权如何交接</a><a href="#rl-admission">03 / 准入与拒绝：两个容量维度、一份资源所有权</a><a href="#rl-preflight">04 / HTTP 提交前：预检错误与保留缓冲帧</a><a href="#rl-sse">05 / SSE 正常结束、错误与取消</a><a href="#rl-disconnect">06 / 断连的两个阶段：handler 与 response body</a><a href="#rl-context">07 / Stop、Kill 与子上下文</a><a href="#rl-tcp">08 / 跨进程取消与被动连接故障</a><a href="#rl-rust-backend">09 / Rust EngineAdapter：取消通知与 stream Drop 的分工</a><a href="#rl-sglang">10 / Python SGLang：精确请求 ID、注册与有序 abort</a><a href="#rl-pd-cleanup">11 / PD 取消特例：为释放 staged KV 继续 dispatch</a><a href="#rl-timeouts">12 / 超时、心跳与慢消费者</a><a href="#rl-fault">13 / Worker 故障检测与迁移资格</a><a href="#rl-migration">14 / 迁移原理：逻辑请求下的多个物理 attempt</a><a href="#rl-migration-limits">15 / 启用条件、硬路由和不能重放的状态</a><a href="#rl-replay">16 / 重放、解码与 usage 口径</a><a href="#rl-resources">17 / 清理必须覆盖成功、失败、取消与重试</a><a href="#rl-observe">18 / 取消与准入指标：信号不等于最终效果</a><a href="#rl-migration-observe">19 / 迁移指标与 Trace：恢复成功如何解释</a><a href="#rl-terminal">20 / 生命周期 Trace 的终态：只能完成一次</a><a href="#rl-shutdown">21 / 优雅退出：先撤流量，再 grace/drain/cleanup</a><a href="#rl-cluster">22 / 对照 ACK：核查项与分阶段验收</a><a href="#rl-evidence">23 / 阅读证据、覆盖与后续边界</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 9734418e5</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>可靠性与流式生命周期：架构、原理与源码</h1><p class="lede">沿响应所有权、取消传播、资源清理、故障重试和优雅退出核对可靠性保证。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 9734418e5</span><span class="pill ">可靠性与流式生命周期 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="rl-scope" class="lesson"><div class="sectionhead"><h2>01 / 可靠性保证来自多个边界</h2><label class="done"><input type="checkbox" data-read="rl-scope"> 已读</label></div><p><strong>可靠性不是遇到异常就重试：必须先识别已提交的副作用、响应已交付到哪一层，以及由谁释放资源。</strong>本章沿 HTTP/SSE → Router → Request Plane → Backend/Engine 的主路径分析准入、流式终态、取消、超时、故障抑制、迁移和优雅退出。</p><div class="tablewrap"><table><thead><tr><th>边界</th><th>主要责任</th><th>不能单独保证</th></tr></thead><tbody><tr><td>HTTP / SSE</td><td>连接 Drop 检测、首个错误预检、协议事件、指标与终态</td><td>客户端最终收到所有字节或语义完整</td></tr><tr><td>Router / admission</td><td>选择/预留容量、队列、取消、cleanup 和 retry lifecycle</td><td>引擎立即停止 GPU 工作</td></tr><tr><td>Runtime context / TCP</td><td>Stop/Kill 状态、子上下文与控制消息</td><td>断网后无限快地检测故障</td></tr><tr><td>Migration</td><td>保存 token/decoder replay 状态，重新派发允许重试的错误</td><td>原 GPU/KV/采样器状态完全重建</td></tr><tr><td>Engine / backend</td><td>精确 abort、流资源释放、first-token/PD KV 协调</td><td>所有语言/版本都采用同一个实现</td></tr><tr><td>Shutdown / Kubernetes</td><td>停止新流量、等待、drain、cleanup、进程退出</td><td>SIGKILL/OOM 下仍执行 Drop/finally</td></tr></tbody></table></div><aside class="note ">源码固定于 9734418e5bc71027e6bd04a09314bf1765208c72，workspace 1.7.0。该代码提交是本地文档提交的父提交，避免用只存在本地的文档提交 SHA 生成源码链接。当前工作树中分析源码与此提交一致；线上私有 SGLang 1.4.1 必须另行核对。未执行推理、故障注入或集群修改。</aside></section><section id="rl-architecture" class="lesson"><div class="sectionhead"><h2>02 / 请求状态与所有权如何交接</h2><label class="done"><input type="checkbox" data-read="rl-architecture"> 已读</label></div><div class="flow"><div><b>01</b>HTTP handler 与连接 guard</div><div><b>02</b>预处理 / Router / admission 预留</div><div><b>03</b>Backend setup / response handshake</div><div><b>04</b>流式帧与 token 处理</div><div><b>05</b>正常终态 / 错误 / 取消 / 迁移</div><div><b>06</b>释放占用与完成指标</div></div><div class="diagram"><div class="lane"><b>取消向下</b><span>HTTP Drop → Context Kill/Stop → linked child → TCP control/context → backend cancellation monitor → engine.abort / SGLang abort_request。</span></div><div class="lane"><b>终态向上</b><span>Engine output/error → Router attempt cleanup → Migration 判断 → HTTP preflight 或 SSE error/finalizer → metrics/terminal。</span></div><div class="lane"><b>资源归属</b><span>HTTP in-flight guard、Router reservation/lease、backend permit、engine stream、staged KV 分属不同 owner；Drop、异步 finish、远端清理是不同机制。</span></div></div><p><a href="reliability-lifecycle.mmd">生命周期与故障分支 Mermaid 源图</a>。正常终止标记、流 EOF、HTTP body Drop、远端引擎释放和 GPU quiescent 不是同一个事件。</p></section><section id="rl-admission" class="lesson"><div class="sectionhead"><h2>03 / 准入与拒绝：两个容量维度、一份资源所有权</h2><label class="done"><input type="checkbox" data-read="rl-admission"> 已读</label></div><details class="source" id="src-rl-admission-contract"><summary><b>源码 · request/waiting 两种容量与释放边界</b><small>lib/llm/src/admission_gate.rs:32–58</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/admission_gate.rs#L32-L58" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>32</i>//! # Engine limits</span>
+<span class="line"><i>33</i>//!</span>
+<span class="line"><i>34</i>//! Two independent limits govern entry to the engine, and a request enters only</span>
+<span class="line"><i>35</i>//! when both have room:</span>
+<span class="line"><i>36</i>//!</span>
+<span class="line"><i>37</i>//! - The **engine request limit** bounds admitted requests that have not</span>
+<span class="line"><i>38</i>//!   finished. A request holds request capacity from admission until its</span>
+<span class="line"><i>39</i>//!   response stream ends or is dropped, however long it then runs.</span>
+<span class="line"><i>40</i>//! - The **engine request waiting limit** bounds admitted requests still</span>
+<span class="line"><i>41</i>//!   waiting for their engine&#x27;s output. A request holds waiting capacity from</span>
+<span class="line"><i>42</i>//!   admission until the gate observes its first generated token or its</span>
+<span class="line"><i>43</i>//!   completion, whichever comes first, on every worker role (see</span>
+<span class="line"><i>44</i>//!   [`ResponseOutput::ends_wait`]). Interim responses — metadata or control</span>
+<span class="line"><i>45</i>//!   only, such as a disaggregation bootstrap announcement or a cache report —</span>
+<span class="line"><i>46</i>//!   leave it waiting. The backend classifies its own responses through</span>
+<span class="line"><i>47</i>//!   [`AdmissionResponse`]; the gate never parses a payload. Obtaining the</span>
+<span class="line"><i>48</i>//!   stream is not a response.</span>
+<span class="line"><i>49</i>//!</span>
+<span class="line"><i>50</i>//! Admission reserves both together, under one lock, so no request ever holds</span>
+<span class="line"><i>51</i>//! one while it waits for the other. A request whose stream never produces a</span>
+<span class="line"><i>52</i>//! response that ends its wait — `generate` fails, the stream ends or fails</span>
+<span class="line"><i>53</i>//! first, or the request is cancelled or dropped — releases both on the way</span>
+<span class="line"><i>54</i>//! out. A request whose wait has ended, even by a completion, keeps its request</span>
+<span class="line"><i>55</i>//! capacity until its stream ends. Every release hands capacity to the queues,</span>
+<span class="line"><i>56</i>//! so queued work proceeds as soon as it has room.</span>
+<span class="line"><i>57</i>//!</span>
+<span class="line"><i>58</i>//! # DP ranks</span></code></pre></details><details class="source" id="src-rl-permit-drop"><summary><b>源码 · 首 token 结束 waiting，EnginePermit Drop 释放剩余容量</b><small>lib/llm/src/admission_gate.rs:1890–1903</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/admission_gate.rs#L1890-L1903" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1890</i>    fn end_waiting(&amp;mut self) {</span>
+<span class="line"><i>1891</i>        if std::mem::take(&amp;mut self.holds_waiting) {</span>
+<span class="line"><i>1892</i>            self.gate.release_waiting(self.rank);</span>
+<span class="line"><i>1893</i>        }</span>
+<span class="line"><i>1894</i>    }</span>
+<span class="line"><i>1895</i>}</span>
+<span class="line"><i>1896</i></span>
+<span class="line"><i>1897</i>impl Drop for EnginePermit {</span>
+<span class="line"><i>1898</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>1899</i>        // The request finished, failed or went away: release everything it</span>
+<span class="line"><i>1900</i>        // still holds.</span>
+<span class="line"><i>1901</i>        self.gate.release_request(self.rank, self.holds_waiting);</span>
+<span class="line"><i>1902</i>    }</span>
+<span class="line"><i>1903</i>}</span></code></pre></details><details class="source" id="src-rl-ticket-drop"><summary><b>源码 · 排队 Future 被丢弃时 AdmissionTicket 离队</b><small>lib/llm/src/admission_gate.rs:2069–2076</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/admission_gate.rs#L2069-L2076" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2069</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>2070</i>        // Reaching here unsettled means the whole future was dropped while the</span>
+<span class="line"><i>2071</i>        // request waited.</span>
+<span class="line"><i>2072</i>        if !self.settled {</span>
+<span class="line"><i>2073</i>            self.leave();</span>
+<span class="line"><i>2074</i>        }</span>
+<span class="line"><i>2075</i>    }</span>
+<span class="line"><i>2076</i>}</span></code></pre></details><p>request capacity 覆盖整个 engine stream；waiting capacity 直到首个生成 token 或结束。二者在同一锁下共同预留，避免占住一项等另一项。队列满可以拒绝；正常等待则因获准、取消或 future Drop 离开。</p><aside class="note ">Admission 的 DP-rank overload 不应粗暴隔离整个 Worker。应用准入队列、Router scheduler 队列、TCP work-handler pool 和引擎 scheduler queue 是不同层；容量和排队指标不能直接相加或互相替代。</aside></section><section id="rl-preflight" class="lesson"><div class="sectionhead"><h2>04 / HTTP 提交前：预检错误与保留缓冲帧</h2><label class="done"><input type="checkbox" data-read="rl-preflight"> 已读</label></div><details class="source" id="src-rl-preflight"><summary><b>源码 · UntilFirstEvent / Bounded / Skip；首个非 annotation 帧错误预检</b><small>lib/llm/src/http/service/openai.rs:3072–3135</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/openai.rs#L3072-L3135" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>3072</i>const MAX_LEADING_ANNOTATIONS: usize = 16;</span>
+<span class="line"><i>3073</i></span>
+<span class="line"><i>3074</i>/// Inspect the first non-annotation event in the stream for a backend error.</span>
+<span class="line"><i>3075</i>///</span>
+<span class="line"><i>3076</i>/// `BackendErrorCheck::UntilFirstEvent` awaits stream events indefinitely: the</span>
+<span class="line"><i>3077</i>/// non-streaming preflight, and the streaming pre-commit when the service is</span>
+<span class="line"><i>3078</i>/// configured to wait. `BackendErrorCheck::Bounded` races against a</span>
+<span class="line"><i>3079</i>/// single deadline captured at function entry (streaming pre-commit peek); if</span>
+<span class="line"><i>3080</i>/// the deadline elapses before a non-annotation event arrives, the buffered</span>
+<span class="line"><i>3081</i>/// annotations are returned chained with the remaining stream so downstream</span>
+<span class="line"><i>3082</i>/// sees the original ordering. `BackendErrorCheck::Skip` returns the stream</span>
+<span class="line"><i>3083</i>/// untouched.</span>
+<span class="line"><i>3084</i>///</span>
+<span class="line"><i>3085</i>/// Returns `Err(BackendErrorInfo)` if the first non-annotation event is a backend</span>
+<span class="line"><i>3086</i>/// error, `Ok(stream)` otherwise.</span>
+<span class="line"><i>3087</i>pub(super) async fn check_for_backend_error_info&lt;T&gt;(</span>
+<span class="line"><i>3088</i>    stream: impl futures::Stream&lt;Item = Annotated&lt;T&gt;&gt; + Send + &#x27;static,</span>
+<span class="line"><i>3089</i>    check: BackendErrorCheck,</span>
+<span class="line"><i>3090</i>) -&gt; Result&lt;std::pin::Pin&lt;Box&lt;dyn futures::Stream&lt;Item = Annotated&lt;T&gt;&gt; + Send&gt;&gt;, BackendErrorInfo&gt;</span>
+<span class="line"><i>3091</i>where</span>
+<span class="line"><i>3092</i>    T: serde::Serialize + Send + &#x27;static,</span>
+<span class="line"><i>3093</i>{</span>
+<span class="line"><i>3094</i>    use futures::stream::StreamExt;</span>
+<span class="line"><i>3095</i></span>
+<span class="line"><i>3096</i>    let mut stream = Box::pin(stream);</span>
+<span class="line"><i>3097</i>    // Single deadline captured at entry so the peek window is bounded in total,</span>
+<span class="line"><i>3098</i>    // not per-iteration.</span>
+<span class="line"><i>3099</i>    let deadline = match check {</span>
+<span class="line"><i>3100</i>        BackendErrorCheck::Skip =&gt; return Ok(stream),</span>
+<span class="line"><i>3101</i>        BackendErrorCheck::Bounded(window) =&gt; Some(tokio::time::Instant::now() + window),</span>
+<span class="line"><i>3102</i>        BackendErrorCheck::UntilFirstEvent =&gt; None,</span>
+<span class="line"><i>3103</i>    };</span>
+<span class="line"><i>3104</i>    let mut buffered: Vec&lt;Annotated&lt;T&gt;&gt; = Vec::new();</span>
+<span class="line"><i>3105</i></span>
+<span class="line"><i>3106</i>    loop {</span>
+<span class="line"><i>3107</i>        let next = match deadline {</span>
+<span class="line"><i>3108</i>            Some(d) =&gt; tokio::select! {</span>
+<span class="line"><i>3109</i>                item = stream.next() =&gt; item,</span>
+<span class="line"><i>3110</i>                _ = tokio::time::sleep_until(d) =&gt; {</span>
+<span class="line"><i>3111</i>                    return Ok(Box::pin(futures::stream::iter(buffered).chain(stream)));</span>
+<span class="line"><i>3112</i>                }</span>
+<span class="line"><i>3113</i>            },</span>
+<span class="line"><i>3114</i>            None =&gt; stream.next().await,</span>
+<span class="line"><i>3115</i>        };</span>
+<span class="line"><i>3116</i></span>
+<span class="line"><i>3117</i>        let Some(event) = next else {</span>
+<span class="line"><i>3118</i>            // Backend closed before yielding any non-annotation event; replay</span>
+<span class="line"><i>3119</i>            // buffered annotations so downstream sees them.</span>
+<span class="line"><i>3120</i>            return Ok(Box::pin(futures::stream::iter(buffered)));</span>
+<span class="line"><i>3121</i>        };</span>
+<span class="line"><i>3122</i></span>
+<span class="line"><i>3123</i>        if is_annotation_frame(&amp;event) &amp;&amp; buffered.len() &lt; MAX_LEADING_ANNOTATIONS {</span>
+<span class="line"><i>3124</i>            buffered.push(event);</span>
+<span class="line"><i>3125</i>            continue;</span>
+<span class="line"><i>3126</i>        }</span>
+<span class="line"><i>3127</i></span>
+<span class="line"><i>3128</i>        if let Some(backend_error) = extract_backend_error_if_present(&amp;event) {</span>
+<span class="line"><i>3129</i>            return Err(backend_error);</span>
+<span class="line"><i>3130</i>        }</span>
+<span class="line"><i>3131</i></span>
+<span class="line"><i>3132</i>        // First non-annotation, non-error event — hand back for downstream</span>
+<span class="line"><i>3133</i>        // consumption with original ordering preserved.</span>
+<span class="line"><i>3134</i>        buffered.push(event);</span>
+<span class="line"><i>3135</i>        return Ok(Box::pin(futures::stream::iter(buffered).chain(stream)));</span></code></pre></details><p>在 HTTP response 提交前发现后端错误，可以返回合适 HTTP 错误；提交后只能通过对应流协议表达错误或关闭流，不能把已发出的 200 改成 5xx。Bounded preflight 使用函数入口捕获的一个 deadline，不因每个 annotation 重置窗口；超时将已缓冲帧按原顺序接回流。</p><p>UntilFirstEvent 表示该层自身没有预检窗口上限，不能解读为整个请求永不超时。前置 annotation 与真正输出 token、可渲染文本又不同；观测应在缓冲前记录到达时间，避免把 release time 错当 TTFT/ITL。</p></section><section id="rl-sse" class="lesson"><div class="sectionhead"><h2>05 / SSE 正常结束、错误与取消</h2><label class="done"><input type="checkbox" data-read="rl-sse"> 已读</label></div><details class="source" id="src-rl-sse-default"><summary><b>源码 · stream guard 预设 Cancelled；优先处理 ready 的流帧</b><small>lib/llm/src/http/service/disconnect.rs:603–631</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/disconnect.rs#L603-L631" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>603</i>        mut activity_rx,</span>
+<span class="line"><i>604</i>        error_signal,</span>
+<span class="line"><i>605</i>        emit_done_sentinel,</span>
+<span class="line"><i>606</i>    } = options;</span>
+<span class="line"><i>607</i></span>
+<span class="line"><i>608</i>    // Default to Cancelled: if the stream is dropped unexpectedly (e.g. client</span>
+<span class="line"><i>609</i>    // disconnect causing a broken-pipe on the SSE write), the guard will report</span>
+<span class="line"><i>610</i>    // &quot;cancelled&quot; instead of &quot;internal&quot;. The happy path overrides this via mark_ok().</span>
+<span class="line"><i>611</i>    inflight_guard.mark_error(ErrorType::Cancelled);</span>
+<span class="line"><i>612</i>    let mut stream_handle = SignaledConnectionHandle::new(stream_handle, error_signal.clone());</span>
+<span class="line"><i>613</i>    let mut inflight_guard = SignaledInflightGuard::new(inflight_guard, error_signal.clone());</span>
+<span class="line"><i>614</i></span>
+<span class="line"><i>615</i>    async_stream::try_stream! {</span>
+<span class="line"><i>616</i>        tokio::pin!(stream);</span>
+<span class="line"><i>617</i>        // Keep the context&#x27;s watch-backed cancellation future alive across body frames.</span>
+<span class="line"><i>618</i>        // Recreating it for every token repeatedly clones a receiver and churns Notify state.</span>
+<span class="line"><i>619</i>        let killed = context.killed();</span>
+<span class="line"><i>620</i>        tokio::pin!(killed);</span>
+<span class="line"><i>621</i>        let mut inactivity_deadline =</span>
+<span class="line"><i>622</i>            inactivity_timeout.map(|timeout| tokio::time::Instant::now() + timeout);</span>
+<span class="line"><i>623</i>        loop {</span>
+<span class="line"><i>624</i>            tokio::select! {</span>
+<span class="line"><i>625</i>                // Drain any ready SSE event before honoring a cancel or the</span>
+<span class="line"><i>626</i>                // inactivity timeout. This preserves already-buffered output on</span>
+<span class="line"><i>627</i>                // disconnect and lets a source stream that emits its own</span>
+<span class="line"><i>628</i>                // finalizer-on-cancel (e.g. the Anthropic converter) flush those</span>
+<span class="line"><i>629</i>                // terminal events before this monitor records the cancellation.</span>
+<span class="line"><i>630</i>                biased;</span>
+<span class="line"><i>631</i>                event = stream.next() =&gt; {</span></code></pre></details><details class="source" id="src-rl-sse-error"><summary><b>源码 · 结构化 error/可选 DONE、EOF mark_ok 与 Kill 分支</b><small>lib/llm/src/http/service/disconnect.rs:685–724</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/disconnect.rs#L685-L724" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>685</i>                                    tracing::error!(%error_type, %err, &quot;Streaming failure&quot;);</span>
+<span class="line"><i>686</i>                                }</span>
+<span class="line"><i>687</i>                            } else {</span>
+<span class="line"><i>688</i>                                tracing::error!(%error_type, %err, &quot;Streaming failure&quot;);</span>
+<span class="line"><i>689</i>                            }</span>
+<span class="line"><i>690</i>                            yield Event::default().data(error_body);</span>
+<span class="line"><i>691</i>                            if emit_done_sentinel {</span>
+<span class="line"><i>692</i>                                yield Event::default().data(&quot;[DONE]&quot;);</span>
+<span class="line"><i>693</i>                            }</span>
+<span class="line"><i>694</i>                            // Break to prevent any subsequent mark_ok() from overwriting the error</span>
+<span class="line"><i>695</i>                            break;</span>
+<span class="line"><i>696</i>                        }</span>
+<span class="line"><i>697</i>                        None =&gt; {</span>
+<span class="line"><i>698</i>                            if let Some(error_type) = inflight_guard.signaled_error_type() {</span>
+<span class="line"><i>699</i>                                inflight_guard.mark_error(error_type);</span>
+<span class="line"><i>700</i>                            } else {</span>
+<span class="line"><i>701</i>                                inflight_guard.mark_ok();</span>
+<span class="line"><i>702</i>                            }</span>
+<span class="line"><i>703</i>                            stream_handle.disarm();</span>
+<span class="line"><i>704</i></span>
+<span class="line"><i>705</i>                            // todo: if we yield a dynamo sentinel event, we need to do it before the done or the</span>
+<span class="line"><i>706</i>                            // async-openai client will chomp it.</span>
+<span class="line"><i>707</i>                            if emit_done_sentinel {</span>
+<span class="line"><i>708</i>                                yield Event::default().data(&quot;[DONE]&quot;);</span>
+<span class="line"><i>709</i>                            }</span>
+<span class="line"><i>710</i>                            break;</span>
+<span class="line"><i>711</i>                        }</span>
+<span class="line"><i>712</i>                    }</span>
+<span class="line"><i>713</i>                }</span>
+<span class="line"><i>714</i>                _ = &amp;mut killed =&gt; {</span>
+<span class="line"><i>715</i>                    // Client disconnects kill the context; graceful stops keep draining.</span>
+<span class="line"><i>716</i>                    inflight_guard.mark_error(ErrorType::Cancelled);</span>
+<span class="line"><i>717</i>                    // Token counts (input_tokens, output_tokens) are recorded on</span>
+<span class="line"><i>718</i>                    // the enclosing span by ResponseMetricCollector::Drop.</span>
+<span class="line"><i>719</i>                    tracing::warn!(</span>
+<span class="line"><i>720</i>                        request_id = %inflight_guard.request_id(),</span>
+<span class="line"><i>721</i>                        model = %inflight_guard.model(),</span>
+<span class="line"><i>722</i>                        endpoint = %inflight_guard.endpoint(),</span>
+<span class="line"><i>723</i>                        request_type = %inflight_guard.request_type(),</span>
+<span class="line"><i>724</i>                        error_type = &quot;cancelled&quot;,</span></code></pre></details><p>正常 EOF 会按已记录 error signal 决定是否 mark_ok，按协议选择是否发 [DONE]。错误路径先分类、解除断连 guard，再发错误与可选终止 sentinel，避免正常错误关闭被误算作客户端断开。OpenAI、Responses、Anthropic 的终止格式不应混为一谈。</p><aside class="note ">SSE HTTP 200 和 [DONE] 都不是业务成功的充分条件：错误流也可能有终止 sentinel。代码在产生/提交终止事件处设置的 emitted 标志不是网络 ACK，不能证明客户端应用已收到或处理成功。</aside></section><section id="rl-disconnect" class="lesson"><div class="sectionhead"><h2>06 / 断连的两个阶段：handler 与 response body</h2><label class="done"><input type="checkbox" data-read="rl-disconnect"> 已读</label></div><details class="source" id="src-rl-connection-drop"><summary><b>源码 · armed/disarmed 状态在 Drop 时送 oneshot 信号</b><small>lib/llm/src/http/service/disconnect.rs:269–284</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/disconnect.rs#L269-L284" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>269</i>    pub fn disarm(&amp;mut self) {</span>
+<span class="line"><i>270</i>        self.on_drop = ConnectionStatus::ClosedGracefully;</span>
+<span class="line"><i>271</i>    }</span>
+<span class="line"><i>272</i></span>
+<span class="line"><i>273</i>    /// Handle which will issue a [`ConnectionStatus::ClosedUnexpectedly`] signal when dropped.</span>
+<span class="line"><i>274</i>    pub fn arm(&amp;mut self) {</span>
+<span class="line"><i>275</i>        self.on_drop = ConnectionStatus::ClosedUnexpectedly;</span>
+<span class="line"><i>276</i>    }</span>
+<span class="line"><i>277</i>}</span>
+<span class="line"><i>278</i></span>
+<span class="line"><i>279</i>impl Drop for ConnectionHandle {</span>
+<span class="line"><i>280</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>281</i>        if let Some(sender) = self.sender.take() {</span>
+<span class="line"><i>282</i>            let _ = sender.send(self.on_drop);</span>
+<span class="line"><i>283</i>        }</span>
+<span class="line"><i>284</i>    }</span></code></pre></details><details class="source" id="src-rl-two-guards"><summary><b>源码 · 两个 owner 分别覆盖 handler 与流 body</b><small>lib/llm/src/http/service/disconnect.rs:293–318</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/disconnect.rs#L293-L318" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>293</i>pub async fn create_connection_monitor(</span>
+<span class="line"><i>294</i>    engine_context: Arc&lt;dyn AsyncEngineContext&gt;,</span>
+<span class="line"><i>295</i>    metrics: Option&lt;Arc&lt;Metrics&gt;&gt;,</span>
+<span class="line"><i>296</i>    cancellation_labels: CancellationLabels,</span>
+<span class="line"><i>297</i>) -&gt; (ConnectionHandle, ConnectionHandle) {</span>
+<span class="line"><i>298</i>    // these oneshot channels monitor possible disconnects from the client in two different scopes:</span>
+<span class="line"><i>299</i>    // - the local task (connection_handle)</span>
+<span class="line"><i>300</i>    // - an optionally streaming response (stream_handle)</span>
+<span class="line"><i>301</i>    let (connection_tx, connection_rx) = tokio::sync::oneshot::channel();</span>
+<span class="line"><i>302</i>    let (stream_tx, stream_rx) = tokio::sync::oneshot::channel();</span>
+<span class="line"><i>303</i></span>
+<span class="line"><i>304</i>    // detached task that will naturally close when both handles are dropped</span>
+<span class="line"><i>305</i>    tokio::spawn(connection_monitor(</span>
+<span class="line"><i>306</i>        engine_context.clone(),</span>
+<span class="line"><i>307</i>        connection_rx,</span>
+<span class="line"><i>308</i>        stream_rx,</span>
+<span class="line"><i>309</i>        metrics,</span>
+<span class="line"><i>310</i>        cancellation_labels,</span>
+<span class="line"><i>311</i>    ));</span>
+<span class="line"><i>312</i></span>
+<span class="line"><i>313</i>    // Two handles, the first is armed, the second is disarmed</span>
+<span class="line"><i>314</i>    (</span>
+<span class="line"><i>315</i>        ConnectionHandle::create_armed(connection_tx),</span>
+<span class="line"><i>316</i>        ConnectionHandle::create_disabled(stream_tx),</span>
+<span class="line"><i>317</i>    )</span>
+<span class="line"><i>318</i>}</span></code></pre></details><details class="source" id="src-rl-disconnect-counter"><summary><b>源码 · 连接/流异常关闭：计数后 Kill context</b><small>lib/llm/src/http/service/disconnect.rs:321–358</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/disconnect.rs#L321-L358" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>321</i>async fn connection_monitor(</span>
+<span class="line"><i>322</i>    engine_context: Arc&lt;dyn AsyncEngineContext&gt;,</span>
+<span class="line"><i>323</i>    connection_rx: tokio::sync::oneshot::Receiver&lt;ConnectionStatus&gt;,</span>
+<span class="line"><i>324</i>    stream_rx: tokio::sync::oneshot::Receiver&lt;ConnectionStatus&gt;,</span>
+<span class="line"><i>325</i>    metrics: Option&lt;Arc&lt;Metrics&gt;&gt;,</span>
+<span class="line"><i>326</i>    cancellation_labels: CancellationLabels,</span>
+<span class="line"><i>327</i>) {</span>
+<span class="line"><i>328</i>    match connection_rx.await {</span>
+<span class="line"><i>329</i>        Err(_) | Ok(ConnectionStatus::ClosedUnexpectedly) =&gt; {</span>
+<span class="line"><i>330</i>            // the client has disconnected, no need to gracefully cancel, just kill the context</span>
+<span class="line"><i>331</i>            tracing::warn!(&quot;Connection closed unexpectedly; issuing cancellation&quot;);</span>
+<span class="line"><i>332</i>            if let Some(metrics) = &amp;metrics {</span>
+<span class="line"><i>333</i>                metrics.inc_client_disconnect();</span>
+<span class="line"><i>334</i>                metrics.inc_cancellation(&amp;cancellation_labels);</span>
+<span class="line"><i>335</i>            }</span>
+<span class="line"><i>336</i>            engine_context.kill();</span>
+<span class="line"><i>337</i>        }</span>
+<span class="line"><i>338</i>        Ok(ConnectionStatus::ClosedGracefully) =&gt; {</span>
+<span class="line"><i>339</i>            tracing::trace!(&quot;Connection closed gracefully&quot;);</span>
+<span class="line"><i>340</i>        }</span>
+<span class="line"><i>341</i>        Ok(ConnectionStatus::Disabled) =&gt; {}</span>
+<span class="line"><i>342</i>    }</span>
+<span class="line"><i>343</i></span>
+<span class="line"><i>344</i>    match stream_rx.await {</span>
+<span class="line"><i>345</i>        Err(_) | Ok(ConnectionStatus::ClosedUnexpectedly) =&gt; {</span>
+<span class="line"><i>346</i>            tracing::warn!(&quot;Stream closed unexpectedly; issuing cancellation&quot;);</span>
+<span class="line"><i>347</i>            if let Some(metrics) = &amp;metrics {</span>
+<span class="line"><i>348</i>                metrics.inc_client_disconnect();</span>
+<span class="line"><i>349</i>                metrics.inc_cancellation(&amp;cancellation_labels);</span>
+<span class="line"><i>350</i>            }</span>
+<span class="line"><i>351</i>            engine_context.kill();</span>
+<span class="line"><i>352</i>        }</span>
+<span class="line"><i>353</i>        Ok(ConnectionStatus::ClosedGracefully) =&gt; {</span>
+<span class="line"><i>354</i>            tracing::trace!(&quot;Stream closed gracefully&quot;);</span>
+<span class="line"><i>355</i>        }</span>
+<span class="line"><i>356</i>        Ok(ConnectionStatus::Disabled) =&gt; {}</span>
+<span class="line"><i>357</i>    }</span>
+<span class="line"><i>358</i>}</span></code></pre></details><p>返回 SSE 后 handler 本身会结束，所以连接 guard 必须把责任交给 response body 的 guard。后者在流被正常消费前 Drop 时触发取消。guard 在 body 第一次 poll 前就需要 armed，才能覆盖 lazy stream 从未被 poll 的断连场景。</p><aside class="note ">取消次数、断连次数和最终请求计数来自不同埋点，可能存在并发信号及两阶段路径。不能把各层 counter 简单相加为唯一用户取消数；需要用 request ID/attempt 和终态定位。</aside></section><section id="rl-context" class="lesson"><div class="sectionhead"><h2>07 / Stop、Kill 与子上下文</h2><label class="done"><input type="checkbox" data-read="rl-context"> 已读</label></div><details class="source" id="src-rl-context-api"><summary><b>源码 · AsyncEngineContext 的软停止与硬终止意图</b><small>lib/runtime/src/engine.rs:117–159</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/engine.rs#L117-L159" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>117</i>pub trait AsyncEngineContext: Send + Sync + Debug {</span>
+<span class="line"><i>118</i>    /// Unique ID for the Stream</span>
+<span class="line"><i>119</i>    fn id(&amp;self) -&gt; &amp;str;</span>
+<span class="line"><i>120</i></span>
+<span class="line"><i>121</i>    /// Returns true if `stop_generating()` has been called; otherwise, false.</span>
+<span class="line"><i>122</i>    fn is_stopped(&amp;self) -&gt; bool;</span>
+<span class="line"><i>123</i></span>
+<span class="line"><i>124</i>    /// Returns true if `kill()` has been called; otherwise, false.</span>
+<span class="line"><i>125</i>    /// This can be used with a `.take_while()` stream combinator to immediately terminate</span>
+<span class="line"><i>126</i>    /// the stream.</span>
+<span class="line"><i>127</i>    ///</span>
+<span class="line"><i>128</i>    /// An ideal location for a `[.take_while(!ctx.is_killed())]` stream combinator is on</span>
+<span class="line"><i>129</i>    /// the most downstream  return stream.</span>
+<span class="line"><i>130</i>    fn is_killed(&amp;self) -&gt; bool;</span>
+<span class="line"><i>131</i></span>
+<span class="line"><i>132</i>    /// Calling this method when [`AsyncEngineContext::is_stopped`] is `true` will return</span>
+<span class="line"><i>133</i>    /// immediately; otherwise, it will [`AsyncEngineContext::is_stopped`] will return true.</span>
+<span class="line"><i>134</i>    async fn stopped(&amp;self);</span>
+<span class="line"><i>135</i></span>
+<span class="line"><i>136</i>    /// Calling this method when [`AsyncEngineContext::is_killed`] is `true` will return</span>
+<span class="line"><i>137</i>    /// immediately; otherwise, it will [`AsyncEngineContext::is_killed`] will return true.</span>
+<span class="line"><i>138</i>    async fn killed(&amp;self);</span>
+<span class="line"><i>139</i></span>
+<span class="line"><i>140</i>    // Controller</span>
+<span class="line"><i>141</i></span>
+<span class="line"><i>142</i>    /// Informs the [`AsyncEngine`] to stop producing results for this particular stream.</span>
+<span class="line"><i>143</i>    /// This method is idempotent. This method does not invalidate results current in the</span>
+<span class="line"><i>144</i>    /// stream. It might take some time for the engine to stop producing results. The caller</span>
+<span class="line"><i>145</i>    /// can decided to drain the stream or drop the stream.</span>
+<span class="line"><i>146</i>    fn stop_generating(&amp;self);</span>
+<span class="line"><i>147</i></span>
+<span class="line"><i>148</i>    /// See [`AsyncEngineContext::stop_generating`].</span>
+<span class="line"><i>149</i>    fn stop(&amp;self);</span>
+<span class="line"><i>150</i></span>
+<span class="line"><i>151</i>    /// Extends the [`AsyncEngineContext::stop_generating`] also indicates a preference to</span>
+<span class="line"><i>152</i>    /// terminate without draining the remaining items in the stream. This is implementation</span>
+<span class="line"><i>153</i>    /// specific and may not be supported by all engines.</span>
+<span class="line"><i>154</i>    fn kill(&amp;self);</span>
+<span class="line"><i>155</i></span>
+<span class="line"><i>156</i>    /// Links child AsyncEngineContext to this AsyncEngineContext. If the `stop_generating`, `stop`</span>
+<span class="line"><i>157</i>    /// or `kill` on this AsyncEngineContext is called, the same method is called on all linked</span>
+<span class="line"><i>158</i>    /// child AsyncEngineContext, in the order they are linked, and then the method on this</span>
+<span class="line"><i>159</i>    /// AsyncEngineContext continues.</span></code></pre></details><details class="source" id="src-rl-controller"><summary><b>源码 · Controller 向已有 children 传播 Stop/Kill</b><small>lib/runtime/src/pipeline/context.rs:444–505</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/context.rs#L444-L505" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>444</i>        // Clone child Arcs to avoid deadlock if parent is accidentally linked under child</span>
+<span class="line"><i>445</i>        let children = self</span>
+<span class="line"><i>446</i>            .child_context</span>
+<span class="line"><i>447</i>            .lock()</span>
+<span class="line"><i>448</i>            .expect(&quot;Failed to lock child context&quot;)</span>
+<span class="line"><i>449</i>            .iter()</span>
+<span class="line"><i>450</i>            .cloned()</span>
+<span class="line"><i>451</i>            .collect::&lt;Vec&lt;_&gt;&gt;();</span>
+<span class="line"><i>452</i>        for child in children {</span>
+<span class="line"><i>453</i>            child.stop_generating();</span>
+<span class="line"><i>454</i>        }</span>
+<span class="line"><i>455</i></span>
+<span class="line"><i>456</i>        let _ = self.tx.send(State::Stopped);</span>
+<span class="line"><i>457</i>    }</span>
+<span class="line"><i>458</i></span>
+<span class="line"><i>459</i>    fn stop(&amp;self) {</span>
+<span class="line"><i>460</i>        // Clone child Arcs to avoid deadlock if parent is accidentally linked under child</span>
+<span class="line"><i>461</i>        let children = self</span>
+<span class="line"><i>462</i>            .child_context</span>
+<span class="line"><i>463</i>            .lock()</span>
+<span class="line"><i>464</i>            .expect(&quot;Failed to lock child context&quot;)</span>
+<span class="line"><i>465</i>            .iter()</span>
+<span class="line"><i>466</i>            .cloned()</span>
+<span class="line"><i>467</i>            .collect::&lt;Vec&lt;_&gt;&gt;();</span>
+<span class="line"><i>468</i>        for child in children {</span>
+<span class="line"><i>469</i>            child.stop();</span>
+<span class="line"><i>470</i>        }</span>
+<span class="line"><i>471</i></span>
+<span class="line"><i>472</i>        let _ = self.tx.send(State::Stopped);</span>
+<span class="line"><i>473</i>    }</span>
+<span class="line"><i>474</i></span>
+<span class="line"><i>475</i>    fn kill(&amp;self) {</span>
+<span class="line"><i>476</i>        // Clone child Arcs to avoid deadlock if parent is accidentally linked under child</span>
+<span class="line"><i>477</i>        let children = self</span>
+<span class="line"><i>478</i>            .child_context</span>
+<span class="line"><i>479</i>            .lock()</span>
+<span class="line"><i>480</i>            .expect(&quot;Failed to lock child context&quot;)</span>
+<span class="line"><i>481</i>            .iter()</span>
+<span class="line"><i>482</i>            .cloned()</span>
+<span class="line"><i>483</i>            .collect::&lt;Vec&lt;_&gt;&gt;();</span>
+<span class="line"><i>484</i>        for child in children {</span>
+<span class="line"><i>485</i>            child.kill();</span>
+<span class="line"><i>486</i>        }</span>
+<span class="line"><i>487</i></span>
+<span class="line"><i>488</i>        let _ = self.tx.send(State::Killed);</span>
+<span class="line"><i>489</i>    }</span>
+<span class="line"><i>490</i></span>
+<span class="line"><i>491</i>    fn link_child(&amp;self, child: Arc&lt;dyn AsyncEngineContext&gt;) {</span>
+<span class="line"><i>492</i>        self.child_context</span>
+<span class="line"><i>493</i>            .lock()</span>
+<span class="line"><i>494</i>            .expect(&quot;Failed to lock child context&quot;)</span>
+<span class="line"><i>495</i>            .push(child);</span>
+<span class="line"><i>496</i>    }</span>
+<span class="line"><i>497</i></span>
+<span class="line"><i>498</i>    fn retain(&amp;self, guard: EngineContextGuard) {</span>
+<span class="line"><i>499</i>        self.retained</span>
+<span class="line"><i>500</i>            .lock()</span>
+<span class="line"><i>501</i>            .expect(&quot;Failed to lock retained engine state&quot;)</span>
+<span class="line"><i>502</i>            .push(RetainedGuard { _guard: guard });</span>
+<span class="line"><i>503</i>    }</span>
+<span class="line"><i>504</i>}</span>
+<span class="line"><i>505</i></span></code></pre></details><p>stop_generating/stop 请求停止继续生成，已有结果仍可 drain；kill 进一步表达不再 drain 的偏好。它们都是上下文信号，不是 OS kill，更不是同步等待 GPU kernel 停止。child context 的连接与观察仍依具体调用点完成。</p><p>Controller.link_child 在这里将 child 加入列表；迁移创建新 attempt 后另行检查 parent/attempt 是否已经 stopped，避免把“刚关联一个 child”当作天然已经处理所有取消竞态。保持上下文图无环也是调用者责任。</p></section><section id="rl-tcp" class="lesson"><div class="sectionhead"><h2>08 / 跨进程取消与被动连接故障</h2><label class="done"><input type="checkbox" data-read="rl-tcp"> 已读</label></div><details class="source" id="src-rl-tcp-control"><summary><b>源码 · TCP Stop/Kill 控制消息与 Sentinel 分开处理</b><small>lib/runtime/src/pipeline/network/tcp/client.rs:435–464</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/network/tcp/client.rs#L435-L464" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>435</i>                                    Err(e) =&gt; {</span>
+<span class="line"><i>436</i>                                        tracing::warn!(</span>
+<span class="line"><i>437</i>                                            err = ?e,</span>
+<span class="line"><i>438</i>                                            &quot;invalid control message, closing connection&quot;</span>
+<span class="line"><i>439</i>                                        );</span>
+<span class="line"><i>440</i>                                        cancellation_seen = true;</span>
+<span class="line"><i>441</i>                                        context.kill();</span>
+<span class="line"><i>442</i>                                        break;</span>
+<span class="line"><i>443</i>                                    }</span>
+<span class="line"><i>444</i>                                };</span>
+<span class="line"><i>445</i>                                match ctrl {</span>
+<span class="line"><i>446</i>                                    ControlMessage::Stop =&gt; {</span>
+<span class="line"><i>447</i>                                        cancellation_seen = true;</span>
+<span class="line"><i>448</i>                                        record_upstream_cancellation(context.as_ref(), &quot;stop&quot;);</span>
+<span class="line"><i>449</i>                                        context.stop();</span>
+<span class="line"><i>450</i>                                        break;</span>
+<span class="line"><i>451</i>                                    }</span>
+<span class="line"><i>452</i>                                    ControlMessage::Kill =&gt; {</span>
+<span class="line"><i>453</i>                                        cancellation_seen = true;</span>
+<span class="line"><i>454</i>                                        record_upstream_cancellation(context.as_ref(), &quot;kill&quot;);</span>
+<span class="line"><i>455</i>                                        context.kill();</span>
+<span class="line"><i>456</i>                                        break;</span>
+<span class="line"><i>457</i>                                    }</span>
+<span class="line"><i>458</i>                                    ControlMessage::Sentinel =&gt; {</span>
+<span class="line"><i>459</i>                                        tracing::trace!(&quot;upstream signaled end of request stream&quot;);</span>
+<span class="line"><i>460</i>                                        break;</span>
+<span class="line"><i>461</i>                                    }</span>
+<span class="line"><i>462</i>                                }</span>
+<span class="line"><i>463</i>                            }</span>
+<span class="line"><i>464</i>                            TwoPartMessageType::DataOnly(data) =&gt; {</span></code></pre></details><details class="source" id="src-rl-tcp-log"><summary><b>源码 · request_span 上记录 signal/source=upstream</b><small>lib/runtime/src/pipeline/network/tcp/client.rs:36–46</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/network/tcp/client.rs#L36-L46" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>36</i>fn record_upstream_cancellation(context: &amp;dyn AsyncEngineContext, signal: &amp;&#x27;static str) {</span>
+<span class="line"><i>37</i>    tracing::info!(</span>
+<span class="line"><i>38</i>        target: &quot;request_span&quot;,</span>
+<span class="line"><i>39</i>        {</span>
+<span class="line"><i>40</i>            request_id = context.id(),</span>
+<span class="line"><i>41</i>            { &quot;cancellation.signal&quot; } = signal,</span>
+<span class="line"><i>42</i>            { &quot;cancellation.source&quot; } = &quot;upstream&quot;</span>
+<span class="line"><i>43</i>        },</span>
+<span class="line"><i>44</i>        &quot;request cancellation received&quot;</span>
+<span class="line"><i>45</i>    );</span>
+<span class="line"><i>46</i>}</span></code></pre></details><p>Stop/Kill 消息显式修改请求 Context；Sentinel 表示请求流端结束，不应一概当取消。连接读写失败还会通过当前传输实现关闭/错误路径影响流。本文重点是已部署 TCP 主路径，不宣称其他 transport 的内部清理完全相同。</p><aside class="note ">Worker 的 cancellation signal 指标/日志证明收到了信号，不证明 engine abort 已完成。确认计算停止、slot/KV 释放，应继续追 backend 与引擎注册表/容量变化。</aside></section><section id="rl-rust-backend" class="lesson"><div class="sectionhead"><h2>09 / Rust EngineAdapter：取消通知与 stream Drop 的分工</h2><label class="done"><input type="checkbox" data-read="rl-rust-backend"> 已读</label></div><details class="source" id="src-rl-cancel-monitor"><summary><b>源码 · CancelMonitorGuard 持有 stream/drop channel</b><small>lib/backend-common/src/adapter.rs:128–151</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/adapter.rs#L128-L151" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>128</i>struct CancelMonitorGuard&lt;T&gt; {</span>
+<span class="line"><i>129</i>    stream: Option&lt;BoxStream&lt;&#x27;static, T&gt;&gt;,</span>
+<span class="line"><i>130</i>    drop_tx: Option&lt;oneshot::Sender&lt;BoxStream&lt;&#x27;static, T&gt;&gt;&gt;,</span>
+<span class="line"><i>131</i>}</span>
+<span class="line"><i>132</i></span>
+<span class="line"><i>133</i>impl&lt;T&gt; Stream for CancelMonitorGuard&lt;T&gt; {</span>
+<span class="line"><i>134</i>    type Item = T;</span>
+<span class="line"><i>135</i></span>
+<span class="line"><i>136</i>    fn poll_next(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;&#x27;_&gt;) -&gt; Poll&lt;Option&lt;T&gt;&gt; {</span>
+<span class="line"><i>137</i>        match self.stream.as_mut() {</span>
+<span class="line"><i>138</i>            Some(stream) =&gt; stream.as_mut().poll_next(cx),</span>
+<span class="line"><i>139</i>            None =&gt; Poll::Ready(None),</span>
+<span class="line"><i>140</i>        }</span>
+<span class="line"><i>141</i>    }</span>
+<span class="line"><i>142</i>}</span>
+<span class="line"><i>143</i></span>
+<span class="line"><i>144</i>impl&lt;T&gt; Drop for CancelMonitorGuard&lt;T&gt; {</span>
+<span class="line"><i>145</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>146</i>        if let (Some(drop_tx), Some(stream)) = (self.drop_tx.take(), self.stream.take()) {</span>
+<span class="line"><i>147</i>            let _ = drop_tx.send(stream);</span>
+<span class="line"><i>148</i>        }</span>
+<span class="line"><i>149</i>    }</span>
+<span class="line"><i>150</i>}</span>
+<span class="line"><i>151</i></span></code></pre></details><details class="source" id="src-rl-abort-select"><summary><b>源码 · 监听 stopped/killed/drop；普通 Drop 不等于主动 abort</b><small>lib/backend-common/src/adapter.rs:340–374</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/adapter.rs#L340-L374" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>340</i>                span.set_status(Status::error(&quot;setup_failed&quot;));</span>
+<span class="line"><i>341</i>                tracing::debug!(</span>
+<span class="line"><i>342</i>                    request_id = ctx.id(),</span>
+<span class="line"><i>343</i>                    error = %e,</span>
+<span class="line"><i>344</i>                    error_type = ?e.error_type(),</span>
+<span class="line"><i>345</i>                    &quot;engine.generate setup failed&quot;,</span>
+<span class="line"><i>346</i>                );</span>
+<span class="line"><i>347</i>                Error::from(e)</span>
+<span class="line"><i>348</i>            })?;</span>
+<span class="line"><i>349</i>        let request_start = Instant::now();</span>
+<span class="line"><i>350</i></span>
+<span class="line"><i>351</i>        let (drop_tx, mut drop_rx) = oneshot::channel();</span>
+<span class="line"><i>352</i>        let abort_engine = self.engine.clone();</span>
+<span class="line"><i>353</i>        let abort_ctx = ctx.clone();</span>
+<span class="line"><i>354</i>        tokio::spawn(async move {</span>
+<span class="line"><i>355</i>            let mut dropped_stream = None;</span>
+<span class="line"><i>356</i>            // Stream teardown may race with cancellation.</span>
+<span class="line"><i>357</i>            let cancelled = tokio::select! {</span>
+<span class="line"><i>358</i>                _ = abort_ctx.stopped() =&gt; {</span>
+<span class="line"><i>359</i>                    tracing::debug!(request_id = abort_ctx.id(), &quot;cancellation observed (stopped)&quot;);</span>
+<span class="line"><i>360</i>                    true</span>
+<span class="line"><i>361</i>                }</span>
+<span class="line"><i>362</i>                _ = abort_ctx.killed() =&gt; {</span>
+<span class="line"><i>363</i>                    tracing::debug!(request_id = abort_ctx.id(), &quot;cancellation observed (killed)&quot;);</span>
+<span class="line"><i>364</i>                    true</span>
+<span class="line"><i>365</i>                }</span>
+<span class="line"><i>366</i>                stream = &amp;mut drop_rx =&gt; {</span>
+<span class="line"><i>367</i>                    dropped_stream = Some(stream);</span>
+<span class="line"><i>368</i>                    abort_ctx.is_stopped() || abort_ctx.is_killed()</span>
+<span class="line"><i>369</i>                },</span>
+<span class="line"><i>370</i>            };</span>
+<span class="line"><i>371</i>            if !cancelled {</span>
+<span class="line"><i>372</i>                return;</span>
+<span class="line"><i>373</i>            }</span>
+<span class="line"><i>374</i>            // `biased`: if first-token AND drop both fire in the same cycle,</span></code></pre></details><details class="source" id="src-rl-abort-wait"><summary><b>源码 · 必要时等 first-token 后 abort；abort 有 5s timeout</b><small>lib/backend-common/src/adapter.rs:383–414</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/adapter.rs#L383-L414" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>383</i>                }</span>
+<span class="line"><i>384</i>                tracing::debug!(</span>
+<span class="line"><i>385</i>                    request_id = abort_ctx.id(),</span>
+<span class="line"><i>386</i>                    &quot;deferring engine.abort() until first-token observed&quot;</span>
+<span class="line"><i>387</i>                );</span>
+<span class="line"><i>388</i>                tokio::select! {</span>
+<span class="line"><i>389</i>                    biased;</span>
+<span class="line"><i>390</i>                    res = rx.wait_for(|v| *v) =&gt; {</span>
+<span class="line"><i>391</i>                        if res.is_err() {</span>
+<span class="line"><i>392</i>                            return;</span>
+<span class="line"><i>393</i>                        }</span>
+<span class="line"><i>394</i>                    }</span>
+<span class="line"><i>395</i>                    _ = &amp;mut drop_rx =&gt; return,</span>
+<span class="line"><i>396</i>                }</span>
+<span class="line"><i>397</i>            }</span>
+<span class="line"><i>398</i>            if tokio::time::timeout(ABORT_TIMEOUT, abort_engine.abort(abort_ctx.clone()))</span>
+<span class="line"><i>399</i>                .await</span>
+<span class="line"><i>400</i>                .is_err()</span>
+<span class="line"><i>401</i>            {</span>
+<span class="line"><i>402</i>                tracing::warn!(</span>
+<span class="line"><i>403</i>                    request_id = abort_ctx.id(),</span>
+<span class="line"><i>404</i>                    timeout_secs = ABORT_TIMEOUT.as_secs(),</span>
+<span class="line"><i>405</i>                    &quot;engine abort timed out; releasing cancelled stream&quot;</span>
+<span class="line"><i>406</i>                );</span>
+<span class="line"><i>407</i>            }</span>
+<span class="line"><i>408</i>            drop((dropped_stream, drop_rx));</span>
+<span class="line"><i>409</i>        });</span>
+<span class="line"><i>410</i></span>
+<span class="line"><i>411</i>        #[cfg(debug_assertions)]</span>
+<span class="line"><i>412</i>        let chunks = crate::validate::wrap(chunks, self.mode);</span>
+<span class="line"><i>413</i>        let guard = CancelMonitorGuard {</span>
+<span class="line"><i>414</i>            stream: Some(chunks),</span></code></pre></details><p>EngineAdapter 的 abort 主要用于 out-of-band 通知；单纯 stream Drop 的清理还依赖 generate 流持有的 RAII 资源。取消与 Drop 竞态、first-token 与 abort 注册竞态需要分开处理，不能假定 async generator 的 Drop 总能执行任意 await 清理。</p><aside class="note ">ABORT_TIMEOUT=5s 限制本 adapter 等 abort 的时间，超时后释放取消流；不是承诺引擎在 5s 内停止计算，也不等于远端 KV 立即回收。该路径属于 Rust backend-common，不直接代表所有 Python backend。</aside></section><section id="rl-sglang" class="lesson"><div class="sectionhead"><h2>10 / Python SGLang：精确请求 ID、注册与有序 abort</h2><label class="done"><input type="checkbox" data-read="rl-sglang"> 已读</label></div><details class="source" id="src-rl-sg-abort"><summary><b>源码 · 按 request IDs 调 tokenizer_manager.abort_request</b><small>components/src/dynamo/sglang/request_handlers/cancellation.py:92–102</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/sglang/request_handlers/cancellation.py#L92-L102" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>92</i>    def _abort_requests(self, request_ids: set[str], context: Context) -&gt; None:</span>
+<span class="line"><i>93</i>        if not request_ids:</span>
+<span class="line"><i>94</i>            return</span>
+<span class="line"><i>95</i>        tokenizer_manager = getattr(self.engine, &quot;tokenizer_manager&quot;, None)</span>
+<span class="line"><i>96</i>        if tokenizer_manager is None:</span>
+<span class="line"><i>97</i>            logging.error(&quot;SGLang tokenizer_manager not found for abort requests&quot;)</span>
+<span class="line"><i>98</i>            return</span>
+<span class="line"><i>99</i>        for request_id in request_ids:</span>
+<span class="line"><i>100</i>            tokenizer_manager.abort_request(rid=request_id, abort_all=False)</span>
+<span class="line"><i>101</i>        request_ids.clear()</span>
+<span class="line"><i>102</i>        logging.info(&quot;Aborted Request ID: %s&quot;, context.id())</span></code></pre></details><details class="source" id="src-rl-sg-monitor"><summary><b>源码 · 监听取消/shutdown，区分精确注册、有序 abort 与请求集合</b><small>components/src/dynamo/sglang/request_handlers/cancellation.py:259–309</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/sglang/request_handlers/cancellation.py#L259-L309" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>259</i>    async def _handle_cancellation(</span>
+<span class="line"><i>260</i>        self,</span>
+<span class="line"><i>261</i>        request_id_future: asyncio.Future,</span>
+<span class="line"><i>262</i>        context: Context,</span>
+<span class="line"><i>263</i>        submitted_request_id: str | None = None,</span>
+<span class="line"><i>264</i>        request_ids: set[str] | None = None,</span>
+<span class="line"><i>265</i>    ) -&gt; asyncio.Task[Any] | None:</span>
+<span class="line"><i>266</i>        &quot;&quot;&quot;Wait for cancellation, then order an exact SGLang abort.&quot;&quot;&quot;</span>
+<span class="line"><i>267</i>        logging.debug(&quot;Cancellation monitor started for Context: %s&quot;, context.id())</span>
+<span class="line"><i>268</i>        ordered_abort_task = None</span>
+<span class="line"><i>269</i>        request_id = submitted_request_id</span>
+<span class="line"><i>270</i>        try:</span>
+<span class="line"><i>271</i>            if request_id is None:</span>
+<span class="line"><i>272</i>                request_id = await request_id_future</span>
+<span class="line"><i>273</i>            async with self._wait_for_signal(context) as shutdown_requested:</span>
+<span class="line"><i>274</i>                tokenizer_manager = getattr(self.engine, &quot;tokenizer_manager&quot;, None)</span>
+<span class="line"><i>275</i>                registry = self._request_registry(</span>
+<span class="line"><i>276</i>                    tokenizer_manager, submitted_request_id</span>
+<span class="line"><i>277</i>                )</span>
+<span class="line"><i>278</i>                logging.info(</span>
+<span class="line"><i>279</i>                    &quot;Cancellation or shutdown signal received for SGLang Request ID %s, Context: %s&quot;,</span>
+<span class="line"><i>280</i>                    request_id,</span>
+<span class="line"><i>281</i>                    context.id(),</span>
+<span class="line"><i>282</i>                )</span>
+<span class="line"><i>283</i>                if tokenizer_manager is None:</span>
+<span class="line"><i>284</i>                    logging.error(</span>
+<span class="line"><i>285</i>                        &quot;SGLang tokenizer_manager not found for abort request: %s&quot;,</span>
+<span class="line"><i>286</i>                        context.id(),</span>
+<span class="line"><i>287</i>                    )</span>
+<span class="line"><i>288</i>                elif submitted_request_id is not None and registry is not None:</span>
+<span class="line"><i>289</i>                    ordered_abort_task = self._start_ordered_abort(</span>
+<span class="line"><i>290</i>                        tokenizer_manager,</span>
+<span class="line"><i>291</i>                        request_id_future,</span>
+<span class="line"><i>292</i>                        submitted_request_id,</span>
+<span class="line"><i>293</i>                        registry,</span>
+<span class="line"><i>294</i>                        context.id(),</span>
+<span class="line"><i>295</i>                    )</span>
+<span class="line"><i>296</i>                elif request_ids is not None:</span>
+<span class="line"><i>297</i>                    self._abort_requests(request_ids, context)</span>
+<span class="line"><i>298</i>                else:</span>
+<span class="line"><i>299</i>                    try:</span>
+<span class="line"><i>300</i>                        await self._abort_sglang_request(</span>
+<span class="line"><i>301</i>                            tokenizer_manager, request_id, registry, context.id()</span>
+<span class="line"><i>302</i>                        )</span>
+<span class="line"><i>303</i>                    except Exception:</span>
+<span class="line"><i>304</i>                        logging.exception(</span>
+<span class="line"><i>305</i>                            &quot;Failed to abort SGLang Request ID %s, Context: %s&quot;,</span>
+<span class="line"><i>306</i>                            request_id,</span>
+<span class="line"><i>307</i>                            context.id(),</span>
+<span class="line"><i>308</i>                        )</span>
+<span class="line"><i>309</i>                if shutdown_requested:</span></code></pre></details><details class="source" id="src-rl-sg-finally"><summary><b>源码 · 退出 monitor 时保留有序清理、取消任务、再传播错误</b><small>components/src/dynamo/sglang/request_handlers/cancellation.py:449–490</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/sglang/request_handlers/cancellation.py#L449-L490" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>449</i>            owner_cancelled: asyncio.CancelledError | None = None</span>
+<span class="line"><i>450</i>            try:</span>
+<span class="line"><i>451</i>                if not cancellation_task.done() and (</span>
+<span class="line"><i>452</i>                    context.is_stopped()</span>
+<span class="line"><i>453</i>                    or (</span>
+<span class="line"><i>454</i>                        self.shutdown_event is not None and self.shutdown_event.is_set()</span>
+<span class="line"><i>455</i>                    )</span>
+<span class="line"><i>456</i>                ):</span>
+<span class="line"><i>457</i>                    # Let a signalled monitor send its abort before any fallback abort.</span>
+<span class="line"><i>458</i>                    try:</span>
+<span class="line"><i>459</i>                        await asyncio.wait(</span>
+<span class="line"><i>460</i>                            (cancellation_task,),</span>
+<span class="line"><i>461</i>                            timeout=_CANCELLATION_DISPATCH_WAIT_TIMEOUT_S,</span>
+<span class="line"><i>462</i>                        )</span>
+<span class="line"><i>463</i>                    except asyncio.CancelledError as exc:</span>
+<span class="line"><i>464</i>                        # Finish the cleanup below, then propagate.</span>
+<span class="line"><i>465</i>                        owner_cancelled = exc</span>
+<span class="line"><i>466</i>                if not cancellation_task.done():</span>
+<span class="line"><i>467</i>                    logging.debug(</span>
+<span class="line"><i>468</i>                        &quot;Cancelling cancellation monitor task for SGLang Request ID %s, Context: %s&quot;,</span>
+<span class="line"><i>469</i>                        request_id,</span>
+<span class="line"><i>470</i>                        context.id(),</span>
+<span class="line"><i>471</i>                    )</span>
+<span class="line"><i>472</i>                    cancellation_task.cancel()</span>
+<span class="line"><i>473</i>                    try:</span>
+<span class="line"><i>474</i>                        await cancellation_task</span>
+<span class="line"><i>475</i>                    except asyncio.CancelledError:</span>
+<span class="line"><i>476</i>                        pass</span>
+<span class="line"><i>477</i>                else:</span>
+<span class="line"><i>478</i>                    ordered_abort_task = cancellation_task.result()</span>
+<span class="line"><i>479</i>            finally:</span>
+<span class="line"><i>480</i>                if not request_id_future.done() and ordered_abort_task is None:</span>
+<span class="line"><i>481</i>                    request_id_future.cancel()</span>
+<span class="line"><i>482</i>            if request_ids is not None:</span>
+<span class="line"><i>483</i>                if ordered_abort_task is not None and submitted_request_id is not None:</span>
+<span class="line"><i>484</i>                    request_ids.discard(submitted_request_id)</span>
+<span class="line"><i>485</i>                self._abort_requests(request_ids, context)</span>
+<span class="line"><i>486</i></span>
+<span class="line"><i>487</i>            if self.shutdown_event and self.shutdown_event.is_set():</span>
+<span class="line"><i>488</i>                raise EngineShutdown(&quot;Engine was shut down during token generation&quot;)</span>
+<span class="line"><i>489</i>            if owner_cancelled is not None:</span>
+<span class="line"><i>490</i>                raise owner_cancelled</span></code></pre></details><p>request 可能先提交、稍后才在 tokenizer manager 注册。当前代码通过 request_id_future、注册状态和有序 abort 避免取消过早导致 abort 找不到请求；必要时还有受限重试。日志中的 Aborted 是调用动作，不等价于证明 scheduler 已完全清空。</p><p>具体 batch/multiple IDs 与 registry state identity 必须按本版本实现理解，不能只在 Python generator 的 finally 里打印一条日志就宣布清理完成。1.4.1 私有镜像需要检查对应文件和引擎 API。</p></section><section id="rl-pd-cleanup" class="lesson"><div class="sectionhead"><h2>11 / PD 取消特例：为释放 staged KV 继续 dispatch</h2><label class="done"><input type="checkbox" data-read="rl-pd-cleanup"> 已读</label></div><details class="source" id="src-rl-pd-policy"><summary><b>源码 · Decode + StagedKv::Present 才保留 cleanup dispatch</b><small>lib/llm/src/kv_router/routing_host/cancellation.rs:47–97</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/routing_host/cancellation.rs#L47-L97" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>47</i>/// can release.</span>
+<span class="line"><i>48</i>///</span>
+<span class="line"><i>49</i>/// This, not the phase alone, is the reason a disconnected request is still</span>
+<span class="line"><i>50</i>/// worth dispatching. `RequestPhase::Decode` is the wider set: the</span>
+<span class="line"><i>51</i>/// conditional-disaggregation bypass reaches decode without running remote</span>
+<span class="line"><i>52</i>/// prefill, so it has nothing staged and nothing to clean up.</span>
+<span class="line"><i>53</i>#[derive(Debug, Clone, Copy, PartialEq, Eq)]</span>
+<span class="line"><i>54</i>pub(super) enum StagedKv {</span>
+<span class="line"><i>55</i>    /// Blocks are staged on a prefill worker for one specific decode worker.</span>
+<span class="line"><i>56</i>    Present,</span>
+<span class="line"><i>57</i>    /// Nothing is staged, so abandoning the request releases everything it holds.</span>
+<span class="line"><i>58</i>    Absent,</span>
+<span class="line"><i>59</i>}</span>
+<span class="line"><i>60</i></span>
+<span class="line"><i>61</i>impl StagedKv {</span>
+<span class="line"><i>62</i>    pub(super) fn for_request(request: &amp;PreprocessedRequest) -&gt; Self {</span>
+<span class="line"><i>63</i>        if request.staged_kv_cleanup {</span>
+<span class="line"><i>64</i>            Self::Present</span>
+<span class="line"><i>65</i>        } else {</span>
+<span class="line"><i>66</i>            Self::Absent</span>
+<span class="line"><i>67</i>        }</span>
+<span class="line"><i>68</i>    }</span>
+<span class="line"><i>69</i>}</span>
+<span class="line"><i>70</i></span>
+<span class="line"><i>71</i>/// Whether a disconnected client&#x27;s request still reaches its worker.</span>
+<span class="line"><i>72</i>///</span>
+<span class="line"><i>73</i>/// A decode leg with staged KV must proceed: only its decode worker&#x27;s</span>
+<span class="line"><i>74</i>/// KV-transfer-complete path frees those blocks. Everything else keeps</span>
+<span class="line"><i>75</i>/// cancelling as soon as the client goes away.</span>
+<span class="line"><i>76</i>#[derive(Debug, Clone, Copy, PartialEq, Eq)]</span>
+<span class="line"><i>77</i>pub(super) enum DispatchCancellation {</span>
+<span class="line"><i>78</i>    /// Abandon the operation when the context is already stopped.</span>
+<span class="line"><i>79</i>    CancelWhenStopped,</span>
+<span class="line"><i>80</i>    /// Run the operation to completion even when the context is stopped.</span>
+<span class="line"><i>81</i>    DispatchWhenStopped,</span>
+<span class="line"><i>82</i>}</span>
+<span class="line"><i>83</i></span>
+<span class="line"><i>84</i>impl DispatchCancellation {</span>
+<span class="line"><i>85</i>    pub(super) fn for_request(phase: RequestPhase, staged_kv: StagedKv) -&gt; Self {</span>
+<span class="line"><i>86</i>        match (phase, staged_kv) {</span>
+<span class="line"><i>87</i>            (RequestPhase::Decode, StagedKv::Present) =&gt; Self::DispatchWhenStopped,</span>
+<span class="line"><i>88</i>            (RequestPhase::Decode, StagedKv::Absent)</span>
+<span class="line"><i>89</i>            | (RequestPhase::Prefill, _)</span>
+<span class="line"><i>90</i>            | (RequestPhase::Aggregated, _) =&gt; Self::CancelWhenStopped,</span>
+<span class="line"><i>91</i>        }</span>
+<span class="line"><i>92</i>    }</span>
+<span class="line"><i>93</i>}</span>
+<span class="line"><i>94</i></span>
+<span class="line"><i>95</i>/// Await a routing stage under the cancellation policy the request requires.</span>
+<span class="line"><i>96</i>///</span>
+<span class="line"><i>97</i>/// `DispatchWhenStopped` is bounded by the shared [`CleanupBudget`] rather than</span></code></pre></details><details class="source" id="src-rl-pd-budget"><summary><b>源码 · 整个 cleanup route 共享 120 秒预算</b><small>lib/llm/src/kv_router/routing_host/cancellation.rs:18–43</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/routing_host/cancellation.rs#L18-L43" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>18</i>/// finishes reaching its worker. On expiry we abandon the operation and release</span>
+<span class="line"><i>19</i>/// everything it held, which is what every phase did before the decode carve-out.</span>
+<span class="line"><i>20</i>const CLEANUP_DISPATCH_TIMEOUT: Duration = Duration::from_secs(120);</span>
+<span class="line"><i>21</i></span>
+<span class="line"><i>22</i>/// One budget for a disconnected request&#x27;s whole cleanup route.</span>
+<span class="line"><i>23</i>///</span>
+<span class="line"><i>24</i>/// The decode leg passes through several wrapped stages in sequence — worker</span>
+<span class="line"><i>25</i>/// selection, routing-decision recording, dispatch — and conditional</span>
+<span class="line"><i>26</i>/// disaggregation can select more than once. Giving each stage its own timeout</span>
+<span class="line"><i>27</i>/// would let total retention reach a multiple of [`CLEANUP_DISPATCH_TIMEOUT`],</span>
+<span class="line"><i>28</i>/// so the stages share this budget instead.</span>
+<span class="line"><i>29</i>///</span>
+<span class="line"><i>30</i>/// The clock starts the first time a stage actually observes a stopped context,</span>
+<span class="line"><i>31</i>/// which means a live request never arms it and keeps today&#x27;s semantics exactly.</span>
+<span class="line"><i>32</i>#[derive(Debug, Default)]</span>
+<span class="line"><i>33</i>pub(super) struct CleanupBudget {</span>
+<span class="line"><i>34</i>    started: Mutex&lt;Option&lt;Instant&gt;&gt;,</span>
+<span class="line"><i>35</i>}</span>
+<span class="line"><i>36</i></span>
+<span class="line"><i>37</i>impl CleanupBudget {</span>
+<span class="line"><i>38</i>    /// Time left in the budget, starting the clock on first use.</span>
+<span class="line"><i>39</i>    pub(super) fn remaining(&amp;self) -&gt; Duration {</span>
+<span class="line"><i>40</i>        let mut started = self.started.lock().unwrap();</span>
+<span class="line"><i>41</i>        let start = *started.get_or_insert_with(Instant::now);</span>
+<span class="line"><i>42</i>        CLEANUP_DISPATCH_TIMEOUT.saturating_sub(start.elapsed())</span>
+<span class="line"><i>43</i>    }</span></code></pre></details><details class="source" id="src-rl-pd-await"><summary><b>源码 · 上下文停止后用剩余预算等当前操作</b><small>lib/llm/src/kv_router/routing_host/cancellation.rs:103–130</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/routing_host/cancellation.rs#L103-L130" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>103</i>pub(super) async fn await_with_cleanup_policy&lt;T&gt;(</span>
+<span class="line"><i>104</i>    context: &amp;dyn AsyncEngineContext,</span>
+<span class="line"><i>105</i>    phase: RequestPhase,</span>
+<span class="line"><i>106</i>    staged_kv: StagedKv,</span>
+<span class="line"><i>107</i>    stage: &amp;&#x27;static str,</span>
+<span class="line"><i>108</i>    budget: &amp;CleanupBudget,</span>
+<span class="line"><i>109</i>    operation: impl Future&lt;Output = T&gt;,</span>
+<span class="line"><i>110</i>) -&gt; Result&lt;T, Error&gt; {</span>
+<span class="line"><i>111</i>    // Pinned once here and lent to both arms, so the wrapper&#x27;s state holds the</span>
+<span class="line"><i>112</i>    // operation a single time rather than once per arm.</span>
+<span class="line"><i>113</i>    tokio::pin!(operation);</span>
+<span class="line"><i>114</i>    match DispatchCancellation::for_request(phase, staged_kv) {</span>
+<span class="line"><i>115</i>        DispatchCancellation::CancelWhenStopped =&gt; cancel_on_stop(context, operation).await,</span>
+<span class="line"><i>116</i>        DispatchCancellation::DispatchWhenStopped =&gt; {</span>
+<span class="line"><i>117</i>            tokio::select! {</span>
+<span class="line"><i>118</i>                biased;</span>
+<span class="line"><i>119</i></span>
+<span class="line"><i>120</i>                result = &amp;mut operation =&gt; Ok(result),</span>
+<span class="line"><i>121</i>                _ = context.stopped() =&gt; {</span>
+<span class="line"><i>122</i>                    match tokio::time::timeout(budget.remaining(), &amp;mut operation).await {</span>
+<span class="line"><i>123</i>                        Ok(result) =&gt; Ok(result),</span>
+<span class="line"><i>124</i>                        Err(_) =&gt; Err(cleanup_budget_exhausted(context.id(), stage)),</span>
+<span class="line"><i>125</i>                    }</span>
+<span class="line"><i>126</i>                }</span>
+<span class="line"><i>127</i>            }</span>
+<span class="line"><i>128</i>        }</span>
+<span class="line"><i>129</i>    }</span>
+<span class="line"><i>130</i>}</span></code></pre></details><p>远端 Prefill 暂存的 KV 可能只能由原定 Decode Worker 在 transfer-complete 路径释放。客户端已断开时仍继续这段 dispatch，是为释放已产生的副作用，不是继续给用户生成答案。仅有 Decode phase 不够：conditional-disaggregation bypass 没有 staged KV，不需要这个例外。</p><aside class="note ">预算从第一个观察到停止的相关 stage 开始，共享给选择、记录、dispatch 等阶段，不是每阶段另给 120s。耗尽时记录 request_id/stage/budget，返回 Cancelled，避免再迁移到另一个 Worker；若原定 Worker 未被到达，staged KV 可能要等过期才能释放。</aside></section><section id="rl-timeouts" class="lesson"><div class="sectionhead"><h2>12 / 超时、心跳与慢消费者</h2><label class="done"><input type="checkbox" data-read="rl-timeouts"> 已读</label></div><details class="source" id="src-rl-timeout-config"><summary><b>源码 · HTTP safety net 使用 backend inactivity 配置的 2 倍</b><small>lib/llm/src/http/service/disconnect.rs:42–58</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/disconnect.rs#L42-L58" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>42</i>use crate::http::service::error::{ClientErrorAction, SanitizedError, http_action_for_error};</span>
+<span class="line"><i>43</i>use crate::http::service::metrics::{CancellationLabels, ErrorType, InflightGuard, Metrics};</span>
+<span class="line"><i>44</i>use dynamo_runtime::error::{DynamoError, ErrorClass};</span>
+<span class="line"><i>45</i></span>
+<span class="line"><i>46</i>use dynamo_runtime::config::environment_names::llm::DYN_HTTP_BACKEND_STREAM_TIMEOUT_SECS as BACKEND_STREAM_TIMEOUT_ENV;</span>
+<span class="line"><i>47</i></span>
+<span class="line"><i>48</i>/// Read the backend stream inactivity timeout from the environment.</span>
+<span class="line"><i>49</i>/// Returns `None` if unset or zero (timeout disabled).</span>
+<span class="line"><i>50</i>///</span>
+<span class="line"><i>51</i>/// The HTTP-layer timeout uses a 2x multiplier over the configured value so that</span>
+<span class="line"><i>52</i>/// the request-plane timeout in `push_router` (which uses the raw value) always</span>
+<span class="line"><i>53</i>/// fires first and triggers `report_instance_down()` for worker quarantine.</span>
+<span class="line"><i>54</i>/// This layer is strictly a safety net for gauge cleanup.</span>
+<span class="line"><i>55</i>pub fn backend_stream_timeout() -&gt; Option&lt;Duration&gt; {</span>
+<span class="line"><i>56</i>    std::env::var(BACKEND_STREAM_TIMEOUT_ENV)</span>
+<span class="line"><i>57</i>        .ok()</span>
+<span class="line"><i>58</i>        .and_then(|s| s.parse::&lt;u64&gt;().ok())</span></code></pre></details><details class="source" id="src-rl-timeout-router"><summary><b>源码 · Request Plane 原值 T：无下一项时隔离 Worker 并产出 typed error</b><small>lib/runtime/src/pipeline/network/egress/push_router.rs:2061–2093</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/network/egress/push_router.rs#L2061-L2093" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2061</i></span>
+<span class="line"><i>2062</i>        let stream: Pin&lt;Box&lt;dyn Stream&lt;Item = U&gt; + Send&gt;&gt; =</span>
+<span class="line"><i>2063</i>            if let Some(timeout) = self.response_timeout {</span>
+<span class="line"><i>2064</i>                Box::pin(async_stream::stream! {</span>
+<span class="line"><i>2065</i>                    let mut inner = Box::pin(stream);</span>
+<span class="line"><i>2066</i>                    loop {</span>
+<span class="line"><i>2067</i>                        tokio::select! {</span>
+<span class="line"><i>2068</i>                            biased;</span>
+<span class="line"><i>2069</i>                            item = inner.next() =&gt; {</span>
+<span class="line"><i>2070</i>                                match item {</span>
+<span class="line"><i>2071</i>                                    Some(item) =&gt; yield item,</span>
+<span class="line"><i>2072</i>                                    None =&gt; break,</span>
+<span class="line"><i>2073</i>                                }</span>
+<span class="line"><i>2074</i>                            }</span>
+<span class="line"><i>2075</i>                            _ = tokio::time::sleep(timeout) =&gt; {</span>
+<span class="line"><i>2076</i>                                tracing::warn!(</span>
+<span class="line"><i>2077</i>                                    instance_id,</span>
+<span class="line"><i>2078</i>                                    timeout_secs = timeout.as_secs(),</span>
+<span class="line"><i>2079</i>                                    &quot;backend response inactivity timeout — quarantining worker&quot;</span>
+<span class="line"><i>2080</i>                                );</span>
+<span class="line"><i>2081</i>                                client_for_timeout.report_instance_down(instance_id);</span>
+<span class="line"><i>2082</i>                                yield U::from_err(</span>
+<span class="line"><i>2083</i>                                    crate::error::DynamoError::builder()</span>
+<span class="line"><i>2084</i>                                        .error_type(crate::error::ErrorType::ResponseTimeout)</span>
+<span class="line"><i>2085</i>                                        .message(&quot;backend response inactivity timeout&quot;)</span>
+<span class="line"><i>2086</i>                                        .build()</span>
+<span class="line"><i>2087</i>                                );</span>
+<span class="line"><i>2088</i>                                break;</span>
+<span class="line"><i>2089</i>                            }</span>
+<span class="line"><i>2090</i>                        }</span>
+<span class="line"><i>2091</i>                    }</span>
+<span class="line"><i>2092</i>                })</span>
+<span class="line"><i>2093</i>            } else {</span></code></pre></details><details class="source" id="src-rl-timeout-http"><summary><b>源码 · 只用真实流活动重置，超时 Kill context 释放 guard</b><small>lib/llm/src/http/service/disconnect.rs:729–771</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/disconnect.rs#L729-L771" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>729</i>                }</span>
+<span class="line"><i>730</i>                activity = async {</span>
+<span class="line"><i>731</i>                    match activity_rx.as_mut() {</span>
+<span class="line"><i>732</i>                        Some(rx) =&gt; rx.recv().await,</span>
+<span class="line"><i>733</i>                        None =&gt; std::future::pending::&lt;Option&lt;()&gt;&gt;().await,</span>
+<span class="line"><i>734</i>                    }</span>
+<span class="line"><i>735</i>                } =&gt; {</span>
+<span class="line"><i>736</i>                    if activity.is_some() {</span>
+<span class="line"><i>737</i>                        inactivity_deadline = inactivity_timeout</span>
+<span class="line"><i>738</i>                            .map(|timeout| tokio::time::Instant::now() + timeout);</span>
+<span class="line"><i>739</i>                    } else {</span>
+<span class="line"><i>740</i>                        activity_rx = None;</span>
+<span class="line"><i>741</i>                    }</span>
+<span class="line"><i>742</i>                }</span>
+<span class="line"><i>743</i>                // Circuit breaker for zombie backend workers: if the backend holds a live TCP</span>
+<span class="line"><i>744</i>                // connection but produces no output for `inactivity_timeout`, kill the engine</span>
+<span class="line"><i>745</i>                // context so that InflightGuard::drop() fires and dec() corrects the gauge.</span>
+<span class="line"><i>746</i>                // Only real stream activity resets this deadline. Client heartbeats must not</span>
+<span class="line"><i>747</i>                // keep a dead backend alive indefinitely.</span>
+<span class="line"><i>748</i>                _ = async {</span>
+<span class="line"><i>749</i>                    match inactivity_deadline {</span>
+<span class="line"><i>750</i>                        Some(deadline) =&gt; tokio::time::sleep_until(deadline).await,</span>
+<span class="line"><i>751</i>                        None =&gt; std::future::pending::&lt;()&gt;().await,</span>
+<span class="line"><i>752</i>                    }</span>
+<span class="line"><i>753</i>                } =&gt; {</span>
+<span class="line"><i>754</i>                    inflight_guard.mark_error(ErrorType::ResponseTimeout);</span>
+<span class="line"><i>755</i>                    if let Some(error_signal) = &amp;error_signal {</span>
+<span class="line"><i>756</i>                        error_signal.set(ErrorType::ResponseTimeout);</span>
+<span class="line"><i>757</i>                    }</span>
+<span class="line"><i>758</i>                    stream_handle.disarm();</span>
+<span class="line"><i>759</i>                    tracing::warn!(</span>
+<span class="line"><i>760</i>                        request_id = %inflight_guard.request_id(),</span>
+<span class="line"><i>761</i>                        model = %inflight_guard.model(),</span>
+<span class="line"><i>762</i>                        endpoint = %inflight_guard.endpoint(),</span>
+<span class="line"><i>763</i>                        request_type = %inflight_guard.request_type(),</span>
+<span class="line"><i>764</i>                        error_type = &quot;response_timeout&quot;,</span>
+<span class="line"><i>765</i>                        elapsed_ms = %inflight_guard.elapsed_ms(),</span>
+<span class="line"><i>766</i>                        timeout_secs = ?inactivity_timeout.map(|d| d.as_secs()),</span>
+<span class="line"><i>767</i>                        &quot;backend stream inactivity timeout; killing engine context to release inflight gauge&quot;</span>
+<span class="line"><i>768</i>                    );</span>
+<span class="line"><i>769</i>                    context.kill();</span>
+<span class="line"><i>770</i>                    break;</span>
+<span class="line"><i>771</i>                }</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>机制</th><th>范围</th><th>边界</th></tr></thead><tbody><tr><td>DYN_HTTP_BACKEND_STREAM_TIMEOUT_SECS=T</td><td>后端 stream inactivity；unset/0 禁用相应超时</td><td>不是整请求 wall-clock deadline；HTTP 2T 是兜底而非精确执行先后保证</td></tr><tr><td>DYN_RESPONSE_STREAM_ESTABLISH_TIMEOUT_SECS</td><td>response stream 建立阶段</td><td>与首 token/逐帧 inactivity 不同</td></tr><tr><td>SSE keep-alive</td><td>维护 HTTP 连接/代理空闲状态</td><td>不应把死后端永久伪装成活动</td></tr><tr><td>pull-based stream / send await</td><td>本地背压与有限 buffer 的消费节奏</td><td>慢客户端不保证引擎/GPU 同步暂停；流不被 poll 时异步计时也非独立硬实时 watchdog</td></tr></tbody></table></div><p>长 Prefill、工具/多模态阶段和协议延迟输出都可能长时间无可见 token；设定 T 要结合真实 backend activity 和最长合法静默，不能一律按用户期望 ITL 配置。</p></section><section id="rl-fault" class="lesson"><div class="sectionhead"><h2>13 / Worker 故障检测与迁移资格</h2><label class="done"><input type="checkbox" data-read="rl-fault"> 已读</label></div><details class="source" id="src-rl-inhibition"><summary><b>源码 · 仅开启 fault detection 时对符合条件错误 report_instance_down</b><small>lib/runtime/src/pipeline/network/egress/push_router.rs:2043–2060</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/pipeline/network/egress/push_router.rs#L2043-L2060" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2043</i>        if !self.fault_detection_enabled {</span>
+<span class="line"><i>2044</i>            return Ok(wrap_route_span(stream, route_span));</span>
+<span class="line"><i>2045</i>        }</span>
+<span class="line"><i>2046</i></span>
+<span class="line"><i>2047</i>        let engine_ctx = stream.context();</span>
+<span class="line"><i>2048</i>        let client = self.client.clone();</span>
+<span class="line"><i>2049</i>        let client_for_timeout = self.client.clone();</span>
+<span class="line"><i>2050</i>        let stream = stream.map(move |res| {</span>
+<span class="line"><i>2051</i>            if let Some(err) = res.err()</span>
+<span class="line"><i>2052</i>                &amp;&amp; is_inhibited(&amp;err)</span>
+<span class="line"><i>2053</i>            {</span>
+<span class="line"><i>2054</i>                tracing::debug!(</span>
+<span class="line"><i>2055</i>                    &quot;Reporting instance {instance_id} down due to migratable error: {err}&quot;</span>
+<span class="line"><i>2056</i>                );</span>
+<span class="line"><i>2057</i>                client.report_instance_down(instance_id);</span>
+<span class="line"><i>2058</i>            }</span>
+<span class="line"><i>2059</i>            res</span>
+<span class="line"><i>2060</i>        });</span></code></pre></details><details class="source" id="src-rl-migration-reasons"><summary><b>源码 · blocking reasons 优先，遍历完整错误链判定资格</b><small>lib/llm/src/migration.rs:89–147</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/migration.rs#L89-L147" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>89</i>const MIGRATION_BLOCKING_REASONS: &amp;[&amp;str] = &amp;[</span>
+<span class="line"><i>90</i>    &quot;request.cancelled&quot;,</span>
+<span class="line"><i>91</i>    &quot;request.deadline_exceeded&quot;,</span>
+<span class="line"><i>92</i>    &quot;backend.cancelled&quot;,</span>
+<span class="line"><i>93</i>    &quot;capacity.exhausted&quot;,</span>
+<span class="line"><i>94</i>    &quot;capacity.pool_exhausted&quot;,</span>
+<span class="line"><i>95</i>];</span>
+<span class="line"><i>96</i></span>
+<span class="line"><i>97</i>fn blocks_migration(reason: &amp;ErrorReason) -&gt; bool {</span>
+<span class="line"><i>98</i>    MIGRATION_BLOCKING_REASONS.contains(&amp;reason.as_str())</span>
+<span class="line"><i>99</i>}</span>
+<span class="line"><i>100</i></span>
+<span class="line"><i>101</i>fn is_migration_eligible(reason: &amp;ErrorReason) -&gt; bool {</span>
+<span class="line"><i>102</i>    matches!(</span>
+<span class="line"><i>103</i>        reason.as_str(),</span>
+<span class="line"><i>104</i>        &quot;transport.cannot_connect&quot;</span>
+<span class="line"><i>105</i>            | &quot;transport.disconnected&quot;</span>
+<span class="line"><i>106</i>            | &quot;transport.connection_timeout&quot;</span>
+<span class="line"><i>107</i>            | &quot;backend.cannot_connect&quot;</span>
+<span class="line"><i>108</i>            | &quot;backend.disconnected&quot;</span>
+<span class="line"><i>109</i>            | &quot;backend.connection_timeout&quot;</span>
+<span class="line"><i>110</i>            | &quot;backend.response_timeout&quot;</span>
+<span class="line"><i>111</i>            | &quot;backend.engine_shutdown&quot;</span>
+<span class="line"><i>112</i>            | &quot;backend.stream_incomplete&quot;</span>
+<span class="line"><i>113</i>            | &quot;backend.worker_unavailable&quot;</span>
+<span class="line"><i>114</i>            | &quot;capacity.worker_overloaded&quot;</span>
+<span class="line"><i>115</i>    )</span>
+<span class="line"><i>116</i>}</span>
+<span class="line"><i>117</i></span>
+<span class="line"><i>118</i>fn has_generation_artifact(request: &amp;PreprocessedRequest) -&gt; bool {</span>
+<span class="line"><i>119</i>    request</span>
+<span class="line"><i>120</i>        .extra_args</span>
+<span class="line"><i>121</i>        .as_ref()</span>
+<span class="line"><i>122</i>        .and_then(|extra| extra.pointer(&quot;/nvext/metadata_upload/kind&quot;))</span>
+<span class="line"><i>123</i>        .and_then(serde_json::Value::as_str)</span>
+<span class="line"><i>124</i>        == Some(&quot;generation_artifact&quot;)</span>
+<span class="line"><i>125</i>}</span>
+<span class="line"><i>126</i></span>
+<span class="line"><i>127</i>fn migratable_error_in_chain&lt;&#x27;a&gt;(err: &amp;&#x27;a (dyn StdError + &#x27;static)) -&gt; Option&lt;&amp;&#x27;a DynamoError&gt; {</span>
+<span class="line"><i>128</i>    let mut migratable = None;</span>
+<span class="line"><i>129</i>    let mut current = Some(err);</span>
+<span class="line"><i>130</i>    while let Some(source) = current {</span>
+<span class="line"><i>131</i>        if source.is::&lt;ClassifierRejection&gt;() {</span>
+<span class="line"><i>132</i>            return None;</span>
+<span class="line"><i>133</i>        }</span>
+<span class="line"><i>134</i>        if let Some(error) = source.downcast_ref::&lt;DynamoError&gt;() {</span>
+<span class="line"><i>135</i>            if blocks_migration(error.reason()) {</span>
+<span class="line"><i>136</i>                return None;</span>
+<span class="line"><i>137</i>            }</span>
+<span class="line"><i>138</i>            if is_migration_eligible(error.reason()) {</span>
+<span class="line"><i>139</i>                migratable.get_or_insert(error);</span>
+<span class="line"><i>140</i>            }</span>
+<span class="line"><i>141</i>        }</span>
+<span class="line"><i>142</i>        current = source.source();</span>
+<span class="line"><i>143</i>    }</span>
+<span class="line"><i>144</i>    migratable</span>
+<span class="line"><i>145</i>}</span>
+<span class="line"><i>146</i></span>
+<span class="line"><i>147</i>/// Check if an error chain indicates the request should be migrated.</span></code></pre></details><p>连接失败、stream disconnected/incomplete、backend response timeout、engine shutdown、worker unavailable 等原因可参与重试；请求取消/deadline、backend cancelled、整体 capacity exhaustion 与 classifier rejection 等阻止迁移。Worker-rank overload 与全池耗尽不是同一语义。</p><aside class="note ">report_instance_down 是本地路由故障抑制的一环，不等于删除 Pod、永久摘除 Worker 或触发 Kubernetes 重启。Discovery 恢复、抑制窗口与副本控制是另一层；同一故障并不必然造成一次可成功迁移。</aside></section><section id="rl-migration" class="lesson"><div class="sectionhead"><h2>14 / 迁移原理：逻辑请求下的多个物理 attempt</h2><label class="done"><input type="checkbox" data-read="rl-migration"> 已读</label></div><div class="flow"><div><b>01</b>当前 attempt 的 setup 或流返回 typed failure</div><div><b>02</b>检查错误链与显式路由限制</div><div><b>03</b>保存已输出 token/decoder checkpoint</div><div><b>04</b>消费一次重试预算，创建 linked attempt</div><div><b>05</b>路由健康 Worker、追加 replay prompt</div><div><b>06</b>继续向同一上游逻辑响应输出</div></div><details class="source" id="src-rl-attempts"><summary><b>源码 · 预算、attempt 编号、migration_link 与 route trace context</b><small>lib/llm/src/migration.rs:531–573</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/migration.rs#L531-L573" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>531</i>    async fn new_stream(&amp;mut self, mut migration_event: Option&lt;MigrationEvent&gt;) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>532</i>        if self.retries_left == 0 {</span>
+<span class="line"><i>533</i>            if let Some(cause) = self.pending_migration.take() {</span>
+<span class="line"><i>534</i>                self.record_migration_exhausted(cause);</span>
+<span class="line"><i>535</i>            }</span>
+<span class="line"><i>536</i>            self.record_migration_outcome(</span>
+<span class="line"><i>537</i>                migration_event.as_ref(),</span>
+<span class="line"><i>538</i>                frontend_service::migration_outcome::FAILURE,</span>
+<span class="line"><i>539</i>            );</span>
+<span class="line"><i>540</i>            let error = Error::msg(&quot;Migration limit exhausted&quot;);</span>
+<span class="line"><i>541</i>            self.abort_request_lifecycle(error.as_ref());</span>
+<span class="line"><i>542</i>            return Err(error);</span>
+<span class="line"><i>543</i>        }</span>
+<span class="line"><i>544</i>        while self.retries_left &gt; 0 {</span>
+<span class="line"><i>545</i>            self.retries_left -= 1;</span>
+<span class="line"><i>546</i>            // Once any chunks have arrived from a previous attempt, stamp</span>
+<span class="line"><i>547</i>            // that worker&#x27;s span as `migration_link` so the next worker&#x27;s</span>
+<span class="line"><i>548</i>            // span renders an OTel Link back to it. Guarded so the initial</span>
+<span class="line"><i>549</i>            // attempt doesn&#x27;t clobber a `migration_link` set upstream.</span>
+<span class="line"><i>550</i>            if let Some(link) = self.last_worker_link.as_ref() {</span>
+<span class="line"><i>551</i>                self.request.migration_link = Some(link.clone());</span>
+<span class="line"><i>552</i>            }</span>
+<span class="line"><i>553</i>            let mut request = Context::with_id_and_metadata(</span>
+<span class="line"><i>554</i>                self.request.clone(),</span>
+<span class="line"><i>555</i>                self.context.id().to_string(),</span>
+<span class="line"><i>556</i>                self.metadata.clone(),</span>
+<span class="line"><i>557</i>            );</span>
+<span class="line"><i>558</i>            let migration = self.pending_migration.take();</span>
+<span class="line"><i>559</i>            let attempt = self.next_attempt;</span>
+<span class="line"><i>560</i>            self.next_attempt += 1;</span>
+<span class="line"><i>561</i>            let route_trace = attach_route_trace_context(</span>
+<span class="line"><i>562</i>                &amp;mut request,</span>
+<span class="line"><i>563</i>                RouteTraceContext::new(</span>
+<span class="line"><i>564</i>                    attempt,</span>
+<span class="line"><i>565</i>                    migration.map(|migration| migration.reason),</span>
+<span class="line"><i>566</i>                    migration.and_then(|migration| migration.from_worker_id),</span>
+<span class="line"><i>567</i>                    self.completed_tokens,</span>
+<span class="line"><i>568</i>                ),</span>
+<span class="line"><i>569</i>            );</span>
+<span class="line"><i>570</i>            if let Some(session_affinity) = self.session_affinity.as_ref() {</span>
+<span class="line"><i>571</i>                request.insert(SESSION_AFFINITY_CONTEXT_KEY, session_affinity.clone());</span>
+<span class="line"><i>572</i>            }</span>
+<span class="line"><i>573</i>            let attempt_context = request.context();</span></code></pre></details><details class="source" id="src-rl-stop-before-retry"><summary><b>源码 · 派发前重查取消，记录取消 outcome</b><small>lib/llm/src/migration.rs:573–616</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/migration.rs#L573-L616" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>573</i>            let attempt_context = request.context();</span>
+<span class="line"><i>574</i>            self.context.link_child(attempt_context.clone());</span>
+<span class="line"><i>575</i>            if self.context.is_stopped() || self.context.is_killed() {</span>
+<span class="line"><i>576</i>                if let Some(cause) = migration {</span>
+<span class="line"><i>577</i>                    tracing::info!(</span>
+<span class="line"><i>578</i>                        target: &quot;request_span&quot;,</span>
+<span class="line"><i>579</i>                        {</span>
+<span class="line"><i>580</i>                            { &quot;request.attempt&quot; } = attempt,</span>
+<span class="line"><i>581</i>                            { &quot;migration.is_retry&quot; } = true,</span>
+<span class="line"><i>582</i>                            { &quot;migration.reason&quot; } = error_type_name(cause.reason),</span>
+<span class="line"><i>583</i>                            { &quot;migration.from_worker_id&quot; } = cause.from_worker_id,</span>
+<span class="line"><i>584</i>                            { &quot;migration.tokens_completed&quot; } = self.completed_tokens</span>
+<span class="line"><i>585</i>                        },</span>
+<span class="line"><i>586</i>                        &quot;migration cancelled before worker dispatch&quot;</span>
+<span class="line"><i>587</i>                    );</span>
+<span class="line"><i>588</i>                } else {</span>
+<span class="line"><i>589</i>                    tracing::info!(</span>
+<span class="line"><i>590</i>                        target: &quot;request_span&quot;,</span>
+<span class="line"><i>591</i>                        {</span>
+<span class="line"><i>592</i>                            { &quot;request.attempt&quot; } = attempt,</span>
+<span class="line"><i>593</i>                            { &quot;migration.is_retry&quot; } = false</span>
+<span class="line"><i>594</i>                        },</span>
+<span class="line"><i>595</i>                        &quot;request cancelled before worker dispatch&quot;</span>
+<span class="line"><i>596</i>                    );</span>
+<span class="line"><i>597</i>                }</span>
+<span class="line"><i>598</i>                self.record_migration_outcome(</span>
+<span class="line"><i>599</i>                    migration_event.as_ref(),</span>
+<span class="line"><i>600</i>                    frontend_service::migration_outcome::CANCELLED,</span>
+<span class="line"><i>601</i>                );</span>
+<span class="line"><i>602</i>                let error = DynamoError::builder()</span>
+<span class="line"><i>603</i>                    .error_type(ErrorType::Cancelled)</span>
+<span class="line"><i>604</i>                    .message(format!(</span>
+<span class="line"><i>605</i>                        &quot;Context id {} is stopped or killed&quot;,</span>
+<span class="line"><i>606</i>                        self.context.id()</span>
+<span class="line"><i>607</i>                    ))</span>
+<span class="line"><i>608</i>                    .build();</span>
+<span class="line"><i>609</i>                self.abort_request_lifecycle(&amp;error);</span>
+<span class="line"><i>610</i>                return Err(error.into());</span>
+<span class="line"><i>611</i>            }</span>
+<span class="line"><i>612</i>            let source_guards = self</span>
+<span class="line"><i>613</i>                .request</span>
+<span class="line"><i>614</i>                .multi_modal_data</span>
+<span class="line"><i>615</i>                .as_ref()</span>
+<span class="line"><i>616</i>                .into_iter()</span></code></pre></details><p>初始调用和替代调用都由 RetryManager 管理。同一个逻辑 request ID 可以对应多个 Worker、attempt 和 engine.generate span；诊断不能只按 request ID 聚合后丢掉 attempt。重试预算是有限次数，不是无限重试；此处不能凭空承诺指数退避或跨所有 backend 的相同策略。</p></section><section id="rl-migration-limits" class="lesson"><div class="sectionhead"><h2>15 / 启用条件、硬路由和不能重放的状态</h2><label class="done"><input type="checkbox" data-read="rl-migration-limits"> 已读</label></div><details class="source" id="src-rl-disable-migration"><summary><b>源码 · guided decoding、n&gt;1、generation artifact 禁用；初始 attempt +1</b><small>lib/llm/src/migration.rs:383–440</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/migration.rs#L383-L440" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>383</i>        // TODO: prompt_embeds take precedence over replayed token_ids. Disable migration for</span>
+<span class="line"><i>384</i>        // embedding prompts until a retry can represent an embedding-based continuation.</span>
+<span class="line"><i>385</i></span>
+<span class="line"><i>386</i>        // TODO: Define a replay-capability contract for attempt-local decoder and sampler state.</span>
+<span class="line"><i>387</i>        // A withheld hidden-stop-sequence prefix is now checkpointed across workers (see</span>
+<span class="line"><i>388</i>        // `jail_seed` / `track_response`), but generated-token penalties and thinking-token</span>
+<span class="line"><i>389</i>        // budgets are not.</span>
+<span class="line"><i>390</i></span>
+<span class="line"><i>391</i>        // Disable migration for structured-output (guided-decoding) requests.</span>
+<span class="line"><i>392</i>        // Inference backends initialize the guided-decoding FSM (finite state machine) fresh</span>
+<span class="line"><i>393</i>        // for every new request and only advance it on newly-generated tokens, not on</span>
+<span class="line"><i>394</i>        // context/prompt tokens. Migrating a partial structured-output response would replay</span>
+<span class="line"><i>395</i>        // already-generated tokens as context, causing the FSM to restart from the schema</span>
+<span class="line"><i>396</i>        // root and producing duplicated or nested JSON. This applies to all backends</span>
+<span class="line"><i>397</i>        // (vLLM, SGLang, TRT-LLM) equally. Propagate the error cleanly instead.</span>
+<span class="line"><i>398</i>        if preprocessed_request</span>
+<span class="line"><i>399</i>            .sampling_options</span>
+<span class="line"><i>400</i>            .guided_decoding</span>
+<span class="line"><i>401</i>            .is_some()</span>
+<span class="line"><i>402</i>        {</span>
+<span class="line"><i>403</i>            if retries_left &gt; 0 {</span>
+<span class="line"><i>404</i>                tracing::warn!(</span>
+<span class="line"><i>405</i>                    &quot;Guided-decoding request: migration disabled — FSM state is not transferable (applies to all backends)&quot;</span>
+<span class="line"><i>406</i>                );</span>
+<span class="line"><i>407</i>            }</span>
+<span class="line"><i>408</i>            retries_left = 0;</span>
+<span class="line"><i>409</i>        }</span>
+<span class="line"><i>410</i></span>
+<span class="line"><i>411</i>        if preprocessed_request.sampling_options.n.unwrap_or(1) &gt; 1 {</span>
+<span class="line"><i>412</i>            if retries_left &gt; 0 {</span>
+<span class="line"><i>413</i>                tracing::warn!(</span>
+<span class="line"><i>414</i>                    &quot;n&gt;1 request: migration disabled - per-choice generation state is not transferable&quot;</span>
+<span class="line"><i>415</i>                );</span>
+<span class="line"><i>416</i>            }</span>
+<span class="line"><i>417</i>            retries_left = 0;</span>
+<span class="line"><i>418</i>        }</span>
+<span class="line"><i>419</i>        if has_generation_artifact(&amp;preprocessed_request) {</span>
+<span class="line"><i>420</i>            if retries_left &gt; 0 {</span>
+<span class="line"><i>421</i>                tracing::warn!(</span>
+<span class="line"><i>422</i>                    &quot;Generation-artifact request: migration disabled because capture state cannot be replayed&quot;</span>
+<span class="line"><i>423</i>                );</span>
+<span class="line"><i>424</i>            }</span>
+<span class="line"><i>425</i>            retries_left = 0;</span>
+<span class="line"><i>426</i>        }</span>
+<span class="line"><i>427</i>        if retries_left &gt; 0 {</span>
+<span class="line"><i>428</i>            preprocessed_request.migration_state = Some(Default::default());</span>
+<span class="line"><i>429</i>        }</span>
+<span class="line"><i>430</i>        let prompt_len = preprocessed_request.token_ids.len();</span>
+<span class="line"><i>431</i>        let mut slf = Self {</span>
+<span class="line"><i>432</i>            context,</span>
+<span class="line"><i>433</i>            metadata,</span>
+<span class="line"><i>434</i>            request: preprocessed_request,</span>
+<span class="line"><i>435</i>            session_affinity,</span>
+<span class="line"><i>436</i>            next_generate: next,</span>
+<span class="line"><i>437</i>            next_stream: None,</span>
+<span class="line"><i>438</i>            retries_left: u64::from(retries_left) + 1, // +1 to account for the initial attempt</span>
+<span class="line"><i>439</i>            max_seq_len,</span>
+<span class="line"><i>440</i>            model_name,</span></code></pre></details><details class="source" id="src-rl-explicit-pin"><summary><b>源码 · 显式 worker pin 约束当前 phase 的迁移资格</b><small>lib/llm/src/migration.rs:158–195</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/migration.rs#L158-L195" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>158</i>fn is_migratable_for_request(</span>
+<span class="line"><i>159</i>    request: &amp;PreprocessedRequest,</span>
+<span class="line"><i>160</i>    err: &amp;(dyn StdError + &#x27;static),</span>
+<span class="line"><i>161</i>) -&gt; bool {</span>
+<span class="line"><i>162</i>    if !is_migratable(err) {</span>
+<span class="line"><i>163</i>        return false;</span>
+<span class="line"><i>164</i>    }</span>
+<span class="line"><i>165</i></span>
+<span class="line"><i>166</i>    let allows_phase = |phase| match explicit_target(request, phase) {</span>
+<span class="line"><i>167</i>        Ok(None) =&gt; true,</span>
+<span class="line"><i>168</i>        Ok(Some(target)) =&gt; {</span>
+<span class="line"><i>169</i>            tracing::debug!(</span>
+<span class="line"><i>170</i>                ?phase,</span>
+<span class="line"><i>171</i>                worker_id = target.worker_id,</span>
+<span class="line"><i>172</i>                dp_rank = ?target.dp_rank,</span>
+<span class="line"><i>173</i>                &quot;Migration disabled for explicitly pinned worker&quot;</span>
+<span class="line"><i>174</i>            );</span>
+<span class="line"><i>175</i>            false</span>
+<span class="line"><i>176</i>        }</span>
+<span class="line"><i>177</i>        Err(error) =&gt; {</span>
+<span class="line"><i>178</i>            tracing::warn!(?phase, %error, &quot;Migration disabled for invalid explicit worker target&quot;);</span>
+<span class="line"><i>179</i>            false</span>
+<span class="line"><i>180</i>        }</span>
+<span class="line"><i>181</i>    };</span>
+<span class="line"><i>182</i></span>
+<span class="line"><i>183</i>    let Some(tracker) = request.tracker.as_ref() else {</span>
+<span class="line"><i>184</i>        // Without a tracker there is no authoritative current phase. Any explicit</span>
+<span class="line"><i>185</i>        // phase target may be the hard pin that just failed, so do not guess.</span>
+<span class="line"><i>186</i>        return [</span>
+<span class="line"><i>187</i>            RequestPhase::Prefill,</span>
+<span class="line"><i>188</i>            RequestPhase::Decode,</span>
+<span class="line"><i>189</i>            RequestPhase::Aggregated,</span>
+<span class="line"><i>190</i>        ]</span>
+<span class="line"><i>191</i>        .into_iter()</span>
+<span class="line"><i>192</i>        .all(allows_phase);</span>
+<span class="line"><i>193</i>    };</span>
+<span class="line"><i>194</i></span>
+<span class="line"><i>195</i>    let phase = tracker.phase();</span></code></pre></details><details class="source" id="src-rl-replay-cap"><summary><b>源码 · 超过 migration max sequence length 停止继续重试</b><small>lib/llm/src/migration.rs:854–872</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/migration.rs#L854-L872" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>854</i>    fn exceed_max_seq_len(&amp;mut self, new_output_len: u32) -&gt; bool {</span>
+<span class="line"><i>855</i>        if let Some(max_seq_len) = self.max_seq_len {</span>
+<span class="line"><i>856</i>            let total_len = self.request.token_ids.len() as u32 + new_output_len;</span>
+<span class="line"><i>857</i>            if total_len &gt; max_seq_len {</span>
+<span class="line"><i>858</i>                tracing::warn!(</span>
+<span class="line"><i>859</i>                    &quot;Sequence length {} exceeds migration max_seq_len {}, \</span>
+<span class="line"><i>860</i>                     disabling migration&quot;,</span>
+<span class="line"><i>861</i>                    total_len,</span>
+<span class="line"><i>862</i>                    max_seq_len</span>
+<span class="line"><i>863</i>                );</span>
+<span class="line"><i>864</i>                self.metrics</span>
+<span class="line"><i>865</i>                    .inc_migration_max_seq_len_exceeded(&amp;self.model_name);</span>
+<span class="line"><i>866</i>                self.retries_left = 0; // disable migration</span>
+<span class="line"><i>867</i>                self.release_replay_prompt_if_final();</span>
+<span class="line"><i>868</i>                return true;</span>
+<span class="line"><i>869</i>            }</span>
+<span class="line"><i>870</i>        }</span>
+<span class="line"><i>871</i>        false</span>
+<span class="line"><i>872</i>    }</span></code></pre></details><p>Frontend 的 --migration-limit / DYN_MIGRATION_LIMIT 默认 0；max sequence replay cap 用 --migration-max-seq-len / DYN_MIGRATION_MAX_SEQ_LEN。它们不是 Worker 自动迁移开关。内部预算在设置值基础上 +1，用于原始 attempt，不应把配置 N 解读为总共 N 次派发。</p><aside class="note ">源码明确留有 prompt_embeds continuation、sampler penalties/thinking budgets replay 的 TODO；不能据此宣称所有状态已完整转移。guided-decoding FSM、n>1 多 choice 和 generation-artifact 已显式禁止重试。会话 affinity 与用户显式固定 worker 是不同机制，不能用后者限制解释所有 affinity 场景。</aside></section><section id="rl-replay" class="lesson"><div class="sectionhead"><h2>16 / 重放、解码与 usage 口径</h2><label class="done"><input type="checkbox" data-read="rl-replay"> 已读</label></div><details class="source" id="src-rl-replay"><summary><b>源码 · 捕获 decoder checkpoint、已输出 token、递减剩余生成预算</b><small>lib/llm/src/migration.rs:755–800</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/migration.rs#L755-L800" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>755</i>    }</span>
+<span class="line"><i>756</i></span>
+<span class="line"><i>757</i>    fn track_response(&amp;mut self, response: &amp;Annotated&lt;Resp&gt;) {</span>
+<span class="line"><i>758</i>        let llm_engine_output = match response.data.as_ref() {</span>
+<span class="line"><i>759</i>            Some(output) =&gt; output,</span>
+<span class="line"><i>760</i>            None =&gt; return,</span>
+<span class="line"><i>761</i>        };</span>
+<span class="line"><i>762</i>        let token_ids = llm_engine_output.token_ids();</span>
+<span class="line"><i>763</i>        // Pure telemetry for the migration lifecycle events, so it has to count</span>
+<span class="line"><i>764</i>        // the final allowed attempt as well. `new_stream` decrements</span>
+<span class="line"><i>765</i>        // `retries_left` *before* dispatching, so that attempt runs with the</span>
+<span class="line"><i>766</i>        // counter already at zero; keeping this behind the replay guard below</span>
+<span class="line"><i>767</i>        // would drop its tokens from `migration retries exhausted`.</span>
+<span class="line"><i>768</i>        self.completed_tokens += token_ids.len();</span>
+<span class="line"><i>769</i></span>
+<span class="line"><i>770</i>        // Everything past this point rebuilds replay state for a *future*</span>
+<span class="line"><i>771</i>        // attempt. Once no retry can happen there is nothing to replay onto,</span>
+<span class="line"><i>772</i>        // so leave the request untouched.</span>
+<span class="line"><i>773</i>        if self.retries_left == 0 {</span>
+<span class="line"><i>774</i>            return;</span>
+<span class="line"><i>775</i>        }</span>
+<span class="line"><i>776</i>        // Capture the worker&#x27;s engine.generate span pointer so a future</span>
+<span class="line"><i>777</i>        // migration retry can render an OTel Link back to it. The adapter</span>
+<span class="line"><i>778</i>        // stamps this on the first non-empty chunk; subsequent chunks may</span>
+<span class="line"><i>779</i>        // also carry it. Keep the most-recently-seen value.</span>
+<span class="line"><i>780</i>        if let Some(link) = llm_engine_output.worker_trace_link() {</span>
+<span class="line"><i>781</i>            self.last_worker_link = Some(link.clone());</span>
+<span class="line"><i>782</i>        }</span>
+<span class="line"><i>783</i>        // Snapshot the Backend&#x27;s complete in-process decoder checkpoint. Overwrite it on</span>
+<span class="line"><i>784</i>        // every chunk (`None` once fully resolved) so a future retry replays exactly the</span>
+<span class="line"><i>785</i>        // last known-good buffered IDs and stop-filter text, never stale state.</span>
+<span class="line"><i>786</i>        self.request.jail_seed = llm_engine_output.decoder_checkpoint().cloned();</span>
+<span class="line"><i>787</i>        let output_len = u32::try_from(token_ids.len()).unwrap_or(u32::MAX);</span>
+<span class="line"><i>788</i>        if self.exceed_max_seq_len(output_len) {</span>
+<span class="line"><i>789</i>            return;</span>
+<span class="line"><i>790</i>        }</span>
+<span class="line"><i>791</i>        // NOTE: A zero remaining token budget is not retry-budget exhaustion. Backends remain</span>
+<span class="line"><i>792</i>        // authoritative for deciding how generation terminates at max_tokens.</span>
+<span class="line"><i>793</i>        if let Some(max_tokens) = self.request.stop_conditions.max_tokens {</span>
+<span class="line"><i>794</i>            self.request.stop_conditions.max_tokens = Some(max_tokens.saturating_sub(output_len));</span>
+<span class="line"><i>795</i>        }</span>
+<span class="line"><i>796</i>        if let Some(min_tokens) = self.request.stop_conditions.min_tokens {</span>
+<span class="line"><i>797</i>            self.request.stop_conditions.min_tokens = Some(min_tokens.saturating_sub(output_len));</span>
+<span class="line"><i>798</i>        }</span>
+<span class="line"><i>799</i>        if !token_ids.is_empty() {</span>
+<span class="line"><i>800</i>            Arc::make_mut(&amp;mut self.request.token_ids).extend(token_ids.iter().copied());</span></code></pre></details><details class="source" id="src-rl-usage"><summary><b>源码 · 重试 prompt 中的 replay tokens 重新计入 completion，限制 cached tokens</b><small>lib/llm/src/migration.rs:817–850</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/migration.rs#L817-L850" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>817</i>            return 0;</span>
+<span class="line"><i>818</i>        }</span>
+<span class="line"><i>819</i>        let replayed = self.request.token_ids.len().saturating_sub(self.prompt_len);</span>
+<span class="line"><i>820</i>        u32::try_from(replayed).unwrap_or(u32::MAX)</span>
+<span class="line"><i>821</i>    }</span>
+<span class="line"><i>822</i></span>
+<span class="line"><i>823</i>    /// Moves the replayed tokens in a retried attempt&#x27;s usage from prompt to completion: the</span>
+<span class="line"><i>824</i>    /// worker counts them as prompt, and its completion count covers only its own attempt. The</span>
+<span class="line"><i>825</i>    /// total is unchanged. Prefix-cache hits are prefixes and the client&#x27;s prompt is a prefix of</span>
+<span class="line"><i>826</i>    /// the replayed one, so the cached count is capped at the client&#x27;s prompt. The worker&#x27;s</span>
+<span class="line"><i>827</i>    /// completion details cover only its own attempt, so they are dropped; the frontend&#x27;s</span>
+<span class="line"><i>828</i>    /// reasoning estimate, which sees every delivered token, fills `reasoning_tokens` instead.</span>
+<span class="line"><i>829</i>    fn rebase_usage(&amp;self, response: &amp;mut Annotated&lt;Resp&gt;) {</span>
+<span class="line"><i>830</i>        if self.replayed_tokens == 0 {</span>
+<span class="line"><i>831</i>            return;</span>
+<span class="line"><i>832</i>        }</span>
+<span class="line"><i>833</i>        let Some(usage) = response</span>
+<span class="line"><i>834</i>            .data</span>
+<span class="line"><i>835</i>            .as_mut()</span>
+<span class="line"><i>836</i>            .and_then(HasTokenIds::completion_usage_mut)</span>
+<span class="line"><i>837</i>        else {</span>
+<span class="line"><i>838</i>            return;</span>
+<span class="line"><i>839</i>        };</span>
+<span class="line"><i>840</i>        usage.prompt_tokens = usage.prompt_tokens.saturating_sub(self.replayed_tokens);</span>
+<span class="line"><i>841</i>        usage.completion_tokens = usage.completion_tokens.saturating_add(self.replayed_tokens);</span>
+<span class="line"><i>842</i>        if let Some(cached) = usage</span>
+<span class="line"><i>843</i>            .prompt_tokens_details</span>
+<span class="line"><i>844</i>            .as_mut()</span>
+<span class="line"><i>845</i>            .and_then(|details| details.cached_tokens.as_mut())</span>
+<span class="line"><i>846</i>        {</span>
+<span class="line"><i>847</i>            *cached = (*cached).min(usage.prompt_tokens);</span>
+<span class="line"><i>848</i>        }</span>
+<span class="line"><i>849</i>        usage.completion_tokens_details = None;</span>
+<span class="line"><i>850</i>    }</span></code></pre></details><p>已输出 token 被加入下一次 prompt，用于继续生成；detokenizer/隐藏 stop-prefix 等 checkpoint 也要一致。新 Worker 的底层 usage 会把 replay tokens 当作 prompt，而客户端视角它们是已经完成的 completion，因此需要 rebase，而不是简单累加各 Worker usage。</p><aside class="note ">这不是恢复原 GPU/KV/随机数生成器的完整 checkpoint，也不是整个协议/网络层的 exactly-once 保证。工具调用、结构化输出、隐藏缓冲、采样状态和多 choice 的安全性必须按所支持契约确认；不要将文档中“无中断”的概述当作所有请求类型承诺。</aside></section><section id="rl-resources" class="lesson"><div class="sectionhead"><h2>17 / 清理必须覆盖成功、失败、取消与重试</h2><label class="done"><input type="checkbox" data-read="rl-resources"> 已读</label></div><details class="source" id="src-rl-router-finish"><summary><b>源码 · finish/abort/release_for_retry 的分类与状态交接</b><small>lib/llm/src/kv_router/routing_host/request_guard.rs:860–892</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/routing_host/request_guard.rs#L860-L892" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>860</i>    pub(super) async fn finish(&amp;mut self) {</span>
+<span class="line"><i>861</i>        if let Some(lifecycle) = self.cleanup.request_lifecycle_mut() {</span>
+<span class="line"><i>862</i>            lifecycle.complete();</span>
+<span class="line"><i>863</i>        }</span>
+<span class="line"><i>864</i>        // Metrics must observe the completed request before cleanup releases its state.</span>
+<span class="line"><i>865</i>        self.observability</span>
+<span class="line"><i>866</i>            .record_metrics(self.record_itl_at_completion);</span>
+<span class="line"><i>867</i>        self.cleanup.finish().await;</span>
+<span class="line"><i>868</i>    }</span>
+<span class="line"><i>869</i></span>
+<span class="line"><i>870</i>    pub(super) async fn abort(&amp;mut self) {</span>
+<span class="line"><i>871</i>        self.abort_with_error(None).await;</span>
+<span class="line"><i>872</i>    }</span>
+<span class="line"><i>873</i></span>
+<span class="line"><i>874</i>    pub(super) async fn release_for_retry(&amp;mut self) -&gt; bool {</span>
+<span class="line"><i>875</i>        let Some(migration_state) = self.migration_state.as_ref() else {</span>
+<span class="line"><i>876</i>            return false;</span>
+<span class="line"><i>877</i>        };</span>
+<span class="line"><i>878</i>        let Some(mut lifecycle) = self.cleanup.take_request_lifecycle() else {</span>
+<span class="line"><i>879</i>            return false;</span>
+<span class="line"><i>880</i>        };</span>
+<span class="line"><i>881</i>        lifecycle.prepare_retry();</span>
+<span class="line"><i>882</i>        migration_state.store_request_lifecycle(lifecycle);</span>
+<span class="line"><i>883</i>        self.cleanup.finish().await;</span>
+<span class="line"><i>884</i>        true</span>
+<span class="line"><i>885</i>    }</span>
+<span class="line"><i>886</i></span>
+<span class="line"><i>887</i>    pub(super) async fn abort_with_error(&amp;mut self, error: Option&lt;&amp;AbortCause&gt;) {</span>
+<span class="line"><i>888</i>        if let Some(lifecycle) = self.cleanup.request_lifecycle_mut() {</span>
+<span class="line"><i>889</i>            lifecycle.abort(error.map(crate::protocols::common::preprocessor::owned_abort_error));</span>
+<span class="line"><i>890</i>        }</span>
+<span class="line"><i>891</i>        self.cleanup.finish().await;</span>
+<span class="line"><i>892</i>    }</span></code></pre></details><details class="source" id="src-rl-router-drop"><summary><b>源码 · Drop 记录 attempt 观测，成员资源随后释放</b><small>lib/llm/src/kv_router/routing_host/request_guard.rs:918–924</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/kv_router/routing_host/request_guard.rs#L918-L924" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>918</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>919</i>        self.observability</span>
+<span class="line"><i>920</i>            .record_metrics(self.record_itl_at_completion);</span>
+<span class="line"><i>921</i>        // RequestCleanup drops immediately afterward and performs resource cleanup.</span>
+<span class="line"><i>922</i>    }</span>
+<span class="line"><i>923</i>}</span>
+<span class="line"><i>924</i></span></code></pre></details><details class="source" id="src-rl-inflight-drop"><summary><b>源码 · InflightGuard Drop：减 gauge、终态 counter、duration、RequestMetrics finish</b><small>lib/llm/src/http/service/metrics.rs:2212–2235</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/metrics.rs#L2212-L2235" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>2212</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>2213</i>        let _enter = self.span.enter();</span>
+<span class="line"><i>2214</i>        let duration = self.timer.elapsed().as_secs_f64();</span>
+<span class="line"><i>2215</i>        self.metrics.dec_inflight_gauge(&amp;self.model);</span>
+<span class="line"><i>2216</i>        self.metrics.inc_request_counter(</span>
+<span class="line"><i>2217</i>            &amp;self.model,</span>
+<span class="line"><i>2218</i>            &amp;self.endpoint,</span>
+<span class="line"><i>2219</i>            &amp;self.request_type,</span>
+<span class="line"><i>2220</i>            &amp;self.status,</span>
+<span class="line"><i>2221</i>            &amp;self.error_type,</span>
+<span class="line"><i>2222</i>        );</span>
+<span class="line"><i>2223</i>        self.metrics</span>
+<span class="line"><i>2224</i>            .request_duration</span>
+<span class="line"><i>2225</i>            .with_label_values(&amp;[&amp;self.model])</span>
+<span class="line"><i>2226</i>            .observe(duration);</span>
+<span class="line"><i>2227</i></span>
+<span class="line"><i>2228</i>        let completion = self.request_completion();</span>
+<span class="line"><i>2229</i>        self.request.finish();</span>
+<span class="line"><i>2230</i>        self.span.record(&quot;request.outcome&quot;, completion.as_str());</span>
+<span class="line"><i>2231</i></span>
+<span class="line"><i>2232</i>        let elapsed_ms = (duration * 1000.0) as u64;</span>
+<span class="line"><i>2233</i>        let status_str = self.status.as_str();</span>
+<span class="line"><i>2234</i>        match completion {</span>
+<span class="line"><i>2235</i>            RequestCompletion::Error =&gt; {</span></code></pre></details><details class="source" id="src-rl-metrics-finish"><summary><b>源码 · 请求级 finish 幂等，释放 awaiting/generating token gauges</b><small>lib/llm/src/http/service/metrics.rs:878–900</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/metrics.rs#L878-L900" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>878</i>    fn finish(&amp;self) {</span>
+<span class="line"><i>879</i>        let previous = self.state.fetch_or(FINISHED, Relaxed);</span>
+<span class="line"><i>880</i>        if previous &amp; FINISHED != 0 {</span>
+<span class="line"><i>881</i>            return;</span>
+<span class="line"><i>882</i>        }</span>
+<span class="line"><i>883</i>        self.flush_output_tokens();</span>
+<span class="line"><i>884</i>        let input = (previous &amp; INPUT_TOKENS) as i64;</span>
+<span class="line"><i>885</i>        if previous &amp; GENERATING != 0 {</span>
+<span class="line"><i>886</i>            self.generating_input_tokens.sub(input);</span>
+<span class="line"><i>887</i>        } else {</span>
+<span class="line"><i>888</i>            self.awaiting_first_token_requests.dec();</span>
+<span class="line"><i>889</i>            self.awaiting_first_token_input_tokens.sub(input);</span>
+<span class="line"><i>890</i>        }</span>
+<span class="line"><i>891</i>    }</span>
+<span class="line"><i>892</i>}</span>
+<span class="line"><i>893</i></span>
+<span class="line"><i>894</i>impl Drop for RequestMetrics {</span>
+<span class="line"><i>895</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>896</i>        // `finish` publishes the pending tokens, but an `add_output_tokens` that</span>
+<span class="line"><i>897</i>        // raced it may have added more.</span>
+<span class="line"><i>898</i>        self.flush_output_tokens();</span>
+<span class="line"><i>899</i>    }</span>
+<span class="line"><i>900</i>}</span></code></pre></details><p>Router 的 lease、occupancy、LoRA load 和分类生命周期不能因 retry 被误判为最终完成；release_for_retry 会把可延续 lifecycle 交给下一 attempt，再释放当前 attempt 的占用。HTTP guard 和 engine permit 又是独立 owner，不能只看到一个 gauge 归零就证明所有远端资源释放。</p><aside class="note ">Drop/finally 只覆盖进程与 runtime 仍有机会执行清理的路径；SIGKILL、OOM、节点掉电不能保证运行这些代码，远端 TTL/发现/故障恢复与持久状态设计仍不可替代。</aside></section><section id="rl-observe" class="lesson"><div class="sectionhead"><h2>18 / 取消与准入指标：信号不等于最终效果</h2><label class="done"><input type="checkbox" data-read="rl-observe"> 已读</label></div><details class="source" id="src-rl-admission-metrics"><summary><b>源码 · 独立 dynamo_backend_admission 指标族</b><small>lib/llm/src/admission_gate/metrics.rs:52–66</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/admission_gate/metrics.rs#L52-L66" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>52</i>const METRIC_PREFIX: &amp;str = &quot;dynamo_backend_admission&quot;;</span>
+<span class="line"><i>53</i>const ENGINE_REQUEST_COUNT: &amp;str = &quot;engine_request_count&quot;;</span>
+<span class="line"><i>54</i>const ENGINE_REQUEST_WAITING_COUNT: &amp;str = &quot;engine_request_waiting_count&quot;;</span>
+<span class="line"><i>55</i>const REQUEST_QUEUE_COUNT: &amp;str = &quot;request_queue_count&quot;;</span>
+<span class="line"><i>56</i>const REQUEST_RECEIVE_TOTAL: &amp;str = &quot;request_receive_total&quot;;</span>
+<span class="line"><i>57</i>const REQUEST_ADMIT_TOTAL: &amp;str = &quot;request_admit_total&quot;;</span>
+<span class="line"><i>58</i>const REJECTION_TOTAL: &amp;str = &quot;rejection_total&quot;;</span>
+<span class="line"><i>59</i>const CANCELLATION_TOTAL: &amp;str = &quot;cancellation_total&quot;;</span>
+<span class="line"><i>60</i></span>
+<span class="line"><i>61</i>/// How each metric of the family is created: named under [`METRIC_PREFIX`],</span>
+<span class="line"><i>62</i>/// and kept with a warning, rather than failing, when its registry refuses it.</span>
+<span class="line"><i>63</i>const OPTIONS: MetricOptions = MetricOptions {</span>
+<span class="line"><i>64</i>    prefix: METRIC_PREFIX,</span>
+<span class="line"><i>65</i>    warn_on_registration_failure: true,</span>
+<span class="line"><i>66</i>};</span></code></pre></details><details class="source" id="src-rl-admission-cancel"><summary><b>源码 · admit/source、reject、cancel 的帮助与记录含义</b><small>lib/llm/src/admission_gate/metrics.rs:142–161</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/admission_gate/metrics.rs#L142-L161" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>142</i>                &quot;Requests received by the backend admission gate, by admission DP rank&quot;,</span>
+<span class="line"><i>143</i>            ),</span>
+<span class="line"><i>144</i>            admissions: create(</span>
+<span class="line"><i>145</i>                hierarchy,</span>
+<span class="line"><i>146</i>                REQUEST_ADMIT_TOTAL,</span>
+<span class="line"><i>147</i>                &quot;Requests passed into the engine by the backend admission gate, by \</span>
+<span class="line"><i>148</i>                 admission DP rank and by whether they waited in its queue&quot;,</span>
+<span class="line"><i>149</i>                &amp;[DP_RANK, SOURCE_LABEL],</span>
+<span class="line"><i>150</i>            ),</span>
+<span class="line"><i>151</i>            rejections: counter(</span>
+<span class="line"><i>152</i>                REJECTION_TOTAL,</span>
+<span class="line"><i>153</i>                &quot;Requests rejected by the backend admission gate because they could not be \</span>
+<span class="line"><i>154</i>                 admitted and its queue had no room, by admission DP rank&quot;,</span>
+<span class="line"><i>155</i>            ),</span>
+<span class="line"><i>156</i>            cancellations: counter(</span>
+<span class="line"><i>157</i>                CANCELLATION_TOTAL,</span>
+<span class="line"><i>158</i>                &quot;Requests cancelled before backend admission, by admission DP rank&quot;,</span>
+<span class="line"><i>159</i>            ),</span>
+<span class="line"><i>160</i>        }</span>
+<span class="line"><i>161</i>    }</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>信号</th><th>准确含义</th><th>关联方式</th></tr></thead><tbody><tr><td>dynamo_frontend_model_cancellation_total</td><td>Frontend 连接/流取消检测路径累计</td><td>结合 endpoint/request_type 与逻辑请求终态</td></tr><tr><td>dynamo_component_cancellation_total / request_span cancellation.signal</td><td>Runtime 取消信号（依所用 transport/路径）</td><td>不能当 engine 已 abort 的证明</td></tr><tr><td>dynamo_backend_admission_cancellation_total</td><td>backend admission 前/排队中的取消</td><td>按 dp_rank；与活跃引擎取消分开</td></tr><tr><td>dynamo_backend_admission_engine_request_count / engine_request_waiting_count / request_queue_count</td><td>引擎占用、等首输出占用、准入队列状态</td><td>与 Router/HTTP active gauges 对照，而非相加</td></tr><tr><td>Frontend active / awaiting_first_token / inflight_input_tokens</td><td>HTTP 逻辑请求进度与已知 token 归属</td><td>首字节、首 token 和最终流完成口径分别核查</td></tr></tbody></table></div><p>HTTP 200 率、最终模型 request counter、SSE semantic failure、取消检测 counter 是不同维度；只看 status code 会漏掉已提交流中的错误。错误分类优先保留 canonical error class/reason，避免统一压成 internal 后丢掉 retry/overload/cancel 的语义。</p></section><section id="rl-migration-observe" class="lesson"><div class="sectionhead"><h2>19 / 迁移指标与 Trace：恢复成功如何解释</h2><label class="done"><input type="checkbox" data-read="rl-migration-observe"> 已读</label></div><details class="source" id="src-rl-migration-metrics"><summary><b>源码 · 迁移 Counter 与 duration Histogram 的 labels/buckets</b><small>lib/llm/src/http/service/metrics.rs:1541–1564</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/metrics.rs#L1541-L1564" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1541</i>        let model_migration_total = IntCounterVec::new(</span>
+<span class="line"><i>1542</i>            Opts::new(</span>
+<span class="line"><i>1543</i>                frontend_metric_name(frontend_service::MODEL_MIGRATION_TOTAL),</span>
+<span class="line"><i>1544</i>                &quot;Total number of request migrations due to worker unavailability&quot;,</span>
+<span class="line"><i>1545</i>            ),</span>
+<span class="line"><i>1546</i>            &amp;[&quot;model&quot;, frontend_service::MIGRATION_TYPE_LABEL],</span>
+<span class="line"><i>1547</i>        )</span>
+<span class="line"><i>1548</i>        .unwrap();</span>
+<span class="line"><i>1549</i></span>
+<span class="line"><i>1550</i>        let model_migration_duration_seconds = HistogramVec::new(</span>
+<span class="line"><i>1551</i>            HistogramOpts::new(</span>
+<span class="line"><i>1552</i>                frontend_metric_name(frontend_service::MODEL_MIGRATION_DURATION_SECONDS),</span>
+<span class="line"><i>1553</i>                &quot;Time from detecting a migratable failure until recovery, terminal failure, or cancellation&quot;,</span>
+<span class="line"><i>1554</i>            )</span>
+<span class="line"><i>1555</i>            .buckets(vec![</span>
+<span class="line"><i>1556</i>                0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 20.0, 40.0, 60.0,</span>
+<span class="line"><i>1557</i>            ]),</span>
+<span class="line"><i>1558</i>            &amp;[</span>
+<span class="line"><i>1559</i>                &quot;model&quot;,</span>
+<span class="line"><i>1560</i>                frontend_service::MIGRATION_TYPE_LABEL,</span>
+<span class="line"><i>1561</i>                frontend_service::MIGRATION_OUTCOME_LABEL,</span>
+<span class="line"><i>1562</i>            ],</span>
+<span class="line"><i>1563</i>        )</span>
+<span class="line"><i>1564</i>        .unwrap();</span></code></pre></details><details class="source" id="src-rl-migration-outcome"><summary><b>源码 · exhausted 的 attempt/reason 日志，outcome duration 记录</b><small>lib/llm/src/migration.rs:732–754</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/migration.rs#L732-L754" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>732</i>    fn record_migration_exhausted(&amp;self, cause: MigrationCause) {</span>
+<span class="line"><i>733</i>        tracing::warn!(</span>
+<span class="line"><i>734</i>            target: &quot;request_span&quot;,</span>
+<span class="line"><i>735</i>            {</span>
+<span class="line"><i>736</i>                { &quot;request.attempt&quot; } = cause.attempt,</span>
+<span class="line"><i>737</i>                { &quot;migration.is_retry&quot; } = true,</span>
+<span class="line"><i>738</i>                { &quot;migration.reason&quot; } = error_type_name(cause.reason),</span>
+<span class="line"><i>739</i>                { &quot;migration.from_worker_id&quot; } = cause.from_worker_id,</span>
+<span class="line"><i>740</i>                { &quot;migration.tokens_completed&quot; } = self.completed_tokens</span>
+<span class="line"><i>741</i>            },</span>
+<span class="line"><i>742</i>            &quot;migration retries exhausted&quot;</span>
+<span class="line"><i>743</i>        );</span>
+<span class="line"><i>744</i>    }</span>
+<span class="line"><i>745</i></span>
+<span class="line"><i>746</i>    fn record_migration_outcome(&amp;self, migration_event: Option&lt;&amp;MigrationEvent&gt;, outcome: &amp;str) {</span>
+<span class="line"><i>747</i>        if let Some(event) = migration_event {</span>
+<span class="line"><i>748</i>            self.metrics.observe_migration_duration(</span>
+<span class="line"><i>749</i>                &amp;self.model_name,</span>
+<span class="line"><i>750</i>                event.migration_type,</span>
+<span class="line"><i>751</i>                outcome,</span>
+<span class="line"><i>752</i>                event.started_at.elapsed(),</span>
+<span class="line"><i>753</i>            );</span>
+<span class="line"><i>754</i>        }</span></code></pre></details><details class="source" id="src-rl-replacement-success"><summary><b>源码 · 替代 stream 建立成功即记录 success，而非等待完整请求终态</b><small>lib/llm/src/migration.rs:627–650</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/migration.rs#L627-L650" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>627</i>            let replayed_tokens = self.replayed_prompt_tokens();</span>
+<span class="line"><i>628</i>            let response_stream = self.next_generate.generate(request).await;</span>
+<span class="line"><i>629</i>            match response_stream {</span>
+<span class="line"><i>630</i>                Ok(next_stream) =&gt; {</span>
+<span class="line"><i>631</i>                    // A dispatch cancelled before its response prologue returns `Ok` empty,</span>
+<span class="line"><i>632</i>                    // so a stopped context here means the client left during the handshake.</span>
+<span class="line"><i>633</i>                    // The parent stops its children before itself, so check the attempt too.</span>
+<span class="line"><i>634</i>                    let outcome = if self.context.is_stopped()</span>
+<span class="line"><i>635</i>                        || self.context.is_killed()</span>
+<span class="line"><i>636</i>                        || attempt_context.is_stopped()</span>
+<span class="line"><i>637</i>                        || attempt_context.is_killed()</span>
+<span class="line"><i>638</i>                    {</span>
+<span class="line"><i>639</i>                        frontend_service::migration_outcome::CANCELLED</span>
+<span class="line"><i>640</i>                    } else {</span>
+<span class="line"><i>641</i>                        frontend_service::migration_outcome::SUCCESS</span>
+<span class="line"><i>642</i>                    };</span>
+<span class="line"><i>643</i>                    self.record_migration_outcome(migration_event.as_ref(), outcome);</span>
+<span class="line"><i>644</i>                    self.active_route_trace = Some(route_trace);</span>
+<span class="line"><i>645</i>                    self.next_stream = Some(next_stream);</span>
+<span class="line"><i>646</i>                    self.replayed_tokens = replayed_tokens;</span>
+<span class="line"><i>647</i>                    return Ok(());</span>
+<span class="line"><i>648</i>                }</span>
+<span class="line"><i>649</i>                Err(err) if is_migratable_for_request(&amp;self.request, err.as_ref()) =&gt; {</span>
+<span class="line"><i>650</i>                    let Some(migration_error) = migratable_error_in_chain(err.as_ref()) else {</span></code></pre></details><p>model_migration_total 按 new_request / ongoing_request 统计迁移活动；duration 从检测到迁移故障到替代建立/最终失败/取消。替代流拿到以后仍可能再次失败，因此 migration outcome=success 不等于完整用户请求最终成功。</p><pre><code># 补充真实集群/模型筛选
+sum by (model, migration_type) (
+  rate(dynamo_frontend_model_migration_total[5m])
+)
+
+histogram_quantile(0.95,
+  sum by (le, model, migration_type, outcome) (
+    rate(dynamo_frontend_model_migration_duration_seconds_bucket[5m])
+  )
+)</code></pre><p>request_span 记录 attempt、reason、from_worker_id、tokens_completed；worker_trace_link 在有输出/可用上下文时形成后续 migration_link，表现为 Span Link，不是强制把多个既有 Trace ID 合并。没有首个可用 link 的 setup 失败不能要求一定有 Worker span 前驱。</p></section><section id="rl-terminal" class="lesson"><div class="sectionhead"><h2>20 / 生命周期 Trace 的终态：只能完成一次</h2><label class="done"><input type="checkbox" data-read="rl-terminal"> 已读</label></div><details class="source" id="src-rl-terminal-once"><summary><b>源码 · LifecycleTerminal.finish 的 atomic once</b><small>lib/runtime/src/telemetry.rs:366–382</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/telemetry.rs#L366-L382" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>366</i>pub struct LifecycleTerminal(Option&lt;Arc&lt;TerminalState&gt;&gt;);</span>
+<span class="line"><i>367</i></span>
+<span class="line"><i>368</i>struct TerminalState {</span>
+<span class="line"><i>369</i>    span: Span,</span>
+<span class="line"><i>370</i>    finished: AtomicBool,</span>
+<span class="line"><i>371</i>}</span>
+<span class="line"><i>372</i></span>
+<span class="line"><i>373</i>impl LifecycleTerminal {</span>
+<span class="line"><i>374</i>    /// Record the first observed terminal result. Later races are ignored.</span>
+<span class="line"><i>375</i>    pub fn finish(&amp;self, outcome: TerminalOutcome) {</span>
+<span class="line"><i>376</i>        if let Some(state) = &amp;self.0</span>
+<span class="line"><i>377</i>            &amp;&amp; !state.finished.swap(true, Ordering::AcqRel)</span>
+<span class="line"><i>378</i>        {</span>
+<span class="line"><i>379</i>            state.record(outcome);</span>
+<span class="line"><i>380</i>        }</span>
+<span class="line"><i>381</i>    }</span>
+<span class="line"><i>382</i>}</span></code></pre></details><details class="source" id="src-rl-stream-terminal"><summary><b>源码 · stream Drop 时保留已发出的 semantic failure，否则 cancelled/failed</b><small>lib/llm/src/http/service/openai.rs:149–184</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/openai.rs#L149-L184" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>149</i>/// Preserve an emitted failure when the response body is dropped before EOF.</span>
+<span class="line"><i>150</i>struct StreamingLifecycleTerminal {</span>
+<span class="line"><i>151</i>    terminal: LifecycleTerminal,</span>
+<span class="line"><i>152</i>    error_signal: StreamErrorSignal,</span>
+<span class="line"><i>153</i>}</span>
+<span class="line"><i>154</i></span>
+<span class="line"><i>155</i>impl Drop for StreamingLifecycleTerminal {</span>
+<span class="line"><i>156</i>    fn drop(&amp;mut self) {</span>
+<span class="line"><i>157</i>        let delivered = self</span>
+<span class="line"><i>158</i>            .error_signal</span>
+<span class="line"><i>159</i>            .terminal_event_emitted()</span>
+<span class="line"><i>160</i>            .then(|| terminal_outcome_for_stream_error(&amp;self.error_signal))</span>
+<span class="line"><i>161</i>            .flatten();</span>
+<span class="line"><i>162</i>        self.terminal.finish(delivered.unwrap_or_else(|| {</span>
+<span class="line"><i>163</i>            if std::thread::panicking() {</span>
+<span class="line"><i>164</i>                TerminalOutcome::Failed</span>
+<span class="line"><i>165</i>            } else {</span>
+<span class="line"><i>166</i>                TerminalOutcome::Cancelled</span>
+<span class="line"><i>167</i>            }</span>
+<span class="line"><i>168</i>        }));</span>
+<span class="line"><i>169</i>    }</span>
+<span class="line"><i>170</i>}</span>
+<span class="line"><i>171</i></span>
+<span class="line"><i>172</i>fn terminal_outcome_for_stream_error(signal: &amp;StreamErrorSignal) -&gt; Option&lt;TerminalOutcome&gt; {</span>
+<span class="line"><i>173</i>    if signal</span>
+<span class="line"><i>174</i>        .semantic_error()</span>
+<span class="line"><i>175</i>        .is_some_and(|error| error.class().normalized() == ErrorClass::DeadlineExceeded)</span>
+<span class="line"><i>176</i>    {</span>
+<span class="line"><i>177</i>        Some(TerminalOutcome::TimedOut)</span>
+<span class="line"><i>178</i>    } else {</span>
+<span class="line"><i>179</i>        signal.error_type().map(terminal_outcome_for_error_type)</span>
+<span class="line"><i>180</i>    }</span>
+<span class="line"><i>181</i>}</span>
+<span class="line"><i>182</i></span>
+<span class="line"><i>183</i>fn classify_lifecycle_response(</span>
+<span class="line"><i>184</i>    response: impl std::future::Future&lt;Output = Result&lt;Response, ErrorResponse&gt;&gt;,</span></code></pre></details><details class="source" id="src-rl-http-terminal"><summary><b>源码 · 在首次 body poll 前持有 fallback，流结束后分类 terminal</b><small>lib/llm/src/http/service/openai.rs:3810–3841</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/http/service/openai.rs#L3810-L3841" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>3810</i>        );</span>
+<span class="line"><i>3811</i>        let terminal = terminal.clone();</span>
+<span class="line"><i>3812</i>        // Arm the cancellation fallback before Axum can take ownership of the</span>
+<span class="line"><i>3813</i>        // lazy response body. If the body is dropped without being polled, the</span>
+<span class="line"><i>3814</i>        // guard still records cancellation instead of an unknown outcome.</span>
+<span class="line"><i>3815</i>        let stream_terminal = StreamingLifecycleTerminal {</span>
+<span class="line"><i>3816</i>            terminal: terminal.clone(),</span>
+<span class="line"><i>3817</i>            error_signal: monitor_error_signal.clone(),</span>
+<span class="line"><i>3818</i>        };</span>
+<span class="line"><i>3819</i>        let stream = async_stream::stream! {</span>
+<span class="line"><i>3820</i>            let _stream_terminal = stream_terminal;</span>
+<span class="line"><i>3821</i>            let mut response_streaming = None;</span>
+<span class="line"><i>3822</i>            let mut inner = Box::pin(stream);</span>
+<span class="line"><i>3823</i>            while let Some(item) = inner.next().await {</span>
+<span class="line"><i>3824</i>                // This monitored stream is the final source of client-visible</span>
+<span class="line"><i>3825</i>                // SSE events. It includes regular and side-channel events as</span>
+<span class="line"><i>3826</i>                // well as errors converted into structured SSE + [DONE].</span>
+<span class="line"><i>3827</i>                if response_streaming.is_none() {</span>
+<span class="line"><i>3828</i>                    let _entered_request_lifecycle = request_lifecycle.enter();</span>
+<span class="line"><i>3829</i>                    response_streaming = Some(lifecycle.start(LifecycleStage::ResponseStreaming));</span>
+<span class="line"><i>3830</i>                }</span>
+<span class="line"><i>3831</i>                yield item;</span>
+<span class="line"><i>3832</i>            }</span>
+<span class="line"><i>3833</i>            if let Some(outcome) = terminal_outcome_for_stream_error(&amp;monitor_error_signal) {</span>
+<span class="line"><i>3834</i>                terminal.finish(outcome);</span>
+<span class="line"><i>3835</i>            } else if ctx.is_stopped() || ctx.is_killed() {</span>
+<span class="line"><i>3836</i>                terminal.finish(TerminalOutcome::Cancelled);</span>
+<span class="line"><i>3837</i>            } else {</span>
+<span class="line"><i>3838</i>                terminal.finish(TerminalOutcome::Success);</span>
+<span class="line"><i>3839</i>            }</span>
+<span class="line"><i>3840</i>        };</span>
+<span class="line"><i>3841</i></span></code></pre></details><p>当前 DYN_LIFECYCLE_TRACE_ENABLED 生命周期阶段可帮助区分 preprocessing、dispatch、admission、worker operation、response.streaming；它不自动填补所有引擎/存储事件。terminal emitted/finish once 防止多层 Drop 把一个已确定错误覆盖为 cancellation，但最终状态仍取决于观测到的边界。</p><aside class="note ">Request Trace 捕获、JSONL 诊断、生命周期 span 和 Prometheus 是不同通道。生产排查应关联 request ID、attempt、worker ID、Trace ID 与规范错误，不必默认记录完整 prompt/输出载荷。</aside></section><section id="rl-shutdown" class="lesson"><div class="sectionhead"><h2>21 / 优雅退出：先撤流量，再 grace/drain/cleanup</h2><label class="done"><input type="checkbox" data-read="rl-shutdown"> 已读</label></div><details class="source" id="src-rl-py-shutdown"><summary><b>源码 · Python：unregister、grace、可选 drain/pre-shutdown、shutdown event</b><small>components/src/dynamo/common/utils/graceful_shutdown.py:107–150</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/common/utils/graceful_shutdown.py#L107-L150" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>107</i>    logger.info(&quot;Received shutdown signal; unregistering endpoints from discovery&quot;)</span>
+<span class="line"><i>108</i>    await _unregister_endpoints(list(endpoints))</span>
+<span class="line"><i>109</i></span>
+<span class="line"><i>110</i>    if grace_period_s &gt; 0:</span>
+<span class="line"><i>111</i>        logger.info(&quot;Grace period %.2fs before stopping endpoints&quot;, grace_period_s)</span>
+<span class="line"><i>112</i>        await asyncio.sleep(grace_period_s)</span>
+<span class="line"><i>113</i></span>
+<span class="line"><i>114</i>    if drain_callback is not None:</span>
+<span class="line"><i>115</i>        logger.info(</span>
+<span class="line"><i>116</i>            &quot;Draining in-flight transfers before shutdown (issue #7319 safeguard)&quot;</span>
+<span class="line"><i>117</i>        )</span>
+<span class="line"><i>118</i>        try:</span>
+<span class="line"><i>119</i>            await asyncio.wait_for(</span>
+<span class="line"><i>120</i>                drain_callback(), timeout=_DEFAULT_DRAIN_TIMEOUT_SECS</span>
+<span class="line"><i>121</i>            )</span>
+<span class="line"><i>122</i>            logger.info(&quot;Drain complete&quot;)</span>
+<span class="line"><i>123</i>        except asyncio.TimeoutError:</span>
+<span class="line"><i>124</i>            logger.warning(</span>
+<span class="line"><i>125</i>                &quot;Drain callback timed out after %.0fs, proceeding with shutdown&quot;,</span>
+<span class="line"><i>126</i>                _DEFAULT_DRAIN_TIMEOUT_SECS,</span>
+<span class="line"><i>127</i>            )</span>
+<span class="line"><i>128</i>        except Exception:</span>
+<span class="line"><i>129</i>            logger.exception(</span>
+<span class="line"><i>130</i>                &quot;Drain callback raised an exception; proceeding with shutdown&quot;</span>
+<span class="line"><i>131</i>            )</span>
+<span class="line"><i>132</i></span>
+<span class="line"><i>133</i>    if pre_shutdown_callback is not None:</span>
+<span class="line"><i>134</i>        logger.info(&quot;Withdrawing worker lifecycle records before engine shutdown&quot;)</span>
+<span class="line"><i>135</i>        try:</span>
+<span class="line"><i>136</i>            await asyncio.wait_for(</span>
+<span class="line"><i>137</i>                pre_shutdown_callback(), timeout=_DEFAULT_CLEANUP_TIMEOUT_SECS</span>
+<span class="line"><i>138</i>            )</span>
+<span class="line"><i>139</i>        except asyncio.TimeoutError:</span>
+<span class="line"><i>140</i>            logger.warning(</span>
+<span class="line"><i>141</i>                &quot;Pre-shutdown callback timed out after %.0fs, proceeding with shutdown&quot;,</span>
+<span class="line"><i>142</i>                _DEFAULT_CLEANUP_TIMEOUT_SECS,</span>
+<span class="line"><i>143</i>            )</span>
+<span class="line"><i>144</i>        except Exception:</span>
+<span class="line"><i>145</i>            logger.exception(</span>
+<span class="line"><i>146</i>                &quot;Pre-shutdown callback raised an exception; proceeding with shutdown&quot;</span>
+<span class="line"><i>147</i>            )</span>
+<span class="line"><i>148</i></span>
+<span class="line"><i>149</i>    if shutdown_event is not None:</span>
+<span class="line"><i>150</i>        shutdown_event.set()</span></code></pre></details><details class="source" id="src-rl-rust-shutdown"><summary><b>源码 · Rust backend-common 的 grace→drain→cleanup</b><small>lib/backend-common/src/worker.rs:1341–1364</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/worker.rs#L1341-L1364" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1341</i>    async fn run_engine_shutdown_steps(&amp;mut self) {</span>
+<span class="line"><i>1342</i>        self.run_engine_shutdown_steps_with_grace(grace_period_secs())</span>
+<span class="line"><i>1343</i>            .await</span>
+<span class="line"><i>1344</i>    }</span>
+<span class="line"><i>1345</i></span>
+<span class="line"><i>1346</i>    /// Same as [`run_engine_shutdown_steps`] but with an explicit grace</span>
+<span class="line"><i>1347</i>    /// period. Lets unit tests assert on call ordering without setting</span>
+<span class="line"><i>1348</i>    /// `DYN_GRACEFUL_SHUTDOWN_GRACE_PERIOD_SECS` (which is process-global</span>
+<span class="line"><i>1349</i>    /// and would race other parallel tests).</span>
+<span class="line"><i>1350</i>    async fn run_engine_shutdown_steps_with_grace(&amp;mut self, grace: f64) {</span>
+<span class="line"><i>1351</i>        if grace &gt; 0.0 {</span>
+<span class="line"><i>1352</i>            tracing::info!(&quot;Grace period {:.2}s before drain&quot;, grace);</span>
+<span class="line"><i>1353</i>            tokio::time::sleep(Duration::from_secs_f64(grace)).await;</span>
+<span class="line"><i>1354</i>        }</span>
+<span class="line"><i>1355</i></span>
+<span class="line"><i>1356</i>        let drain_start = std::time::Instant::now();</span>
+<span class="line"><i>1357</i>        self.drain_until_idle_or_deadline().await;</span>
+<span class="line"><i>1358</i>        let drain_elapsed = drain_start.elapsed().as_secs_f64();</span>
+<span class="line"><i>1359</i>        if let Some(lifecycle) = self.lifecycle.as_ref() {</span>
+<span class="line"><i>1360</i>            lifecycle.observe_drain_time(drain_elapsed);</span>
+<span class="line"><i>1361</i>        }</span>
+<span class="line"><i>1362</i></span>
+<span class="line"><i>1363</i>        self.cleanup_once().await;</span>
+<span class="line"><i>1364</i>    }</span></code></pre></details><details class="source" id="src-rl-prefill-drain"><summary><b>源码 · Prefill 才 poll quiescent；有限预算、心跳和超时</b><small>lib/backend-common/src/worker.rs:1374–1427</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/worker.rs#L1374-L1427" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1374</i>    async fn drain_until_idle_or_deadline(&amp;self) {</span>
+<span class="line"><i>1375</i>        if !self.config.disaggregation_mode.is_prefill() {</span>
+<span class="line"><i>1376</i>            return;</span>
+<span class="line"><i>1377</i>        }</span>
+<span class="line"><i>1378</i>        let configured = drain_timeout_secs();</span>
+<span class="line"><i>1379</i>        let cap = (graceful_shutdown_timeout().as_secs_f64() - CLEANUP_RESERVE_S).max(0.0);</span>
+<span class="line"><i>1380</i>        let budget = configured.min(cap);</span>
+<span class="line"><i>1381</i>        let deadline = std::time::Instant::now() + Duration::from_secs_f64(budget);</span>
+<span class="line"><i>1382</i>        let start = std::time::Instant::now();</span>
+<span class="line"><i>1383</i>        let mut last_heartbeat = start;</span>
+<span class="line"><i>1384</i>        let mut announced = false;</span>
+<span class="line"><i>1385</i>        loop {</span>
+<span class="line"><i>1386</i>            match self.engine.is_quiescent().await {</span>
+<span class="line"><i>1387</i>                // Quiescent: in-flight transfers done, safe to exit drain.</span>
+<span class="line"><i>1388</i>                Ok(Some(true)) =&gt; {</span>
+<span class="line"><i>1389</i>                    if announced {</span>
+<span class="line"><i>1390</i>                        tracing::info!(</span>
+<span class="line"><i>1391</i>                            &quot;drain: exited (quiescent, elapsed={:.1}s)&quot;,</span>
+<span class="line"><i>1392</i>                            start.elapsed().as_secs_f64()</span>
+<span class="line"><i>1393</i>                        );</span>
+<span class="line"><i>1394</i>                    }</span>
+<span class="line"><i>1395</i>                    return;</span>
+<span class="line"><i>1396</i>                }</span>
+<span class="line"><i>1397</i>                // Busy (Some(false)) or no introspection (None): keep polling.</span>
+<span class="line"><i>1398</i>                Ok(Some(false)) | Ok(None) =&gt; {}</span>
+<span class="line"><i>1399</i>                Err(e) =&gt; {</span>
+<span class="line"><i>1400</i>                    tracing::debug!(error = %e, &quot;is_quiescent raised; treating as not quiescent&quot;)</span>
+<span class="line"><i>1401</i>                }</span>
+<span class="line"><i>1402</i>            }</span>
+<span class="line"><i>1403</i>            if !announced {</span>
+<span class="line"><i>1404</i>                // First non-quiescent poll: announce once that we&#x27;re waiting.</span>
+<span class="line"><i>1405</i>                tracing::info!(</span>
+<span class="line"><i>1406</i>                    &quot;drain: waiting for prefill to quiesce; polling is_quiescent (timeout={:.1}s)&quot;,</span>
+<span class="line"><i>1407</i>                    budget</span>
+<span class="line"><i>1408</i>                );</span>
+<span class="line"><i>1409</i>                announced = true;</span>
+<span class="line"><i>1410</i>            }</span>
+<span class="line"><i>1411</i>            if std::time::Instant::now() &gt;= deadline {</span>
+<span class="line"><i>1412</i>                tracing::warn!(</span>
+<span class="line"><i>1413</i>                    &quot;drain: timed out at {:.1}s; proceeding with cleanup&quot;,</span>
+<span class="line"><i>1414</i>                    start.elapsed().as_secs_f64()</span>
+<span class="line"><i>1415</i>                );</span>
+<span class="line"><i>1416</i>                return;</span>
+<span class="line"><i>1417</i>            }</span>
+<span class="line"><i>1418</i>            if last_heartbeat.elapsed().as_secs_f64() &gt;= DRAIN_HEARTBEAT_INTERVAL_S {</span>
+<span class="line"><i>1419</i>                tracing::info!(</span>
+<span class="line"><i>1420</i>                    &quot;drain: heartbeat (elapsed={:.1}s)&quot;,</span>
+<span class="line"><i>1421</i>                    start.elapsed().as_secs_f64()</span>
+<span class="line"><i>1422</i>                );</span>
+<span class="line"><i>1423</i>                last_heartbeat = std::time::Instant::now();</span>
+<span class="line"><i>1424</i>            }</span>
+<span class="line"><i>1425</i>            tokio::time::sleep(Duration::from_secs_f64(DRAIN_POLL_INTERVAL_S)).await;</span>
+<span class="line"><i>1426</i>        }</span>
+<span class="line"><i>1427</i>    }</span></code></pre></details><details class="source" id="src-rl-shutdown-gauges"><summary><b>源码 · model_load/drain/cleanup 是 Gauge，不是 Histogram</b><small>lib/backend-common/src/metrics.rs:124–163</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/backend-common/src/metrics.rs#L124-L163" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>124</i>    pub fn new(metrics: &amp;EngineMetrics, model_load_time_seconds: f64) -&gt; Result&lt;Self, DynamoError&gt; {</span>
+<span class="line"><i>125</i>        let labels = const_labels(metrics);</span>
+<span class="line"><i>126</i>        let hierarchy = metrics.hierarchy().as_ref();</span>
+<span class="line"><i>127</i>        let build = |name: &amp;str, help: &amp;str| {</span>
+<span class="line"><i>128</i>            create_metric::&lt;prometheus::Gauge, _&gt;(hierarchy, name, help, &amp;labels, None, None)</span>
+<span class="line"><i>129</i>                .map_err(|e| gauge_err(name, e))</span>
+<span class="line"><i>130</i>        };</span>
+<span class="line"><i>131</i>        let cleanup = build(</span>
+<span class="line"><i>132</i>            &quot;cleanup_time_seconds&quot;,</span>
+<span class="line"><i>133</i>            &quot;Time spent releasing engine resources during shutdown. Set \</span>
+<span class="line"><i>134</i>             by the framework once after engine.cleanup() returns.&quot;,</span>
+<span class="line"><i>135</i>        )?;</span>
+<span class="line"><i>136</i>        let drain = build(</span>
+<span class="line"><i>137</i>            &quot;drain_time_seconds&quot;,</span>
+<span class="line"><i>138</i>            &quot;Time spent draining in-flight work before cleanup. Stays at \</span>
+<span class="line"><i>139</i>             0 for engines without a drain hook.&quot;,</span>
+<span class="line"><i>140</i>        )?;</span>
+<span class="line"><i>141</i>        let model_load = build(</span>
+<span class="line"><i>142</i>            &quot;model_load_time_seconds&quot;,</span>
+<span class="line"><i>143</i>            &quot;Time engine.start() took to return. Set once at Worker setup.&quot;,</span>
+<span class="line"><i>144</i>        )?;</span>
+<span class="line"><i>145</i>        model_load.set(model_load_time_seconds);</span>
+<span class="line"><i>146</i>        Ok(Self {</span>
+<span class="line"><i>147</i>            cleanup_time_seconds: cleanup,</span>
+<span class="line"><i>148</i>            drain_time_seconds: drain,</span>
+<span class="line"><i>149</i>            model_load_time_seconds: model_load,</span>
+<span class="line"><i>150</i>        })</span>
+<span class="line"><i>151</i>    }</span>
+<span class="line"><i>152</i></span>
+<span class="line"><i>153</i>    /// Record cleanup latency. `Worker` calls this exactly once during</span>
+<span class="line"><i>154</i>    /// shutdown after `engine.cleanup()` returns.</span>
+<span class="line"><i>155</i>    pub fn observe_cleanup_time(&amp;self, seconds: f64) {</span>
+<span class="line"><i>156</i>        self.cleanup_time_seconds.set(seconds);</span>
+<span class="line"><i>157</i>    }</span>
+<span class="line"><i>158</i></span>
+<span class="line"><i>159</i>    /// Record drain latency. `Worker` calls this exactly once during</span>
+<span class="line"><i>160</i>    /// graceful shutdown after the `engine.is_quiescent()` drain loop returns.</span>
+<span class="line"><i>161</i>    pub fn observe_drain_time(&amp;self, seconds: f64) {</span>
+<span class="line"><i>162</i>        self.drain_time_seconds.set(seconds);</span>
+<span class="line"><i>163</i>    }</span></code></pre></details><p>Rust drain 默认 30s，预算受 graceful_shutdown_timeout 减 cleanup reserve 约束；每 0.5s poll，约 5s 进度日志。Some(true) 才提前退出；None/false/Err 继续到预算。Python helper 的 drain 是可选 callback；SGLang 安装自己的 signal ownership 后调用该 helper，不直接等同 Rust Worker 的实现。</p><aside class="note ">撤注册不能瞬间刷新所有客户端缓存，grace 也不等于所有请求都已完成。Kubernetes terminationGracePeriodSeconds、runtime graceful timeout、drain、engine cleanup 必须协调。下线末期才 Set 的 gauge 可能来不及被 scrape，不能只靠最后一次 Prometheus 样本证明清理执行。</aside></section><section id="rl-cluster" class="lesson"><div class="sectionhead"><h2>22 / 对照 ACK：核查项与分阶段验收</h2><label class="done"><input type="checkbox" data-read="rl-cluster"> 已读</label></div><p>依据 <a href="ack-LB97i2CZNR/dynamo-test-deployment.md">ACK 1.4.1 部署记录</a>，当前是 SGLang 混合 aggregated/PD、TCP/ZMQ、Worker grace 300s、Frontend grace 60s。记录未给出迁移配置和完整取消实现，不把本源码的新行为视为线上已启用。</p><div class="tablewrap"><table><thead><tr><th>用例</th><th>执行/观测重点</th><th>完成证据</th></tr></thead><tbody><tr><td>正常 SSE 与非流式</td><td>TTFT/ITL、终止格式、in-flight/queue 回落</td><td>唯一 request ID、实际 worker/attempt、完整协议结果</td></tr><tr><td>首 token 前断开</td><td>handler Drop、准入排队取消、已提交引擎请求</td><td>HTTP/runtime/admission/engine 各层信号与占用变化</td></tr><tr><td>首 token 后断开</td><td>response body Drop、engine abort 与残留请求</td><td>被取消请求不继续长期占用，其他请求正常</td></tr><tr><td>PD staged KV 后断开</td><td>确认真实 PD，cleanup dispatch 是否达到指定 Decode</td><td>stage/budget、KV释放/过期、没有无意义迁移</td></tr><tr><td>后端静默与连接故障</td><td>区分 establish/inactivity/client heartbeat</td><td>typed error、Worker inhibition、请求终态与资源回落</td></tr><tr><td>受控 Worker 中断并迁移</td><td>启用配置、允许请求类型、替代容量与 token replay</td><td>attempt/link、usage、输出边界、恢复及最终终态</td></tr><tr><td>SIGTERM 与强杀</td><td>分别验收 graceful/shutdown 和故障恢复</td><td>撤注册/流量变化、grace/drain日志、重试与最终资源状态</td></tr></tbody></table></div><p>故障注入必须在隔离实例/受控窗口执行，先确认路由不会误入 igd-* 或 aggregated 旁路。这里仅给验收设计，没有对现有集群执行断连压测、杀 Pod 或更新配置。</p></section><section id="rl-evidence" class="lesson"><div class="sectionhead"><h2>23 / 阅读证据、覆盖与后续边界</h2><label class="done"><input type="checkbox" data-read="rl-evidence"> 已读</label></div><p><a href="reliability-source-manifest.json">固定提交源码清单</a>包含路径、行号、revision 和 SHA-256。相关专题：<a href="observability.html">可观测</a>、<a href="pd-trace.html">PD Trace</a>、<a href="storage-events.html">Storage &amp; Events</a>、<a href="control-plane.html">控制面</a>。</p><p>配套官方仓库文档位于 docs/fern/pages/developer-guide/knowledge-base/concepts/fault-tolerance/，覆盖 cancellation、migration、rejection、admission 与 graceful shutdown。部分文档是原理概述，本文用固定实现限定其保证范围。</p><p>已有测试可作为阅读入口：disconnect 的 unpolled/terminal/error/timeout cases，routing_host/cancellation 的 shared-budget tests，adapter 的 abort-stall tests，migration 的 guided decoding/usage/replay cases。此次只校验文档，不把阅读测试源码说成已执行推理测试。</p><aside class="note ">不逐行覆盖所有传输、所有 Python backend、各引擎 scheduler 内部、GPU kernel 中断、存储故障一致性及进程崩溃后的全部恢复协议。以请求完成/资源释放/远端恢复三套边界核验可靠性，不能用其中一种信号替代另外两种。</aside></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 9734418e5bc71027e6bd04a09314bf1765208c72。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

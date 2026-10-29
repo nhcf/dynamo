@@ -1,0 +1,192 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "拆解 Runtime / DistributedRuntime、endpoint 注册、请求与响应传输、Context、Python 绑定及观测传播。",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "runtime-1",
+      "path": "lib/runtime/src/runtime.rs",
+      "start": 72,
+      "end": 130,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "5a40cfc471e1ec911b975d5282e1cd01fd1fdb2061a4614ec7e9695f22f21147"
+    },
+    {
+      "id": "runtime-2",
+      "path": "lib/runtime/src/distributed.rs",
+      "start": 139,
+      "end": 188,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "4352592e0bb83d326ccc6026ce59b2e4e77256be0176b55c16774583e4926452"
+    },
+    {
+      "id": "runtime-3",
+      "path": "lib/runtime/src/component.rs",
+      "start": 105,
+      "end": 137,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "b9bfbbc6142e2cf946e32c1b9972c6d0eb12e2fc8baabe8614627fc83f5f8a3c"
+    },
+    {
+      "id": "runtime-4",
+      "path": "lib/runtime/src/component.rs",
+      "start": 364,
+      "end": 379,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "b9bfbbc6142e2cf946e32c1b9972c6d0eb12e2fc8baabe8614627fc83f5f8a3c"
+    },
+    {
+      "id": "runtime-5",
+      "path": "lib/runtime/src/distributed.rs",
+      "start": 1053,
+      "end": 1117,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "4352592e0bb83d326ccc6026ce59b2e4e77256be0176b55c16774583e4926452"
+    },
+    {
+      "id": "runtime-6",
+      "path": "lib/runtime/src/distributed.rs",
+      "start": 1170,
+      "end": 1200,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "4352592e0bb83d326ccc6026ce59b2e4e77256be0176b55c16774583e4926452"
+    },
+    {
+      "id": "runtime-7",
+      "path": "lib/runtime/src/pipeline/network.rs",
+      "start": 58,
+      "end": 90,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "6cd4596dfdab1cfe65cc92ef0f070bfd6e9a8cb5e59c3387cac2cb12b9471593"
+    },
+    {
+      "id": "runtime-8",
+      "path": "lib/runtime/src/pipeline/network.rs",
+      "start": 117,
+      "end": 153,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "6cd4596dfdab1cfe65cc92ef0f070bfd6e9a8cb5e59c3387cac2cb12b9471593"
+    },
+    {
+      "id": "runtime-9",
+      "path": "lib/runtime/src/distributed.rs",
+      "start": 215,
+      "end": 266,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "4352592e0bb83d326ccc6026ce59b2e4e77256be0176b55c16774583e4926452"
+    },
+    {
+      "id": "runtime-10",
+      "path": "lib/runtime/src/component/endpoint.rs",
+      "start": 134,
+      "end": 166,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "59a6889fa5137820ea4374582b8b7b5b089b3a4d1c71e22b0edf0fd307eb231d"
+    },
+    {
+      "id": "runtime-11",
+      "path": "lib/runtime/src/component/endpoint.rs",
+      "start": 167,
+      "end": 218,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "59a6889fa5137820ea4374582b8b7b5b089b3a4d1c71e22b0edf0fd307eb231d"
+    },
+    {
+      "id": "runtime-12",
+      "path": "lib/runtime/src/discovery/mod.rs",
+      "start": 1567,
+      "end": 1613,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7aa15551dd6ff5fa2fb09b4faaaabc9b8dbfdf73995a2dab2e4d45dff5770520"
+    },
+    {
+      "id": "runtime-13",
+      "path": "lib/runtime/src/pipeline/network/egress/addressed_router.rs",
+      "start": 414,
+      "end": 470,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "144ce11d1a027576eba0a00fce3e0b0e5ba21b85494980562064e5a15483dc71"
+    },
+    {
+      "id": "runtime-14",
+      "path": "lib/runtime/src/pipeline/context.rs",
+      "start": 14,
+      "end": 64,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "02395c80f51715a8f92b99d57b03de58064080850cf8f3ba2b97f0e6919549e4"
+    },
+    {
+      "id": "runtime-15",
+      "path": "lib/runtime/src/pipeline/context.rs",
+      "start": 440,
+      "end": 489,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "02395c80f51715a8f92b99d57b03de58064080850cf8f3ba2b97f0e6919549e4"
+    },
+    {
+      "id": "runtime-16",
+      "path": "lib/runtime/src/pipeline/network/ingress/shared_tcp_endpoint.rs",
+      "start": 286,
+      "end": 337,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "975ef76da70cfa4de9f1a968bcaeb2db477d88043a0b12116852417ba8e903a7"
+    },
+    {
+      "id": "runtime-17",
+      "path": "lib/runtime/src/logging.rs",
+      "start": 765,
+      "end": 813,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "91ada36b1a7472e781620f4e99ee7ea8f2c1af0fb105e510f8292274ee010648"
+    },
+    {
+      "id": "runtime-18",
+      "path": "lib/runtime/src/pipeline/network/egress/route_span.rs",
+      "start": 20,
+      "end": 81,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "39e6ce55565c9ae0f44063c3b60193ac337533d2d4034112e89e7b83689a6e92"
+    },
+    {
+      "id": "runtime-19",
+      "path": "lib/bindings/python/rust/lib.rs",
+      "start": 1710,
+      "end": 1765,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "04a45c12de4e86e1666a6d64a516efb7409b370a50bf5588718451e9bfce88e3"
+    },
+    {
+      "id": "runtime-20",
+      "path": "lib/bindings/python/rust/context.rs",
+      "start": 447,
+      "end": 462,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2468665304c0d541fbbf0bec39d81b2354548136bbd3192a0fa534567753d5b6"
+    },
+    {
+      "id": "runtime-21",
+      "path": "lib/runtime/src/metrics.rs",
+      "start": 694,
+      "end": 731,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "5b31472853686070e70c681aa7856e531397b82e9a4ebf049130a862837b79cf"
+    },
+    {
+      "id": "runtime-22",
+      "path": "lib/runtime/src/metrics.rs",
+      "start": 875,
+      "end": 910,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "5b31472853686070e70c681aa7856e531397b82e9a4ebf049130a862837b79cf"
+    },
+    {
+      "id": "runtime-23",
+      "path": "lib/runtime/src/component/endpoint.rs",
+      "start": 270,
+      "end": 313,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "59a6889fa5137820ea4374582b8b7b5b089b3a4d1c71e22b0edf0fd307eb231d"
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "把单元/契约测试、Mocker、offline/online replay 与真实 AIPerf 测量分开，追踪输入、确定性、telemetry 和报告的证据边界。",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "validation-1",
+      "path": "lib/backend-common/src/testing.rs",
+      "start": 532,
+      "end": 562,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "69b554df1e002bb659af920223e59ad5b68a50539a87e85acb61e54231b2c798"
+    },
+    {
+      "id": "validation-2",
+      "path": "lib/backend-common/src/testing.rs",
+      "start": 564,
+      "end": 606,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "69b554df1e002bb659af920223e59ad5b68a50539a87e85acb61e54231b2c798"
+    },
+    {
+      "id": "validation-3",
+      "path": "lib/mocker/src/engine_adapter.rs",
+      "start": 144,
+      "end": 172,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7f5aee06b4e81a8bbc49073341cefc1affbd3a8eb81c302ca4d37f5f72ac082d"
+    },
+    {
+      "id": "validation-4",
+      "path": "lib/mocker/src/scheduler/metrics.rs",
+      "start": 5,
+      "end": 56,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "4c8eb54e00d0981a0b0ea6c9c7bc9e090fc2c2d626beee82f0d654d71d7b6077"
+    },
+    {
+      "id": "validation-5",
+      "path": "lib/data-gen/src/request_trace/load.rs",
+      "start": 27,
+      "end": 89,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "61edfd95e4730255e559f30056623d6efe120bd6414cc5cc8771ba60b242e7ea"
+    },
+    {
+      "id": "validation-6",
+      "path": "components/src/dynamo/replay/api.py",
+      "start": 380,
+      "end": 422,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "21436b69b62e3e4d842842e1a9ea30403fcfd3746669025ec4463d9adcaf8366"
+    },
+    {
+      "id": "validation-7",
+      "path": "lib/mocker/src/replay/offline/entrypoints.rs",
+      "start": 119,
+      "end": 154,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "cfc7f2d90f0f43b4469d988cb70bd9064158e08a894ddafdefd37a635610825a"
+    },
+    {
+      "id": "validation-8",
+      "path": "lib/mocker/src/replay/offline/entrypoints.rs",
+      "start": 196,
+      "end": 254,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "cfc7f2d90f0f43b4469d988cb70bd9064158e08a894ddafdefd37a635610825a"
+    },
+    {
+      "id": "validation-9",
+      "path": "lib/mocker/src/replay/mod.rs",
+      "start": 169,
+      "end": 215,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f6b559307b0e9874ffac4948489b8d2f0916bc530da125a23c13257423d6b374"
+    },
+    {
+      "id": "validation-10",
+      "path": "components/src/dynamo/replay/api.py",
+      "start": 415,
+      "end": 422,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "21436b69b62e3e4d842842e1a9ea30403fcfd3746669025ec4463d9adcaf8366"
+    },
+    {
+      "id": "validation-11",
+      "path": "components/src/dynamo/replay/api.py",
+      "start": 424,
+      "end": 450,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "21436b69b62e3e4d842842e1a9ea30403fcfd3746669025ec4463d9adcaf8366"
+    },
+    {
+      "id": "validation-12",
+      "path": "lib/mocker/src/replay/online/entrypoints.rs",
+      "start": 68,
+      "end": 99,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "082d9c127cc73374f0b7d5769510f2fe4e8f81bac0c1e7fa13613965e1415178"
+    },
+    {
+      "id": "validation-13",
+      "path": "lib/mocker/src/replay/online/live_runtime.rs",
+      "start": 101,
+      "end": 133,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "ceb15188539e35bc607db74c8013015f93cb0031ec03751ea8dff4fc0f98dcc5"
+    },
+    {
+      "id": "validation-14",
+      "path": "lib/mocker/src/replay/online/live_runtime.rs",
+      "start": 153,
+      "end": 189,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "ceb15188539e35bc607db74c8013015f93cb0031ec03751ea8dff4fc0f98dcc5"
+    },
+    {
+      "id": "validation-15",
+      "path": "lib/mocker/src/replay/online/recorder.rs",
+      "start": 31,
+      "end": 58,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "a5bb22fcfeb28392fd8b843cb96daace2af6a80a7d5caccf905618f158139d05"
+    },
+    {
+      "id": "validation-16",
+      "path": "lib/mocker/src/replay/online/recorder.rs",
+      "start": 156,
+      "end": 173,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "a5bb22fcfeb28392fd8b843cb96daace2af6a80a7d5caccf905618f158139d05"
+    },
+    {
+      "id": "validation-17",
+      "path": "lib/mocker/src/replay/mod.rs",
+      "start": 68,
+      "end": 94,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f6b559307b0e9874ffac4948489b8d2f0916bc530da125a23c13257423d6b374"
+    },
+    {
+      "id": "validation-18",
+      "path": "components/src/dynamo/replay/api.py",
+      "start": 330,
+      "end": 347,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "21436b69b62e3e4d842842e1a9ea30403fcfd3746669025ec4463d9adcaf8366"
+    }
+  ]
+}

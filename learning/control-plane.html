@@ -1,0 +1,1260 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>控制面：架构、原理与可观测源码 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#cp-scope">01 / 控制面的边界与组件地图</a><a href="#cp-architecture">02 / 三条控制闭环与一条请求路径</a><a href="#cp-contract">03 / CRD 是意图与状态契约，不是命令队列</a><a href="#cp-reconcile">04 / 从 API 变更到幂等收敛</a><a href="#cp-admission">05 / Admission 指标：从注册到实际 Observe/Inc</a><a href="#cp-inventory">06 / 资源存量 Gauge：周期、作用域和旧序列</a><a href="#cp-export">07 / 指标注册、HTTPS 暴露与 ServiceMonitor</a><a href="#cp-framework">08 / 调谐、队列和健康不能混作一个 Ready</a><a href="#cp-events">09 / 状态、日志、Kubernetes Event 与 Trace 的关系</a><a href="#cp-dcd">10 / DCD：子资源执行与故障定位边界</a><a href="#cp-dgdr">11 / DGDR + Profiler：从 SLA 需求到可部署配置</a><a href="#cp-profiler-observe">12 / Profiler 进度与失败：文件 → sidecar → ConfigMap → status</a><a href="#cp-scale">13 / Planner 与伸缩执行：决定、提交、收敛分开观测</a><a href="#cp-model">14 / DynamoModel：模型端点与 LoRA 管理</a><a href="#cp-discovery">15 / Discovery 是分布式成员控制，不是一个中心路由 Pod</a><a href="#cp-discovery-observe">16 / Discovery 的可观测语义：connect、sync、watch 三件事</a><a href="#cp-queries">17 / 查询示例与可验证的排障顺序</a><a href="#cp-cluster">18 / 对照你的 ACK 部署：哪些存在，哪些尚未证明</a><a href="#cp-evidence">19 / 源码阅读入口、版本与维护</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 9734418e5</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>控制面：架构、原理与可观测源码</h1><p class="lede">沿部署意图、容量调节、成员发现三条闭环，追到指标记录、状态持久化和采集出口。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 9734418e5</span><span class="pill ">控制面专题 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="cp-scope" class="lesson"><div class="sectionhead"><h2>01 / 控制面的边界与组件地图</h2><label class="done"><input type="checkbox" data-read="cp-scope"> 已读</label></div><p><strong>控制面维护部署意图、成员关系和容量目标；Request Plane 执行每次推理。</strong>本章覆盖 Kubernetes Operator、Admission、DGD/DCD、DGDR/Profiler、DGDSA、DynamoModel，以及运行在各进程中的 Discovery。Planner 的观测算法已有独立专题，这里补上它与执行器的闭环。</p><div class="tablewrap"><table><thead><tr><th>组件/机制</th><th>主要输入 → 输出</th><th>运行位置</th><th>观测重点</th></tr></thead><tbody><tr><td>Operator Manager</td><td>Kubernetes watch → reconcile/status/events</td><td>Go 常驻服务</td><td>队列、调谐错误、存量、准入、健康</td></tr><tr><td>Admission</td><td>API 写请求 → 默认化/校验/允许或拒绝</td><td>Operator Webhook</td><td>包装器计时与拒绝分类</td></tr><tr><td>DGD / DCD</td><td>图与组件意图 → provider 资源/Deployment/LWS/状态</td><td>Operator controllers</td><td>generation、Ready、rollout、资源变更事件</td></tr><tr><td>DGDR / Profiler</td><td>模型/硬件/负载/SLA → 候选配置与 DGD</td><td>Controller + Job</td><td>阶段、失败详情、产物，不等于在线 autoscaling</td></tr><tr><td>Planner / DGDSA</td><td>观测与部署状态 → 目标副本 → DGD</td><td>Python + Operator</td><td>输入完整性、决策、写入与实际收敛</td></tr><tr><td>DynamoModel</td><td>模型与服务端点 → base/LoRA 注册与就绪状态</td><td>Operator controller</td><td>端点存在、直接就绪、fallback-covered</td></tr><tr><td>Discovery</td><td>元数据 + endpoint readiness → 可选服务成员</td><td>Rust Runtime 内部 daemon</td><td>同步、watch、Pod UID、query 范围</td></tr><tr><td>Grove / LWS / DisaggregatedSet</td><td>工作负载布局与副本意图 → 调度/部署</td><td>provider/外部控制器</td><td>provider 自身条件；不把 Pod 调度误算为 Planner 决策</td></tr></tbody></table></div><aside class="note ">源码固定于 9734418e5bc71027e6bd04a09314bf1765208c72，workspace 1.7.0；不是线上 SGLang 1.4.1 行为保证。未改动集群，也未执行 Go/Rust/Python 推理测试。代码图索引明确排除了 deploy/，Operator 采用直接源码核对；Python/Rust 优先图查询后核对固定提交。</aside></section><section id="cp-architecture" class="lesson"><div class="sectionhead"><h2>02 / 三条控制闭环与一条请求路径</h2><label class="done"><input type="checkbox" data-read="cp-architecture"> 已读</label></div><div class="diagram"><div class="lane"><b>部署闭环</b><span>用户 → Admission → Kubernetes API → DGD controller → 选定 provider program → DCD / provider workload → Pod / Service → status / watch → 再调谐</span></div><div class="lane"><b>容量闭环</b><span>Frontend / Worker → Prometheus、FPM、部署状态 → Planner → DGDSA scale 或 DGD patch → Operator → Pod 可用 → 反馈</span></div><div class="lane"><b>成员闭环</b><span>Worker 注册 → DynamoWorkerMetadata；EndpointSlice / Pod readiness → Runtime join/cache → DiscoveryQuery → Frontend / Router 的成员集合</span></div><div class="lane"><b>推理路径</b><span>Client → Frontend / KV Router → Prefill / Decode / Engine；不要求每次请求都经过 Operator 或 kube-apiserver</span></div></div><p><a href="control-plane-architecture.mmd">架构图 Mermaid 源文件</a> · <a href="control-plane-reconcile.mmd">调谐时序图 Mermaid 源文件</a>。上方架构以离线 HTML 展示，不依赖在线 Mermaid 渲染服务。</p><aside class="note ">运行中的请求可能继续执行，但控制面故障会影响新实例注册、成员更新、扩缩容、部署和恢复。影响依赖缓存、watch 和 provider 状态，不能简单断言控制面故障一定让所有请求立即失败，或完全没有影响。</aside></section><section id="cp-contract" class="lesson"><div class="sectionhead"><h2>03 / CRD 是意图与状态契约，不是命令队列</h2><label class="done"><input type="checkbox" data-read="cp-contract"> 已读</label></div><p>DGD 表达完整推理图，DCD 是组件子资源及其重试、所有权、状态边界。DGDR 表达自动选型需求；Profiler 给出配置，autoApply 决定是否继续部署。DGDSA 为组件暴露独立的 scale 意图，DynamoModel 管理模型及端点关联。WorkerMetadata 是服务注册元数据，不是部署期望。</p><details class="source" id="src-cp-program"><summary><b>源码 · program request/result 与 provider 分发</b><small>deploy/operator/internal/controller/dgd_workload_program.go:34–99</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dgd_workload_program.go#L34-L99" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>34</i>	// DGD is the mutable primary object. Programs may mutate and directly</span>
+<span class="line"><i>35</i>	// persist non-status fields; status is returned through workloadProgramResult.</span>
+<span class="line"><i>36</i>	DGD *nvidiacomv1beta1.DynamoGraphDeployment</span>
+<span class="line"><i>37</i>}</span>
+<span class="line"><i>38</i></span>
+<span class="line"><i>39</i>type workloadProgramEvent struct {</span>
+<span class="line"><i>40</i>	Type    string</span>
+<span class="line"><i>41</i>	Reason  string</span>
+<span class="line"><i>42</i>	Message string</span>
+<span class="line"><i>43</i>}</span>
+<span class="line"><i>44</i></span>
+<span class="line"><i>45</i>type workloadProgramResult struct {</span>
+<span class="line"><i>46</i>	ctrl.Result</span>
+<span class="line"><i>47</i>	// Status is the complete desired DGD status after this attempt. It remains</span>
+<span class="line"><i>48</i>	// meaningful when Reconcile returns an error so the outer reconciler can</span>
+<span class="line"><i>49</i>	// persist any partial progress before returning that error.</span>
+<span class="line"><i>50</i>	Status nvidiacomv1beta1.DynamoGraphDeploymentStatus</span>
+<span class="line"><i>51</i>	// Events contains status-transition events that become real only after</span>
+<span class="line"><i>52</i>	// Status has been persisted successfully.</span>
+<span class="line"><i>53</i>	Events []workloadProgramEvent</span>
+<span class="line"><i>54</i>}</span>
+<span class="line"><i>55</i></span>
+<span class="line"><i>56</i>type programRestart struct {</span>
+<span class="line"><i>57</i>	State  *dynamo.RestartState</span>
+<span class="line"><i>58</i>	Status *nvidiacomv1beta1.RestartStatus</span>
+<span class="line"><i>59</i>}</span>
+<span class="line"><i>60</i></span>
+<span class="line"><i>61</i>type restartProgressResolver func(</span>
+<span class="line"><i>62</i>	context.Context,</span>
+<span class="line"><i>63</i>	*nvidiacomv1beta1.DynamoGraphDeployment,</span>
+<span class="line"><i>64</i>	[]string,</span>
+<span class="line"><i>65</i>) []string</span>
+<span class="line"><i>66</i></span>
+<span class="line"><i>67</i>// workloadProgram owns the complete graph-workload state machine for one</span>
+<span class="line"><i>68</i>// pathway. The common DGD controller selects one program and invokes it once;</span>
+<span class="line"><i>69</i>// it does not drive provider rendering, rollout, readiness, or cleanup through</span>
+<span class="line"><i>70</i>// lifecycle callbacks.</span>
+<span class="line"><i>71</i>type workloadProgram interface {</span>
+<span class="line"><i>72</i>	Reconcile(context.Context, workloadProgramRequest) (workloadProgramResult, error)</span>
+<span class="line"><i>73</i>}</span>
+<span class="line"><i>74</i></span>
+<span class="line"><i>75</i>func (r *DynamoGraphDeploymentReconciler) selectWorkloadProgram(</span>
+<span class="line"><i>76</i>	provider workloadProvider,</span>
+<span class="line"><i>77</i>) (workloadProgram, error) {</span>
+<span class="line"><i>78</i>	// Dispatch each durable provider value to its complete workload program.</span>
+<span class="line"><i>79</i>	switch provider {</span>
+<span class="line"><i>80</i>	case workloadProviderGrove:</span>
+<span class="line"><i>81</i>		return r.newGroveProgram(), nil</span>
+<span class="line"><i>82</i>	case workloadProviderDisaggregatedSet:</span>
+<span class="line"><i>83</i>		return r.newDisaggregatedSetProgram(), nil</span>
+<span class="line"><i>84</i>	case workloadProviderComponent:</span>
+<span class="line"><i>85</i>		return r.newComponentProgram(), nil</span>
+<span class="line"><i>86</i>	default:</span>
+<span class="line"><i>87</i>		return nil, fmt.Errorf(&quot;unsupported workload provider %q&quot;, provider)</span>
+<span class="line"><i>88</i>	}</span>
+<span class="line"><i>89</i>}</span>
+<span class="line"><i>90</i></span>
+<span class="line"><i>91</i>func newWorkloadProgramResult(</span>
+<span class="line"><i>92</i>	dgd *nvidiacomv1beta1.DynamoGraphDeployment,</span>
+<span class="line"><i>93</i>) workloadProgramResult {</span>
+<span class="line"><i>94</i>	return workloadProgramResult{Status: *dgd.Status.DeepCopy()}</span>
+<span class="line"><i>95</i>}</span>
+<span class="line"><i>96</i></span>
+<span class="line"><i>97</i>func (r *workloadProgramResult) Eventf(</span>
+<span class="line"><i>98</i>	eventType string,</span>
+<span class="line"><i>99</i>	reason string,</span></code></pre></details><p>当前 DGD controller 选择且只调用一个完整 program：component、Grove 或 DisaggregatedSet。不要把所有部署都画成 DGD → DCD → Deployment 的固定链；provider 负责自身布局与 rollout。Kubernetes Deployment/LWS/调度器也各有自己的控制循环。</p><details class="source" id="src-cp-conditions"><summary><b>源码 · 结果应用、ObservedGeneration 与 Ready 条件</b><small>deploy/operator/internal/controller/dgd_workload_program.go:144–180</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dgd_workload_program.go#L144-L180" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>144</i>	r.Status.State = result.State</span>
+<span class="line"><i>145</i>	r.Status.Components = result.ComponentStatus</span>
+<span class="line"><i>146</i>	if result.State != nvidiacomv1beta1.DGDStateFailed &amp;&amp; rollingUpdateInProgress(r.Status.RollingUpdate) {</span>
+<span class="line"><i>147</i>		r.Status.State = nvidiacomv1beta1.DGDStatePending</span>
+<span class="line"><i>148</i>	}</span>
+<span class="line"><i>149</i>	meta.SetStatusCondition(&amp;r.Status.Conditions, readyCondition(generation, r.Status, result))</span>
+<span class="line"><i>150</i>	r.Status.ObservedGeneration = generation</span>
+<span class="line"><i>151</i>}</span>
+<span class="line"><i>152</i></span>
+<span class="line"><i>153</i>func readyCondition(</span>
+<span class="line"><i>154</i>	generation int64,</span>
+<span class="line"><i>155</i>	status nvidiacomv1beta1.DynamoGraphDeploymentStatus,</span>
+<span class="line"><i>156</i>	workloads ReconcileResult,</span>
+<span class="line"><i>157</i>) metav1.Condition {</span>
+<span class="line"><i>158</i>	if workloads.State != nvidiacomv1beta1.DGDStateFailed &amp;&amp; rollingUpdateInProgress(status.RollingUpdate) {</span>
+<span class="line"><i>159</i>		return metav1.Condition{</span>
+<span class="line"><i>160</i>			Type:               &quot;Ready&quot;,</span>
+<span class="line"><i>161</i>			Status:             metav1.ConditionFalse,</span>
+<span class="line"><i>162</i>			ObservedGeneration: generation,</span>
+<span class="line"><i>163</i>			Reason:             &quot;rolling_update_in_progress&quot;,</span>
+<span class="line"><i>164</i>			Message:            &quot;Rolling update in progress&quot;,</span>
+<span class="line"><i>165</i>		}</span>
+<span class="line"><i>166</i>	}</span>
+<span class="line"><i>167</i></span>
+<span class="line"><i>168</i>	conditionStatus := metav1.ConditionFalse</span>
+<span class="line"><i>169</i>	if workloads.State == nvidiacomv1beta1.DGDStateSuccessful {</span>
+<span class="line"><i>170</i>		conditionStatus = metav1.ConditionTrue</span>
+<span class="line"><i>171</i>	}</span>
+<span class="line"><i>172</i>	return metav1.Condition{</span>
+<span class="line"><i>173</i>		Type:               &quot;Ready&quot;,</span>
+<span class="line"><i>174</i>		Status:             conditionStatus,</span>
+<span class="line"><i>175</i>		ObservedGeneration: generation,</span>
+<span class="line"><i>176</i>		Reason:             string(workloads.Reason),</span>
+<span class="line"><i>177</i>		Message:            string(workloads.Message),</span>
+<span class="line"><i>178</i>	}</span>
+<span class="line"><i>179</i>}</span>
+<span class="line"><i>180</i></span></code></pre></details><aside class="note ">spec 是期望，status 是上次观测。ObservedGeneration 对齐说明该 spec 已被相应调谐处理，并不单独证明所有 Pod 已 Ready；还需读 Conditions 和组件状态。更新 schema、provider 或 API 版本时应核对实际版本，不能把本章 components API 直接粘到历史 1.4.1 services 清单。</aside></section><section id="cp-reconcile" class="lesson"><div class="sectionhead"><h2>04 / 从 API 变更到幂等收敛</h2><label class="done"><input type="checkbox" data-read="cp-reconcile"> 已读</label></div><div class="flow"><div><b>01</b>API 接受资源写入</div><div><b>02</b>watch 入队：namespace/name</div><div><b>03</b>读取最新对象/删除与 finalizer</div><div><b>04</b>选择 program，执行必要变更</div><div><b>05</b>保存完整 status</div><div><b>06</b>成功保存后发状态转换 Event，等待下一轮</div></div><details class="source" id="src-cp-reconcile"><summary><b>源码 · 调用 program、保留部分状态、先持久化再发状态事件</b><small>deploy/operator/internal/controller/dynamographdeployment_controller.go:192–243</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dynamographdeployment_controller.go#L192-L243" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>192</i>		return ctrl.Result{}, err</span>
+<span class="line"><i>193</i>	}</span>
+<span class="line"><i>194</i></span>
+<span class="line"><i>195</i>	program, err := r.selectWorkloadProgram(provider)</span>
+<span class="line"><i>196</i>	if err != nil {</span>
+<span class="line"><i>197</i>		return ctrl.Result{}, err</span>
+<span class="line"><i>198</i>	}</span>
+<span class="line"><i>199</i>	programResult, programErr := program.Reconcile(ctx, workloadProgramRequest{</span>
+<span class="line"><i>200</i>		DGD: dynamoDeployment,</span>
+<span class="line"><i>201</i>	})</span>
+<span class="line"><i>202</i>	ownershipConflictCondition, ownershipConflictTransition := applyOwnershipConflict(</span>
+<span class="line"><i>203</i>		programResult.Status.Conditions,</span>
+<span class="line"><i>204</i>		dynamoDeployment.Generation,</span>
+<span class="line"><i>205</i>		programErr,</span>
+<span class="line"><i>206</i>	)</span>
+<span class="line"><i>207</i>	if ownershipConflictCondition != nil {</span>
+<span class="line"><i>208</i>		meta.SetStatusCondition(&amp;programResult.Status.Conditions, *ownershipConflictCondition)</span>
+<span class="line"><i>209</i>	}</span>
+<span class="line"><i>210</i>	if ownershipConflictTransition == ownershipConflictRaised {</span>
+<span class="line"><i>211</i>		programResult.Eventf(corev1.EventTypeWarning, ownershipConflictCondition.Reason,</span>
+<span class="line"><i>212</i>			&quot;Refusing to reconcile a resource with conflicting controller ownership: %s&quot;, ownershipConflictCondition.Message)</span>
+<span class="line"><i>213</i>	}</span>
+<span class="line"><i>214</i>	result = programResult.Result</span>
+<span class="line"><i>215</i>	if statusErr := r.persistWorkloadProgramResult(ctx, dynamoDeployment, programResult); statusErr != nil {</span>
+<span class="line"><i>216</i>		logger.Error(statusErr, &quot;unable to persist workload program status&quot;)</span>
+<span class="line"><i>217</i>		return result, statusErr</span>
+<span class="line"><i>218</i>	}</span>
+<span class="line"><i>219</i>	if programErr != nil {</span>
+<span class="line"><i>220</i>		logger.Error(programErr, &quot;failed to reconcile the workload program&quot;)</span>
+<span class="line"><i>221</i>		return result, programErr</span>
+<span class="line"><i>222</i>	}</span>
+<span class="line"><i>223</i></span>
+<span class="line"><i>224</i>	logger.Info(&quot;Reconciliation done&quot;)</span>
+<span class="line"><i>225</i>	return result, nil</span>
+<span class="line"><i>226</i>}</span>
+<span class="line"><i>227</i></span>
+<span class="line"><i>228</i>func (r *DynamoGraphDeploymentReconciler) persistWorkloadProgramResult(</span>
+<span class="line"><i>229</i>	ctx context.Context,</span>
+<span class="line"><i>230</i>	dgd *nvidiacomv1beta1.DynamoGraphDeployment,</span>
+<span class="line"><i>231</i>	result workloadProgramResult,</span>
+<span class="line"><i>232</i>) error {</span>
+<span class="line"><i>233</i>	dgd.Status = result.Status</span>
+<span class="line"><i>234</i>	if err := r.Status().Update(ctx, dgd); err != nil {</span>
+<span class="line"><i>235</i>		return fmt.Errorf(&quot;update DynamoGraphDeployment status: %w&quot;, err)</span>
+<span class="line"><i>236</i>	}</span>
+<span class="line"><i>237</i>	if r.Recorder != nil {</span>
+<span class="line"><i>238</i>		for _, event := range result.Events {</span>
+<span class="line"><i>239</i>			r.Recorder.Eventf(dgd, nil, event.Type, event.Reason, &quot;Update&quot;, &quot;%s&quot;, event.Message)</span>
+<span class="line"><i>240</i>		}</span>
+<span class="line"><i>241</i>	}</span>
+<span class="line"><i>242</i>	return nil</span>
+<span class="line"><i>243</i>}</span></code></pre></details><details class="source" id="src-cp-component"><summary><b>源码 · component program：rollout、共享资源、restart、workload、scaling adapter</b><small>deploy/operator/internal/controller/dgd_component_program.go:106–161</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dgd_component_program.go#L106-L161" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>106</i></span>
+<span class="line"><i>107</i>	previousRolloutPhase := rollingUpdatePhase(programResult.Status.RollingUpdate)</span>
+<span class="line"><i>108</i>	if err := p.reconcileWorkerRollout(ctx, req.DGD, &amp;programResult.Status); err != nil {</span>
+<span class="line"><i>109</i>		return programResult, err</span>
+<span class="line"><i>110</i>	}</span>
+<span class="line"><i>111</i>	p.recordRollingUpdateTransition(req.DGD, previousRolloutPhase, &amp;programResult)</span>
+<span class="line"><i>112</i>	checkpoints, err := p.sharedResources.Reconcile(ctx, req.DGD)</span>
+<span class="line"><i>113</i>	if checkpoints.Statuses != nil {</span>
+<span class="line"><i>114</i>		programResult.Status.Checkpoints = checkpoints.Statuses</span>
+<span class="line"><i>115</i>	}</span>
+<span class="line"><i>116</i>	if err != nil {</span>
+<span class="line"><i>117</i>		return programResult, err</span>
+<span class="line"><i>118</i>	}</span>
+<span class="line"><i>119</i>	hasMultinode := req.DGD.HasAnyMultinodeComponent()</span>
+<span class="line"><i>120</i>	if hasMultinode &amp;&amp; !p.lwsEnabled {</span>
+<span class="line"><i>121</i>		err := fmt.Errorf(&quot;no multinode orchestrator available&quot;)</span>
+<span class="line"><i>122</i>		log.FromContext(ctx).Error(</span>
+<span class="line"><i>123</i>			err,</span>
+<span class="line"><i>124</i>			err.Error(),</span>
+<span class="line"><i>125</i>			&quot;hasMultinode&quot;, hasMultinode,</span>
+<span class="line"><i>126</i>			&quot;lwsEnabled&quot;, p.lwsEnabled,</span>
+<span class="line"><i>127</i>		)</span>
+<span class="line"><i>128</i>		return programResult, failWorkloadProgram(reasonNoMultinodeOrchestrator, err)</span>
+<span class="line"><i>129</i>	}</span>
+<span class="line"><i>130</i>	previousRestart := programResult.Status.Restart</span>
+<span class="line"><i>131</i>	restart := p.restart.Resolve(</span>
+<span class="line"><i>132</i>		ctx,</span>
+<span class="line"><i>133</i>		req.DGD,</span>
+<span class="line"><i>134</i>		&amp;programResult.Status,</span>
+<span class="line"><i>135</i>		p.restartProgress.Resolve,</span>
+<span class="line"><i>136</i>	)</span>
+<span class="line"><i>137</i>	recordRestartTransition(previousRestart, restart.Status, &amp;programResult)</span>
+<span class="line"><i>138</i>	programResult.Status.Restart = restart.Status</span>
+<span class="line"><i>139</i></span>
+<span class="line"><i>140</i>	result, err := p.workloads.Reconcile(</span>
+<span class="line"><i>141</i>		ctx,</span>
+<span class="line"><i>142</i>		req.DGD,</span>
+<span class="line"><i>143</i>		restart.State,</span>
+<span class="line"><i>144</i>		checkpoints.Infos,</span>
+<span class="line"><i>145</i>	)</span>
+<span class="line"><i>146</i>	if err != nil {</span>
+<span class="line"><i>147</i>		// Preserve newly observed component status while leaving the generation unobserved.</span>
+<span class="line"><i>148</i>		if result.ComponentStatus != nil {</span>
+<span class="line"><i>149</i>			programResult.Status.Components = result.ComponentStatus</span>
+<span class="line"><i>150</i>		}</span>
+<span class="line"><i>151</i>		return programResult, fmt.Errorf(&quot;failed to reconcile Dynamo components deployments: %w&quot;, err)</span>
+<span class="line"><i>152</i>	}</span>
+<span class="line"><i>153</i>	result = applyCheckpointStartupReadiness(result, checkpoints.Infos)</span>
+<span class="line"><i>154</i>	if result.State != nvidiacomv1beta1.DGDStatePending || result.Reason != reasonWaitingForCheckpoint {</span>
+<span class="line"><i>155</i>		if err := p.scalingAdapters.Reconcile(ctx, req.DGD); err != nil {</span>
+<span class="line"><i>156</i>			log.FromContext(ctx).Error(err, &quot;Failed to reconcile scaling adapters&quot;)</span>
+<span class="line"><i>157</i>			return programResult, fmt.Errorf(&quot;failed to reconcile scaling adapters: %w&quot;, err)</span>
+<span class="line"><i>158</i>		}</span>
+<span class="line"><i>159</i>	}</span>
+<span class="line"><i>160</i>	programResult.applyReconcileResult(req.DGD.Generation, result)</span>
+<span class="line"><i>161</i>	return programResult, nil</span></code></pre></details><p>调谐基于最新期望/观测状态反复收敛，事件只是触发信号。一次 reconcile 返回 nil，不等于整个图已经服务可用；返回可重试错误通常由框架安排重试。部分无效配置可能已写 Failed 状态后返回 nil，故只盯 reconcile_errors 会漏掉业务失败。</p><details class="exercise"><summary>阅读检查 · 为什么 reconcile 很快不等于模型启动很快？</summary><p>它可能只创建资源并等待下一次事件；GPU 调度、拉镜像、加载权重和就绪发生在外部异步阶段。</p></details></section><section id="cp-admission" class="lesson"><div class="sectionhead"><h2>05 / Admission 指标：从注册到实际 Observe/Inc</h2><label class="done"><input type="checkbox" data-read="cp-admission"> 已读</label></div><details class="source" id="src-cp-register"><summary><b>源码 · Lease-aware validator → ObservedValidator → admission handler</b><small>deploy/operator/internal/webhook/validation/register.go:18–34</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/webhook/validation/register.go#L18-L34" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>18</i>	mgr manager.Manager,</span>
+<span class="line"><i>19</i>	path string,</span>
+<span class="line"><i>20</i>	validator admission.Validator[T],</span>
+<span class="line"><i>21</i>	resourceType string,</span>
+<span class="line"><i>22</i>	gate features.Gate,</span>
+<span class="line"><i>23</i>) {</span>
+<span class="line"><i>24</i>	leaseAwareValidator := internalwebhook.NewLeaseAwareValidator(</span>
+<span class="line"><i>25</i>		validator,</span>
+<span class="line"><i>26</i>		internalwebhook.GetExcludedNamespaces(),</span>
+<span class="line"><i>27</i>	)</span>
+<span class="line"><i>28</i>	observedValidator := observability.NewObservedValidator(leaseAwareValidator, resourceType)</span>
+<span class="line"><i>29</i>	webhook := admission.WithValidator(mgr.GetScheme(), observedValidator).WithRecoverPanic(true)</span>
+<span class="line"><i>30</i>	if gate != nil {</span>
+<span class="line"><i>31</i>		webhook = internalwebhook.WithGate(webhook, gate)</span>
+<span class="line"><i>32</i>	}</span>
+<span class="line"><i>33</i>	mgr.GetWebhookServer().Register(path, webhook)</span>
+<span class="line"><i>34</i>}</span></code></pre></details><details class="source" id="src-cp-wrapper"><summary><b>源码 · CREATE / UPDATE / DELETE 的计时与允许/拒绝</b><small>deploy/operator/internal/observability/webhook_wrapper.go:43–89</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/observability/webhook_wrapper.go#L43-L89" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>43</i>// ValidateCreate wraps the underlying validator&#x27;s ValidateCreate method with metrics collection</span>
+<span class="line"><i>44</i>func (m *ObservedValidator[T]) ValidateCreate(ctx context.Context, obj T) (admission.Warnings, error) {</span>
+<span class="line"><i>45</i>	startTime := time.Now()</span>
+<span class="line"><i>46</i>	warnings, err := m.validator.ValidateCreate(ctx, obj)</span>
+<span class="line"><i>47</i>	duration := time.Since(startTime)</span>
+<span class="line"><i>48</i></span>
+<span class="line"><i>49</i>	allowed := err == nil</span>
+<span class="line"><i>50</i>	RecordWebhookAdmission(m.resourceType, &quot;CREATE&quot;, allowed, duration)</span>
+<span class="line"><i>51</i></span>
+<span class="line"><i>52</i>	if !allowed {</span>
+<span class="line"><i>53</i>		RecordWebhookDenial(m.resourceType, &quot;CREATE&quot;, err)</span>
+<span class="line"><i>54</i>	}</span>
+<span class="line"><i>55</i></span>
+<span class="line"><i>56</i>	return warnings, err</span>
+<span class="line"><i>57</i>}</span>
+<span class="line"><i>58</i></span>
+<span class="line"><i>59</i>// ValidateUpdate wraps the underlying validator&#x27;s ValidateUpdate method with metrics collection</span>
+<span class="line"><i>60</i>func (m *ObservedValidator[T]) ValidateUpdate(ctx context.Context, oldObj, newObj T) (admission.Warnings, error) {</span>
+<span class="line"><i>61</i>	startTime := time.Now()</span>
+<span class="line"><i>62</i>	warnings, err := m.validator.ValidateUpdate(ctx, oldObj, newObj)</span>
+<span class="line"><i>63</i>	duration := time.Since(startTime)</span>
+<span class="line"><i>64</i></span>
+<span class="line"><i>65</i>	allowed := err == nil</span>
+<span class="line"><i>66</i>	RecordWebhookAdmission(m.resourceType, &quot;UPDATE&quot;, allowed, duration)</span>
+<span class="line"><i>67</i></span>
+<span class="line"><i>68</i>	if !allowed {</span>
+<span class="line"><i>69</i>		RecordWebhookDenial(m.resourceType, &quot;UPDATE&quot;, err)</span>
+<span class="line"><i>70</i>	}</span>
+<span class="line"><i>71</i></span>
+<span class="line"><i>72</i>	return warnings, err</span>
+<span class="line"><i>73</i>}</span>
+<span class="line"><i>74</i></span>
+<span class="line"><i>75</i>// ValidateDelete wraps the underlying validator&#x27;s ValidateDelete method with metrics collection</span>
+<span class="line"><i>76</i>func (m *ObservedValidator[T]) ValidateDelete(ctx context.Context, obj T) (admission.Warnings, error) {</span>
+<span class="line"><i>77</i>	startTime := time.Now()</span>
+<span class="line"><i>78</i>	warnings, err := m.validator.ValidateDelete(ctx, obj)</span>
+<span class="line"><i>79</i>	duration := time.Since(startTime)</span>
+<span class="line"><i>80</i></span>
+<span class="line"><i>81</i>	allowed := err == nil</span>
+<span class="line"><i>82</i>	RecordWebhookAdmission(m.resourceType, &quot;DELETE&quot;, allowed, duration)</span>
+<span class="line"><i>83</i></span>
+<span class="line"><i>84</i>	if !allowed {</span>
+<span class="line"><i>85</i>		RecordWebhookDenial(m.resourceType, &quot;DELETE&quot;, err)</span>
+<span class="line"><i>86</i>	}</span>
+<span class="line"><i>87</i></span>
+<span class="line"><i>88</i>	return warnings, err</span>
+<span class="line"><i>89</i>}</span></code></pre></details><details class="source" id="src-cp-webhook-metrics"><summary><b>源码 · Histogram/Counter 定义与记录</b><small>deploy/operator/internal/observability/metrics.go:43–98</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/observability/metrics.go#L43-L98" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>43</i>	// Webhook metrics</span>
+<span class="line"><i>44</i>	webhookDuration = prometheus.NewHistogramVec(</span>
+<span class="line"><i>45</i>		prometheus.HistogramOpts{</span>
+<span class="line"><i>46</i>			Namespace: metricsNamespace,</span>
+<span class="line"><i>47</i>			Name:      &quot;webhook_duration_seconds&quot;,</span>
+<span class="line"><i>48</i>			Help:      &quot;Duration of webhook validation in seconds&quot;,</span>
+<span class="line"><i>49</i>			Buckets:   []float64{.001, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5},</span>
+<span class="line"><i>50</i>		},</span>
+<span class="line"><i>51</i>		[]string{&quot;resource_type&quot;, &quot;operation&quot;},</span>
+<span class="line"><i>52</i>	)</span>
+<span class="line"><i>53</i></span>
+<span class="line"><i>54</i>	webhookRequestsTotal = prometheus.NewCounterVec(</span>
+<span class="line"><i>55</i>		prometheus.CounterOpts{</span>
+<span class="line"><i>56</i>			Namespace: metricsNamespace,</span>
+<span class="line"><i>57</i>			Name:      &quot;webhook_requests_total&quot;,</span>
+<span class="line"><i>58</i>			Help:      &quot;Total number of webhook admission requests&quot;,</span>
+<span class="line"><i>59</i>		},</span>
+<span class="line"><i>60</i>		[]string{&quot;resource_type&quot;, &quot;operation&quot;, &quot;result&quot;},</span>
+<span class="line"><i>61</i>	)</span>
+<span class="line"><i>62</i></span>
+<span class="line"><i>63</i>	webhookDenialsTotal = prometheus.NewCounterVec(</span>
+<span class="line"><i>64</i>		prometheus.CounterOpts{</span>
+<span class="line"><i>65</i>			Namespace: metricsNamespace,</span>
+<span class="line"><i>66</i>			Name:      &quot;webhook_denials_total&quot;,</span>
+<span class="line"><i>67</i>			Help:      &quot;Total number of webhook admission denials&quot;,</span>
+<span class="line"><i>68</i>		},</span>
+<span class="line"><i>69</i>		[]string{&quot;resource_type&quot;, &quot;operation&quot;, &quot;reason&quot;},</span>
+<span class="line"><i>70</i>	)</span>
+<span class="line"><i>71</i>)</span>
+<span class="line"><i>72</i></span>
+<span class="line"><i>73</i>// InitMetrics registers all custom metrics with the controller-runtime metrics registry</span>
+<span class="line"><i>74</i>func InitMetrics() {</span>
+<span class="line"><i>75</i>	ctrlmetrics.Registry.MustRegister(</span>
+<span class="line"><i>76</i>		resourcesTotal,</span>
+<span class="line"><i>77</i>		webhookDuration,</span>
+<span class="line"><i>78</i>		webhookRequestsTotal,</span>
+<span class="line"><i>79</i>		webhookDenialsTotal,</span>
+<span class="line"><i>80</i>	)</span>
+<span class="line"><i>81</i>}</span>
+<span class="line"><i>82</i></span>
+<span class="line"><i>83</i>// RecordWebhookAdmission records metrics for a webhook admission request</span>
+<span class="line"><i>84</i>func RecordWebhookAdmission(resourceType, operation string, allowed bool, duration time.Duration) {</span>
+<span class="line"><i>85</i>	webhookDuration.WithLabelValues(resourceType, operation).Observe(duration.Seconds())</span>
+<span class="line"><i>86</i></span>
+<span class="line"><i>87</i>	result := &quot;allowed&quot;</span>
+<span class="line"><i>88</i>	if !allowed {</span>
+<span class="line"><i>89</i>		result = &quot;denied&quot;</span>
+<span class="line"><i>90</i>	}</span>
+<span class="line"><i>91</i>	webhookRequestsTotal.WithLabelValues(resourceType, operation, result).Inc()</span>
+<span class="line"><i>92</i>}</span>
+<span class="line"><i>93</i></span>
+<span class="line"><i>94</i>// RecordWebhookDenial records a webhook denial with a categorized reason</span>
+<span class="line"><i>95</i>func RecordWebhookDenial(resourceType, operation string, err error) {</span>
+<span class="line"><i>96</i>	reason := categorizeError(err)</span>
+<span class="line"><i>97</i>	webhookDenialsTotal.WithLabelValues(resourceType, operation, reason).Inc()</span>
+<span class="line"><i>98</i>}</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>指标</th><th>类型/labels</th><th>真正计量范围</th></tr></thead><tbody><tr><td>dynamo_operator_webhook_duration_seconds</td><td>Histogram；resource_type, operation</td><td>被包装 validator 的执行时间，duration.Seconds()；bucket 1ms 到 5s</td></tr><tr><td>dynamo_operator_webhook_requests_total</td><td>Counter；resource_type, operation, result</td><td>validator 返回后按 err 是否为空记录 allowed/denied</td></tr><tr><td>dynamo_operator_webhook_denials_total</td><td>Counter；resource_type, operation, reason</td><td>只在 validator 返回 error 时增加</td></tr></tbody></table></div><p>包装器包含 LeaseAwareValidator，但不覆盖整个 API 请求、排队、网络、完整 admission decode/response，也不等于 defaulting webhook 的耗时。Feature Gate 位于 admission handler 外层；在到达 validator 前返回、decode 失败或 panic 打断正常返回的请求，不保证走完这些自定义计数。</p><details class="source" id="src-cp-reason"><summary><b>源码 · 实际拒绝原因按 Kubernetes 错误分类</b><small>deploy/operator/internal/observability/metrics.go:105–137</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/observability/metrics.go#L105-L137" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>105</i>// categorizeError categorizes Kubernetes errors for better metrics granularity</span>
+<span class="line"><i>106</i>func categorizeError(err error) string {</span>
+<span class="line"><i>107</i>	if err == nil {</span>
+<span class="line"><i>108</i>		return &quot;none&quot;</span>
+<span class="line"><i>109</i>	}</span>
+<span class="line"><i>110</i></span>
+<span class="line"><i>111</i>	switch {</span>
+<span class="line"><i>112</i>	case k8serrors.IsNotFound(err):</span>
+<span class="line"><i>113</i>		return &quot;not_found&quot;</span>
+<span class="line"><i>114</i>	case k8serrors.IsAlreadyExists(err):</span>
+<span class="line"><i>115</i>		return &quot;already_exists&quot;</span>
+<span class="line"><i>116</i>	case k8serrors.IsConflict(err):</span>
+<span class="line"><i>117</i>		return &quot;conflict&quot;</span>
+<span class="line"><i>118</i>	case k8serrors.IsInvalid(err):</span>
+<span class="line"><i>119</i>		return &quot;validation&quot;</span>
+<span class="line"><i>120</i>	case k8serrors.IsBadRequest(err):</span>
+<span class="line"><i>121</i>		return &quot;bad_request&quot;</span>
+<span class="line"><i>122</i>	case k8serrors.IsUnauthorized(err):</span>
+<span class="line"><i>123</i>		return &quot;unauthorized&quot;</span>
+<span class="line"><i>124</i>	case k8serrors.IsForbidden(err):</span>
+<span class="line"><i>125</i>		return &quot;forbidden&quot;</span>
+<span class="line"><i>126</i>	case k8serrors.IsTimeout(err):</span>
+<span class="line"><i>127</i>		return &quot;timeout&quot;</span>
+<span class="line"><i>128</i>	case k8serrors.IsServerTimeout(err):</span>
+<span class="line"><i>129</i>		return &quot;server_timeout&quot;</span>
+<span class="line"><i>130</i>	case k8serrors.IsServiceUnavailable(err):</span>
+<span class="line"><i>131</i>		return &quot;unavailable&quot;</span>
+<span class="line"><i>132</i>	case k8serrors.IsTooManyRequests(err):</span>
+<span class="line"><i>133</i>		return &quot;rate_limited&quot;</span>
+<span class="line"><i>134</i>	default:</span>
+<span class="line"><i>135</i>		return &quot;internal&quot;</span>
+<span class="line"><i>136</i>	}</span>
+<span class="line"><i>137</i>}</span></code></pre></details><aside class="note ">官方参考页列出的 immutable_field_changed / invalid_config 是示例描述；本提交 categorizeError 实际产生 validation、bad_request、conflict、forbidden、timeout、internal 等。普通未匹配 error 会落到 internal，不应按不存在的业务 reason 编写告警。</aside></section><section id="cp-inventory" class="lesson"><div class="sectionhead"><h2>06 / 资源存量 Gauge：周期、作用域和旧序列</h2><label class="done"><input type="checkbox" data-read="cp-inventory"> 已读</label></div><details class="source" id="src-cp-resource-def"><summary><b>源码 · resources_total 实际是 GaugeVec</b><small>deploy/operator/internal/observability/metrics.go:28–41</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/observability/metrics.go#L28-L41" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>28</i>const (</span>
+<span class="line"><i>29</i>	metricsNamespace = &quot;dynamo_operator&quot;</span>
+<span class="line"><i>30</i>)</span>
+<span class="line"><i>31</i></span>
+<span class="line"><i>32</i>var (</span>
+<span class="line"><i>33</i>	// Resource metrics (populated by resource counter)</span>
+<span class="line"><i>34</i>	resourcesTotal = prometheus.NewGaugeVec(</span>
+<span class="line"><i>35</i>		prometheus.GaugeOpts{</span>
+<span class="line"><i>36</i>			Namespace: metricsNamespace,</span>
+<span class="line"><i>37</i>			Name:      &quot;resources_total&quot;,</span>
+<span class="line"><i>38</i>			Help:      &quot;Total number of resources by type and status&quot;,</span>
+<span class="line"><i>39</i>		},</span>
+<span class="line"><i>40</i>		[]string{&quot;resource_type&quot;, &quot;namespace&quot;, &quot;status&quot;},</span>
+<span class="line"><i>41</i>	)</span></code></pre></details><details class="source" id="src-cp-resource-run"><summary><b>源码 · 启动时刷新、30 秒周期、每副本运行</b><small>deploy/operator/internal/observability/resource_counter.go:67–108</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/observability/resource_counter.go#L67-L108" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>67</i>// Start periodically updates resource count metrics after the manager starts its cache.</span>
+<span class="line"><i>68</i>// It uses the manager&#x27;s cached client to avoid loading the API server.</span>
+<span class="line"><i>69</i>// The client&#x27;s cache scope is automatically determined by the manager&#x27;s configuration:</span>
+<span class="line"><i>70</i>// - Namespace-restricted operators: cache is scoped to specific namespace</span>
+<span class="line"><i>71</i>// - Cluster-wide operators: cache includes all namespaces (except those filtered by excludedNamespaces)</span>
+<span class="line"><i>72</i>// The excludedNamespaces parameter allows filtering out namespaces managed by namespace-restricted operators.</span>
+<span class="line"><i>73</i>func (r *ResourceCounter) Start(ctx context.Context) error {</span>
+<span class="line"><i>74</i>	logger := log.FromContext(ctx).WithName(&quot;resource-counter&quot;)</span>
+<span class="line"><i>75</i>	logger.Info(&quot;Starting resource counter&quot;, &quot;interval&quot;, resourceCountInterval)</span>
+<span class="line"><i>76</i></span>
+<span class="line"><i>77</i>	ticker := time.NewTicker(resourceCountInterval)</span>
+<span class="line"><i>78</i>	defer ticker.Stop()</span>
+<span class="line"><i>79</i></span>
+<span class="line"><i>80</i>	// Initial update</span>
+<span class="line"><i>81</i>	updateResourceMetrics(ctx, r.client, r.excludedNamespaces, logger)</span>
+<span class="line"><i>82</i></span>
+<span class="line"><i>83</i>	for {</span>
+<span class="line"><i>84</i>		select {</span>
+<span class="line"><i>85</i>		case &lt;-ctx.Done():</span>
+<span class="line"><i>86</i>			logger.Info(&quot;Stopping resource counter&quot;)</span>
+<span class="line"><i>87</i>			return nil</span>
+<span class="line"><i>88</i>		case &lt;-ticker.C:</span>
+<span class="line"><i>89</i>			updateResourceMetrics(ctx, r.client, r.excludedNamespaces, logger)</span>
+<span class="line"><i>90</i>		}</span>
+<span class="line"><i>91</i>	}</span>
+<span class="line"><i>92</i>}</span>
+<span class="line"><i>93</i></span>
+<span class="line"><i>94</i>// NeedLeaderElection returns false because metrics are exposed per replica.</span>
+<span class="line"><i>95</i>func (r *ResourceCounter) NeedLeaderElection() bool {</span>
+<span class="line"><i>96</i>	return false</span>
+<span class="line"><i>97</i>}</span>
+<span class="line"><i>98</i></span>
+<span class="line"><i>99</i>// updateResourceMetrics queries all CRDs and updates gauges</span>
+<span class="line"><i>100</i>// The client&#x27;s cache scope determines which namespaces are queried</span>
+<span class="line"><i>101</i>func updateResourceMetrics(ctx context.Context, c client.Client, excludedNamespaces ExcludedNamespaces, logger logr.Logger) {</span>
+<span class="line"><i>102</i>	// Count all resource types</span>
+<span class="line"><i>103</i>	updateDynamoGraphDeploymentCounts(ctx, c, excludedNamespaces, logger)</span>
+<span class="line"><i>104</i>	updateDynamoComponentDeploymentCounts(ctx, c, excludedNamespaces, logger)</span>
+<span class="line"><i>105</i>	updateDynamoModelCounts(ctx, c, excludedNamespaces, logger)</span>
+<span class="line"><i>106</i>	updateDynamoGraphDeploymentRequestCounts(ctx, c, excludedNamespaces, logger)</span>
+<span class="line"><i>107</i>	updateDynamoGraphDeploymentScalingAdapterCounts(ctx, c, excludedNamespaces, logger)</span>
+<span class="line"><i>108</i>}</span></code></pre></details><details class="source" id="src-cp-resource-count"><summary><b>源码 · 按 namespace/state 计数及 List 错误处理</b><small>deploy/operator/internal/observability/resource_counter.go:110–160</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/observability/resource_counter.go#L110-L160" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>110</i>// countResourcesByState is a generic helper for all resources with GetState()</span>
+<span class="line"><i>111</i>// It takes a slice of value types and iterates by index to avoid extra allocations</span>
+<span class="line"><i>112</i>func countResourcesByState[T any, PT StateProvider](</span>
+<span class="line"><i>113</i>	items []T,</span>
+<span class="line"><i>114</i>	excludedNamespaces ExcludedNamespaces,</span>
+<span class="line"><i>115</i>	resourceType string,</span>
+<span class="line"><i>116</i>	toPtrFunc func(*T) PT,</span>
+<span class="line"><i>117</i>) {</span>
+<span class="line"><i>118</i>	// Count by state and namespace</span>
+<span class="line"><i>119</i>	counts := make(map[string]map[string]int)</span>
+<span class="line"><i>120</i>	for i := range items {</span>
+<span class="line"><i>121</i>		item := toPtrFunc(&amp;items[i])</span>
+<span class="line"><i>122</i>		namespace := item.GetNamespace()</span>
+<span class="line"><i>123</i></span>
+<span class="line"><i>124</i>		// Skip if namespace is managed by a namespace-restricted operator</span>
+<span class="line"><i>125</i>		if excludedNamespaces != nil &amp;&amp; excludedNamespaces.Contains(namespace) {</span>
+<span class="line"><i>126</i>			continue</span>
+<span class="line"><i>127</i>		}</span>
+<span class="line"><i>128</i></span>
+<span class="line"><i>129</i>		state := item.GetState()</span>
+<span class="line"><i>130</i>		if counts[namespace] == nil {</span>
+<span class="line"><i>131</i>			counts[namespace] = make(map[string]int)</span>
+<span class="line"><i>132</i>		}</span>
+<span class="line"><i>133</i>		counts[namespace][state]++</span>
+<span class="line"><i>134</i>	}</span>
+<span class="line"><i>135</i></span>
+<span class="line"><i>136</i>	// Update metrics</span>
+<span class="line"><i>137</i>	for namespace, stateCounts := range counts {</span>
+<span class="line"><i>138</i>		for state, count := range stateCounts {</span>
+<span class="line"><i>139</i>			UpdateResourceCount(resourceType, namespace, state, float64(count))</span>
+<span class="line"><i>140</i>		}</span>
+<span class="line"><i>141</i>	}</span>
+<span class="line"><i>142</i>}</span>
+<span class="line"><i>143</i></span>
+<span class="line"><i>144</i>func updateDynamoGraphDeploymentCounts(ctx context.Context, c client.Client, excludedNamespaces ExcludedNamespaces, logger logr.Logger) {</span>
+<span class="line"><i>145</i>	dgdList := &amp;v1beta1.DynamoGraphDeploymentList{}</span>
+<span class="line"><i>146</i>	if err := c.List(ctx, dgdList); err != nil {</span>
+<span class="line"><i>147</i>		logger.Error(err, &quot;failed to list DynamoGraphDeployments&quot;)</span>
+<span class="line"><i>148</i>		return</span>
+<span class="line"><i>149</i>	}</span>
+<span class="line"><i>150</i>	countResourcesByState(</span>
+<span class="line"><i>151</i>		dgdList.Items,</span>
+<span class="line"><i>152</i>		excludedNamespaces,</span>
+<span class="line"><i>153</i>		consts.ResourceTypeDynamoGraphDeployment,</span>
+<span class="line"><i>154</i>		func(d *v1beta1.DynamoGraphDeployment) *v1beta1.DynamoGraphDeployment { return d },</span>
+<span class="line"><i>155</i>	)</span>
+<span class="line"><i>156</i>}</span>
+<span class="line"><i>157</i></span>
+<span class="line"><i>158</i>func updateDynamoComponentDeploymentCounts(ctx context.Context, c client.Client, excludedNamespaces ExcludedNamespaces, logger logr.Logger) {</span>
+<span class="line"><i>159</i>	dcdList := &amp;v1beta1.DynamoComponentDeploymentList{}</span>
+<span class="line"><i>160</i>	if err := c.List(ctx, dcdList); err != nil {</span></code></pre></details><p>ResourceCounter 使用 Manager 的缓存 client，作用域受 manager cache 与 excludedNamespaces 共同限制。NeedLeaderElection=false，非 leader 也暴露存量；相同管理范围的多个副本不能直接 sum。名称以 total 结尾仍是 Gauge，不使用 rate() 计算资源数量。</p><div class="tablewrap"><table><thead><tr><th>情况</th><th>源码行为</th><th>读数影响</th></tr></thead><tbody><tr><td>资源仍处于某状态</td><td>只为本轮观察到的 namespace/state 执行 Set</td><td>近似缓存快照，刷新 30s，加上缓存/抓取延迟</td></tr><tr><td>一个状态最后一个资源迁走/删除</td><td>本轮没有此组合，没有 Reset/Delete/显式 Set(0)</td><td>旧序列可能留存直到进程重启或另有同组合更新</td></tr><tr><td>List 失败</td><td>记录 error 并返回，不清理旧值</td><td>保留旧值，不能视为最新状态</td></tr><tr><td>多 Operator 副本</td><td>每副本均统计自身缓存可见资源</td><td>先限定实例或按相同 scope 去重；max 只能去重复，不能修复旧序列</td></tr></tbody></table></div><aside class="note ">静态推导例：A 资源从 successful 变为 failed，新 failed=1 被设置，但若 successful 组合在本轮完全消失，旧 successful=1 不会被置零。两状态相加会读到 2。这里记录源码限制，没有执行故障复现，也未修改实现。</aside></section><section id="cp-export" class="lesson"><div class="sectionhead"><h2>07 / 指标注册、HTTPS 暴露与 ServiceMonitor</h2><label class="done"><input type="checkbox" data-read="cp-export"> 已读</label></div><details class="source" id="src-cp-registry"><summary><b>源码 · 四组自定义指标注册到 controller-runtime Registry</b><small>deploy/operator/internal/observability/metrics.go:73–81</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/observability/metrics.go#L73-L81" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>73</i>// InitMetrics registers all custom metrics with the controller-runtime metrics registry</span>
+<span class="line"><i>74</i>func InitMetrics() {</span>
+<span class="line"><i>75</i>	ctrlmetrics.Registry.MustRegister(</span>
+<span class="line"><i>76</i>		resourcesTotal,</span>
+<span class="line"><i>77</i>		webhookDuration,</span>
+<span class="line"><i>78</i>		webhookRequestsTotal,</span>
+<span class="line"><i>79</i>		webhookDenialsTotal,</span>
+<span class="line"><i>80</i>	)</span>
+<span class="line"><i>81</i>}</span></code></pre></details><details class="source" id="src-cp-manager"><summary><b>源码 · Metrics server、认证授权过滤、leader election</b><small>deploy/operator/cmd/main.go:235–260</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/cmd/main.go#L235-L260" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>235</i>	metricsBindAddr := fmt.Sprintf(&quot;%s:%d&quot;, operatorCfg.Server.Metrics.BindAddress, operatorCfg.Server.Metrics.Port)</span>
+<span class="line"><i>236</i>	healthProbeAddr := fmt.Sprintf(</span>
+<span class="line"><i>237</i>		&quot;%s:%d&quot;, operatorCfg.Server.HealthProbe.BindAddress, operatorCfg.Server.HealthProbe.Port,</span>
+<span class="line"><i>238</i>	)</span>
+<span class="line"><i>239</i></span>
+<span class="line"><i>240</i>	mgrOpts := ctrl.Options{</span>
+<span class="line"><i>241</i>		Scheme: crdScheme,</span>
+<span class="line"><i>242</i>		Metrics: metricsserver.Options{</span>
+<span class="line"><i>243</i>			BindAddress:    metricsBindAddr,</span>
+<span class="line"><i>244</i>			SecureServing:  ptr.Deref(operatorCfg.Server.Metrics.Secure, true),</span>
+<span class="line"><i>245</i>			FilterProvider: metricsfilters.WithAuthenticationAndAuthorization,</span>
+<span class="line"><i>246</i>			TLSOpts:        tlsOpts,</span>
+<span class="line"><i>247</i>		},</span>
+<span class="line"><i>248</i>		WebhookServer:           webhookServer,</span>
+<span class="line"><i>249</i>		HealthProbeBindAddress:  healthProbeAddr,</span>
+<span class="line"><i>250</i>		LeaderElection:          operatorCfg.LeaderElection.Enabled,</span>
+<span class="line"><i>251</i>		LeaderElectionID:        operatorCfg.LeaderElection.ID,</span>
+<span class="line"><i>252</i>		LeaderElectionNamespace: operatorCfg.LeaderElection.Namespace,</span>
+<span class="line"><i>253</i>	}</span>
+<span class="line"><i>254</i></span>
+<span class="line"><i>255</i>	restrictedNamespace := operatorCfg.Namespace.Restricted</span>
+<span class="line"><i>256</i>	if restrictedNamespace != &quot;&quot; {</span>
+<span class="line"><i>257</i>		mgrOpts.Cache.DefaultNamespaces = map[string]cache.Config{</span>
+<span class="line"><i>258</i>			restrictedNamespace: {},</span>
+<span class="line"><i>259</i>		}</span>
+<span class="line"><i>260</i>		setupLog.Info(&quot;Restricted namespace configured, launching in restricted mode&quot;, &quot;namespace&quot;, restrictedNamespace)</span></code></pre></details><details class="source" id="src-cp-resource-add"><summary><b>源码 · Manager 注册 ResourceCounter runnable</b><small>deploy/operator/cmd/main.go:379–389</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/cmd/main.go#L379-L389" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>379</i>	// Register after ExcludedNamespaces is set so cluster-wide metrics skip restricted namespaces.</span>
+<span class="line"><i>380</i>	setupLog.Info(&quot;Registering resource counter&quot;)</span>
+<span class="line"><i>381</i>	if err := mgr.Add(observability.NewResourceCounter(</span>
+<span class="line"><i>382</i>		mgr.GetClient(),</span>
+<span class="line"><i>383</i>		runtimeConfig.ExcludedNamespaces,</span>
+<span class="line"><i>384</i>	)); err != nil {</span>
+<span class="line"><i>385</i>		setupLog.Error(err, &quot;unable to register resource counter&quot;)</span>
+<span class="line"><i>386</i>		os.Exit(1)</span>
+<span class="line"><i>387</i>	}</span>
+<span class="line"><i>388</i></span>
+<span class="line"><i>389</i>	gates, err := features.New(mainCtx, mgr, operatorCfg)</span></code></pre></details><details class="source" id="src-cp-monitor"><summary><b>源码 · ServiceMonitor 三态开关及 HTTPS scrape</b><small>deploy/helm/charts/platform/components/operator/templates/operator-servicemonitor.yaml:15–49</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/helm/charts/platform/components/operator/templates/operator-servicemonitor.yaml#L15-L49" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>15</i># Tri-state for ServiceMonitor creation (metricsService.enabled):</span>
+<span class="line"><i>16</i>#   null  = auto-detect via .Capabilities (works with helm install/upgrade)</span>
+<span class="line"><i>17</i>#   true  = always create (use with helm template / GitOps)</span>
+<span class="line"><i>18</i>#   false = never create (opt-out even if prometheus-operator is installed)</span>
+<span class="line"><i>19</i>{{- $serviceMonitorEnabled := false }}</span>
+<span class="line"><i>20</i>{{- if kindIs &quot;invalid&quot; .Values.metricsService.enabled }}</span>
+<span class="line"><i>21</i>  {{- $serviceMonitorEnabled = (.Capabilities.APIVersions.Has &quot;monitoring.coreos.com/v1&quot;) }}</span>
+<span class="line"><i>22</i>{{- else }}</span>
+<span class="line"><i>23</i>  {{- $serviceMonitorEnabled = .Values.metricsService.enabled }}</span>
+<span class="line"><i>24</i>{{- end }}</span>
+<span class="line"><i>25</i>{{- if $serviceMonitorEnabled }}</span>
+<span class="line"><i>26</i>apiVersion: monitoring.coreos.com/v1</span>
+<span class="line"><i>27</i>kind: ServiceMonitor</span>
+<span class="line"><i>28</i>metadata:</span>
+<span class="line"><i>29</i>  name: {{ include &quot;dynamo-operator.fullname&quot; . }}-operator</span>
+<span class="line"><i>30</i>  namespace: {{ .Release.Namespace }}</span>
+<span class="line"><i>31</i>  labels:</span>
+<span class="line"><i>32</i>    {{- with .Values.metricsService.labels }}</span>
+<span class="line"><i>33</i>    {{- toYaml . | nindent 4 }}</span>
+<span class="line"><i>34</i>    {{- end }}</span>
+<span class="line"><i>35</i>    {{- include &quot;dynamo-operator.labels&quot; . | nindent 4 }}</span>
+<span class="line"><i>36</i>spec:</span>
+<span class="line"><i>37</i>  selector:</span>
+<span class="line"><i>38</i>    matchLabels:</span>
+<span class="line"><i>39</i>      control-plane: controller-manager</span>
+<span class="line"><i>40</i>      {{- include &quot;dynamo-operator.selectorLabels&quot; . | nindent 6 }}</span>
+<span class="line"><i>41</i>  endpoints:</span>
+<span class="line"><i>42</i>  - port: metrics</span>
+<span class="line"><i>43</i>    scheme: https</span>
+<span class="line"><i>44</i>    path: /metrics</span>
+<span class="line"><i>45</i>    interval: 15s</span>
+<span class="line"><i>46</i>    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token</span>
+<span class="line"><i>47</i>    tlsConfig:</span>
+<span class="line"><i>48</i>      insecureSkipVerify: true</span>
+<span class="line"><i>49</i>{{- end }}</span></code></pre></details><details class="source" id="src-cp-metric-service"><summary><b>源码 · Metrics Service 与 ServiceMonitor 创建条件不同</b><small>deploy/helm/charts/platform/components/operator/templates/metrics-service.yaml:15–37</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/helm/charts/platform/components/operator/templates/metrics-service.yaml#L15-L37" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>15</i># metricsService.enabled: null/true = create, false = skip.</span>
+<span class="line"><i>16</i># The Service is a core K8s resource (no CRD dependency), so null and true</span>
+<span class="line"><i>17</i># both result in creation. Only explicit false disables it.</span>
+<span class="line"><i>18</i>{{- if not (eq (toString .Values.metricsService.enabled) &quot;false&quot;) }}</span>
+<span class="line"><i>19</i>---</span>
+<span class="line"><i>20</i>apiVersion: v1</span>
+<span class="line"><i>21</i>kind: Service</span>
+<span class="line"><i>22</i>metadata:</span>
+<span class="line"><i>23</i>  name: {{ include &quot;dynamo-operator.fullname&quot; . }}</span>
+<span class="line"><i>24</i>  labels:</span>
+<span class="line"><i>25</i>    app.kubernetes.io/component: metrics</span>
+<span class="line"><i>26</i>    app.kubernetes.io/created-by: dynamo-operator</span>
+<span class="line"><i>27</i>    app.kubernetes.io/part-of: dynamo-operator</span>
+<span class="line"><i>28</i>    control-plane: controller-manager</span>
+<span class="line"><i>29</i>  {{- include &quot;dynamo-operator.labels&quot; . | nindent 4 }}</span>
+<span class="line"><i>30</i>spec:</span>
+<span class="line"><i>31</i>  type: {{ .Values.metricsService.type }}</span>
+<span class="line"><i>32</i>  selector:</span>
+<span class="line"><i>33</i>    control-plane: controller-manager</span>
+<span class="line"><i>34</i>  {{- include &quot;dynamo-operator.selectorLabels&quot; . | nindent 4 }}</span>
+<span class="line"><i>35</i>  ports:</span>
+<span class="line"><i>36</i>  {{- .Values.metricsService.ports | toYaml | nindent 2 -}}</span>
+<span class="line"><i>37</i>{{- end }}</span></code></pre></details><p>自定义 Go metrics 与 controller-runtime 调谐 metrics 共用 Registry/metrics server；应用侧 Rust/Python Registry 是另一路。默认安全服务启用认证授权过滤，ServiceMonitor 使用 metrics 端口、HTTPS、15s 和 bearer token。Service 存在不代表 Monitor 存在，也不代表 Prometheus 已选择它。</p><aside class="note ">metricsService.enabled=null：Service 可以创建，ServiceMonitor 依 Helm Capabilities 检测 monitoring.coreos.com/v1；true 强制创建；false 跳过。GitOps/helm template 场景尤其要核对渲染结果。模板 insecureSkipVerify=true 是所审默认配置，不要据此推断所有环境都如此。</aside><p>排查顺序：实际监听端口/协议 → Service selector/port → Monitor 对象 → Prometheus 的 Monitor selector → bearer token 和授权 → target UP → 指标是否产生。401/403 与网络不通是不同失败层。</p></section><section id="cp-framework" class="lesson"><div class="sectionhead"><h2>08 / 调谐、队列和健康不能混作一个 Ready</h2><label class="done"><input type="checkbox" data-read="cp-framework"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>信号</th><th>能说明什么</th><th>不能单独说明什么</th></tr></thead><tbody><tr><td>controller_runtime_reconcile_time_seconds / reconcile_total / reconcile_errors_total</td><td>按 controller 统计执行耗时、结果、错误（框架指标）</td><td>某个 DGD 的业务 Ready、模型加载时间或目标 namespace 级根因</td></tr><tr><td>workqueue_*（以实际 /metrics 为准）</td><td>队列等待/积压，用于解释触发到执行前的延迟</td><td>引擎队列或推理 token 延迟</td></tr><tr><td>Operator /healthz</td><td>所注册的 healthz.Ping 响应</td><td>kube-apiserver/所有资源/模型均健康</td></tr><tr><td>Operator /readyz</td><td>这里注册 webhookServer.StartedChecker()</td><td>所有推理图 Ready，或一定持有 leader</td></tr><tr><td>DGD Ready / component conditions</td><td>部署控制器最近观测的工作负载可用状态</td><td>单次请求成功或模型 SLA 达标</td></tr></tbody></table></div><details class="source" id="src-cp-health"><summary><b>源码 · Operator liveness/readiness 注册的实际检查</b><small>deploy/operator/cmd/main.go:481–491</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/cmd/main.go#L481-L491" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>481</i>	sshKeyManager := secret.NewSSHKeyManager(mgr.GetClient(), operatorCfg.MPI)</span>
+<span class="line"><i>482</i></span>
+<span class="line"><i>483</i>	if err := mgr.AddHealthzCheck(&quot;healthz&quot;, healthz.Ping); err != nil {</span>
+<span class="line"><i>484</i>		setupLog.Error(err, &quot;unable to set up health check&quot;)</span>
+<span class="line"><i>485</i>		os.Exit(1)</span>
+<span class="line"><i>486</i>	}</span>
+<span class="line"><i>487</i>	if err := mgr.AddReadyzCheck(&quot;webhook-server&quot;, webhookServer.StartedChecker()); err != nil {</span>
+<span class="line"><i>488</i>		setupLog.Error(err, &quot;unable to set up ready check&quot;)</span>
+<span class="line"><i>489</i>		os.Exit(1)</span>
+<span class="line"><i>490</i>	}</span>
+<span class="line"><i>491</i></span></code></pre></details><p>框架依赖由 deploy/operator/go.mod 固定到 controller-runtime v0.24.1；本章不把依赖包内部的计时逻辑伪装成 Dynamo 自定义实现。调谐错误使用 rate/增量，阶段阻塞还要查 status、Kubernetes Events、Pod 状态与 provider conditions。</p></section><section id="cp-events" class="lesson"><div class="sectionhead"><h2>09 / 状态、日志、Kubernetes Event 与 Trace 的关系</h2><label class="done"><input type="checkbox" data-read="cp-events"> 已读</label></div><p>DGD 的 programResult 保存完整 status、部分进度和待发状态事件；外层在 Status().Update 成功后才发送这些状态转换 Event。这能避免“状态没保存，成功事件已对外宣告”的矛盾。该约束针对这条 DGD 路径，不能推广成所有 controller 都按相同顺序写事件。</p><div class="tablewrap"><table><thead><tr><th>载体</th><th>定位键/用途</th><th>保留与边界</th></tr></thead><tbody><tr><td>CR status/conditions</td><td>namespace/name、generation、reason/message</td><td>当前观测状态；不是完整历史</td></tr><tr><td>Kubernetes Events</td><td>involved/related object UID、reason、时间</td><td>离散诊断事件；可能聚合、过期，不是审计日志</td></tr><tr><td>Operator 结构化日志</td><td>controller、namespace/name、具体错误和动作</td><td>由日志平台保存；需保留集群/Pod身份</td></tr><tr><td>OTel spans</td><td>Trace ID/Span ID/Link</td><td>本次所审 Go main/observability 路径未见推理 traceparent 注入/提取契约</td></tr></tbody></table></div><aside class="note ">给 Frontend/Worker 开 OTEL 不会自动把 Operator reconcile、admission 和 DGDR Job 接成推理请求的同一条 Trace。若要部署生命周期 trace，需要定义独立 operation ID、异步因果关系、各语言埋点与导出；本章没有把这项扩展当作现成能力。</aside></section><section id="cp-dcd" class="lesson"><div class="sectionhead"><h2>10 / DCD：子资源执行与故障定位边界</h2><label class="done"><input type="checkbox" data-read="cp-dcd"> 已读</label></div><details class="source" id="src-cp-dcd"><summary><b>源码 · 初始化 Conditions/Events，选择 LWS 或 Deployment，处理 Service</b><small>deploy/operator/internal/controller/dynamocomponentdeployment_controller.go:184–231</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dynamocomponentdeployment_controller.go#L184-L231" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>184</i>				Reason:  &quot;Reconciling&quot;,</span>
+<span class="line"><i>185</i>				Message: &quot;Starting to reconcile DynamoComponentDeployment&quot;,</span>
+<span class="line"><i>186</i>			},</span>
+<span class="line"><i>187</i>			metav1.Condition{</span>
+<span class="line"><i>188</i>				Type:    nvidiacomv1beta1.DynamoComponentDeploymentConditionTypeDynamoComponentReady,</span>
+<span class="line"><i>189</i>				Status:  metav1.ConditionUnknown,</span>
+<span class="line"><i>190</i>				Reason:  &quot;Reconciling&quot;,</span>
+<span class="line"><i>191</i>				Message: &quot;Starting to reconcile DynamoComponentDeployment&quot;,</span>
+<span class="line"><i>192</i>			},</span>
+<span class="line"><i>193</i>		)</span>
+<span class="line"><i>194</i>		if err != nil {</span>
+<span class="line"><i>195</i>			return</span>
+<span class="line"><i>196</i>		}</span>
+<span class="line"><i>197</i>	}</span>
+<span class="line"><i>198</i></span>
+<span class="line"><i>199</i>	// Create the appropriate workload resource based on deployment type</span>
+<span class="line"><i>200</i>	var componentReconcileResult ComponentReconcileResult</span>
+<span class="line"><i>201</i>	if r.RuntimeConfig.Gate.Enabled(features.LWS) &amp;&amp; dynamoComponentDeployment.IsMultinode() {</span>
+<span class="line"><i>202</i>		componentReconcileResult, err = r.reconcileLeaderWorkerSetResources(ctx, dynamoComponentDeployment)</span>
+<span class="line"><i>203</i>	} else {</span>
+<span class="line"><i>204</i>		componentReconcileResult, err = r.reconcileDeploymentResources(ctx, dynamoComponentDeployment)</span>
+<span class="line"><i>205</i>	}</span>
+<span class="line"><i>206</i>	if err != nil {</span>
+<span class="line"><i>207</i>		return ctrl.Result{}, fmt.Errorf(&quot;failed to reconcile the resources: %w&quot;, err)</span>
+<span class="line"><i>208</i>	}</span>
+<span class="line"><i>209</i>	modified := componentReconcileResult.modified</span>
+<span class="line"><i>210</i></span>
+<span class="line"><i>211</i>	serviceModified := false</span>
+<span class="line"><i>212</i>	disaggregatedSetBacked, err := r.isDisaggregatedSetBacked(ctx, dynamoComponentDeployment)</span>
+<span class="line"><i>213</i>	if err != nil {</span>
+<span class="line"><i>214</i>		return ctrl.Result{}, fmt.Errorf(&quot;failed to determine workload provider: %w&quot;, err)</span>
+<span class="line"><i>215</i>	}</span>
+<span class="line"><i>216</i>	if !disaggregatedSetBacked {</span>
+<span class="line"><i>217</i>		// Graph-level Services are rendered and owned by the DGD when the DS</span>
+<span class="line"><i>218</i>		// provider is selected. Standalone/component DCDs retain this path.</span>
+<span class="line"><i>219</i>		serviceModified, err = r.createOrUpdateOrDeleteServices(ctx, generateResourceOption{</span>
+<span class="line"><i>220</i>			dynamoComponentDeployment: dynamoComponentDeployment,</span>
+<span class="line"><i>221</i>		})</span>
+<span class="line"><i>222</i>		if err != nil {</span>
+<span class="line"><i>223</i>			return ctrl.Result{}, fmt.Errorf(&quot;failed to create or update the service: %w&quot;, err)</span>
+<span class="line"><i>224</i>		}</span>
+<span class="line"><i>225</i></span>
+<span class="line"><i>226</i>		componentName := dynamo.GetDCDComponentName(dynamoComponentDeployment)</span>
+<span class="line"><i>227</i>		componentMap := map[string]*nvidiacomv1beta1.DynamoComponentDeploymentSharedSpec{</span>
+<span class="line"><i>228</i>			componentName: &amp;dynamoComponentDeployment.Spec.DynamoComponentDeploymentSharedSpec,</span>
+<span class="line"><i>229</i>		}</span>
+<span class="line"><i>230</i>		if err := dynamo.ReconcileModelServicesForComponents(ctx, r, dynamoComponentDeployment, componentMap, dynamoComponentDeployment.Namespace); err != nil {</span>
+<span class="line"><i>231</i>			logs.Error(err, &quot;Failed to reconcile model service&quot;)</span></code></pre></details><p>组件 program 把图意图转交组件资源；DCD controller 再收敛 Deployment/LWS、Service/入口与可用状态。DCD 能独立重试与报告失败，不应将所有子资源等待都归到 DGD 自身的函数耗时。</p><p>排障从 DGD Ready/组件状态下钻 DCD conditions，再查 Deployment/LWS、Pod scheduling/container 状态和模型初始化日志。DCD 返回 nil 但 Available=False 是合法的“等待外部状态”，不等于 controller_runtime_reconcile_errors 会增长。</p></section><section id="cp-dgdr" class="lesson"><div class="sectionhead"><h2>11 / DGDR + Profiler：从 SLA 需求到可部署配置</h2><label class="done"><input type="checkbox" data-read="cp-dgdr"> 已读</label></div><div class="flow"><div><b>01</b>DGDR Pending：校验需求/生成 profiling Job</div><div><b>02</b>Profiling：搜索/测量或模拟/输出配置</div><div><b>03</b>Ready：产物可用、等待应用</div><div><b>04</b>Deploying：创建/跟踪 DGD</div><div><b>05</b>Deployed：DGD 满足就绪；失败另有 Failed</div></div><details class="source" id="src-cp-dgdr-state"><summary><b>源码 · 实际阶段分发</b><small>deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go:495–513</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go#L495-L513" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>495</i>	switch dgdr.Status.Phase {</span>
+<span class="line"><i>496</i>	case nvidiacomv1beta1.DGDRPhasePending, &quot;&quot;:</span>
+<span class="line"><i>497</i>		return r.handlePendingPhase(ctx, dgdr)</span>
+<span class="line"><i>498</i>	case nvidiacomv1beta1.DGDRPhaseProfiling:</span>
+<span class="line"><i>499</i>		return r.handleProfilingPhase(ctx, dgdr)</span>
+<span class="line"><i>500</i>	case nvidiacomv1beta1.DGDRPhaseDeploying:</span>
+<span class="line"><i>501</i>		return r.handleDeployingPhase(ctx, dgdr)</span>
+<span class="line"><i>502</i>	case nvidiacomv1beta1.DGDRPhaseReady:</span>
+<span class="line"><i>503</i>		return r.handleReadyPhase(ctx, dgdr)</span>
+<span class="line"><i>504</i>	case nvidiacomv1beta1.DGDRPhaseDeployed:</span>
+<span class="line"><i>505</i>		return r.handleDeployedPhase(ctx, dgdr)</span>
+<span class="line"><i>506</i>	case nvidiacomv1beta1.DGDRPhaseFailed:</span>
+<span class="line"><i>507</i>		return r.handleFailedPhase(ctx, dgdr)</span>
+<span class="line"><i>508</i>	default:</span>
+<span class="line"><i>509</i>		logger.Info(&quot;Unknown phase&quot;, &quot;phase&quot;, dgdr.Status.Phase)</span>
+<span class="line"><i>510</i>		return r.updatePhase(ctx, dgdr, nvidiacomv1beta1.DGDRPhaseFailed, MessageInvalidState)</span>
+<span class="line"><i>511</i>	}</span>
+<span class="line"><i>512</i>}</span>
+<span class="line"><i>513</i></span></code></pre></details><details class="source" id="src-cp-profile-start"><summary><b>源码 · run_profile 初始化状态并进入配置搜索</b><small>components/src/dynamo/profiler/profile_sla.py:343–395</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/profiler/profile_sla.py#L343-L395" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>343</i>async def run_profile(</span>
+<span class="line"><i>344</i>    dgdr: DynamoGraphDeploymentRequestSpec,</span>
+<span class="line"><i>345</i>    ops: ProfilerOperationalConfig | None = None,</span>
+<span class="line"><i>346</i>) -&gt; None:</span>
+<span class="line"><i>347</i>    &quot;&quot;&quot;Run the profiling pipeline.</span>
+<span class="line"><i>348</i></span>
+<span class="line"><i>349</i>    Args:</span>
+<span class="line"><i>350</i>        dgdr: The DynamoGraphDeploymentRequest spec describing the model,</span>
+<span class="line"><i>351</i>              hardware, workload, SLA, and feature configuration.</span>
+<span class="line"><i>352</i>        ops:  Operational knobs (output dir, namespace, granularity, etc.).</span>
+<span class="line"><i>353</i>              Uses defaults when ``None``.</span>
+<span class="line"><i>354</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>355</i>    if ops is None:</span>
+<span class="line"><i>356</i>        ops = ProfilerOperationalConfig()</span>
+<span class="line"><i>357</i></span>
+<span class="line"><i>358</i>    deployment_clients: list = []</span>
+<span class="line"><i>359</i></span>
+<span class="line"><i>360</i>    os.makedirs(ops.output_dir, exist_ok=True)</span>
+<span class="line"><i>361</i>    write_profiler_status(</span>
+<span class="line"><i>362</i>        ops.output_dir,</span>
+<span class="line"><i>363</i>        status=ProfilerStatus.RUNNING,</span>
+<span class="line"><i>364</i>        message=&quot;Profiler job started&quot;,</span>
+<span class="line"><i>365</i>        phase=ProfilingPhase.Initializing,</span>
+<span class="line"><i>366</i>    )</span>
+<span class="line"><i>367</i></span>
+<span class="line"><i>368</i>    try:</span>
+<span class="line"><i>369</i>        # Validate DGDR spec — after this, required fields are guaranteed non-None</span>
+<span class="line"><i>370</i>        valid_dgdr_spec(dgdr)</span>
+<span class="line"><i>371</i>        (</span>
+<span class="line"><i>372</i>            model,</span>
+<span class="line"><i>373</i>            backend,</span>
+<span class="line"><i>374</i>            system,</span>
+<span class="line"><i>375</i>            total_gpus,</span>
+<span class="line"><i>376</i>            isl,</span>
+<span class="line"><i>377</i>            osl,</span>
+<span class="line"><i>378</i>            request_latency,</span>
+<span class="line"><i>379</i>            target_ttft,</span>
+<span class="line"><i>380</i>            target_tpot,</span>
+<span class="line"><i>381</i>            search_strategy,</span>
+<span class="line"><i>382</i>            picking_mode,</span>
+<span class="line"><i>383</i>        ) = _extract_profiler_params(dgdr)</span>
+<span class="line"><i>384</i>        aic_supported = _check_dgdr_aic_support(dgdr, backend, system)</span>
+<span class="line"><i>385</i>        # then validate DGDR features based on AIC support</span>
+<span class="line"><i>386</i>        validate_dgdr_dynamo_features(dgdr, aic_supported)</span>
+<span class="line"><i>387</i></span>
+<span class="line"><i>388</i>        ops.current_phase = ProfilingPhase.SweepingPrefill</span>
+<span class="line"><i>389</i>        write_profiler_status(</span>
+<span class="line"><i>390</i>            ops.output_dir,</span>
+<span class="line"><i>391</i>            status=ProfilerStatus.RUNNING,</span>
+<span class="line"><i>392</i>            message=&quot;Sweeping parallelization strategies&quot;,</span>
+<span class="line"><i>393</i>            phase=ops.current_phase,</span>
+<span class="line"><i>394</i>        )</span>
+<span class="line"><i>395</i></span></code></pre></details><p>autoApply=true 时可从 profiling 完成进入 Deploying；false 时停在 Ready 供检查/手动应用，不必逐次经历所有图中状态。Profiler 产物包括候选/选型结果和部署配置，性能数据应带上模型、硬件、负载与测量口径；不是通过 Job 成功就直接证明生产 SLA。</p><aside class="note ">当前 controller 遇到 spec.V1Beta2 envelope carrier 会提前返回；本章阶段机分析的是实际实现的原生 v1beta1 路径，不把尚未实现的 reconciler 视为已可用。</aside></section><section id="cp-profiler-observe" class="lesson"><div class="sectionhead"><h2>12 / Profiler 进度与失败：文件 → sidecar → ConfigMap → status</h2><label class="done"><input type="checkbox" data-read="cp-profiler-observe"> 已读</label></div><details class="source" id="src-cp-profile-status"><summary><b>源码 · 写状态、UTC timestamp、phase/message/error；写失败只 warning</b><small>components/src/dynamo/profiler/utils/profiler_status.py:35–73</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/profiler/utils/profiler_status.py#L35-L73" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>35</i>def write_profiler_status(</span>
+<span class="line"><i>36</i>    output_dir: str,</span>
+<span class="line"><i>37</i>    status: ProfilerStatus,</span>
+<span class="line"><i>38</i>    message: str = &quot;&quot;,</span>
+<span class="line"><i>39</i>    error: str = &quot;&quot;,</span>
+<span class="line"><i>40</i>    outputs: dict | None = None,</span>
+<span class="line"><i>41</i>    phase: ProfilingPhase | None = None,</span>
+<span class="line"><i>42</i>) -&gt; None:</span>
+<span class="line"><i>43</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>44</i>    Write profiler status file.</span>
+<span class="line"><i>45</i></span>
+<span class="line"><i>46</i>    Args:</span>
+<span class="line"><i>47</i>        output_dir: Output directory path</span>
+<span class="line"><i>48</i>        status: Status enum value</span>
+<span class="line"><i>49</i>        message: Optional status message</span>
+<span class="line"><i>50</i>        error: Optional error message (for failed status)</span>
+<span class="line"><i>51</i>        outputs: Optional dict of output files (for success status)</span>
+<span class="line"><i>52</i>        phase: Optional profiling sub-phase (e.g. ProfilingPhase value).</span>
+<span class="line"><i>53</i>               Relayed by the sidecar to the controller for kubectl visibility.</span>
+<span class="line"><i>54</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>55</i>    status_file = os.path.join(output_dir, STATUS_FILE_NAME)</span>
+<span class="line"><i>56</i>    status_data: dict[str, Any] = {</span>
+<span class="line"><i>57</i>        &quot;status&quot;: status.value,</span>
+<span class="line"><i>58</i>        &quot;timestamp&quot;: time.strftime(&quot;%Y-%m-%dT%H:%M:%SZ&quot;, time.gmtime()),</span>
+<span class="line"><i>59</i>    }</span>
+<span class="line"><i>60</i>    if message:</span>
+<span class="line"><i>61</i>        status_data[&quot;message&quot;] = message</span>
+<span class="line"><i>62</i>    if error:</span>
+<span class="line"><i>63</i>        status_data[&quot;error&quot;] = error</span>
+<span class="line"><i>64</i>    if outputs:</span>
+<span class="line"><i>65</i>        status_data[&quot;outputs&quot;] = outputs</span>
+<span class="line"><i>66</i>    if phase:</span>
+<span class="line"><i>67</i>        status_data[&quot;phase&quot;] = phase.value</span>
+<span class="line"><i>68</i></span>
+<span class="line"><i>69</i>    try:</span>
+<span class="line"><i>70</i>        with open(status_file, &quot;w&quot;) as f:</span>
+<span class="line"><i>71</i>            yaml.safe_dump(status_data, f, sort_keys=False)</span>
+<span class="line"><i>72</i>    except Exception as e:</span>
+<span class="line"><i>73</i>        logger.warning(&quot;Failed to write profiler status file: %s&quot;, e)</span></code></pre></details><details class="source" id="src-cp-copier"><summary><b>源码 · output-copier relay phase：仅阶段改变才更新 ConfigMap</b><small>deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go:139–197</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go#L139-L197" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>139</i>//</span>
+<span class="line"><i>140</i>// The sidecar is a continuous poller that:</span>
+<span class="line"><i>141</i>//  1. During profiling: polls profiler_status.yaml every 10s, relays phase+message</span>
+<span class="line"><i>142</i>//     to the output ConfigMap so the controller can track sub-phase progress.</span>
+<span class="line"><i>143</i>//  2. After profiler terminates: writes the final profiling output (final_config.yaml</span>
+<span class="line"><i>144</i>//     + profiler_status.yaml) to the same ConfigMap, preserving the phase+message keys.</span>
+<span class="line"><i>145</i>const sidecarScriptTemplate = `</span>
+<span class="line"><i>146</i>set -e</span>
+<span class="line"><i>147</i>set -o pipefail</span>
+<span class="line"><i>148</i></span>
+<span class="line"><i>149</i># Without kubectl the sidecar would poll forever and strand the DGDR in</span>
+<span class="line"><i>150</i># Profiling; fail the Job instead so the controller can move it to Failed.</span>
+<span class="line"><i>151</i>if ! command -v kubectl &gt;/dev/null 2&gt;&amp;1; then</span>
+<span class="line"><i>152</i>  echo &quot;ERROR: kubectl not found in the output-copier image. The image set for the output-copier container through spec.overrides.profilingJob must contain kubectl.&quot; &gt;&amp;2</span>
+<span class="line"><i>153</i>  exit 1</span>
+<span class="line"><i>154</i>fi</span>
+<span class="line"><i>155</i></span>
+<span class="line"><i>156</i>STATUS_FILE=&quot;{{.OutputPath}}/profiler_status.yaml&quot;</span>
+<span class="line"><i>157</i>LAST_PHASE=&quot;&quot;</span>
+<span class="line"><i>158</i>START_TIME=$(date +%s)</span>
+<span class="line"><i>159</i>LAST_PROGRESS_LOG=$START_TIME</span>
+<span class="line"><i>160</i>PROGRESS_INTERVAL=300</span>
+<span class="line"><i>161</i></span>
+<span class="line"><i>162</i># relay_phase: read phase+message from profiler_status.yaml and write to ConfigMap.</span>
+<span class="line"><i>163</i># Only writes when the phase changes (debounce).</span>
+<span class="line"><i>164</i>relay_phase() {</span>
+<span class="line"><i>165</i>  if [ ! -f &quot;$STATUS_FILE&quot; ]; then</span>
+<span class="line"><i>166</i>    return</span>
+<span class="line"><i>167</i>  fi</span>
+<span class="line"><i>168</i>  PHASE=$(grep &quot;^phase:&quot; &quot;$STATUS_FILE&quot; 2&gt;/dev/null | awk &#x27;{print $2}&#x27; | tr -d &#x27;&quot;&#x27; | tr -d &quot;&#x27;&quot; || true)</span>
+<span class="line"><i>169</i>  MESSAGE=$(grep &quot;^message:&quot; &quot;$STATUS_FILE&quot; 2&gt;/dev/null | sed &#x27;s/^message: *//&#x27; | tr -d &#x27;&quot;&#x27; | tr -d &quot;&#x27;&quot; || true)</span>
+<span class="line"><i>170</i>  if [ -z &quot;$PHASE&quot; ] || [ &quot;$PHASE&quot; = &quot;$LAST_PHASE&quot; ]; then</span>
+<span class="line"><i>171</i>    return</span>
+<span class="line"><i>172</i>  fi</span>
+<span class="line"><i>173</i>  echo &quot;Phase update: $PHASE - $MESSAGE&quot;</span>
+<span class="line"><i>174</i>  cat &gt;/tmp/progress.yaml &lt;&lt;PEOF</span>
+<span class="line"><i>175</i>apiVersion: v1</span>
+<span class="line"><i>176</i>kind: ConfigMap</span>
+<span class="line"><i>177</i>metadata:</span>
+<span class="line"><i>178</i>  name: {{.ConfigMapName}}</span>
+<span class="line"><i>179</i>  namespace: {{.Namespace}}</span>
+<span class="line"><i>180</i>  labels:</span>
+<span class="line"><i>181</i>    dgdr.nvidia.com/name: {{.DGDRName}}</span>
+<span class="line"><i>182</i>    dgdr.nvidia.com/namespace: {{.Namespace}}</span>
+<span class="line"><i>183</i>    nvidia.com/managed-by: dynamo-operator</span>
+<span class="line"><i>184</i>  ownerReferences:</span>
+<span class="line"><i>185</i>  - apiVersion: nvidia.com/v1beta1</span>
+<span class="line"><i>186</i>    kind: DynamoGraphDeploymentRequest</span>
+<span class="line"><i>187</i>    name: {{.DGDRName}}</span>
+<span class="line"><i>188</i>    uid: {{.DGDRuid}}</span>
+<span class="line"><i>189</i>    blockOwnerDeletion: true</span>
+<span class="line"><i>190</i>    controller: true</span>
+<span class="line"><i>191</i>data:</span>
+<span class="line"><i>192</i>  phase: &quot;$PHASE&quot;</span>
+<span class="line"><i>193</i>  message: &quot;$MESSAGE&quot;</span>
+<span class="line"><i>194</i>PEOF</span>
+<span class="line"><i>195</i>  kubectl apply -f /tmp/progress.yaml 2&gt;/dev/null &amp;&amp; LAST_PHASE=&quot;$PHASE&quot; || echo &quot;Warning: failed to update progress ConfigMap&quot;</span>
+<span class="line"><i>196</i>}</span>
+<span class="line"><i>197</i></span></code></pre></details><details class="source" id="src-cp-subphase"><summary><b>源码 · controller 读取 phase/message 并更新 Profiling/Succeeded conditions</b><small>deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go:572–616</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go#L572-L616" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>572</i>func (r *DynamoGraphDeploymentRequestReconciler) updateProfilingSubPhase(</span>
+<span class="line"><i>573</i>	ctx context.Context,</span>
+<span class="line"><i>574</i>	dgdr *nvidiacomv1beta1.DynamoGraphDeploymentRequest,</span>
+<span class="line"><i>575</i>) error {</span>
+<span class="line"><i>576</i>	logger := log.FromContext(ctx)</span>
+<span class="line"><i>577</i>	outputCMName := getOutputConfigMapName(dgdr)</span>
+<span class="line"><i>578</i></span>
+<span class="line"><i>579</i>	cm := &amp;corev1.ConfigMap{}</span>
+<span class="line"><i>580</i>	if err := r.Get(ctx, types.NamespacedName{</span>
+<span class="line"><i>581</i>		Name: outputCMName, Namespace: dgdr.Namespace,</span>
+<span class="line"><i>582</i>	}, cm); err != nil {</span>
+<span class="line"><i>583</i>		return nil // No output ConfigMap yet — skip</span>
+<span class="line"><i>584</i>	}</span>
+<span class="line"><i>585</i></span>
+<span class="line"><i>586</i>	phase, exists := cm.Data[&quot;phase&quot;]</span>
+<span class="line"><i>587</i>	if !exists || phase == &quot;&quot; {</span>
+<span class="line"><i>588</i>		return nil</span>
+<span class="line"><i>589</i>	}</span>
+<span class="line"><i>590</i></span>
+<span class="line"><i>591</i>	if !isValidProfilingPhase(phase) {</span>
+<span class="line"><i>592</i>		return fmt.Errorf(&quot;invalid profiling phase %q in ConfigMap %s&quot;, phase, outputCMName)</span>
+<span class="line"><i>593</i>	}</span>
+<span class="line"><i>594</i></span>
+<span class="line"><i>595</i>	profilingPhase := nvidiacomv1beta1.ProfilingPhase(phase)</span>
+<span class="line"><i>596</i>	if dgdr.Status.ProfilingPhase == profilingPhase {</span>
+<span class="line"><i>597</i>		return nil // No change</span>
+<span class="line"><i>598</i>	}</span>
+<span class="line"><i>599</i></span>
+<span class="line"><i>600</i>	logger.Info(&quot;Profiling sub-phase updated&quot;, &quot;phase&quot;, phase)</span>
+<span class="line"><i>601</i>	dgdr.SetProfilingPhase(profilingPhase)</span>
+<span class="line"><i>602</i></span>
+<span class="line"><i>603</i>	// Reason is derived from phase; message comes from the profiler via ConfigMap.</span>
+<span class="line"><i>604</i>	reason := profilingPhaseReason(profilingPhase)</span>
+<span class="line"><i>605</i>	message := cm.Data[&quot;message&quot;] // written by profiler, relayed by sidecar</span>
+<span class="line"><i>606</i></span>
+<span class="line"><i>607</i>	meta.SetStatusCondition(&amp;dgdr.Status.Conditions, metav1.Condition{</span>
+<span class="line"><i>608</i>		Type:               nvidiacomv1beta1.ConditionTypeProfiling,</span>
+<span class="line"><i>609</i>		Status:             metav1.ConditionFalse,</span>
+<span class="line"><i>610</i>		ObservedGeneration: dgdr.Generation,</span>
+<span class="line"><i>611</i>		Reason:             reason,</span>
+<span class="line"><i>612</i>		Message:            message,</span>
+<span class="line"><i>613</i>	})</span>
+<span class="line"><i>614</i>	setSucceededCondition(dgdr, nvidiacomv1beta1.DGDRPhaseProfiling)</span>
+<span class="line"><i>615</i></span>
+<span class="line"><i>616</i>	return r.Status().Update(ctx, dgdr)</span></code></pre></details><details class="source" id="src-cp-profile-failure"><summary><b>源码 · Job 完成后继续核对 profiler_status=failed</b><small>deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go:698–734</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dynamographdeploymentrequest_controller.go#L698-L734" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>698</i>		// Don&#x27;t requeue - we&#x27;ll be triggered when the Job completes/fails</span>
+<span class="line"><i>699</i>		return ctrl.Result{}, nil</span>
+<span class="line"><i>700</i>	}</span>
+<span class="line"><i>701</i></span>
+<span class="line"><i>702</i>	// The sidecar exits 0 even on profiler failure (to avoid wasteful Job</span>
+<span class="line"><i>703</i>	// retries), so a completed Job does not imply success. Check the output</span>
+<span class="line"><i>704</i>	// ConfigMap for an explicit failure status written by the sidecar.</span>
+<span class="line"><i>705</i>	profilerFailed, profilerError, cmErr := r.checkProfilerFailureInConfigMap(ctx, dgdr)</span>
+<span class="line"><i>706</i>	if cmErr != nil {</span>
+<span class="line"><i>707</i>		// Infrastructure error reading ConfigMap (RBAC, API, etc.) — retry.</span>
+<span class="line"><i>708</i>		return ctrl.Result{}, cmErr</span>
+<span class="line"><i>709</i>	}</span>
+<span class="line"><i>710</i>	if profilerFailed {</span>
+<span class="line"><i>711</i>		failureReason := profilingPhaseFailureReason(dgdr.Status.ProfilingPhase)</span>
+<span class="line"><i>712</i>		failureMessage := fmt.Sprintf(&quot;profiling failed: %s&quot;, profilerError)</span>
+<span class="line"><i>713</i>		dgdr.Status.Phase = nvidiacomv1beta1.DGDRPhaseFailed</span>
+<span class="line"><i>714</i>		meta.SetStatusCondition(&amp;dgdr.Status.Conditions, metav1.Condition{</span>
+<span class="line"><i>715</i>			Type:               nvidiacomv1beta1.ConditionTypeSucceeded,</span>
+<span class="line"><i>716</i>			Status:             metav1.ConditionFalse,</span>
+<span class="line"><i>717</i>			ObservedGeneration: dgdr.Generation,</span>
+<span class="line"><i>718</i>			Reason:             failureReason,</span>
+<span class="line"><i>719</i>			Message:            failureMessage,</span>
+<span class="line"><i>720</i>		})</span>
+<span class="line"><i>721</i>		dgdr.AddStatusCondition(metav1.Condition{</span>
+<span class="line"><i>722</i>			Type:               nvidiacomv1beta1.ConditionTypeProfiling,</span>
+<span class="line"><i>723</i>			Status:             metav1.ConditionFalse,</span>
+<span class="line"><i>724</i>			ObservedGeneration: dgdr.Generation,</span>
+<span class="line"><i>725</i>			Reason:             failureReason,</span>
+<span class="line"><i>726</i>			Message:            failureMessage,</span>
+<span class="line"><i>727</i>		})</span>
+<span class="line"><i>728</i>		r.Recorder.Eventf(dgdr, nil, corev1.EventTypeWarning, MessageProfilingCheckFailed, &quot;Get&quot;, &quot;%s&quot;, failureMessage)</span>
+<span class="line"><i>729</i>		if err := r.Status().Update(ctx, dgdr); err != nil {</span>
+<span class="line"><i>730</i>			return ctrl.Result{}, err</span>
+<span class="line"><i>731</i>		}</span>
+<span class="line"><i>732</i>		return ctrl.Result{}, nil</span>
+<span class="line"><i>733</i>	}</span>
+<span class="line"><i>734</i></span></code></pre></details><div class="tablewrap"><table><thead><tr><th>环节</th><th>源码语义</th><th>运维含义</th></tr></thead><tbody><tr><td>Python 状态文件</td><td>写 profiler_status.yaml；异常记录 warning，函数不重新抛出</td><td>任务仍运行但文件缺失时先查输出目录/权限/日志</td></tr><tr><td>sidecar</td><td>循环约 10s 轮询；同一 phase 不重复 relay message；输出到 ConfigMap</td><td>kubectl phase 是粗粒度进度，不是每条实时消息</td></tr><tr><td>controller</td><td>watch Job/ConfigMap，校验 phase；保存 status/conditions</td><td>阶段数据需经历文件、轮询、API写入、watch等延迟</td></tr><tr><td>完成判断</td><td>Job completed 仍检查 profiler_status/profiler_error</td><td>Job Succeeded 不保证 Profiler 业务成功</td></tr></tbody></table></div><p>这条进度链是控制面可观测数据，也是状态机输入。排查 profiling 卡住应同时保存 DGDR conditions、Job/两个容器日志、状态文件与输出 ConfigMap；只看 Prometheus 资源总数不足以恢复搜索阶段和错误细节。</p></section><section id="cp-scale" class="lesson"><div class="sectionhead"><h2>13 / Planner 与伸缩执行：决定、提交、收敛分开观测</h2><label class="done"><input type="checkbox" data-read="cp-scale"> 已读</label></div><p>Planner 的 Prometheus/FPM 输入、SLA 决策与自身指标详见 <a href="planner.html">Planner 源码专题</a>。这里沿写入边界继续追踪：声明 scalingAdapter 的组件以 DGDSA 意图为准；严格 scale patch 失败不会悄悄再写 DGD，避免两个副本真值来源。</p><details class="source" id="src-cp-planner-write"><summary><b>源码 · Planner 严格写 DGDSA Scale subresource</b><small>components/src/dynamo/planner/connectors/clients/kubernetes_api.py:207–236</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/planner/connectors/clients/kubernetes_api.py#L207-L236" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>207</i>    def update_scaling_adapter_replicas(</span>
+<span class="line"><i>208</i>        self,</span>
+<span class="line"><i>209</i>        graph_deployment_name: str,</span>
+<span class="line"><i>210</i>        service_name: str,</span>
+<span class="line"><i>211</i>        replicas: int,</span>
+<span class="line"><i>212</i>        *,</span>
+<span class="line"><i>213</i>        resource_version: str | None = None,</span>
+<span class="line"><i>214</i>    ) -&gt; None:</span>
+<span class="line"><i>215</i>        &quot;&quot;&quot;Strictly patch a declared DGDSA through its Scale subresource.</span>
+<span class="line"><i>216</i></span>
+<span class="line"><i>217</i>        Unlike :meth:`update_service_replicas`, this method never falls back to</span>
+<span class="line"><i>218</i>        mutating the DGD. Components that declare ``scalingAdapter`` have made</span>
+<span class="line"><i>219</i>        the DGDSA desired state authoritative, so a missing adapter must fail</span>
+<span class="line"><i>220</i>        loudly instead of creating a second replica owner.</span>
+<span class="line"><i>221</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>222</i>        adapter_name = self.scaling_adapter_name(graph_deployment_name, service_name)</span>
+<span class="line"><i>223</i>        body: dict[str, object] = {&quot;spec&quot;: {&quot;replicas&quot;: replicas}}</span>
+<span class="line"><i>224</i>        if resource_version is not None:</span>
+<span class="line"><i>225</i>            body[&quot;metadata&quot;] = {&quot;resourceVersion&quot;: resource_version}</span>
+<span class="line"><i>226</i></span>
+<span class="line"><i>227</i>        self.custom_api.patch_namespaced_custom_object_scale(</span>
+<span class="line"><i>228</i>            group=NVIDIA_API_GROUP,</span>
+<span class="line"><i>229</i>            version=DYNAMO_API_VERSION,</span>
+<span class="line"><i>230</i>            namespace=self.current_namespace,</span>
+<span class="line"><i>231</i>            plural=DGDSA_PLURAL,</span>
+<span class="line"><i>232</i>            name=adapter_name,</span>
+<span class="line"><i>233</i>            body=body,</span>
+<span class="line"><i>234</i>        )</span>
+<span class="line"><i>235</i>        logger.info(&quot;Scaled DGDSA %s to %s replicas&quot;, adapter_name, replicas)</span>
+<span class="line"><i>236</i></span></code></pre></details><details class="source" id="src-cp-adapter"><summary><b>源码 · DGDSA → DGD replicas、Scaled Event 和 LastScaleTime</b><small>deploy/operator/internal/controller/dynamographdeploymentscalingadapter_controller.go:107–148</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dynamographdeploymentscalingadapter_controller.go#L107-L148" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>107</i>	currentReplicas := int32(1)</span>
+<span class="line"><i>108</i>	if component.Replicas != nil {</span>
+<span class="line"><i>109</i>		currentReplicas = *component.Replicas</span>
+<span class="line"><i>110</i>	}</span>
+<span class="line"><i>111</i></span>
+<span class="line"><i>112</i>	// 4. Update DGD if replicas changed (DGDSA is the source of truth)</span>
+<span class="line"><i>113</i>	if currentReplicas != adapter.Spec.Replicas {</span>
+<span class="line"><i>114</i>		// Update the component&#x27;s replicas in DGD.</span>
+<span class="line"><i>115</i>		component.Replicas = &amp;adapter.Spec.Replicas</span>
+<span class="line"><i>116</i></span>
+<span class="line"><i>117</i>		if err := r.Update(ctx, dgd); err != nil {</span>
+<span class="line"><i>118</i>			logger.Error(err, &quot;Failed to update DGD&quot;)</span>
+<span class="line"><i>119</i>			r.Recorder.Eventf(adapter, dgd, corev1.EventTypeWarning, &quot;UpdateFailed&quot;, &quot;Update&quot;,</span>
+<span class="line"><i>120</i>				&quot;Failed to update DGD %s: %v&quot;, dgd.Name, err)</span>
+<span class="line"><i>121</i>			return ctrl.Result{}, err</span>
+<span class="line"><i>122</i>		}</span>
+<span class="line"><i>123</i></span>
+<span class="line"><i>124</i>		logger.Info(&quot;Scaled component&quot;,</span>
+<span class="line"><i>125</i>			&quot;dgd&quot;, dgd.Name,</span>
+<span class="line"><i>126</i>			&quot;component&quot;, componentName,</span>
+<span class="line"><i>127</i>			&quot;from&quot;, currentReplicas,</span>
+<span class="line"><i>128</i>			&quot;to&quot;, adapter.Spec.Replicas)</span>
+<span class="line"><i>129</i></span>
+<span class="line"><i>130</i>		r.Recorder.Eventf(adapter, dgd, corev1.EventTypeNormal, &quot;Scaled&quot;, &quot;Scale&quot;,</span>
+<span class="line"><i>131</i>			&quot;Scaled component %s from %d to %d replicas&quot;, componentName, currentReplicas, adapter.Spec.Replicas)</span>
+<span class="line"><i>132</i></span>
+<span class="line"><i>133</i>		// Record scaling event</span>
+<span class="line"><i>134</i>		now := metav1.Now()</span>
+<span class="line"><i>135</i>		adapter.Status.LastScaleTime = &amp;now</span>
+<span class="line"><i>136</i>	}</span>
+<span class="line"><i>137</i></span>
+<span class="line"><i>138</i>	// 5. Update adapter status</span>
+<span class="line"><i>139</i>	adapter.Status.Replicas = adapter.Spec.Replicas</span>
+<span class="line"><i>140</i>	adapter.Status.Selector = r.buildPodSelector(dgd.Name, componentName)</span>
+<span class="line"><i>141</i></span>
+<span class="line"><i>142</i>	if err := r.Status().Update(ctx, adapter); err != nil {</span>
+<span class="line"><i>143</i>		logger.Error(err, &quot;Failed to update adapter status&quot;)</span>
+<span class="line"><i>144</i>		return ctrl.Result{}, err</span>
+<span class="line"><i>145</i>	}</span>
+<span class="line"><i>146</i></span>
+<span class="line"><i>147</i>	return ctrl.Result{}, nil</span>
+<span class="line"><i>148</i>}</span></code></pre></details><details class="source" id="src-cp-prom-env"><summary><b>源码 · Operator 注入 PROMETHEUS_ENDPOINT，保留用户覆盖</b><small>deploy/operator/internal/dynamo/component_common.go:172–204</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/dynamo/component_common.go#L172-L204" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>172</i>// Dynamo component containers and the DGDR profiler Job.</span>
+<span class="line"><i>173</i>// container must not be nil; existing environment values take precedence.</span>
+<span class="line"><i>174</i>func AddStandardEnvVars(container *corev1.Container, infrastructure configv1alpha1.InfrastructureConfiguration) {</span>
+<span class="line"><i>175</i>	standardEnvVars := []corev1.EnvVar{}</span>
+<span class="line"><i>176</i>	if infrastructure.NATSAddress != &quot;&quot; {</span>
+<span class="line"><i>177</i>		standardEnvVars = append(standardEnvVars, corev1.EnvVar{</span>
+<span class="line"><i>178</i>			Name:  &quot;NATS_SERVER&quot;,</span>
+<span class="line"><i>179</i>			Value: infrastructure.NATSAddress,</span>
+<span class="line"><i>180</i>		})</span>
+<span class="line"><i>181</i>	}</span>
+<span class="line"><i>182</i></span>
+<span class="line"><i>183</i>	if infrastructure.ETCDAddress != &quot;&quot; {</span>
+<span class="line"><i>184</i>		standardEnvVars = append(standardEnvVars, corev1.EnvVar{</span>
+<span class="line"><i>185</i>			Name:  &quot;ETCD_ENDPOINTS&quot;,</span>
+<span class="line"><i>186</i>			Value: infrastructure.ETCDAddress,</span>
+<span class="line"><i>187</i>		})</span>
+<span class="line"><i>188</i>	}</span>
+<span class="line"><i>189</i></span>
+<span class="line"><i>190</i>	if infrastructure.ModelExpressURL != &quot;&quot; {</span>
+<span class="line"><i>191</i>		standardEnvVars = append(standardEnvVars, corev1.EnvVar{</span>
+<span class="line"><i>192</i>			Name:  &quot;MODEL_EXPRESS_URL&quot;,</span>
+<span class="line"><i>193</i>			Value: infrastructure.ModelExpressURL,</span>
+<span class="line"><i>194</i>		})</span>
+<span class="line"><i>195</i>	}</span>
+<span class="line"><i>196</i>	if infrastructure.PrometheusEndpoint != &quot;&quot; {</span>
+<span class="line"><i>197</i>		standardEnvVars = append(standardEnvVars, corev1.EnvVar{</span>
+<span class="line"><i>198</i>			Name:  &quot;PROMETHEUS_ENDPOINT&quot;,</span>
+<span class="line"><i>199</i>			Value: infrastructure.PrometheusEndpoint,</span>
+<span class="line"><i>200</i>		})</span>
+<span class="line"><i>201</i>	}</span>
+<span class="line"><i>202</i>	// merge the env vars to allow users to override the standard env vars</span>
+<span class="line"><i>203</i>	container.Env = MergeEnvs(standardEnvVars, container.Env)</span>
+<span class="line"><i>204</i>}</span></code></pre></details><aside class="note ">adapter.Status.Replicas 在这里直接赋成 adapter.Spec.Replicas；LastScaleTime 是成功提交 DGD 副本更新的时间，不是新 Pod 就绪时间。既要观测决策目标/提交错误，又要读 DGD observedGeneration、rollout/组件就绪及实际可服务容量。HPA/KEDA/Planner 共用目标时还须明确唯一写入者。</aside></section><section id="cp-model" class="lesson"><div class="sectionhead"><h2>14 / DynamoModel：模型端点与 LoRA 管理</h2><label class="done"><input type="checkbox" data-read="cp-model"> 已读</label></div><details class="source" id="src-cp-model-empty"><summary><b>源码 · EndpointSlice 候选缺失、probe/LoRA 加载和失败事件</b><small>deploy/operator/internal/controller/dynamo_model_controller.go:112–151</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dynamo_model_controller.go#L112-L151" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>112</i>	// Get endpoint candidates (common logic)</span>
+<span class="line"><i>113</i>	candidates, serviceNames, err := r.getEndpointCandidates(ctx, model)</span>
+<span class="line"><i>114</i>	if err != nil {</span>
+<span class="line"><i>115</i>		// Error already logged and status updated in helper</span>
+<span class="line"><i>116</i>		// Let controller-runtime handle retry with exponential backoff</span>
+<span class="line"><i>117</i>		return ctrl.Result{}, err</span>
+<span class="line"><i>118</i>	}</span>
+<span class="line"><i>119</i></span>
+<span class="line"><i>120</i>	if len(candidates) == 0 {</span>
+<span class="line"><i>121</i>		msg := fmt.Sprintf(&quot;No endpoint slices found for base model %s&quot;, model.Spec.BaseModelName)</span>
+<span class="line"><i>122</i>		logs.Info(msg)</span>
+<span class="line"><i>123</i>		r.Recorder.Eventf(model, nil, corev1.EventTypeWarning, &quot;NoEndpointsFound&quot;, &quot;Get&quot;, &quot;%s&quot;, msg)</span>
+<span class="line"><i>124</i>		r.updateCondition(model, ConditionTypeServicesFound, metav1.ConditionFalse, ReasonNoServicesFound, msg)</span>
+<span class="line"><i>125</i>		r.updateCondition(model, ConditionTypeEndpointsReady, metav1.ConditionFalse, ReasonNoEndpoints, msg)</span>
+<span class="line"><i>126</i>		model.Status.Endpoints = nil</span>
+<span class="line"><i>127</i>		model.Status.TotalEndpoints = 0</span>
+<span class="line"><i>128</i>		model.Status.ReadyEndpoints = 0</span>
+<span class="line"><i>129</i>		model.Status.LoRAFallbackCoveredEndpoints = 0</span>
+<span class="line"><i>130</i>		if err := r.Status().Update(ctx, model); err != nil {</span>
+<span class="line"><i>131</i>			return ctrl.Result{}, err</span>
+<span class="line"><i>132</i>		}</span>
+<span class="line"><i>133</i>		// Don&#x27;t requeue - we&#x27;re watching EndpointSlices, so we&#x27;ll be notified when they appear</span>
+<span class="line"><i>134</i>		return ctrl.Result{}, nil</span>
+<span class="line"><i>135</i>	}</span>
+<span class="line"><i>136</i></span>
+<span class="line"><i>137</i>	// Load LoRA on all endpoints in parallel with bounded concurrency</span>
+<span class="line"><i>138</i>	allEndpoints, probeErr := r.EndpointClient.LoadLoRA(ctx, candidates, model)</span>
+<span class="line"><i>139</i></span>
+<span class="line"><i>140</i>	// Determine if we need to requeue based on model type</span>
+<span class="line"><i>141</i>	// For LoRA models: requeue if there were probe errors OR if not all endpoints</span>
+<span class="line"><i>142</i>	// are directly ready or covered by a capable prefill during a rolling upgrade.</span>
+<span class="line"><i>143</i>	// For base models: only requeue if there were probe errors (Ready is expected to be false)</span>
+<span class="line"><i>144</i>	hasFailures := probeErr != nil</span>
+<span class="line"><i>145</i>	if model.IsLoRA() {</span>
+<span class="line"><i>146</i>		hasFailures = hasFailures || countServingEndpoints(allEndpoints) &lt; len(allEndpoints)</span>
+<span class="line"><i>147</i>	}</span>
+<span class="line"><i>148</i></span>
+<span class="line"><i>149</i>	if probeErr != nil {</span>
+<span class="line"><i>150</i>		logs.Error(probeErr, &quot;Some endpoints failed during probing&quot;)</span>
+<span class="line"><i>151</i>		r.Recorder.Eventf(model, nil, corev1.EventTypeWarning, &quot;PartialEndpointFailure&quot;, &quot;Update&quot;,</span></code></pre></details><details class="source" id="src-cp-model-status"><summary><b>源码 · 直接 ready 与 fallback-covered 的状态区分</b><small>deploy/operator/internal/controller/dynamo_model_controller.go:164–195</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/deploy/operator/internal/controller/dynamo_model_controller.go#L164-L195" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>164</i>	// Update status</span>
+<span class="line"><i>165</i>	model.Status.Endpoints = allEndpoints</span>
+<span class="line"><i>166</i>	model.Status.TotalEndpoints = len(allEndpoints)</span>
+<span class="line"><i>167</i>	model.Status.ReadyEndpoints = countReadyEndpoints(allEndpoints)</span>
+<span class="line"><i>168</i>	model.Status.LoRAFallbackCoveredEndpoints = countLoRAFallbackCoveredEndpoints(allEndpoints)</span>
+<span class="line"><i>169</i></span>
+<span class="line"><i>170</i>	// Update conditions based on model type</span>
+<span class="line"><i>171</i>	if model.IsLoRA() {</span>
+<span class="line"><i>172</i>		// For LoRA models, the model is ready only when every endpoint is</span>
+<span class="line"><i>173</i>		// directly ready or a legacy prefill is covered by a capable peer. Keep</span>
+<span class="line"><i>174</i>		// ReadyEndpoints truthful: it counts only endpoints that serve directly.</span>
+<span class="line"><i>175</i>		if countServingEndpoints(allEndpoints) == model.Status.TotalEndpoints &amp;&amp; model.Status.TotalEndpoints &gt; 0 {</span>
+<span class="line"><i>176</i>			r.updateCondition(model, ConditionTypeEndpointsReady, metav1.ConditionTrue, ReasonAllEndpointsReady,</span>
+<span class="line"><i>177</i>				fmt.Sprintf(&quot;All %d endpoint(s) are ready or covered by a capable prefill&quot;, model.Status.TotalEndpoints))</span>
+<span class="line"><i>178</i>			r.Recorder.Eventf(model, nil, corev1.EventTypeNormal, &quot;EndpointsReady&quot;, &quot;Update&quot;,</span>
+<span class="line"><i>179</i>				&quot;All %d endpoints ready or fallback-covered for base model %s&quot;, model.Status.TotalEndpoints, model.Spec.BaseModelName)</span>
+<span class="line"><i>180</i>		} else if model.Status.TotalEndpoints &gt; 0 {</span>
+<span class="line"><i>181</i>			r.updateCondition(model, ConditionTypeEndpointsReady, metav1.ConditionFalse, ReasonNotReady,</span>
+<span class="line"><i>182</i>				fmt.Sprintf(&quot;Found %d ready endpoint(s) and %d fallback-covered endpoint(s) out of %d total&quot;, model.Status.ReadyEndpoints, model.Status.LoRAFallbackCoveredEndpoints, model.Status.TotalEndpoints))</span>
+<span class="line"><i>183</i>			r.Recorder.Eventf(model, nil, corev1.EventTypeWarning, &quot;NotReady&quot;, &quot;Update&quot;,</span>
+<span class="line"><i>184</i>				&quot;Only %d of %d endpoints ready for base model %s&quot;, model.Status.ReadyEndpoints, model.Status.TotalEndpoints, model.Spec.BaseModelName)</span>
+<span class="line"><i>185</i>		} else {</span>
+<span class="line"><i>186</i>			r.updateCondition(model, ConditionTypeEndpointsReady, metav1.ConditionFalse, ReasonNoEndpoints, &quot;No endpoints found&quot;)</span>
+<span class="line"><i>187</i>		}</span>
+<span class="line"><i>188</i>	} else {</span>
+<span class="line"><i>189</i>		// For base models, just check that endpoints exist (readiness doesn&#x27;t apply)</span>
+<span class="line"><i>190</i>		if model.Status.TotalEndpoints &gt; 0 {</span>
+<span class="line"><i>191</i>			r.updateCondition(model, ConditionTypeEndpointsReady, metav1.ConditionTrue, ReasonEndpointsDiscovered,</span>
+<span class="line"><i>192</i>				fmt.Sprintf(&quot;Found %d endpoint(s) for base model&quot;, model.Status.TotalEndpoints))</span>
+<span class="line"><i>193</i>			r.Recorder.Eventf(model, nil, corev1.EventTypeNormal, &quot;EndpointsDiscovered&quot;, &quot;Get&quot;,</span>
+<span class="line"><i>194</i>				&quot;Discovered %d endpoints for base model %s&quot;, model.Status.TotalEndpoints, model.Spec.BaseModelName)</span>
+<span class="line"><i>195</i>		} else {</span></code></pre></details><p>DynamoModel 从模型关联的 Service/EndpointSlice 查候选，驱动端点探测/LoRA 管理并维护 Conditions。它不同于 Request Plane 每次选择 Worker；也不同于 Runtime 的 WorkerMetadata 注册。</p><aside class="note ">ReadyEndpoints 只统计直接可服务的端点；fallback-covered 另有字段。base model 与 LoRA 的 Ready 语义也不同，不应把所有模型的 EndpointsReady 或 ReadyEndpoints/TotalEndpoints 当作相同可用率公式。</aside></section><section id="cp-discovery" class="lesson"><div class="sectionhead"><h2>15 / Discovery 是分布式成员控制，不是一个中心路由 Pod</h2><label class="done"><input type="checkbox" data-read="cp-discovery"> 已读</label></div><details class="source" id="src-cp-discover-register"><summary><b>源码 · Worker 元数据保存到 DynamoWorkerMetadata</b><small>lib/runtime/src/discovery/kube.rs:280–301</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/discovery/kube.rs#L280-L301" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>280</i>        let cr_name = self.pod_info.target.cr_name();</span>
+<span class="line"><i>281</i>        let cr = build_cr(</span>
+<span class="line"><i>282</i>            &amp;cr_name,</span>
+<span class="line"><i>283</i>            &amp;self.pod_info.pod_name,</span>
+<span class="line"><i>284</i>            &amp;self.pod_info.pod_uid,</span>
+<span class="line"><i>285</i>            &amp;metadata,</span>
+<span class="line"><i>286</i>        )?;</span>
+<span class="line"><i>287</i></span>
+<span class="line"><i>288</i>        if let Err(e) = apply_cr(&amp;self.kube_client, &amp;self.pod_info.pod_namespace, &amp;cr).await {</span>
+<span class="line"><i>289</i>            // Rollback local state on CR persistence failure</span>
+<span class="line"><i>290</i>            tracing::warn!(</span>
+<span class="line"><i>291</i>                &quot;Failed to persist metadata to CR, rolling back local state: {}&quot;,</span>
+<span class="line"><i>292</i>                e</span>
+<span class="line"><i>293</i>            );</span>
+<span class="line"><i>294</i>            *metadata = original_state;</span>
+<span class="line"><i>295</i>            return Err(e);</span>
+<span class="line"><i>296</i>        }</span>
+<span class="line"><i>297</i></span>
+<span class="line"><i>298</i>        tracing::debug!(&quot;Persisted metadata to DynamoWorkerMetadata CR&quot;);</span>
+<span class="line"><i>299</i></span>
+<span class="line"><i>300</i>        Ok(registered_instance)</span>
+<span class="line"><i>301</i>    }</span></code></pre></details><details class="source" id="src-cp-discover-source"><summary><b>源码 · 按 Kubernetes namespace/标签 watch readiness source</b><small>lib/runtime/src/discovery/kube/daemon.rs:136–164</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/discovery/kube/daemon.rs#L136-L164" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>136</i>    fn new(</span>
+<span class="line"><i>137</i>        pod_info: &amp;PodInfo,</span>
+<span class="line"><i>138</i>        kube_client: KubeClient,</span>
+<span class="line"><i>139</i>        events: mpsc::Sender&lt;ReadinessEvent&gt;,</span>
+<span class="line"><i>140</i>    ) -&gt; Self {</span>
+<span class="line"><i>141</i>        let labels = Config::default()</span>
+<span class="line"><i>142</i>            .labels(&quot;nvidia.com/dynamo-discovery-backend=kubernetes&quot;)</span>
+<span class="line"><i>143</i>            .labels(&quot;nvidia.com/dynamo-discovery-enabled=true&quot;);</span>
+<span class="line"><i>144</i></span>
+<span class="line"><i>145</i>        match pod_info.mode {</span>
+<span class="line"><i>146</i>            KubeDiscoveryMode::Pod =&gt; {</span>
+<span class="line"><i>147</i>                let api: Api&lt;EndpointSlice&gt; = Api::namespaced(kube_client, &amp;pod_info.pod_namespace);</span>
+<span class="line"><i>148</i>                let (reader, writer) = reflector::store();</span>
+<span class="line"><i>149</i>                tracing::info!(&quot;Daemon watching EndpointSlices (pod mode)&quot;);</span>
+<span class="line"><i>150</i></span>
+<span class="line"><i>151</i>                let stream = reflector(writer, watcher(api, labels)).default_backoff();</span>
+<span class="line"><i>152</i>                tokio::spawn(async move {</span>
+<span class="line"><i>153</i>                    tokio::pin!(stream);</span>
+<span class="line"><i>154</i>                    while let Some(res) = stream.next().await {</span>
+<span class="line"><i>155</i>                        match res {</span>
+<span class="line"><i>156</i>                            Ok(event) =&gt; {</span>
+<span class="line"><i>157</i>                                if let Some(event) = endpoint_slice_event(event)</span>
+<span class="line"><i>158</i>                                    &amp;&amp; events.send(event).await.is_err()</span>
+<span class="line"><i>159</i>                                {</span>
+<span class="line"><i>160</i>                                    break;</span>
+<span class="line"><i>161</i>                                }</span>
+<span class="line"><i>162</i>                            }</span>
+<span class="line"><i>163</i>                            Err(e) =&gt; {</span>
+<span class="line"><i>164</i>                                tracing::warn!(&quot;EndpointSlice reflector error: {e}&quot;);</span></code></pre></details><details class="source" id="src-cp-discover-join"><summary><b>源码 · 就绪源与 Metadata 需匹配 Pod UID</b><small>lib/runtime/src/discovery/kube/daemon/state.rs:246–262</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/discovery/kube/daemon/state.rs#L246-L262" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>246</i>    fn reconcile_key(&amp;mut self, cr_key: &amp;str) {</span>
+<span class="line"><i>247</i>        let Some(ready) = self.left.get(cr_key) else {</span>
+<span class="line"><i>248</i>            return;</span>
+<span class="line"><i>249</i>        };</span>
+<span class="line"><i>250</i></span>
+<span class="line"><i>251</i>        let Some(cached) = self</span>
+<span class="line"><i>252</i>            .right</span>
+<span class="line"><i>253</i>            .get(cr_key)</span>
+<span class="line"><i>254</i>            .filter(|cached| cached.owner_pod_uid.as_deref() == Some(ready.pod_uid.as_str()))</span>
+<span class="line"><i>255</i>        else {</span>
+<span class="line"><i>256</i>            self.known.remove(&amp;ready.instance_id);</span>
+<span class="line"><i>257</i>            return;</span>
+<span class="line"><i>258</i>        };</span>
+<span class="line"><i>259</i></span>
+<span class="line"><i>260</i>        self.known</span>
+<span class="line"><i>261</i>            .insert(ready.instance_id, cached.metadata.clone());</span>
+<span class="line"><i>262</i>    }</span></code></pre></details><p>Pod 模式从 EndpointSlice 获取 readiness，container 模式改用 Pod/container readiness；元数据从 DynamoWorkerMetadata 来。JoinTable 只合并对应 Pod incarnation 的数据，避免旧同名 Pod 的元数据与新 Pod 的地址错误拼接。客户端随后仍按 DiscoveryQuery 做逻辑 namespace/component/endpoint 过滤。</p><p>因此“同一 Kubernetes namespace 内可见”不等于“所有请求都把所有 Worker 纳入候选”。Kubernetes namespace、Dynamo 逻辑 namespace、模型/endpoint 选择及标签过滤是多个边界，实际隔离必须沿查询与路由选择核验。</p></section><section id="cp-discovery-observe" class="lesson"><div class="sectionhead"><h2>16 / Discovery 的可观测语义：connect、sync、watch 三件事</h2><label class="done"><input type="checkbox" data-read="cp-discovery-observe"> 已读</label></div><details class="source" id="src-cp-discover-connect"><summary><b>源码 · connectivity 只验证有限 List 权限/可达性</b><small>lib/runtime/src/discovery/kube.rs:190–199</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/discovery/kube.rs#L190-L199" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>190</i>    async fn check_connection(&amp;self) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>191</i>        // Check Kubernetes API connectivity and permission to list DynamoWorkerMetadata.</span>
+<span class="line"><i>192</i>        // Request metadata for at most one object to keep the response small.</span>
+<span class="line"><i>193</i>        // An empty collection is valid before registration; API errors propagate.</span>
+<span class="line"><i>194</i>        // This does not verify discovery watch health or local cache synchronization.</span>
+<span class="line"><i>195</i>        let api: Api&lt;DynamoWorkerMetadata&gt; =</span>
+<span class="line"><i>196</i>            Api::namespaced(self.kube_client.clone(), &amp;self.pod_info.pod_namespace);</span>
+<span class="line"><i>197</i>        api.list_metadata(&amp;ListParams::default().limit(1)).await?;</span>
+<span class="line"><i>198</i>        Ok(())</span>
+<span class="line"><i>199</i>    }</span></code></pre></details><details class="source" id="src-cp-discover-ready"><summary><b>源码 · 首轮同步前等待 daemon Ready</b><small>lib/runtime/src/discovery/kube.rs:88–113</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/discovery/kube.rs#L88-L113" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>88</i>    /// Waits until the daemon holds its first complete view of the cluster.</span>
+<span class="line"><i>89</i>    ///</span>
+<span class="line"><i>90</i>    /// Fails when the daemon stopped or failed first, or when `cancel_token` fires.</span>
+<span class="line"><i>91</i>    async fn await_daemon_ready(&amp;self, cancel_token: Option&lt;&amp;CancellationToken&gt;) -&gt; Result&lt;()&gt; {</span>
+<span class="line"><i>92</i>        let mut daemon_state = self.daemon_state.clone();</span>
+<span class="line"><i>93</i>        let settled = daemon_state.wait_for(|state| *state != DaemonState::Pending);</span>
+<span class="line"><i>94</i>        let state = match cancel_token {</span>
+<span class="line"><i>95</i>            Some(token) =&gt; token.run_until_cancelled(settled).await.ok_or_else(|| {</span>
+<span class="line"><i>96</i>                anyhow::anyhow!(</span>
+<span class="line"><i>97</i>                    &quot;the watch was cancelled before the Kubernetes discovery daemon was ready&quot;</span>
+<span class="line"><i>98</i>                )</span>
+<span class="line"><i>99</i>            })?,</span>
+<span class="line"><i>100</i>            None =&gt; settled.await,</span>
+<span class="line"><i>101</i>        }</span>
+<span class="line"><i>102</i>        .map_err(|_| {</span>
+<span class="line"><i>103</i>            anyhow::anyhow!(&quot;the Kubernetes discovery daemon ended without reporting its state&quot;)</span>
+<span class="line"><i>104</i>        })?;</span>
+<span class="line"><i>105</i>        match &amp;*state {</span>
+<span class="line"><i>106</i>            DaemonState::Ready =&gt; Ok(()),</span>
+<span class="line"><i>107</i>            DaemonState::Stopped =&gt; anyhow::bail!(&quot;the Kubernetes discovery daemon is stopped&quot;),</span>
+<span class="line"><i>108</i>            DaemonState::Failed(reason) =&gt; {</span>
+<span class="line"><i>109</i>                anyhow::bail!(&quot;the Kubernetes discovery daemon failed: {reason}&quot;)</span>
+<span class="line"><i>110</i>            }</span>
+<span class="line"><i>111</i>            DaemonState::Pending =&gt; unreachable!(&quot;wait_for returns once the daemon left Pending&quot;),</span>
+<span class="line"><i>112</i>        }</span>
+<span class="line"><i>113</i>    }</span></code></pre></details><details class="source" id="src-cp-discover-watch"><summary><b>源码 · 订阅与初始快照在读锁保护下衔接</b><small>lib/runtime/src/discovery/kube.rs:439–467</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/discovery/kube.rs#L439-L467" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>439</i>        tracing::info!(</span>
+<span class="line"><i>440</i>            &quot;KubeDiscoveryClient::list_and_watch started for query={:?}&quot;,</span>
+<span class="line"><i>441</i>            query</span>
+<span class="line"><i>442</i>        );</span>
+<span class="line"><i>443</i></span>
+<span class="line"><i>444</i>        // Before the initial sync, the snapshot would be a false empty set.</span>
+<span class="line"><i>445</i>        self.await_daemon_ready(cancel_token.as_ref()).await?;</span>
+<span class="line"><i>446</i>        let (out_tx, out_rx) = mpsc::unbounded_channel();</span>
+<span class="line"><i>447</i>        let stream_id = uuid::Uuid::new_v4();</span>
+<span class="line"><i>448</i></span>
+<span class="line"><i>449</i>        // Acquire read lock, subscribe to broadcast, then read initial state.</span>
+<span class="line"><i>450</i>        // The write lock (held by the daemon while updating list_state and sending events)</span>
+<span class="line"><i>451</i>        // is mutually exclusive with our read lock, so no events can slip between</span>
+<span class="line"><i>452</i>        // our subscription point and our initial state read.</span>
+<span class="line"><i>453</i>        // This runs before the return, so a caller that lists afterwards cannot observe an</span>
+<span class="line"><i>454</i>        // instance that a removal deletes before the subscription.</span>
+<span class="line"><i>455</i>        let (initial_instances, mut broadcast_rx) = {</span>
+<span class="line"><i>456</i>            let state = self.list_state.read().await;</span>
+<span class="line"><i>457</i>            let rx = self.event_tx.subscribe();</span>
+<span class="line"><i>458</i>            let initial = state</span>
+<span class="line"><i>459</i>                .values()</span>
+<span class="line"><i>460</i>                .flat_map(|m| m.filter(&amp;query))</span>
+<span class="line"><i>461</i>                .collect::&lt;Vec&lt;_&gt;&gt;();</span>
+<span class="line"><i>462</i>            (initial, rx)</span>
+<span class="line"><i>463</i>        };</span>
+<span class="line"><i>464</i>        let list_state = self.list_state.clone();</span>
+<span class="line"><i>465</i></span>
+<span class="line"><i>466</i>        tokio::spawn(async move {</span>
+<span class="line"><i>467</i>            tracing::debug!(</span></code></pre></details><details class="source" id="src-cp-discover-lag"><summary><b>源码 · broadcast lag 后从 list_state 重建差异</b><small>lib/runtime/src/discovery/kube.rs:552–574</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/discovery/kube.rs#L552-L574" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>552</i>                    Err(RecvError::Lagged(n)) =&gt; {</span>
+<span class="line"><i>553</i>                        tracing::warn!(</span>
+<span class="line"><i>554</i>                            stream_id = %stream_id,</span>
+<span class="line"><i>555</i>                            dropped = n,</span>
+<span class="line"><i>556</i>                            &quot;Broadcast receiver lagged, reconciling from list_state&quot;</span>
+<span class="line"><i>557</i>                        );</span>
+<span class="line"><i>558</i>                        let state = list_state.read().await;</span>
+<span class="line"><i>559</i>                        let current: HashMap&lt;DiscoveryInstanceId, DiscoveryInstance&gt; = state</span>
+<span class="line"><i>560</i>                            .values()</span>
+<span class="line"><i>561</i>                            .flat_map(|m| m.filter(&amp;query))</span>
+<span class="line"><i>562</i>                            .map(|i| (i.id(), i))</span>
+<span class="line"><i>563</i>                            .collect();</span>
+<span class="line"><i>564</i>                        drop(state);</span>
+<span class="line"><i>565</i>                        for event in resync_discovery_events(&amp;mut known, current) {</span>
+<span class="line"><i>566</i>                            if out_tx.send(Ok(event)).is_err() {</span>
+<span class="line"><i>567</i>                                return;</span>
+<span class="line"><i>568</i>                            }</span>
+<span class="line"><i>569</i>                        }</span>
+<span class="line"><i>570</i>                    }</span>
+<span class="line"><i>571</i>                    Err(RecvError::Closed) =&gt; {</span>
+<span class="line"><i>572</i>                        tracing::info!(</span>
+<span class="line"><i>573</i>                            stream_id = %stream_id,</span>
+<span class="line"><i>574</i>                            &quot;Broadcast channel closed (daemon stopped)&quot;</span></code></pre></details><details class="source" id="src-cp-discover-errors"><summary><b>源码 · reflector warning、daemon Failed 和状态通道</b><small>lib/runtime/src/discovery/kube/daemon.rs:261–301</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/runtime/src/discovery/kube/daemon.rs#L261-L301" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>261</i></span>
+<span class="line"><i>262</i>        let cr_reflector_stream =</span>
+<span class="line"><i>263</i>            reflector(cr_writer, watcher(metadata_crs, Config::default())).default_backoff();</span>
+<span class="line"><i>264</i>        tokio::spawn(async move {</span>
+<span class="line"><i>265</i>            tokio::pin!(cr_reflector_stream);</span>
+<span class="line"><i>266</i>            while let Some(res) = cr_reflector_stream.next().await {</span>
+<span class="line"><i>267</i>                match res {</span>
+<span class="line"><i>268</i>                    Ok(event) =&gt; {</span>
+<span class="line"><i>269</i>                        if let Some(event) = cr_event(event)</span>
+<span class="line"><i>270</i>                            &amp;&amp; cr_tx.send(event).await.is_err()</span>
+<span class="line"><i>271</i>                        {</span>
+<span class="line"><i>272</i>                            break;</span>
+<span class="line"><i>273</i>                        }</span>
+<span class="line"><i>274</i>                    }</span>
+<span class="line"><i>275</i>                    Err(e) =&gt; {</span>
+<span class="line"><i>276</i>                        tracing::warn!(&quot;DynamoWorkerMetadata CR reflector error: {e}&quot;);</span>
+<span class="line"><i>277</i>                    }</span>
+<span class="line"><i>278</i>                }</span>
+<span class="line"><i>279</i>            }</span>
+<span class="line"><i>280</i>        });</span>
+<span class="line"><i>281</i></span>
+<span class="line"><i>282</i>        let state = match event_loop(</span>
+<span class="line"><i>283</i>            source,</span>
+<span class="line"><i>284</i>            cr_reader,</span>
+<span class="line"><i>285</i>            readiness_rx,</span>
+<span class="line"><i>286</i>            cr_rx,</span>
+<span class="line"><i>287</i>            &amp;outputs,</span>
+<span class="line"><i>288</i>            &amp;self.cancel_token,</span>
+<span class="line"><i>289</i>        )</span>
+<span class="line"><i>290</i>        .await</span>
+<span class="line"><i>291</i>        {</span>
+<span class="line"><i>292</i>            Ok(()) =&gt; {</span>
+<span class="line"><i>293</i>                tracing::info!(&quot;Discovery daemon stopped&quot;);</span>
+<span class="line"><i>294</i>                DaemonState::Stopped</span>
+<span class="line"><i>295</i>            }</span>
+<span class="line"><i>296</i>            Err(error) =&gt; {</span>
+<span class="line"><i>297</i>                tracing::error!(%error, &quot;Discovery daemon failed&quot;);</span>
+<span class="line"><i>298</i>                DaemonState::Failed(error.to_string())</span>
+<span class="line"><i>299</i>            }</span>
+<span class="line"><i>300</i>        };</span>
+<span class="line"><i>301</i>        outputs.state_tx.send_replace(state);</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>观测事实</th><th>正确解释</th></tr></thead><tbody><tr><td>check_connection 成功</td><td>API 可达且能 List Metadata（空集合合法），不证明 watch 健康/缓存已同步/存在 Worker</td></tr><tr><td>await_daemon_ready 成功</td><td>首轮完整视图已经建立，不等于每个模型存在可用 endpoint</td></tr><tr><td>reflector warning</td><td>watch/reflector 出错并走 backoff，需结合后续恢复与成员变化</td></tr><tr><td>Broadcast receiver lagged</td><td>本地消费者落后，触发从缓存重建差异；不是自动判定所有 Worker 故障</td></tr><tr><td>daemon Failed/Stopped</td><td>同步循环终止，关注生命周期/取消/错误原因</td></tr></tbody></table></div><aside class="note ">所审发现路径主要使用 Rust tracing 日志和内部状态通道；没有据这些局部代码宣称完整的 discovery Prometheus 指标集合。建议接入层监测初始同步耗时、反射器错误/恢复、成员数、last-change/last-sync 和查询范围时，先确认现有指标，缺失者作为后续埋点需求。</aside></section><section id="cp-queries" class="lesson"><div class="sectionhead"><h2>17 / 查询示例与可验证的排障顺序</h2><label class="done"><input type="checkbox" data-read="cp-queries"> 已读</label></div><p>示例必须补充真实 cluster/job/instance 筛选；以下按框架/自定义指标语义书写，不承诺你的 1.4.1 集群已产生这些序列。</p><pre><code># 调谐错误速率：低流量时也观察绝对增量
+sum by (controller) (rate(controller_runtime_reconcile_errors_total[5m]))
+
+# 准入验证 p95（不是整个 API 写入延迟）
+histogram_quantile(0.95,
+  sum by (le, resource_type, operation) (
+    rate(dynamo_operator_webhook_duration_seconds_bucket[5m])
+  )
+)
+
+# 拒绝分类：reason 以实际源码/序列为准
+sum by (resource_type, operation, reason) (
+  rate(dynamo_operator_webhook_denials_total[5m])
+)
+
+# 同管理范围副本的库存去重示意：必须先筛 cluster/job/scope
+# 该写法不能消除状态组合残留问题，不作为强一致库存账本
+max by (resource_type, namespace, status) (
+  dynamo_operator_resources_total
+)</code></pre><div class="tablewrap"><table><thead><tr><th>症状</th><th>先查</th><th>再下钻</th></tr></thead><tbody><tr><td>API 写入被拒绝</td><td>webhook allowed/denied、reason、API error</td><td>validator 日志、gate/namespace lease、规则与版本</td></tr><tr><td>DGD 一直 pending，但 reconcile_errors=0</td><td>Ready.reason / component status / generation</td><td>DCD/provider workload、Pod 调度/加载模型/rollout</td></tr><tr><td>Job Succeeded，DGDR Failed</td><td>profiler_status/profiler_error、Profiling/Succeeded</td><td>Profiler 和 output-copier 日志、输出 ConfigMap</td></tr><tr><td>副本目标已变，容量仍没增加</td><td>DGDSA spec、DGD spec/status、Ready组件数</td><td>调度容量、镜像、初始化、注册/发现</td></tr><tr><td>Frontend 看不到 Worker</td><td>Discovery API连通、初始sync、逻辑query</td><td>DWM、EndpointSlice/Pod readiness、Pod UID 与 watch 日志</td></tr><tr><td>metrics 401/403 或缺目标</td><td>HTTPS/认证授权、Monitor selector</td><td>delegated-auth RBAC、Prometheus 选择范围、实际端口</td></tr></tbody></table></div></section><section id="cp-cluster" class="lesson"><div class="sectionhead"><h2>18 / 对照你的 ACK 部署：哪些存在，哪些尚未证明</h2><label class="done"><input type="checkbox" data-read="cp-cluster"> 已读</label></div><p>依据 <a href="ack-LB97i2CZNR/dynamo-test-deployment.md">用户整理的 2026-10-28 快照</a>：Operator 1.4.1，DGD 为 Frontend/prefill/decode/aggregated，TCP 请求面、ZMQ 事件面、SGLang/NIXL。以下只做快照映射，不重新宣称现场验收。</p><div class="tablewrap"><table><thead><tr><th>对象</th><th>快照结论</th><th>后续读取项</th></tr></thead><tbody><tr><td>Operator</td><td>存在，ServiceMonitor HTTPS/15s</td><td>实际 /metrics 版本、labels、鉴权及 Prometheus target</td></tr><tr><td>DGD 与组件</td><td>Ready=True；四角色混合</td><td>DCD/provider 状态、generation/hash、当前 API schema</td></tr><tr><td>独立 Planner</td><td>快照未列出；PodMonitor 存在不能证明 Pod 存在</td><td>实际组件/Pod、配置与输入数据源</td></tr><tr><td>DGDR/Profiler/DGDSA/DynamoModel</td><td>安装相应 CRD 不等于存在实例</td><td>get 对应 CR、ownerReferences、Job/scale 目标</td></tr><tr><td>Discovery</td><td>Frontend 可见多组 endpoint/igd-*</td><td>WorkerMetadata/readiness 与当前模型的查询/路由范围；不直接断言串流</td></tr><tr><td>NATS/etcd/Grove</td><td>本 DGD 未要求新增；其他 igd 体系使用 Grove</td><td>按独立部署所有权区分，不从其他体系推导本 DGD provider</td></tr></tbody></table></div><p>Request Plane 接入另见 <a href="ack-LB97i2CZNR/request-plane-trace-checklist.html">实际部署 Trace 工作清单</a>。本章控制面观测不要求把该清单重做成 Operator 请求 trace。</p></section><section id="cp-evidence" class="lesson"><div class="sectionhead"><h2>19 / 源码阅读入口、版本与维护</h2><label class="done"><input type="checkbox" data-read="cp-evidence"> 已读</label></div><p><a href="control-plane-source-manifest.json">源码摘录清单</a>记录每段路径、行号、固定 revision 和整文件 SHA-256。新增章节可独立重建，页面搜索、展开源码、阅读进度和打印均离线可用。</p><ul><li>架构依据：本提交的 docs/fern/pages/developer-guide/knowledge-base/concepts/system-architecture/architecture.md 与各实现文件。</li><li><a href="https://docs.nvidia.com/dynamo/dev/reference/observability/operator-metrics">官方 Operator Metrics</a> 用于指标语义对照，dev 页面持续变化；差异以本章固定源码解释为准。</li><li><a href="planner.html">Planner 专题</a>使用较早源码基线，跨页比较先核对两页 revision；本章补充当前 scale 提交链。</li><li>Go 指标/资源计数、Python 状态与副本 API、Rust discovery 已阅读相关源码。Grove/LWS/controller-runtime/NIXL 等依赖内部实现、Profiler 全搜索数学、Global Planner 算法不是本章逐行覆盖范围。</li></ul><aside class="note ">本次是静态分析和文档交付。源码限制、潜在旧序列和文档差异均未当作线上故障定论；没有改生产代码、创建 Issue、执行部署、启动 Profiler 或进行推理压测。</aside><details class="exercise"><summary>阅读检查 · 要证明一次扩容真正完成，至少需要串哪几类证据？</summary><p>观测输入与决策 → 目标副本写入 → Operator 处理对应 generation → provider/Pod 就绪 → Runtime 注册与客户端成员视图 → 实际请求恢复/容量测量。</p></details></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 9734418e5bc71027e6bd04a09314bf1765208c72。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

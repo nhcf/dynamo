@@ -1,0 +1,360 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "PrefillRouter activation, Completed/Bootstrap handoff, engine protocols, conditional disaggregation, cancellation and observability",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "pd-serving-outcome",
+      "path": "lib/llm/src/kv_router/prefill_router/mod.rs",
+      "start": 98,
+      "end": 157,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2f29105fa79b6e7a108c6b43e4a4c2bedf7e50b10cbaca27b098eec32a9958af"
+    },
+    {
+      "id": "pd-serving-binding",
+      "path": "lib/llm/src/kv_router/prefill_router/activation.rs",
+      "start": 291,
+      "end": 332,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "125633372cfa622f58ea0aefc0a851fb0b811477b8443157344780b7f18db81d"
+    },
+    {
+      "id": "pd-serving-activation",
+      "path": "lib/llm/src/kv_router/prefill_router/activation.rs",
+      "start": 640,
+      "end": 664,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "125633372cfa622f58ea0aefc0a851fb0b811477b8443157344780b7f18db81d"
+    },
+    {
+      "id": "pd-serving-pending",
+      "path": "lib/llm/src/kv_router/prefill_router/mod.rs",
+      "start": 160,
+      "end": 184,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2f29105fa79b6e7a108c6b43e4a4c2bedf7e50b10cbaca27b098eec32a9958af"
+    },
+    {
+      "id": "pd-serving-entry",
+      "path": "lib/llm/src/kv_router/prefill_router/mod.rs",
+      "start": 368,
+      "end": 441,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2f29105fa79b6e7a108c6b43e4a4c2bedf7e50b10cbaca27b098eec32a9958af"
+    },
+    {
+      "id": "pd-serving-prepare",
+      "path": "lib/llm/src/kv_router/prefill_router/mod.rs",
+      "start": 743,
+      "end": 783,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2f29105fa79b6e7a108c6b43e4a4c2bedf7e50b10cbaca27b098eec32a9958af"
+    },
+    {
+      "id": "pd-serving-room",
+      "path": "lib/llm/src/kv_router/prefill_router/mod.rs",
+      "start": 800,
+      "end": 831,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2f29105fa79b6e7a108c6b43e4a4c2bedf7e50b10cbaca27b098eec32a9958af"
+    },
+    {
+      "id": "pd-serving-consume",
+      "path": "lib/llm/src/kv_router/prefill_router/admission.rs",
+      "start": 22,
+      "end": 109,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "8f922086a58026ba6b8638e35aa361b566718ab794aa7b5d82047518cd9c4ec3"
+    },
+    {
+      "id": "pd-serving-spawn",
+      "path": "lib/llm/src/kv_router/prefill_router/admission.rs",
+      "start": 164,
+      "end": 191,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "8f922086a58026ba6b8638e35aa361b566718ab794aa7b5d82047518cd9c4ec3"
+    },
+    {
+      "id": "pd-serving-outcome-dispatch",
+      "path": "lib/llm/src/kv_router/prefill_router/mod.rs",
+      "start": 548,
+      "end": 594,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2f29105fa79b6e7a108c6b43e4a4c2bedf7e50b10cbaca27b098eec32a9958af"
+    },
+    {
+      "id": "pd-serving-task",
+      "path": "lib/llm/src/kv_router/prefill_router/handoff.rs",
+      "start": 26,
+      "end": 82,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "22672b4dcd56a0e7792d2707bc023c1099d275a7b88862e600509f0e1a4fd949"
+    },
+    {
+      "id": "pd-serving-race",
+      "path": "lib/llm/src/kv_router/prefill_router/handoff.rs",
+      "start": 110,
+      "end": 168,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "22672b4dcd56a0e7792d2707bc023c1099d275a7b88862e600509f0e1a4fd949"
+    },
+    {
+      "id": "pd-serving-terminal-gate",
+      "path": "lib/llm/src/kv_router/prefill_router/handoff.rs",
+      "start": 185,
+      "end": 253,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "22672b4dcd56a0e7792d2707bc023c1099d275a7b88862e600509f0e1a4fd949"
+    },
+    {
+      "id": "pd-serving-terminal-check",
+      "path": "lib/llm/src/kv_router/prefill_router/admission.rs",
+      "start": 111,
+      "end": 162,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "8f922086a58026ba6b8638e35aa361b566718ab794aa7b5d82047518cd9c4ec3"
+    },
+    {
+      "id": "pd-serving-decode-request",
+      "path": "lib/llm/src/kv_router/prefill_router/mod.rs",
+      "start": 635,
+      "end": 689,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2f29105fa79b6e7a108c6b43e4a4c2bedf7e50b10cbaca27b098eec32a9958af"
+    },
+    {
+      "id": "pd-serving-sg-sampling",
+      "path": "components/src/dynamo/sglang/_disagg.py",
+      "start": 15,
+      "end": 44,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2e3b1f8265464f4756238a2438572ff8187ce05cb00c6c644b81b4370480bad8"
+    },
+    {
+      "id": "pd-serving-sg-max",
+      "path": "components/src/dynamo/sglang/request_handlers/llm/prefill_handler.py",
+      "start": 92,
+      "end": 151,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f5a23d56508fc961ab3204c5a655ee3cb2387f6f82f5e4f3a4a02365d1ae866c"
+    },
+    {
+      "id": "pd-serving-sg-engine",
+      "path": "components/src/dynamo/sglang/request_handlers/llm/prefill_handler.py",
+      "start": 246,
+      "end": 304,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f5a23d56508fc961ab3204c5a655ee3cb2387f6f82f5e4f3a4a02365d1ae866c"
+    },
+    {
+      "id": "pd-serving-sg-decode",
+      "path": "components/src/dynamo/sglang/request_handlers/llm/decode_handler.py",
+      "start": 630,
+      "end": 662,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2a3aa43587737a2d3f3c4d0fa3f3d7f3f190c58a569070e577ae812513fe7068"
+    },
+    {
+      "id": "pd-serving-sg-standard",
+      "path": "components/src/dynamo/sglang/request_handlers/llm/decode_handler.py",
+      "start": 779,
+      "end": 821,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2a3aa43587737a2d3f3c4d0fa3f3d7f3f190c58a569070e577ae812513fe7068"
+    },
+    {
+      "id": "pd-serving-sg-bypass",
+      "path": "components/src/dynamo/sglang/request_handlers/llm/decode_handler.py",
+      "start": 118,
+      "end": 126,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2a3aa43587737a2d3f3c4d0fa3f3d7f3f190c58a569070e577ae812513fe7068"
+    },
+    {
+      "id": "pd-serving-connector-contract",
+      "path": "components/src/dynamo/vllm/kv_connector_protocols.py",
+      "start": 4,
+      "end": 64,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "575c2e508d5374106703c73d792b3174e7538d28df369dd615a0b020e88eb08d"
+    },
+    {
+      "id": "pd-serving-vl-prefill",
+      "path": "components/src/dynamo/vllm/handlers.py",
+      "start": 4584,
+      "end": 4624,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "bc4135da6eaf66df4cb7cf084d6c81622185f26a7ec9caeacdf1249f1be5cb61"
+    },
+    {
+      "id": "pd-serving-vl-output",
+      "path": "components/src/dynamo/vllm/handlers.py",
+      "start": 4670,
+      "end": 4727,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "bc4135da6eaf66df4cb7cf084d6c81622185f26a7ec9caeacdf1249f1be5cb61"
+    },
+    {
+      "id": "pd-serving-vl-decode",
+      "path": "components/src/dynamo/vllm/handlers.py",
+      "start": 3978,
+      "end": 4026,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "bc4135da6eaf66df4cb7cf084d6c81622185f26a7ec9caeacdf1249f1be5cb61"
+    },
+    {
+      "id": "pd-serving-vl-params",
+      "path": "components/src/dynamo/vllm/handlers.py",
+      "start": 4536,
+      "end": 4582,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "bc4135da6eaf66df4cb7cf084d6c81622185f26a7ec9caeacdf1249f1be5cb61"
+    },
+    {
+      "id": "pd-serving-trt-prefill",
+      "path": "components/src/dynamo/trtllm/request_handlers/handlers.py",
+      "start": 146,
+      "end": 218,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "50c24ec9cf613912c5e64affe5cb8eac3e2025aff0e62201de10eae8b541980f"
+    },
+    {
+      "id": "pd-serving-trt-decode",
+      "path": "components/src/dynamo/trtllm/request_handlers/handler_base.py",
+      "start": 597,
+      "end": 647,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "30fc99c726670b9986294f661fceaff3862b9590597ef3bf6b335fd2a6460638"
+    },
+    {
+      "id": "pd-serving-trt-context",
+      "path": "components/src/dynamo/trtllm/request_handlers/handler_base.py",
+      "start": 815,
+      "end": 849,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "30fc99c726670b9986294f661fceaff3862b9590597ef3bf6b335fd2a6460638"
+    },
+    {
+      "id": "pd-serving-trt-bypass",
+      "path": "components/src/dynamo/trtllm/request_handlers/handler_base.py",
+      "start": 1098,
+      "end": 1120,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "30fc99c726670b9986294f661fceaff3862b9590597ef3bf6b335fd2a6460638"
+    },
+    {
+      "id": "pd-serving-conditional-preview",
+      "path": "lib/llm/src/kv_router/prefill_router/conditional_bypass.rs",
+      "start": 31,
+      "end": 75,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "086a82d1c346cc65116232f7d13584c174d3d345ce7462c30a513f788152e4c1"
+    },
+    {
+      "id": "pd-serving-policy",
+      "path": "lib/kv-router/src/conditional_disagg.rs",
+      "start": 149,
+      "end": 167,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "5c92a7d62e4f6d355a480bd8100f09c15229bd08c081c2cebe58621892a6bfa9"
+    },
+    {
+      "id": "pd-serving-conditional-admit",
+      "path": "lib/llm/src/kv_router/prefill_router/conditional_bypass.rs",
+      "start": 100,
+      "end": 147,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "086a82d1c346cc65116232f7d13584c174d3d345ce7462c30a513f788152e4c1"
+    },
+    {
+      "id": "pd-serving-independent",
+      "path": "lib/llm/src/kv_router/prefill_router/mod.rs",
+      "start": 711,
+      "end": 719,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2f29105fa79b6e7a108c6b43e4a4c2bedf7e50b10cbaca27b098eec32a9958af"
+    },
+    {
+      "id": "pd-serving-reject",
+      "path": "lib/llm/src/kv_router/prefill_router/handoff.rs",
+      "start": 259,
+      "end": 276,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "22672b4dcd56a0e7792d2707bc023c1099d275a7b88862e600509f0e1a4fd949"
+    },
+    {
+      "id": "pd-serving-cleanup",
+      "path": "lib/llm/src/kv_router/routing_host/cancellation.rs",
+      "start": 18,
+      "end": 43,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f9e408fe575c8cadd12696ff3f5aec36e91766f424fd2741ebfbf9704258d85d"
+    },
+    {
+      "id": "pd-serving-timing-start",
+      "path": "lib/llm/src/protocols/common/timing.rs",
+      "start": 258,
+      "end": 270,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "008e705b4a4363edfcf19a845784e60680791c0c72ecf92e0b84c74bf7bb649e"
+    },
+    {
+      "id": "pd-serving-timing-duration",
+      "path": "lib/llm/src/protocols/common/timing.rs",
+      "start": 315,
+      "end": 326,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "008e705b4a4363edfcf19a845784e60680791c0c72ecf92e0b84c74bf7bb649e"
+    },
+    {
+      "id": "pd-serving-guard-start",
+      "path": "lib/llm/src/kv_router/routing_host/request_guard.rs",
+      "start": 315,
+      "end": 355,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "9b62d5971a2a30151099849ff184a734874ce674464161c8990b2f83139c841c"
+    },
+    {
+      "id": "pd-serving-transfer-timing",
+      "path": "lib/llm/src/protocols/common/timing.rs",
+      "start": 532,
+      "end": 547,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "008e705b4a4363edfcf19a845784e60680791c0c72ecf92e0b84c74bf7bb649e"
+    },
+    {
+      "id": "pd-serving-transfer-hist",
+      "path": "lib/llm/src/kv_router/metrics.rs",
+      "start": 1146,
+      "end": 1153,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "385d6ca0d39471e5bc3b1dbaf6449a2dce31885b8704941acf86d04dae867fb3"
+    },
+    {
+      "id": "pd-serving-record",
+      "path": "lib/llm/src/kv_router/routing_host/request_guard.rs",
+      "start": 378,
+      "end": 405,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "9b62d5971a2a30151099849ff184a734874ce674464161c8990b2f83139c841c"
+    },
+    {
+      "id": "pd-serving-worker-attribution",
+      "path": "lib/llm/src/protocols/common/timing.rs",
+      "start": 441,
+      "end": 469,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "008e705b4a4363edfcf19a845784e60680791c0c72ecf92e0b84c74bf7bb649e"
+    },
+    {
+      "id": "pd-serving-decision-log",
+      "path": "lib/llm/src/kv_router/prefill_router/conditional_bypass.rs",
+      "start": 170,
+      "end": 198,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "086a82d1c346cc65116232f7d13584c174d3d345ce7462c30a513f788152e4c1"
+    }
+  ]
+}

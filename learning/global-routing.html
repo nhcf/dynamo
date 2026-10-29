@@ -1,0 +1,964 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>多集群与全局路由：实现现状与视图边界 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#global-routing-scope">01 / 阅读范围与证据版本</a><a href="#global-routing-architecture">02 / 先分清四条独立链路</a><a href="#global-routing-implementation">03 / 目录名不是能力证明：Rust 空壳与真实实现</a><a href="#global-routing-request">04 / Python Global Router：独立的 Prefill / Decode 客户端</a><a href="#global-routing-grid">05 / 选池策略：配置映射，不是在线优化器</a><a href="#global-routing-retry">06 / 跨池 retry：只在尚未转发输出时尝试</a><a href="#global-routing-relay">07 / Pool Relay：catalog、缓存过滤器与运行事实</a><a href="#global-routing-discovery">08 / GlobalDiscoveryClient：注册租约与完整列表</a><a href="#global-routing-view">09 / PoolViews：重连 generation fencing 与 snapshot 优先</a><a href="#global-routing-load-types">10 / 三种 load 的来源不同，不能混成 GPU 使用率</a><a href="#global-routing-coverage">11 / 观测源码：COMPLETE / DEGRADED / UNAVAILABLE</a><a href="#global-routing-global-planner">12 / Global Planner：伸缩意图与 GPU 总预算</a><a href="#global-routing-planner-observe">13 / 伸缩观测：no-operation、授权声称与真实执行分开</a><a href="#global-routing-integration">14 / 真正接入跨域路由还需完成什么</a><a href="#global-routing-diagram">15 / 架构分层图与交叉阅读</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 9734418e5</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>多集群与全局路由：实现现状与视图边界</h1><p class="lede">分别分析 Python 分层 Global Router、Pool Relay 的跨域事实、Rust 视图工具和 Global Planner 容量仲裁，避免把独立模块视为已连通系统。</p><div class="meta"><span class="pill">2026-10-29</span><span class="pill">commit 9734418e5</span><span class="pill ">系统源码专题 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="global-routing-scope" class="lesson"><div class="sectionhead"><h2>01 / 阅读范围与证据版本</h2><label class="done"><input type="checkbox" data-read="global-routing-scope"> 已读</label></div><p>分别分析 Python 分层 Global Router、Pool Relay 的跨域事实、Rust 视图工具和 Global Planner 容量仲裁，避免把独立模块视为已连通系统。</p><aside class="note ">源码固定于 9734418e5bc71027e6bd04a09314bf1765208c72（workspace 1.7.0），与 PD / 可靠性等新专题使用同一代码基线。本文分析实现和配置边界，未运行推理、性能实验或集群修改。历史部署与旧版章节须按版本对照。</aside></section><section id="global-routing-architecture" class="lesson"><div class="sectionhead"><h2>02 / 先分清四条独立链路</h2><label class="done"><input type="checkbox" data-read="global-routing-architecture"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>链路</th><th>当前实现</th><th>边界</th></tr></thead><tbody><tr><td>请求分层路由</td><td>Python GlobalRouterHandler → pool namespace local router</td><td>当前策略按预先配置 grid 和 priority，不是自动读取 Relay 实时负载</td></tr><tr><td>跨域事实导出</td><td>Pool Relay → catalog / filter / readiness / load gRPC</td><td>发布事实，不执行跨 DC 路由策略或自动合并独立池</td></tr><tr><td>全局视图工具</td><td>global-discovery-client / global-view-receiver</td><td>提供 client / reconciliation API，不代表已接入所有请求面</td></tr><tr><td>容量协调</td><td>Python Global Planner → CapacityManager → DGD connector</td><td>仲裁伸缩，与每请求选池分开</td></tr></tbody></table></div><div class="flow"><div><b>01</b>局部 endpoint / Frontend</div><div><b>02</b>Pool Relay 事实发布</div><div><b>03</b>跨域 consumer 维护新鲜视图</div><div><b>04</b>策略消费者选择（须单独接线）</div></div><p>跨 namespace 不自动等于跨 Kubernetes cluster，更不自动等于跨 DC。端到端仍需要发现作用域、网络、身份、模型/缓存域兼容和实际消费者接线。</p></section><section id="global-routing-implementation" class="lesson"><div class="sectionhead"><h2>03 / 目录名不是能力证明：Rust 空壳与真实实现</h2><label class="done"><input type="checkbox" data-read="global-routing-implementation"> 已读</label></div><details class="source" id="src-global-routing-1"><summary><b>源码 · Global Router Rust crate 当前仅模块描述</b><small>lib/global-router/src/lib.rs:1–4</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/global-router/src/lib.rs#L1-L4" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1</i>// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION &amp; AFFILIATES. All rights reserved.</span>
+<span class="line"><i>2</i>// SPDX-License-Identifier: Apache-2.0</span>
+<span class="line"><i>3</i></span>
+<span class="line"><i>4</i>//! Pool selection for the Global Router.</span></code></pre></details><details class="source" id="src-global-routing-2"><summary><b>源码 · Global Frontend Rust crate 当前仅模块描述</b><small>lib/global-frontend/src/lib.rs:1–4</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/global-frontend/src/lib.rs#L1-L4" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1</i>// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION &amp; AFFILIATES. All rights reserved.</span>
+<span class="line"><i>2</i>// SPDX-License-Identifier: Apache-2.0</span>
+<span class="line"><i>3</i></span>
+<span class="line"><i>4</i>//! OpenAI-compatible entry point that forwards requests to Dynamo pools.</span></code></pre></details><details class="source" id="src-global-routing-3"><summary><b>源码 · Broadcaster Rust crate 当前仅模块描述</b><small>lib/global-view-broadcaster/src/lib.rs:1–4</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/global-view-broadcaster/src/lib.rs#L1-L4" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1</i>// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION &amp; AFFILIATES. All rights reserved.</span>
+<span class="line"><i>2</i>// SPDX-License-Identifier: Apache-2.0</span>
+<span class="line"><i>3</i></span>
+<span class="line"><i>4</i>//! Sends pool state from Pool Relays to Global Routers.</span></code></pre></details><p>global-common / global-discovery-service 此版本同样只有模块描述，不能从 Cargo workspace 成员推导为运行服务。真实 Python Global Router / Global Planner 与已经实现的 Pool Relay、client、receiver 要分别阅读。旧大纲中的 kv_dc_relay 路径已不适合当前代码，入口应改为 pool_relay。</p></section><section id="global-routing-request" class="lesson"><div class="sectionhead"><h2>04 / Python Global Router：独立的 Prefill / Decode 客户端</h2><label class="done"><input type="checkbox" data-read="global-routing-request"> 已读</label></div><details class="source" id="src-global-routing-4"><summary><b>源码 · 按模式维护 pool clients 与 namespace 映射</b><small>components/src/dynamo/global_router/handler.py:38–73</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/global_router/handler.py#L38-L73" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>38</i>    def __init__(</span>
+<span class="line"><i>39</i>        self,</span>
+<span class="line"><i>40</i>        runtime: DistributedRuntime,</span>
+<span class="line"><i>41</i>        config_path: str,</span>
+<span class="line"><i>42</i>        model_name: str,</span>
+<span class="line"><i>43</i>        default_ttft_target_ms: Optional[float] = None,</span>
+<span class="line"><i>44</i>        default_itl_target_ms: Optional[float] = None,</span>
+<span class="line"><i>45</i>    ):</span>
+<span class="line"><i>46</i>        self.runtime = runtime</span>
+<span class="line"><i>47</i>        self.config = load_config(config_path)</span>
+<span class="line"><i>48</i>        self.model_name = model_name</span>
+<span class="line"><i>49</i>        self.default_ttft_target_ms = default_ttft_target_ms</span>
+<span class="line"><i>50</i>        self.default_itl_target_ms = default_itl_target_ms</span>
+<span class="line"><i>51</i></span>
+<span class="line"><i>52</i>        # Clients to local routers in each pool namespace</span>
+<span class="line"><i>53</i>        # Will be populated in initialize()</span>
+<span class="line"><i>54</i>        self.prefill_clients: Dict[str, Client] = {}</span>
+<span class="line"><i>55</i>        self.decode_clients: Dict[str, Client] = {}</span>
+<span class="line"><i>56</i>        self.agg_clients: Dict[str, Client] = {}</span>
+<span class="line"><i>57</i></span>
+<span class="line"><i>58</i>        if self.config.mode == &quot;disagg&quot;:</span>
+<span class="line"><i>59</i>            assert self.config.prefill_pool_dynamo_namespaces is not None</span>
+<span class="line"><i>60</i>            assert self.config.decode_pool_dynamo_namespaces is not None</span>
+<span class="line"><i>61</i>            self.prefill_namespace_to_idx: Dict[str, int] = {</span>
+<span class="line"><i>62</i>                ns: idx</span>
+<span class="line"><i>63</i>                for idx, ns in enumerate(self.config.prefill_pool_dynamo_namespaces)</span>
+<span class="line"><i>64</i>            }</span>
+<span class="line"><i>65</i>            self.decode_namespace_to_idx: Dict[str, int] = {</span>
+<span class="line"><i>66</i>                ns: idx</span>
+<span class="line"><i>67</i>                for idx, ns in enumerate(self.config.decode_pool_dynamo_namespaces)</span>
+<span class="line"><i>68</i>            }</span>
+<span class="line"><i>69</i>        elif self.config.mode == &quot;agg&quot;:</span>
+<span class="line"><i>70</i>            assert self.config.agg_pool_dynamo_namespaces is not None</span>
+<span class="line"><i>71</i>            self.agg_namespace_to_idx: Dict[str, int] = {</span>
+<span class="line"><i>72</i>                ns: idx for idx, ns in enumerate(self.config.agg_pool_dynamo_namespaces)</span>
+<span class="line"><i>73</i>            }</span></code></pre></details><details class="source" id="src-global-routing-5"><summary><b>源码 · Prefill 取 ISL、TTFT target、priority 并转发</b><small>components/src/dynamo/global_router/handler.py:219–274</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/global_router/handler.py#L219-L274" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>219</i>    async def handle_prefill(</span>
+<span class="line"><i>220</i>        self, request: Dict[str, Any], context=None</span>
+<span class="line"><i>221</i>    ) -&gt; AsyncGenerator[Dict[str, Any], None]:</span>
+<span class="line"><i>222</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>223</i>        Handle prefill requests from the frontend (disagg mode).</span>
+<span class="line"><i>224</i></span>
+<span class="line"><i>225</i>        Selects the appropriate prefill pool based on ISL, TTFT target,</span>
+<span class="line"><i>226</i>        and optional priority, then forwards the request to the local</span>
+<span class="line"><i>227</i>        router in that pool.</span>
+<span class="line"><i>228</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>229</i>        assert self.config.prefill_pool_selection_strategy is not None</span>
+<span class="line"><i>230</i>        assert self.config.prefill_pool_dynamo_namespaces is not None</span>
+<span class="line"><i>231</i></span>
+<span class="line"><i>232</i>        isl = token_ids_len(request.get(&quot;token_ids&quot;))</span>
+<span class="line"><i>233</i></span>
+<span class="line"><i>234</i>        # Extract TTFT target from nvext.router (forwarded by the preprocessor</span>
+<span class="line"><i>235</i>        # as the `router` field on PreprocessedRequest), fallback to CLI default.</span>
+<span class="line"><i>236</i>        # Use `is None` to preserve explicit 0 (routes to the fastest bucket).</span>
+<span class="line"><i>237</i>        router_params = request.get(&quot;router&quot;) or {}</span>
+<span class="line"><i>238</i>        ttft_target_ms = router_params.get(&quot;ttft_target&quot;)</span>
+<span class="line"><i>239</i>        if ttft_target_ms is None:</span>
+<span class="line"><i>240</i>            ttft_target_ms = self.default_ttft_target_ms</span>
+<span class="line"><i>241</i></span>
+<span class="line"><i>242</i>        # Extract priority from routing hints (set by nvext.agent_hints.priority)</span>
+<span class="line"><i>243</i>        routing = request.get(&quot;routing&quot;) or {}</span>
+<span class="line"><i>244</i>        priority = routing.get(&quot;priority&quot;)</span>
+<span class="line"><i>245</i></span>
+<span class="line"><i>246</i>        # Select prefill pool</span>
+<span class="line"><i>247</i>        pool_idx = self.config.prefill_pool_selection_strategy.select_pool(</span>
+<span class="line"><i>248</i>            isl=isl, ttft_target_ms=ttft_target_ms, priority=priority</span>
+<span class="line"><i>249</i>        )</span>
+<span class="line"><i>250</i>        namespace = self.config.prefill_pool_dynamo_namespaces[pool_idx]</span>
+<span class="line"><i>251</i>        assert self.config.prefill_pool_priorities is not None</span>
+<span class="line"><i>252</i>        pool_order = get_priority_retry_order(</span>
+<span class="line"><i>253</i>            selected_pool=pool_idx,</span>
+<span class="line"><i>254</i>            pool_priorities=self.config.prefill_pool_priorities,</span>
+<span class="line"><i>255</i>            enable_priority_retry=self.config.enable_priority_retry,</span>
+<span class="line"><i>256</i>        )</span>
+<span class="line"><i>257</i></span>
+<span class="line"><i>258</i>        logger.info(</span>
+<span class="line"><i>259</i>            f&quot;Routing prefill request: ISL={isl}, TTFT_target={ttft_target_ms}ms, &quot;</span>
+<span class="line"><i>260</i>            f&quot;priority={priority} -&gt; pool {pool_idx} ({namespace}); &quot;</span>
+<span class="line"><i>261</i>            f&quot;retry_order={pool_order}&quot;</span>
+<span class="line"><i>262</i>        )</span>
+<span class="line"><i>263</i></span>
+<span class="line"><i>264</i>        # Forward request to local router and stream back responses</span>
+<span class="line"><i>265</i>        async for data in self._forward_with_priority_retry(</span>
+<span class="line"><i>266</i>            request=request,</span>
+<span class="line"><i>267</i>            request_type=&quot;prefill&quot;,</span>
+<span class="line"><i>268</i>            initial_pool_idx=pool_idx,</span>
+<span class="line"><i>269</i>            namespaces=self.config.prefill_pool_dynamo_namespaces,</span>
+<span class="line"><i>270</i>            clients=self.prefill_clients,</span>
+<span class="line"><i>271</i>            pool_priorities=self.config.prefill_pool_priorities,</span>
+<span class="line"><i>272</i>            context=context,</span>
+<span class="line"><i>273</i>        ):</span>
+<span class="line"><i>274</i>            yield data</span></code></pre></details><p>disagg 模式分别接 Prefill 与 Decode，agg 模式统一 generate。选择 pool 后转给该 namespace 的 local router，再由后者选 worker。nvext.router 转换后的 router 字段承载目标值；is None 检查保留显式 0，而不是用真假判断吞掉 fastest bucket 意图。</p></section><section id="global-routing-grid" class="lesson"><div class="sectionhead"><h2>05 / 选池策略：配置映射，不是在线优化器</h2><label class="done"><input type="checkbox" data-read="global-routing-grid"> 已读</label></div><details class="source" id="src-global-routing-6"><summary><b>源码 · ISL / TTFT grid 与 priority override</b><small>components/src/dynamo/global_router/pool_selection.py:153–191</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/global_router/pool_selection.py#L153-L191" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>153</i>    def select_pool(</span>
+<span class="line"><i>154</i>        self,</span>
+<span class="line"><i>155</i>        isl: int,</span>
+<span class="line"><i>156</i>        ttft_target_ms: Optional[float] = None,</span>
+<span class="line"><i>157</i>        priority: Optional[int] = None,</span>
+<span class="line"><i>158</i>    ) -&gt; int:</span>
+<span class="line"><i>159</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>160</i>        Select prefill pool based on ISL, TTFT target, and optional priority.</span>
+<span class="line"><i>161</i></span>
+<span class="line"><i>162</i>        Args:</span>
+<span class="line"><i>163</i>            isl: Input sequence length (number of tokens)</span>
+<span class="line"><i>164</i>            ttft_target_ms: Target time to first token in ms. If None, uses middle of range.</span>
+<span class="line"><i>165</i>            priority: Request priority from agent hints. If set and a priority</span>
+<span class="line"><i>166</i>                override rule matches, the override takes precedence over the grid.</span>
+<span class="line"><i>167</i></span>
+<span class="line"><i>168</i>        Returns:</span>
+<span class="line"><i>169</i>            Pool index from prefill_pool_mapping or a priority override</span>
+<span class="line"><i>170</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>171</i>        if ttft_target_ms is None:</span>
+<span class="line"><i>172</i>            ttft_target_ms = (self.ttft_min_ms + self.ttft_max_ms) / 2</span>
+<span class="line"><i>173</i></span>
+<span class="line"><i>174</i>        # Compute grid indices with clamping</span>
+<span class="line"><i>175</i>        isl_idx = self._clamp_index(</span>
+<span class="line"><i>176</i>            (isl - self.isl_min) / self.isl_step, self.isl_resolution</span>
+<span class="line"><i>177</i>        )</span>
+<span class="line"><i>178</i>        ttft_idx = self._clamp_index(</span>
+<span class="line"><i>179</i>            (ttft_target_ms - self.ttft_min_ms) / self.ttft_step_ms,</span>
+<span class="line"><i>180</i>            self.ttft_resolution,</span>
+<span class="line"><i>181</i>        )</span>
+<span class="line"><i>182</i></span>
+<span class="line"><i>183</i>        pool_idx = self.prefill_pool_mapping[isl_idx][ttft_idx]</span>
+<span class="line"><i>184</i>        pool_idx = _apply_priority_overrides(</span>
+<span class="line"><i>185</i>            pool_idx, priority, self.priority_overrides</span>
+<span class="line"><i>186</i>        )</span>
+<span class="line"><i>187</i>        logger.debug(</span>
+<span class="line"><i>188</i>            f&quot;Prefill pool selection: ISL={isl}, TTFT={ttft_target_ms}ms, &quot;</span>
+<span class="line"><i>189</i>            f&quot;priority={priority} -&gt; pool {pool_idx}&quot;</span>
+<span class="line"><i>190</i>        )</span>
+<span class="line"><i>191</i>        return pool_idx</span></code></pre></details><details class="source" id="src-global-routing-7"><summary><b>源码 · Decode request token count / ITL grid</b><small>components/src/dynamo/global_router/pool_selection.py:224–262</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/global_router/pool_selection.py#L224-L262" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>224</i>    def select_pool(</span>
+<span class="line"><i>225</i>        self,</span>
+<span class="line"><i>226</i>        context_length: int,</span>
+<span class="line"><i>227</i>        itl_target_ms: Optional[float] = None,</span>
+<span class="line"><i>228</i>        priority: Optional[int] = None,</span>
+<span class="line"><i>229</i>    ) -&gt; int:</span>
+<span class="line"><i>230</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>231</i>        Select decode pool based on context length, ITL target, and optional priority.</span>
+<span class="line"><i>232</i></span>
+<span class="line"><i>233</i>        Args:</span>
+<span class="line"><i>234</i>            context_length: Request token count supplied by the global router</span>
+<span class="line"><i>235</i>            itl_target_ms: Target inter-token latency in ms. If None, uses middle of range.</span>
+<span class="line"><i>236</i>            priority: Request priority from agent hints. If set and a priority</span>
+<span class="line"><i>237</i>                override rule matches, the override takes precedence over the grid.</span>
+<span class="line"><i>238</i></span>
+<span class="line"><i>239</i>        Returns:</span>
+<span class="line"><i>240</i>            Pool index from decode_pool_mapping or a priority override</span>
+<span class="line"><i>241</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>242</i>        if itl_target_ms is None:</span>
+<span class="line"><i>243</i>            itl_target_ms = (self.itl_min_ms + self.itl_max_ms) / 2</span>
+<span class="line"><i>244</i></span>
+<span class="line"><i>245</i>        # Compute grid indices with clamping</span>
+<span class="line"><i>246</i>        ctx_idx = self._clamp_index(</span>
+<span class="line"><i>247</i>            (context_length - self.context_length_min) / self.context_length_step,</span>
+<span class="line"><i>248</i>            self.context_length_resolution,</span>
+<span class="line"><i>249</i>        )</span>
+<span class="line"><i>250</i>        itl_idx = self._clamp_index(</span>
+<span class="line"><i>251</i>            (itl_target_ms - self.itl_min_ms) / self.itl_step_ms, self.itl_resolution</span>
+<span class="line"><i>252</i>        )</span>
+<span class="line"><i>253</i></span>
+<span class="line"><i>254</i>        pool_idx = self.decode_pool_mapping[ctx_idx][itl_idx]</span>
+<span class="line"><i>255</i>        pool_idx = _apply_priority_overrides(</span>
+<span class="line"><i>256</i>            pool_idx, priority, self.priority_overrides</span>
+<span class="line"><i>257</i>        )</span>
+<span class="line"><i>258</i>        logger.debug(</span>
+<span class="line"><i>259</i>            f&quot;Decode pool selection: context_length={context_length}, ITL={itl_target_ms}ms, &quot;</span>
+<span class="line"><i>260</i>            f&quot;priority={priority} -&gt; pool {pool_idx}&quot;</span>
+<span class="line"><i>261</i>        )</span>
+<span class="line"><i>262</i>        return pool_idx</span></code></pre></details><details class="source" id="src-global-routing-8"><summary><b>源码 · Aggregated 的 TTFT / ITL 与可选 ISL 维度</b><small>components/src/dynamo/global_router/pool_selection.py:308–373</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/global_router/pool_selection.py#L308-L373" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>308</i>    def select_pool(</span>
+<span class="line"><i>309</i>        self,</span>
+<span class="line"><i>310</i>        ttft_target_ms: Optional[float] = None,</span>
+<span class="line"><i>311</i>        itl_target_ms: Optional[float] = None,</span>
+<span class="line"><i>312</i>        priority: Optional[int] = None,</span>
+<span class="line"><i>313</i>        isl: Optional[int] = None,</span>
+<span class="line"><i>314</i>    ) -&gt; int:</span>
+<span class="line"><i>315</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>316</i>        Select agg pool based on TTFT target, ITL target, optional ISL, and priority.</span>
+<span class="line"><i>317</i></span>
+<span class="line"><i>318</i>        Args:</span>
+<span class="line"><i>319</i>            ttft_target_ms: Target time to first token in ms. If None, uses middle of range.</span>
+<span class="line"><i>320</i>            itl_target_ms: Target inter-token latency in ms. If None, uses middle of range.</span>
+<span class="line"><i>321</i>            priority: Request priority from agent hints. If set and a priority</span>
+<span class="line"><i>322</i>                override rule matches, the override takes precedence over the grid.</span>
+<span class="line"><i>323</i>            isl: Input sequence length. Used when the optional ISL grid is configured.</span>
+<span class="line"><i>324</i></span>
+<span class="line"><i>325</i>        Returns:</span>
+<span class="line"><i>326</i>            Pool index from agg_pool_mapping or a priority override</span>
+<span class="line"><i>327</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>328</i>        if ttft_target_ms is None:</span>
+<span class="line"><i>329</i>            ttft_target_ms = (self.ttft_min_ms + self.ttft_max_ms) / 2</span>
+<span class="line"><i>330</i>        if itl_target_ms is None:</span>
+<span class="line"><i>331</i>            itl_target_ms = (self.itl_min_ms + self.itl_max_ms) / 2</span>
+<span class="line"><i>332</i></span>
+<span class="line"><i>333</i>        # Compute grid indices with clamping</span>
+<span class="line"><i>334</i>        ttft_idx = self._clamp_index(</span>
+<span class="line"><i>335</i>            (ttft_target_ms - self.ttft_min_ms) / self.ttft_step_ms,</span>
+<span class="line"><i>336</i>            self.ttft_resolution,</span>
+<span class="line"><i>337</i>        )</span>
+<span class="line"><i>338</i>        itl_idx = self._clamp_index(</span>
+<span class="line"><i>339</i>            (itl_target_ms - self.itl_min_ms) / self.itl_step_ms, self.itl_resolution</span>
+<span class="line"><i>340</i>        )</span>
+<span class="line"><i>341</i></span>
+<span class="line"><i>342</i>        isl_min, isl_max, isl_resolution = (</span>
+<span class="line"><i>343</i>            self.isl_min,</span>
+<span class="line"><i>344</i>            self.isl_max,</span>
+<span class="line"><i>345</i>            self.isl_resolution,</span>
+<span class="line"><i>346</i>        )</span>
+<span class="line"><i>347</i>        if isl_min is None or isl_max is None or isl_resolution is None:</span>
+<span class="line"><i>348</i>            if any(field is not None for field in (isl_min, isl_max, isl_resolution)):</span>
+<span class="line"><i>349</i>                raise ValueError(</span>
+<span class="line"><i>350</i>                    &quot;isl_min, isl_max, and isl_resolution must be configured together&quot;</span>
+<span class="line"><i>351</i>                )</span>
+<span class="line"><i>352</i>            mapping_2d = cast(List[List[int]], self.agg_pool_mapping)</span>
+<span class="line"><i>353</i>            pool_idx = mapping_2d[ttft_idx][itl_idx]</span>
+<span class="line"><i>354</i>        else:</span>
+<span class="line"><i>355</i>            if isl is None:</span>
+<span class="line"><i>356</i>                isl = (isl_min + isl_max) // 2</span>
+<span class="line"><i>357</i>            isl_idx = self._clamp_index(</span>
+<span class="line"><i>358</i>                (isl - isl_min) / ((isl_max - isl_min) / isl_resolution), isl_resolution</span>
+<span class="line"><i>359</i>            )</span>
+<span class="line"><i>360</i>            mapping_3d = cast(List[List[List[int]]], self.agg_pool_mapping)</span>
+<span class="line"><i>361</i>            pool_idx = mapping_3d[isl_idx][ttft_idx][itl_idx]</span>
+<span class="line"><i>362</i>        pool_idx = _apply_priority_overrides(</span>
+<span class="line"><i>363</i>            pool_idx, priority, self.priority_overrides</span>
+<span class="line"><i>364</i>        )</span>
+<span class="line"><i>365</i>        logger.debug(</span>
+<span class="line"><i>366</i>            &quot;Agg pool selection: ISL=%s, TTFT=%sms, ITL=%sms, priority=%s -&gt; pool %s&quot;,</span>
+<span class="line"><i>367</i>            isl,</span>
+<span class="line"><i>368</i>            ttft_target_ms,</span>
+<span class="line"><i>369</i>            itl_target_ms,</span>
+<span class="line"><i>370</i>            priority,</span>
+<span class="line"><i>371</i>            pool_idx,</span>
+<span class="line"><i>372</i>        )</span>
+<span class="line"><i>373</i>        return pool_idx</span></code></pre></details><p>输入按配置范围离散化并 clamp，查 mapping 后应用 priority override。Decode 的参数名保留 context_length，但传入的是生成前请求 token_ids 的长度，不是不断增长的 GPU 实时上下文。目标 TTFT/ITL 是选桶输入，并非后端已承诺满足的 SLO。</p></section><section id="global-routing-retry" class="lesson"><div class="sectionhead"><h2>06 / 跨池 retry：只在尚未转发输出时尝试</h2><label class="done"><input type="checkbox" data-read="global-routing-retry"> 已读</label></div><details class="source" id="src-global-routing-9"><summary><b>源码 · priority retry、取消检查、已输出保护与 Decode caveat</b><small>components/src/dynamo/global_router/handler.py:75–147</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/global_router/handler.py#L75-L147" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>75</i>    async def _forward_with_priority_retry(</span>
+<span class="line"><i>76</i>        self,</span>
+<span class="line"><i>77</i>        request: Dict[str, Any],</span>
+<span class="line"><i>78</i>        request_type: str,</span>
+<span class="line"><i>79</i>        initial_pool_idx: int,</span>
+<span class="line"><i>80</i>        namespaces: List[str],</span>
+<span class="line"><i>81</i>        clients: Dict[str, Client],</span>
+<span class="line"><i>82</i>        pool_priorities: List[int],</span>
+<span class="line"><i>83</i>        context=None,</span>
+<span class="line"><i>84</i>    ) -&gt; AsyncGenerator[Dict[str, Any], None]:</span>
+<span class="line"><i>85</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>86</i>        Forward a request to the selected pool and retry faster pools on failure.</span>
+<span class="line"><i>87</i></span>
+<span class="line"><i>88</i>        Retry order is controlled by pool priorities: lower priority numbers are</span>
+<span class="line"><i>89</i>        faster, so retries walk from the selected pool toward faster pools.</span>
+<span class="line"><i>90</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>91</i>        pool_order = get_priority_retry_order(</span>
+<span class="line"><i>92</i>            selected_pool=initial_pool_idx,</span>
+<span class="line"><i>93</i>            pool_priorities=pool_priorities,</span>
+<span class="line"><i>94</i>            enable_priority_retry=self.config.enable_priority_retry,</span>
+<span class="line"><i>95</i>        )</span>
+<span class="line"><i>96</i>        # The egress codec is chosen per destination; a JSON destination would read</span>
+<span class="line"><i>97</i>        # a packed buffer as one id per byte, so forward a list.</span>
+<span class="line"><i>98</i>        request = normalize_request_token_ids(dict(request))</span>
+<span class="line"><i>99</i></span>
+<span class="line"><i>100</i>        for attempt_idx, pool_idx in enumerate(pool_order):</span>
+<span class="line"><i>101</i>            namespace = namespaces[pool_idx]</span>
+<span class="line"><i>102</i>            client = clients[namespace]</span>
+<span class="line"><i>103</i>            yielded_output = False</span>
+<span class="line"><i>104</i></span>
+<span class="line"><i>105</i>            try:</span>
+<span class="line"><i>106</i>                stream = await client.generate(request, context=context)</span>
+<span class="line"><i>107</i>                async for output in stream:</span>
+<span class="line"><i>108</i>                    yielded_output = True</span>
+<span class="line"><i>109</i>                    data = output.data() if hasattr(output, &quot;data&quot;) else output</span>
+<span class="line"><i>110</i>                    yield data</span>
+<span class="line"><i>111</i>                return</span>
+<span class="line"><i>112</i>            except Exception as e:</span>
+<span class="line"><i>113</i>                if context is not None and context.is_stopped():</span>
+<span class="line"><i>114</i>                    logger.debug(</span>
+<span class="line"><i>115</i>                        &quot;Request context was cancelled; skipping priority retry&quot;</span>
+<span class="line"><i>116</i>                    )</span>
+<span class="line"><i>117</i>                    raise</span>
+<span class="line"><i>118</i></span>
+<span class="line"><i>119</i>                is_last_attempt = attempt_idx == len(pool_order) - 1</span>
+<span class="line"><i>120</i>                if yielded_output:</span>
+<span class="line"><i>121</i>                    logger.error(</span>
+<span class="line"><i>122</i>                        f&quot;Error forwarding {request_type} request to {namespace} &quot;</span>
+<span class="line"><i>123</i>                        f&quot;after streaming started; cannot safely retry: {e}&quot;</span>
+<span class="line"><i>124</i>                    )</span>
+<span class="line"><i>125</i>                    raise</span>
+<span class="line"><i>126</i></span>
+<span class="line"><i>127</i>                if is_last_attempt:</span>
+<span class="line"><i>128</i>                    logger.error(</span>
+<span class="line"><i>129</i>                        f&quot;Error forwarding {request_type} request to {namespace}; &quot;</span>
+<span class="line"><i>130</i>                        f&quot;no priority retry pools remain: {e}&quot;</span>
+<span class="line"><i>131</i>                    )</span>
+<span class="line"><i>132</i>                    raise</span>
+<span class="line"><i>133</i></span>
+<span class="line"><i>134</i>                next_pool_idx = pool_order[attempt_idx + 1]</span>
+<span class="line"><i>135</i>                next_namespace = namespaces[next_pool_idx]</span>
+<span class="line"><i>136</i>                if request_type == &quot;decode&quot;:</span>
+<span class="line"><i>137</i>                    # A failed decode attempt may already have caused the prefill</span>
+<span class="line"><i>138</i>                    # engine to retire or drop its KV cache for this request. That</span>
+<span class="line"><i>139</i>                    # is acceptable: the retry is a fresh decode request to another</span>
+<span class="line"><i>140</i>                    # pool. The backend should handle any cache miss normally, but</span>
+<span class="line"><i>141</i>                    # current Dynamo backends do not support this yet.</span>
+<span class="line"><i>142</i>                    logger.debug(&quot;Retrying decode request after pool failure&quot;)</span>
+<span class="line"><i>143</i>                logger.warning(</span>
+<span class="line"><i>144</i>                    f&quot;Error forwarding {request_type} request to pool {pool_idx} &quot;</span>
+<span class="line"><i>145</i>                    f&quot;({namespace}): {e}; retrying faster pool {next_pool_idx} &quot;</span>
+<span class="line"><i>146</i>                    f&quot;({next_namespace})&quot;</span>
+<span class="line"><i>147</i>                )</span></code></pre></details><p>priority 数字越小表示更快 pool；可按配置向更快候选重试。已有任何输出后不能安全重试，取消也不继续迁移。源码明确提示 Decode retry 可能遇到 Prefill KV 已退休，而当前 backend 尚不支持该缺失恢复语义；不能把存在 retry 代码当作 PD 跨池无损故障转移保证。</p><p>官方 Global Router README 列出 vLLM、Mocker、SGLang 路径；TensorRT-LLM 没有专用端到端集成验证。共享 Frontend 能处理 TRT PD，不自动代表该全局拓扑受支持。</p></section><section id="global-routing-relay" class="lesson"><div class="sectionhead"><h2>07 / Pool Relay：catalog、缓存过滤器与运行事实</h2><label class="done"><input type="checkbox" data-read="global-routing-relay"> 已读</label></div><details class="source" id="src-global-routing-10"><summary><b>源码 · gRPC RPC、兼容 major 与结构化错误 reason</b><small>lib/llm/src/pool_relay/wan/grpc/protocol/relay.proto:8–42</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/pool_relay/wan/grpc/protocol/relay.proto#L8-L42" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>8</i>// v1 is a compatibility major, not a schema revision. Additive fields keep</span>
+<span class="line"><i>9</i>// protocol_version=1 and contract_marker=0x4B565231. Preserve field numbers,</span>
+<span class="line"><i>10</i>// types and meanings; reserve deleted field numbers and names. Incompatible</span>
+<span class="line"><i>11</i>// semantics require a new package. See ../docs/grpc-contract.md.</span>
+<span class="line"><i>12</i>// Unknown safety-relevant types make the affected pool/topology unsupported,</span>
+<span class="line"><i>13</i>// not the entire catalog. Never interpret unknown values as a known default.</span>
+<span class="line"><i>14</i>service KvEventRelay</span>
+<span class="line"><i>15</i>{</span>
+<span class="line"><i>16</i>  rpc GetRelayInfo(RelayInfoRequest) returns (RelayInfo);</span>
+<span class="line"><i>17</i>  rpc WatchKvPoolCatalog(WatchKvPoolCatalogRequest) returns (stream KvPoolCatalogUpdate);</span>
+<span class="line"><i>18</i>  rpc SubscribeKvPool(SubscribeKvPoolRequest) returns (stream FilterUpdate);</span>
+<span class="line"><i>19</i>  rpc SubscribeServingReadiness(SubscribeServingReadinessRequest) returns (stream ServingReadinessUpdate);</span>
+<span class="line"><i>20</i>  rpc SubscribeKvPoolLoad(SubscribeKvPoolLoadRequest) returns (stream KvPoolLoadUpdate);</span>
+<span class="line"><i>21</i>  rpc SubscribeServingLoad(SubscribeServingLoadRequest) returns (stream ServingLoadUpdate);</span>
+<span class="line"><i>22</i>}</span>
+<span class="line"><i>23</i></span>
+<span class="line"><i>24</i>// Relay application errors carry this enum&#x27;s exact symbolic name in the</span>
+<span class="line"><i>25</i>// ASCII trailer kv-relay-error-reason. Missing/unknown reasons fall back to</span>
+<span class="line"><i>26</i>// the gRPC status code; messages are diagnostic text, never a retry API.</span>
+<span class="line"><i>27</i>enum RelayErrorReason {</span>
+<span class="line"><i>28</i>  RELAY_ERROR_REASON_UNSPECIFIED = 0;</span>
+<span class="line"><i>29</i>  RELAY_ERROR_REASON_CONTRACT_MISMATCH = 1;</span>
+<span class="line"><i>30</i>  RELAY_ERROR_REASON_INVALID_REQUEST = 2;</span>
+<span class="line"><i>31</i>  RELAY_ERROR_REASON_UNSUPPORTED_FEATURE = 3;</span>
+<span class="line"><i>32</i>  RELAY_ERROR_REASON_POOL_NOT_FOUND = 4;</span>
+<span class="line"><i>33</i>  RELAY_ERROR_REASON_PRODUCER_CHANGED = 5;</span>
+<span class="line"><i>34</i>  RELAY_ERROR_REASON_RESOURCE_LIMIT = 6;</span>
+<span class="line"><i>35</i>  RELAY_ERROR_REASON_SUBSCRIBER_LAGGED = 7;</span>
+<span class="line"><i>36</i>  RELAY_ERROR_REASON_SNAPSHOT_PROGRESS_TIMEOUT = 8;</span>
+<span class="line"><i>37</i>  RELAY_ERROR_REASON_PUBLICATION_UNAVAILABLE = 9;</span>
+<span class="line"><i>38</i>  RELAY_ERROR_REASON_INVALID_PUBLICATION = 10;</span>
+<span class="line"><i>39</i>  RELAY_ERROR_REASON_INTERNAL = 11;</span>
+<span class="line"><i>40</i>}</span>
+<span class="line"><i>41</i></span>
+<span class="line"><i>42</i>enum IdentitySource {</span></code></pre></details><p>Relay 暴露 GetRelayInfo、WatchKvPoolCatalog、SubscribeKvPool、SubscribeServingReadiness、SubscribeKvPoolLoad 与 SubscribeServingLoad。版本号 1 是兼容 major，未知 safety-relevant 类型不能按默认解释。CKF 是近似缓存事实，真实使用前仍需本地引擎/路由验证；pool identity、producer 变化与 snapshot/delta generation 不可混用。</p><aside class="note ">Relay 是 Experimental。配置的 logical namespace 过滤不会扩大 Kubernetes discovery 的 RBAC/watch 作用域；可选 gRPC listener 在当前指南中是 plaintext，跨信任域的 TLS/mTLS 由外部代理方案负责。</aside></section><section id="global-routing-discovery" class="lesson"><div class="sectionhead"><h2>08 / GlobalDiscoveryClient：注册租约与完整列表</h2><label class="done"><input type="checkbox" data-read="global-routing-discovery"> 已读</label></div><details class="source" id="src-global-routing-11"><summary><b>源码 · HTTP client、禁止 redirect、routers 全量读取与 pool heartbeat</b><small>lib/global-discovery-client/src/client.rs:58–121</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/global-discovery-client/src/client.rs#L58-L121" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>58</i>    pub fn new(base_url: Url, request_timeout: Duration) -&gt; Result&lt;Self, DiscoveryClientError&gt; {</span>
+<span class="line"><i>59</i>        let http = reqwest::Client::builder()</span>
+<span class="line"><i>60</i>            .timeout(request_timeout)</span>
+<span class="line"><i>61</i>            // A followed redirect can turn the registration POST into a GET,</span>
+<span class="line"><i>62</i>            // so a 3xx must fail instead of looking like a success.</span>
+<span class="line"><i>63</i>            .redirect(reqwest::redirect::Policy::none())</span>
+<span class="line"><i>64</i>            .build()</span>
+<span class="line"><i>65</i>            .map_err(DiscoveryClientError::Build)?;</span>
+<span class="line"><i>66</i>        Ok(Self {</span>
+<span class="line"><i>67</i>            http,</span>
+<span class="line"><i>68</i>            routers_url: endpoint(&amp;base_url, &quot;routers&quot;)?,</span>
+<span class="line"><i>69</i>            pools_url: endpoint(&amp;base_url, &quot;pools&quot;)?,</span>
+<span class="line"><i>70</i>        })</span>
+<span class="line"><i>71</i>    }</span>
+<span class="line"><i>72</i></span>
+<span class="line"><i>73</i>    /// Calls `GET /routers` and returns every Global Router replica the</span>
+<span class="line"><i>74</i>    /// service lists.</span>
+<span class="line"><i>75</i>    ///</span>
+<span class="line"><i>76</i>    /// Each call returns the full current set. If any entry does not parse,</span>
+<span class="line"><i>77</i>    /// the whole call fails, so a caller never acts on a partial list.</span>
+<span class="line"><i>78</i>    pub async fn routers(&amp;self) -&gt; Result&lt;Vec&lt;ReplicaEndpoint&gt;, DiscoveryClientError&gt; {</span>
+<span class="line"><i>79</i>        let url = &amp;self.routers_url;</span>
+<span class="line"><i>80</i>        let response = self.send(self.http.get(url.clone()), url).await?;</span>
+<span class="line"><i>81</i>        let body: RoutersResponse = read_json(response, url).await?;</span>
+<span class="line"><i>82</i>        Ok(body.routers)</span>
+<span class="line"><i>83</i>    }</span>
+<span class="line"><i>84</i></span>
+<span class="line"><i>85</i>    /// Calls `POST /pools` to register a pool or refresh its registration,</span>
+<span class="line"><i>86</i>    /// and returns the service&#x27;s [`Lease`]. Each call is also the pool&#x27;s</span>
+<span class="line"><i>87</i>    /// heartbeat, so the PoolRelay calls this again after</span>
+<span class="line"><i>88</i>    /// `Lease::heartbeat_interval`.</span>
+<span class="line"><i>89</i>    pub async fn register_pool(</span>
+<span class="line"><i>90</i>        &amp;self,</span>
+<span class="line"><i>91</i>        registration: &amp;PoolRegistration,</span>
+<span class="line"><i>92</i>    ) -&gt; Result&lt;Lease, DiscoveryClientError&gt; {</span>
+<span class="line"><i>93</i>        let url = &amp;self.pools_url;</span>
+<span class="line"><i>94</i>        let response = self</span>
+<span class="line"><i>95</i>            .send(self.http.post(url.clone()).json(registration), url)</span>
+<span class="line"><i>96</i>            .await?;</span>
+<span class="line"><i>97</i>        read_json(response, url).await</span>
+<span class="line"><i>98</i>    }</span>
+<span class="line"><i>99</i></span>
+<span class="line"><i>100</i>    async fn send(</span>
+<span class="line"><i>101</i>        &amp;self,</span>
+<span class="line"><i>102</i>        request: reqwest::RequestBuilder,</span>
+<span class="line"><i>103</i>        url: &amp;Url,</span>
+<span class="line"><i>104</i>    ) -&gt; Result&lt;reqwest::Response, DiscoveryClientError&gt; {</span>
+<span class="line"><i>105</i>        let response = request</span>
+<span class="line"><i>106</i>            .send()</span>
+<span class="line"><i>107</i>            .await</span>
+<span class="line"><i>108</i>            .map_err(|source| DiscoveryClientError::Request {</span>
+<span class="line"><i>109</i>                url: url.clone(),</span>
+<span class="line"><i>110</i>                source,</span>
+<span class="line"><i>111</i>            })?;</span>
+<span class="line"><i>112</i>        let status = response.status();</span>
+<span class="line"><i>113</i>        if status.is_success() {</span>
+<span class="line"><i>114</i>            return Ok(response);</span>
+<span class="line"><i>115</i>        }</span>
+<span class="line"><i>116</i>        Err(DiscoveryClientError::Status {</span>
+<span class="line"><i>117</i>            url: url.clone(),</span>
+<span class="line"><i>118</i>            status,</span>
+<span class="line"><i>119</i>            body: response.text().await.unwrap_or_default(),</span>
+<span class="line"><i>120</i>        })</span>
+<span class="line"><i>121</i>    }</span></code></pre></details><details class="source" id="src-global-routing-12"><summary><b>源码 · Resync 与 Exact / Estimated completeness</b><small>lib/global-discovery-client/src/watch.rs:5–28</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/global-discovery-client/src/watch.rs#L5-L28" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>5</i></span>
+<span class="line"><i>6</i>#[derive(Clone, Debug)]</span>
+<span class="line"><i>7</i>pub enum WatchEvent&lt;T, K&gt; {</span>
+<span class="line"><i>8</i>    /// A new or changed item. It replaces any earlier item with the same key.</span>
+<span class="line"><i>9</i>    Added(T),</span>
+<span class="line"><i>10</i>    Removed(K),</span>
+<span class="line"><i>11</i>    Resync(Snapshot&lt;T&gt;),</span>
+<span class="line"><i>12</i>}</span>
+<span class="line"><i>13</i></span>
+<span class="line"><i>14</i>#[derive(Clone, Debug)]</span>
+<span class="line"><i>15</i>pub struct Snapshot&lt;T&gt; {</span>
+<span class="line"><i>16</i>    pub items: Vec&lt;T&gt;,</span>
+<span class="line"><i>17</i>    pub completeness: Completeness,</span>
+<span class="line"><i>18</i>}</span>
+<span class="line"><i>19</i></span>
+<span class="line"><i>20</i>/// Whether a snapshot lists every item, so a new router replica can tell a</span>
+<span class="line"><i>21</i>/// complete list from a partial one.</span>
+<span class="line"><i>22</i>#[derive(Clone, Copy, Debug, PartialEq, Eq)]</span>
+<span class="line"><i>23</i>pub enum Completeness {</span>
+<span class="line"><i>24</i>    /// Read from a shared store, so it lists every existing item.</span>
+<span class="line"><i>25</i>    Exact,</span>
+<span class="line"><i>26</i>    /// Built from the updates this replica has received so far.</span>
+<span class="line"><i>27</i>    Estimated,</span>
+<span class="line"><i>28</i>}</span></code></pre></details><p>register_pool 的重复 POST 同时刷新 heartbeat lease；routers 返回全量，任一条解析错误使整个调用失败，避免客户端使用悄悄截断的列表。watch 的 Resync 替换旧状态，Estimated 明确表示 replica 仅基于已接收更新。client 契约实现不能证明同版本占位的 server crate 已可运行。</p></section><section id="global-routing-view" class="lesson"><div class="sectionhead"><h2>09 / PoolViews：重连 generation fencing 与 snapshot 优先</h2><label class="done"><input type="checkbox" data-read="global-routing-view"> 已读</label></div><details class="source" id="src-global-routing-13"><summary><b>源码 · StreamToken 与 StaleStream / SnapshotRequired / DuplicatePool</b><small>lib/global-view-receiver/src/lib.rs:14–36</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/global-view-receiver/src/lib.rs#L14-L36" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>14</i>///</span>
+<span class="line"><i>15</i>/// A replacement connection receives a new token. Late updates or disconnects from the old</span>
+<span class="line"><i>16</i>/// connection cannot change the replacement&#x27;s state.</span>
+<span class="line"><i>17</i>#[derive(Debug)]</span>
+<span class="line"><i>18</i>pub struct StreamToken&lt;R&gt; {</span>
+<span class="line"><i>19</i>    relay: R,</span>
+<span class="line"><i>20</i>    generation: u64,</span>
+<span class="line"><i>21</i>}</span>
+<span class="line"><i>22</i></span>
+<span class="line"><i>23</i>#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]</span>
+<span class="line"><i>24</i>pub enum ApplyError {</span>
+<span class="line"><i>25</i>    #[error(&quot;relay stream is no longer current&quot;)]</span>
+<span class="line"><i>26</i>    StaleStream,</span>
+<span class="line"><i>27</i>    #[error(&quot;a complete snapshot is required before updates&quot;)]</span>
+<span class="line"><i>28</i>    SnapshotRequired,</span>
+<span class="line"><i>29</i>    #[error(&quot;snapshot contains a duplicate pool&quot;)]</span>
+<span class="line"><i>30</i>    DuplicatePool,</span>
+<span class="line"><i>31</i>}</span>
+<span class="line"><i>32</i></span>
+<span class="line"><i>33</i>struct RelayStream&lt;P&gt; {</span>
+<span class="line"><i>34</i>    generation: u64,</span>
+<span class="line"><i>35</i>    pools: Option&lt;HashSet&lt;P&gt;&gt;,</span>
+<span class="line"><i>36</i>}</span></code></pre></details><details class="source" id="src-global-routing-14"><summary><b>源码 · open 替换源并验证完整 snapshot 后原子更新</b><small>lib/global-view-receiver/src/lib.rs:63–122</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/global-view-receiver/src/lib.rs#L63-L122" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>63</i>    pub fn open(&amp;mut self, relay: R) -&gt; StreamToken&lt;R&gt; {</span>
+<span class="line"><i>64</i>        static NEXT_GENERATION: AtomicU64 = AtomicU64::new(0);</span>
+<span class="line"><i>65</i>        let generation = NEXT_GENERATION</span>
+<span class="line"><i>66</i>            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {</span>
+<span class="line"><i>67</i>                current.checked_add(1)</span>
+<span class="line"><i>68</i>            })</span>
+<span class="line"><i>69</i>            .expect(&quot;relay stream generation overflow&quot;)</span>
+<span class="line"><i>70</i>            + 1;</span>
+<span class="line"><i>71</i>        if let Some(previous) = self.relays.remove(&amp;relay) {</span>
+<span class="line"><i>72</i>            self.remove_relay_views(&amp;relay, previous.pools);</span>
+<span class="line"><i>73</i>        }</span>
+<span class="line"><i>74</i>        self.relays.insert(</span>
+<span class="line"><i>75</i>            relay.clone(),</span>
+<span class="line"><i>76</i>            RelayStream {</span>
+<span class="line"><i>77</i>                generation,</span>
+<span class="line"><i>78</i>                pools: None,</span>
+<span class="line"><i>79</i>            },</span>
+<span class="line"><i>80</i>        );</span>
+<span class="line"><i>81</i>        StreamToken { relay, generation }</span>
+<span class="line"><i>82</i>    }</span>
+<span class="line"><i>83</i></span>
+<span class="line"><i>84</i>    /// Replace one Relay&#x27;s entire pool view. A pool omitted here is withdrawn from that Relay.</span>
+<span class="line"><i>85</i>    /// Duplicate logical pool keys reject the snapshot without modifying the current view.</span>
+<span class="line"><i>86</i>    pub fn replace_snapshot(</span>
+<span class="line"><i>87</i>        &amp;mut self,</span>
+<span class="line"><i>88</i>        stream: &amp;StreamToken&lt;R&gt;,</span>
+<span class="line"><i>89</i>        pools: impl IntoIterator&lt;Item = (P, V)&gt;,</span>
+<span class="line"><i>90</i>    ) -&gt; Result&lt;(), ApplyError&gt; {</span>
+<span class="line"><i>91</i>        self.current_mut(stream)?;</span>
+<span class="line"><i>92</i>        let mut replacement = HashMap::new();</span>
+<span class="line"><i>93</i>        for (pool_id, view) in pools {</span>
+<span class="line"><i>94</i>            if replacement.insert(pool_id, view).is_some() {</span>
+<span class="line"><i>95</i>                return Err(ApplyError::DuplicatePool);</span>
+<span class="line"><i>96</i>            }</span>
+<span class="line"><i>97</i>        }</span>
+<span class="line"><i>98</i>        let old_pools = self</span>
+<span class="line"><i>99</i>            .current_mut(stream)?</span>
+<span class="line"><i>100</i>            .pools</span>
+<span class="line"><i>101</i>            .replace(replacement.keys().cloned().collect());</span>
+<span class="line"><i>102</i>        let current_pools = self</span>
+<span class="line"><i>103</i>            .relays</span>
+<span class="line"><i>104</i>            .get(&amp;stream.relay)</span>
+<span class="line"><i>105</i>            .and_then(|relay| relay.pools.as_ref())</span>
+<span class="line"><i>106</i>            .expect(&quot;snapshot was just installed&quot;);</span>
+<span class="line"><i>107</i>        let removed: Vec&lt;P&gt; = old_pools</span>
+<span class="line"><i>108</i>            .into_iter()</span>
+<span class="line"><i>109</i>            .flatten()</span>
+<span class="line"><i>110</i>            .filter(|pool_id| !current_pools.contains(pool_id))</span>
+<span class="line"><i>111</i>            .collect();</span>
+<span class="line"><i>112</i>        for pool_id in removed {</span>
+<span class="line"><i>113</i>            self.remove_relay_pool(&amp;stream.relay, &amp;pool_id);</span>
+<span class="line"><i>114</i>        }</span>
+<span class="line"><i>115</i>        for (pool_id, view) in replacement {</span>
+<span class="line"><i>116</i>            self.pools</span>
+<span class="line"><i>117</i>                .entry(pool_id)</span>
+<span class="line"><i>118</i>                .or_default()</span>
+<span class="line"><i>119</i>                .insert(stream.relay.clone(), view);</span>
+<span class="line"><i>120</i>        }</span>
+<span class="line"><i>121</i>        Ok(())</span>
+<span class="line"><i>122</i>    }</span></code></pre></details><details class="source" id="src-global-routing-15"><summary><b>源码 · snapshot 后 upsert / remove / 显式 disconnect</b><small>lib/global-view-receiver/src/lib.rs:125–172</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/global-view-receiver/src/lib.rs#L125-L172" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>125</i>    pub fn upsert(</span>
+<span class="line"><i>126</i>        &amp;mut self,</span>
+<span class="line"><i>127</i>        stream: &amp;StreamToken&lt;R&gt;,</span>
+<span class="line"><i>128</i>        pool_id: P,</span>
+<span class="line"><i>129</i>        view: V,</span>
+<span class="line"><i>130</i>    ) -&gt; Result&lt;(), ApplyError&gt; {</span>
+<span class="line"><i>131</i>        let known_pools = self</span>
+<span class="line"><i>132</i>            .current_mut(stream)?</span>
+<span class="line"><i>133</i>            .pools</span>
+<span class="line"><i>134</i>            .as_mut()</span>
+<span class="line"><i>135</i>            .ok_or(ApplyError::SnapshotRequired)?;</span>
+<span class="line"><i>136</i>        if !known_pools.contains(&amp;pool_id) {</span>
+<span class="line"><i>137</i>            known_pools.insert(pool_id.clone());</span>
+<span class="line"><i>138</i>        }</span>
+<span class="line"><i>139</i>        if let Some(views) = self.pools.get_mut(&amp;pool_id) {</span>
+<span class="line"><i>140</i>            if let Some(current) = views.get_mut(&amp;stream.relay) {</span>
+<span class="line"><i>141</i>                *current = view;</span>
+<span class="line"><i>142</i>            } else {</span>
+<span class="line"><i>143</i>                views.insert(stream.relay.clone(), view);</span>
+<span class="line"><i>144</i>            }</span>
+<span class="line"><i>145</i>        } else {</span>
+<span class="line"><i>146</i>            self.pools</span>
+<span class="line"><i>147</i>                .insert(pool_id, HashMap::from([(stream.relay.clone(), view)]));</span>
+<span class="line"><i>148</i>        }</span>
+<span class="line"><i>149</i>        Ok(())</span>
+<span class="line"><i>150</i>    }</span>
+<span class="line"><i>151</i></span>
+<span class="line"><i>152</i>    /// Withdraw one pool from this Relay without affecting other Relay replicas.</span>
+<span class="line"><i>153</i>    pub fn remove(&amp;mut self, stream: &amp;StreamToken&lt;R&gt;, pool_id: &amp;P) -&gt; Result&lt;(), ApplyError&gt; {</span>
+<span class="line"><i>154</i>        self.current_mut(stream)?</span>
+<span class="line"><i>155</i>            .pools</span>
+<span class="line"><i>156</i>            .as_mut()</span>
+<span class="line"><i>157</i>            .ok_or(ApplyError::SnapshotRequired)?</span>
+<span class="line"><i>158</i>            .remove(pool_id);</span>
+<span class="line"><i>159</i>        self.remove_relay_pool(&amp;stream.relay, pool_id);</span>
+<span class="line"><i>160</i>        Ok(())</span>
+<span class="line"><i>161</i>    }</span>
+<span class="line"><i>162</i></span>
+<span class="line"><i>163</i>    /// Drop all views from a disconnected Relay. An old stream cannot disconnect its replacement.</span>
+<span class="line"><i>164</i>    /// The transport adapter must call this on EOF, error, or cancellation; dropping the token</span>
+<span class="line"><i>165</i>    /// alone does not change the receiver&#x27;s state.</span>
+<span class="line"><i>166</i>    pub fn disconnect(&amp;mut self, stream: &amp;StreamToken&lt;R&gt;) -&gt; Result&lt;(), ApplyError&gt; {</span>
+<span class="line"><i>167</i>        self.current_mut(stream)?;</span>
+<span class="line"><i>168</i>        if let Some(relay) = self.relays.remove(&amp;stream.relay) {</span>
+<span class="line"><i>169</i>            self.remove_relay_views(&amp;stream.relay, relay.pools);</span>
+<span class="line"><i>170</i>        }</span>
+<span class="line"><i>171</i>        Ok(())</span>
+<span class="line"><i>172</i>    }</span></code></pre></details><p>receiver 按 source 分别保存值，不定义网络传输或多源 merge policy。重连先移除旧源视图，完整 snapshot 到达才激活更新；重复 pool snapshot 拒绝且不破坏当前视图。旧 stream 的更新/断开不能影响新 generation；仅 Drop token 不会清状态，adapter 必须在 EOF/error/cancel 调 disconnect。</p></section><section id="global-routing-load-types" class="lesson"><div class="sectionhead"><h2>10 / 三种 load 的来源不同，不能混成 GPU 使用率</h2><label class="done"><input type="checkbox" data-read="global-routing-load-types"> 已读</label></div><details class="source" id="src-global-routing-16"><summary><b>源码 · worker-authoritative KV pool load</b><small>lib/llm/src/pool_relay/load.rs:39–59</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/pool_relay/load.rs#L39-L59" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>39</i>/// DC-wide load derived from worker-authoritative `kv_used_blocks` reports.</span>
+<span class="line"><i>40</i>///</span>
+<span class="line"><i>41</i>/// Router scheduler views (`active_decode_blocks`, `active_prefill_tokens`) are</span>
+<span class="line"><i>42</i>/// not part of this snapshot; [`SchedulerLoadState`] aggregates them from the</span>
+<span class="line"><i>43</i>/// scheduler-load subject, where each view carries its scheduler group.</span>
+<span class="line"><i>44</i>#[derive(Debug, Clone, Copy, PartialEq, Eq)]</span>
+<span class="line"><i>45</i>pub struct PoolLoadSnapshot {</span>
+<span class="line"><i>46</i>    pub producer: ProducerIdentity,</span>
+<span class="line"><i>47</i>    /// Aggregate authoritative KV usage, available only after every declared rank</span>
+<span class="line"><i>48</i>    /// has reported at least once for the current capacity generation.</span>
+<span class="line"><i>49</i>    pub kv_used_blocks: Option&lt;u64&gt;,</span>
+<span class="line"><i>50</i>    /// Aggregate KV capacity, available only when every declared rank publishes a</span>
+<span class="line"><i>51</i>    /// non-zero capacity.</span>
+<span class="line"><i>52</i>    pub total_kv_blocks: Option&lt;u64&gt;,</span>
+<span class="line"><i>53</i>    /// Declared ranks that have published authoritative KV usage.</span>
+<span class="line"><i>54</i>    pub kv_observed_ranks: usize,</span>
+<span class="line"><i>55</i>    /// Declared ranks whose KV capacity is known and non-zero.</span>
+<span class="line"><i>56</i>    pub kv_capacity_ranks: usize,</span>
+<span class="line"><i>57</i>    /// Worker ranks declared by the current runtime configuration.</span>
+<span class="line"><i>58</i>    pub kv_expected_ranks: usize,</span>
+<span class="line"><i>59</i>}</span></code></pre></details><details class="source" id="src-global-routing-17"><summary><b>源码 · scheduler 与 Frontend 双输入</b><small>lib/llm/src/pool_relay/serving_load.rs:5–16</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/pool_relay/serving_load.rs#L5-L16" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>5</i>//!</span>
+<span class="line"><i>6</i>//! Two inputs feed it:</span>
+<span class="line"><i>7</i>//!</span>
+<span class="line"><i>8</i>//! - router scheduler views of each pool&#x27;s worker ranks, which each pool&#x27;s load</span>
+<span class="line"><i>9</i>//!   collector feeds into [`SchedulerLoadState`](super::load::SchedulerLoadState)</span>
+<span class="line"><i>10</i>//!   from [`SCHEDULER_LOAD_SUBJECT`];</span>
+<span class="line"><i>11</i>//! - frontend load frames from [`FRONTEND_LOAD_TOPIC`], which [`frontend`]</span>
+<span class="line"><i>12</i>//!   folds into per-model views.</span>
+<span class="line"><i>13</i>//!</span>
+<span class="line"><i>14</i>//! [`ServingLoadAggregator`] watches the publishers registered for both</span>
+<span class="line"><i>15</i>//! streams ([`roster`]) and publishes one complete [`ServingLoadSnapshot`] per</span>
+<span class="line"><i>16</i>//! load window.</span></code></pre></details><details class="source" id="src-global-routing-18"><summary><b>源码 · 新鲜度、retention 与 model coverage</b><small>lib/llm/src/pool_relay/serving_load.rs:49–97</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/pool_relay/serving_load.rs#L49-L97" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>49</i>/// A source&#x27;s report counts for this many of its publish intervals, so one or</span>
+<span class="line"><i>50</i>/// two lost reports do not make an aggregate incomplete.</span>
+<span class="line"><i>51</i>const FRESHNESS_INTERVALS: u32 = 3;</span>
+<span class="line"><i>52</i></span>
+<span class="line"><i>53</i>pub(super) const fn freshness(publish_interval: Duration) -&gt; Duration {</span>
+<span class="line"><i>54</i>    publish_interval.saturating_mul(FRESHNESS_INTERVALS)</span>
+<span class="line"><i>55</i>}</span>
+<span class="line"><i>56</i></span>
+<span class="line"><i>57</i>/// How long the Relay remembers a silent source. Bounds the state left behind</span>
+<span class="line"><i>58</i>/// by departed routers and frontends; much longer than any freshness window, so</span>
+<span class="line"><i>59</i>/// a briefly silent source is resumed rather than mistaken for a new one.</span>
+<span class="line"><i>60</i>pub(super) const SOURCE_RETENTION: Duration = Duration::from_secs(10 * 60);</span>
+<span class="line"><i>61</i></span>
+<span class="line"><i>62</i>/// How long the catalog may have pools while a stream has no publisher, before</span>
+<span class="line"><i>63</i>/// the Relay warns that producers are probably not publishing.</span>
+<span class="line"><i>64</i>const SILENT_STREAM_WARNING: Duration = Duration::from_secs(30);</span>
+<span class="line"><i>65</i></span>
+<span class="line"><i>66</i>/// One complete serving-load view: every catalog pool and every model a catalog</span>
+<span class="line"><i>67</i>/// pool registers or a fresh frontend serves.</span>
+<span class="line"><i>68</i>#[derive(Debug, Clone, Default, PartialEq, Eq)]</span>
+<span class="line"><i>69</i>pub(crate) struct ServingLoadSnapshot {</span>
+<span class="line"><i>70</i>    pub(super) pools: Vec&lt;PoolServingLoad&gt;,</span>
+<span class="line"><i>71</i>    pub(super) models: Vec&lt;ModelServingLoad&gt;,</span>
+<span class="line"><i>72</i>}</span>
+<span class="line"><i>73</i></span>
+<span class="line"><i>74</i>#[derive(Debug, Clone, Copy, PartialEq, Eq)]</span>
+<span class="line"><i>75</i>pub(super) struct PoolServingLoad {</span>
+<span class="line"><i>76</i>    pub(super) producer: ProducerIdentity,</span>
+<span class="line"><i>77</i>    pub(super) scheduler: PoolSchedulerLoad,</span>
+<span class="line"><i>78</i>    /// `None` for a pool without valid serving facts.</span>
+<span class="line"><i>79</i>    pub(super) deployment: Option&lt;PoolDeployment&gt;,</span>
+<span class="line"><i>80</i>}</span>
+<span class="line"><i>81</i></span>
+<span class="line"><i>82</i>/// Frontend load of one canonical model in one namespace.</span>
+<span class="line"><i>83</i>#[derive(Debug, Clone, PartialEq, Eq)]</span>
+<span class="line"><i>84</i>pub(super) struct ModelServingLoad {</span>
+<span class="line"><i>85</i>    pub(super) namespace: String,</span>
+<span class="line"><i>86</i>    pub(super) model: String,</span>
+<span class="line"><i>87</i>    /// In-flight requests summed over the namespace&#x27;s fresh frontends.</span>
+<span class="line"><i>88</i>    pub(super) gauges: Coverage&lt;RequestGauges&gt;,</span>
+<span class="line"><i>89</i>    /// Relay-lifetime cumulative counters.</span>
+<span class="line"><i>90</i>    pub(super) totals: RequestTotals,</span>
+<span class="line"><i>91</i>    /// Oldest publish time among the namespace&#x27;s fresh frontends; 0 when none.</span>
+<span class="line"><i>92</i>    pub(super) source_observed_ms: u64,</span>
+<span class="line"><i>93</i>    pub(super) expected_frontends: u64,</span>
+<span class="line"><i>94</i>    pub(super) observed_frontends: u64,</span>
+<span class="line"><i>95</i>    pub(super) ready_frontends: u64,</span>
+<span class="line"><i>96</i>    pub(super) serving_pools: Vec&lt;PoolId&gt;,</span>
+<span class="line"><i>97</i>}</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>事实</th><th>来源</th><th>适合回答</th></tr></thead><tbody><tr><td>KV pool load</td><td>worker-authoritative kv_used_blocks + 容量</td><td>该池存储/使用了多少可计量 KV 块</td></tr><tr><td>scheduler load</td><td>各 router 对 pool/rank 的活跃 Prefill/Decode 视图</td><td>路由器已承诺多少请求工作量</td></tr><tr><td>Frontend model load</td><td>HTTP RequestMetrics 共享对象发布 frame</td><td>模型的 awaiting/generating、输入输出累计量</td></tr></tbody></table></div><p>这里 load 不等于 Prometheus 任意 query，也不等于 CUDA 利用率。freshness 当前按 publish interval 的三倍计算；source retention 为十分钟，用于保留来源身份而非把十分钟旧值都当 fresh。</p></section><section id="global-routing-coverage" class="lesson"><div class="sectionhead"><h2>11 / 观测源码：COMPLETE / DEGRADED / UNAVAILABLE</h2><label class="done"><input type="checkbox" data-read="global-routing-coverage"> 已读</label></div><details class="source" id="src-global-routing-19"><summary><b>源码 · 只汇总 fresh Frontend；unknown/coverage 与 totals 分开</b><small>lib/llm/src/pool_relay/serving_load/frontend.rs:320–389</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/pool_relay/serving_load/frontend.rs#L320-L389" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>320</i>    pub(super) fn model_loads(</span>
+<span class="line"><i>321</i>        &amp;self,</span>
+<span class="line"><i>322</i>        catalog: &amp;PoolCatalogSnapshot,</span>
+<span class="line"><i>323</i>        relay_namespace: &amp;str,</span>
+<span class="line"><i>324</i>        registered: &amp;HashMap&lt;String, HashSet&lt;u64&gt;&gt;,</span>
+<span class="line"><i>325</i>        now: Instant,</span>
+<span class="line"><i>326</i>    ) -&gt; Vec&lt;ModelServingLoad&gt; {</span>
+<span class="line"><i>327</i>        let mut models = BTreeMap::&lt;(&amp;str, &amp;str), ModelAggregate&gt;::new();</span>
+<span class="line"><i>328</i>        let mut homes = HashMap::&lt;&amp;str, BTreeSet&lt;&amp;str&gt;&gt;::new();</span>
+<span class="line"><i>329</i>        for pool in catalog.pools() {</span>
+<span class="line"><i>330</i>            let namespace = pool.serving_endpoint().namespace.as_str();</span>
+<span class="line"><i>331</i>            for registration in pool.registrations() {</span>
+<span class="line"><i>332</i>                let model = registration.model().as_str();</span>
+<span class="line"><i>333</i>                models</span>
+<span class="line"><i>334</i>                    .entry((namespace, model))</span>
+<span class="line"><i>335</i>                    .or_default()</span>
+<span class="line"><i>336</i>                    .serving_pools</span>
+<span class="line"><i>337</i>                    .insert(pool.pool_id());</span>
+<span class="line"><i>338</i>                homes.entry(model).or_default().insert(namespace);</span>
+<span class="line"><i>339</i>            }</span>
+<span class="line"><i>340</i>        }</span>
+<span class="line"><i>341</i>        for ((namespace, _), source) in &amp;self.frontends {</span>
+<span class="line"><i>342</i>            if !source.is_fresh(now) {</span>
+<span class="line"><i>343</i>                continue;</span>
+<span class="line"><i>344</i>            }</span>
+<span class="line"><i>345</i>            for model in &amp;source.models {</span>
+<span class="line"><i>346</i>                let namespace = Some(namespace.as_str())</span>
+<span class="line"><i>347</i>                    .filter(|&amp;namespace| namespace != relay_namespace)</span>
+<span class="line"><i>348</i>                    .or_else(|| relay_home(&amp;homes, &amp;model.model, relay_namespace))</span>
+<span class="line"><i>349</i>                    .unwrap_or(namespace);</span>
+<span class="line"><i>350</i>                let aggregate = models.entry((namespace, model.model.as_str())).or_default();</span>
+<span class="line"><i>351</i>                aggregate.ready_frontends += u64::from(source.serving_ready &amp;&amp; model.is_ready);</span>
+<span class="line"><i>352</i>                aggregate.gauges.add(&amp;model.gauges);</span>
+<span class="line"><i>353</i>            }</span>
+<span class="line"><i>354</i>        }</span>
+<span class="line"><i>355</i>        let mut coverage = HashMap::&lt;&amp;str, NamespaceCoverage&gt;::new();</span>
+<span class="line"><i>356</i>        models</span>
+<span class="line"><i>357</i>            .into_iter()</span>
+<span class="line"><i>358</i>            .map(|((namespace, model), aggregate)| {</span>
+<span class="line"><i>359</i>                let relay_load = relay_home(&amp;homes, model, relay_namespace) == Some(namespace);</span>
+<span class="line"><i>360</i>                let mut model_coverage =</span>
+<span class="line"><i>361</i>                    self.cached_coverage(&amp;mut coverage, namespace, registered, now);</span>
+<span class="line"><i>362</i>                let mut totals = self.totals(namespace, model);</span>
+<span class="line"><i>363</i>                if relay_load {</span>
+<span class="line"><i>364</i>                    model_coverage = model_coverage.and(self.cached_coverage(</span>
+<span class="line"><i>365</i>                        &amp;mut coverage,</span>
+<span class="line"><i>366</i>                        relay_namespace,</span>
+<span class="line"><i>367</i>                        registered,</span>
+<span class="line"><i>368</i>                        now,</span>
+<span class="line"><i>369</i>                    ));</span>
+<span class="line"><i>370</i>                    totals.add(&amp;self.totals(relay_namespace, model));</span>
+<span class="line"><i>371</i>                }</span>
+<span class="line"><i>372</i>                ModelServingLoad {</span>
+<span class="line"><i>373</i>                    namespace: namespace.to_string(),</span>
+<span class="line"><i>374</i>                    model: model.to_string(),</span>
+<span class="line"><i>375</i>                    gauges: match model_coverage.status() {</span>
+<span class="line"><i>376</i>                        Coverage::Complete(()) =&gt; Coverage::Complete(aggregate.gauges),</span>
+<span class="line"><i>377</i>                        Coverage::Partial =&gt; Coverage::Partial,</span>
+<span class="line"><i>378</i>                        Coverage::Missing =&gt; Coverage::Missing,</span>
+<span class="line"><i>379</i>                    },</span>
+<span class="line"><i>380</i>                    totals,</span>
+<span class="line"><i>381</i>                    source_observed_ms: model_coverage.source_observed_ms.unwrap_or_default(),</span>
+<span class="line"><i>382</i>                    expected_frontends: model_coverage.expected,</span>
+<span class="line"><i>383</i>                    observed_frontends: model_coverage.observed,</span>
+<span class="line"><i>384</i>                    ready_frontends: aggregate.ready_frontends,</span>
+<span class="line"><i>385</i>                    serving_pools: aggregate.serving_pools.into_iter().collect(),</span>
+<span class="line"><i>386</i>                }</span>
+<span class="line"><i>387</i>            })</span>
+<span class="line"><i>388</i>            .collect()</span>
+<span class="line"><i>389</i>    }</span></code></pre></details><details class="source" id="src-global-routing-20"><summary><b>源码 · 预期与观测 frontend 数、发现健康和新鲜度</b><small>lib/llm/src/pool_relay/serving_load/frontend.rs:415–447</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/pool_relay/serving_load/frontend.rs#L415-L447" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>415</i>    fn coverage(</span>
+<span class="line"><i>416</i>        &amp;self,</span>
+<span class="line"><i>417</i>        namespace: &amp;str,</span>
+<span class="line"><i>418</i>        registered: Option&lt;&amp;HashSet&lt;u64&gt;&gt;,</span>
+<span class="line"><i>419</i>        now: Instant,</span>
+<span class="line"><i>420</i>    ) -&gt; NamespaceCoverage {</span>
+<span class="line"><i>421</i>        let mut coverage = NamespaceCoverage {</span>
+<span class="line"><i>422</i>            roster_known: registered.is_some(),</span>
+<span class="line"><i>423</i>            ..NamespaceCoverage::default()</span>
+<span class="line"><i>424</i>        };</span>
+<span class="line"><i>425</i>        let mut known = HashSet::new();</span>
+<span class="line"><i>426</i>        for ((source_namespace, _), source) in &amp;self.frontends {</span>
+<span class="line"><i>427</i>            if source_namespace != namespace {</span>
+<span class="line"><i>428</i>                continue;</span>
+<span class="line"><i>429</i>            }</span>
+<span class="line"><i>430</i>            known.insert(source.publisher_id);</span>
+<span class="line"><i>431</i>            if source.is_fresh(now) {</span>
+<span class="line"><i>432</i>                coverage.observed += 1;</span>
+<span class="line"><i>433</i>                coverage.expected += 1;</span>
+<span class="line"><i>434</i>                coverage.source_observed_ms = Some(</span>
+<span class="line"><i>435</i>                    coverage</span>
+<span class="line"><i>436</i>                        .source_observed_ms</span>
+<span class="line"><i>437</i>                        .map_or(source.published_at_ms, |at| at.min(source.published_at_ms)),</span>
+<span class="line"><i>438</i>                );</span>
+<span class="line"><i>439</i>            } else if registered.is_some_and(|ids| ids.contains(&amp;source.publisher_id)) {</span>
+<span class="line"><i>440</i>                coverage.expected += 1;</span>
+<span class="line"><i>441</i>            }</span>
+<span class="line"><i>442</i>        }</span>
+<span class="line"><i>443</i>        if let Some(registered) = registered {</span>
+<span class="line"><i>444</i>            coverage.expected += registered.difference(&amp;known).count() as u64;</span>
+<span class="line"><i>445</i>        }</span>
+<span class="line"><i>446</i>        coverage</span>
+<span class="line"><i>447</i>    }</span></code></pre></details><details class="source" id="src-global-routing-21"><summary><b>源码 · ServingLoad RPC 的完整窗口与 coverage 契约</b><small>lib/llm/src/pool_relay/wan/grpc/protocol/relay.proto:387–441</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/pool_relay/wan/grpc/protocol/relay.proto#L387-L441" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>387</i></span>
+<span class="line"><i>388</i>// Scheduler load of one pool as seen by the routers that schedule onto it:</span>
+<span class="line"><i>389</i>// COMPLETE when every expected router reported every expected rank recently,</span>
+<span class="line"><i>390</i>// DEGRADED when coverage is partial, UNAVAILABLE when no router reported.</span>
+<span class="line"><i>391</i>// Expected routers are those that reported recently plus those that registered</span>
+<span class="line"><i>392</i>// for the pool&#x27;s scheduler-load subject within the last three publish</span>
+<span class="line"><i>393</i>// intervals; routers that predate this RPC are not counted.</span>
+<span class="line"><i>394</i>message PoolServingLoad</span>
+<span class="line"><i>395</i>{</span>
+<span class="line"><i>396</i>  ProducerIdentity producer = 1;</span>
+<span class="line"><i>397</i>  LoadView load = 2;</span>
+<span class="line"><i>398</i>  PoolDeploymentStatus deployment = 3;</span>
+<span class="line"><i>399</i>}</span>
+<span class="line"><i>400</i></span>
+<span class="line"><i>401</i>// Expected frontends are those that published recently plus those that</span>
+<span class="line"><i>402</i>// registered in discovery within the last three publish intervals, in the</span>
+<span class="line"><i>403</i>// model&#x27;s namespace and, for frontends without an exact namespace, the</span>
+<span class="line"><i>404</i>// Relay&#x27;s. A frontend that does not list the model is not serving it and</span>
+<span class="line"><i>405</i>// contributes zero.</span>
+<span class="line"><i>406</i>message ModelDeploymentStatus</span>
+<span class="line"><i>407</i>{</span>
+<span class="line"><i>408</i>  uint64 expected_frontends = 1;</span>
+<span class="line"><i>409</i>  // Expected frontends that published recently.</span>
+<span class="line"><i>410</i>  uint64 observed_frontends = 2;</span>
+<span class="line"><i>411</i>  // Observed frontends that list the model and are ready to serve.</span>
+<span class="line"><i>412</i>  uint64 ready_frontends = 3;</span>
+<span class="line"><i>413</i>  // Stable links to catalog pools serving the model in this namespace.</span>
+<span class="line"><i>414</i>  repeated KvPoolId serving_pools = 4;</span>
+<span class="line"><i>415</i>}</span>
+<span class="line"><i>416</i></span>
+<span class="line"><i>417</i>// Frontend load of one model. Key: (namespace, canonical_model_id), as in</span>
+<span class="line"><i>418</i>// TopologyEntry; alias traffic is counted under the canonical model.</span>
+<span class="line"><i>419</i>// COMPLETE when frontend discovery succeeded and every expected frontend</span>
+<span class="line"><i>420</i>// published recently, DEGRADED when some are silent or discovery failed,</span>
+<span class="line"><i>421</i>// UNAVAILABLE when none published recently.</span>
+<span class="line"><i>422</i>message ModelServingLoad</span>
+<span class="line"><i>423</i>{</span>
+<span class="line"><i>424</i>  string namespace = 1;</span>
+<span class="line"><i>425</i>  string canonical_model_id = 2;</span>
+<span class="line"><i>426</i>  LoadView load = 3;</span>
+<span class="line"><i>427</i>  ModelDeploymentStatus deployment = 4;</span>
+<span class="line"><i>428</i>}</span>
+<span class="line"><i>429</i></span>
+<span class="line"><i>430</i>// Complete window: a pool or model absent from the next window is gone.</span>
+<span class="line"><i>431</i>message ServingLoadUpdate</span>
+<span class="line"><i>432</i>{</span>
+<span class="line"><i>433</i>  uint32 protocol_version = 1;</span>
+<span class="line"><i>434</i>  RelayIdentity relay = 2;</span>
+<span class="line"><i>435</i>  uint64 window_sequence = 3;</span>
+<span class="line"><i>436</i>  uint64 observed_ms = 4;</span>
+<span class="line"><i>437</i>  uint64 window_ms = 5;</span>
+<span class="line"><i>438</i>  repeated PoolServingLoad pools = 6;</span>
+<span class="line"><i>439</i>  repeated ModelServingLoad models = 7;</span>
+<span class="line"><i>440</i>  fixed32 contract_marker = 127;</span>
+<span class="line"><i>441</i>}</span></code></pre></details><p>发现正常且全部预期生产者新近发布才 COMPLETE；只有部分或发现不健康为 DEGRADED，没有新近发布则 UNAVAILABLE。新鲜 frontend 未声明模型时为该模型贡献零，不是贡献未知。Partial coverage 不输出一个看似低负载的部分总和，而是保持缺失/降级语义；消费者不能用零填平。完整窗口中下一次缺失的 pool/model 视为消失；跨窗口累计计数、source incarnation 与旧 frame 去重还需沿 record 路径核对。</p></section><section id="global-routing-global-planner" class="lesson"><div class="sectionhead"><h2>12 / Global Planner：伸缩意图与 GPU 总预算</h2><label class="done"><input type="checkbox" data-read="global-routing-global-planner"> 已读</label></div><details class="source" id="src-global-routing-22"><summary><b>源码 · 意图缓存、standalone 总量与互补 intent 配对</b><small>components/src/dynamo/global_planner/orchestrator.py:437–504</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/global_planner/orchestrator.py#L437-L504" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>437</i>    def mediate(</span>
+<span class="line"><i>438</i>        self,</span>
+<span class="line"><i>439</i>        participant_id: str,</span>
+<span class="line"><i>440</i>        targets: list[TargetReplica],</span>
+<span class="line"><i>441</i>        all_pools: PoolSnapshot,</span>
+<span class="line"><i>442</i>        log_deployment_name: str = &quot;&quot;,</span>
+<span class="line"><i>443</i>        log_caller_name: str = &quot;&quot;,</span>
+<span class="line"><i>444</i>    ) -&gt; MediationResult:</span>
+<span class="line"><i>445</i>        &quot;&quot;&quot;Decide whether ``targets`` for ``participant_id`` fit the budget.</span>
+<span class="line"><i>446</i></span>
+<span class="line"><i>447</i>        Always updates the intent cache first (so a denied request can still be</span>
+<span class="line"><i>448</i>        paired against later). Returns an approved result (standalone or with</span>
+<span class="line"><i>449</i>        selected partners) or a soft rejection with a budget-breach message. The</span>
+<span class="line"><i>450</i>        ``log_*`` values are used only for parity-identical log lines.</span>
+<span class="line"><i>451</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>452</i>        pools = all_pools.get(participant_id, {})</span>
+<span class="line"><i>453</i></span>
+<span class="line"><i>454</i>        # Always update the intent cache with this request&#x27;s targets, regardless</span>
+<span class="line"><i>455</i>        # of decision. A later request from a complementary pool may need to pair</span>
+<span class="line"><i>456</i>        # with this intent.</span>
+<span class="line"><i>457</i>        self.update_intent_cache(participant_id, targets, pools)</span>
+<span class="line"><i>458</i></span>
+<span class="line"><i>459</i>        request_pool_keys = {</span>
+<span class="line"><i>460</i>            (participant_id, t.sub_component_type.value) for t in targets</span>
+<span class="line"><i>461</i>        }</span>
+<span class="line"><i>462</i>        standalone_overrides = {</span>
+<span class="line"><i>463</i>            (participant_id, t.sub_component_type.value): t.desired_replicas</span>
+<span class="line"><i>464</i>            for t in targets</span>
+<span class="line"><i>465</i>        }</span>
+<span class="line"><i>466</i></span>
+<span class="line"><i>467</i>        if not self.budget_enforcement_enabled():</span>
+<span class="line"><i>468</i>            return MediationResult(approved=True, selected_partners=[])</span>
+<span class="line"><i>469</i></span>
+<span class="line"><i>470</i>        net_delta = self.net_delta_gpu(targets, pools)</span>
+<span class="line"><i>471</i>        internally_paired = self.is_internally_paired(targets, pools)</span>
+<span class="line"><i>472</i></span>
+<span class="line"><i>473</i>        total_standalone = self._total_gpus_from_snapshot(</span>
+<span class="line"><i>474</i>            all_pools, standalone_overrides</span>
+<span class="line"><i>475</i>        )</span>
+<span class="line"><i>476</i></span>
+<span class="line"><i>477</i>        # Tolerance depends on which pools are actually changing.</span>
+<span class="line"><i>478</i>        changing_request_pools = [</span>
+<span class="line"><i>479</i>            pools[t.sub_component_type.value]</span>
+<span class="line"><i>480</i>            for t in targets</span>
+<span class="line"><i>481</i>            if t.sub_component_type.value in pools</span>
+<span class="line"><i>482</i>            and t.desired_replicas != pools[t.sub_component_type.value].current_replicas</span>
+<span class="line"><i>483</i>        ]</span>
+<span class="line"><i>484</i>        standalone_tolerance = self._internal_pair_tolerance(changing_request_pools)</span>
+<span class="line"><i>485</i></span>
+<span class="line"><i>486</i>        # Internally-paired requests get tolerance even without an external</span>
+<span class="line"><i>487</i>        # partner.</span>
+<span class="line"><i>488</i>        standalone_ok, standalone_reason = self._bounds_for_total(</span>
+<span class="line"><i>489</i>            total_standalone, internally_paired, standalone_tolerance</span>
+<span class="line"><i>490</i>        )</span>
+<span class="line"><i>491</i></span>
+<span class="line"><i>492</i>        # TODO(global-planner): Rework boundary and partner selection to allow</span>
+<span class="line"><i>493</i>        # monotonic recovery from an already-out-of-bounds state, compute</span>
+<span class="line"><i>494</i>        # tolerance only from selected pools, continue after an unpartializable</span>
+<span class="line"><i>495</i>        # candidate, prefer an already-valid standalone request, and preserve</span>
+<span class="line"><i>496</i>        # same-participant priority during sorting.</span>
+<span class="line"><i>497</i>        # Multi-partner packing: pack as many opposite-direction cached intents</span>
+<span class="line"><i>498</i>        # as fit within the band, partially consuming one over-sized candidate if</span>
+<span class="line"><i>499</i>        # needed.</span>
+<span class="line"><i>500</i>        (</span>
+<span class="line"><i>501</i>            selected_partners,</span>
+<span class="line"><i>502</i>            total_paired,</span>
+<span class="line"><i>503</i>            paired_tolerance,</span>
+<span class="line"><i>504</i>        ) = self._find_pair_partner_set(</span></code></pre></details><details class="source" id="src-global-routing-23"><summary><b>源码 · 实际 scale 与 current replicas 的 connector</b><small>components/src/dynamo/global_planner/kubernetes_capacity_manager.py:295–328</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/global_planner/kubernetes_capacity_manager.py#L295-L328" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>295</i>    async def scale(</span>
+<span class="line"><i>296</i>        self,</span>
+<span class="line"><i>297</i>        participant_id: str,</span>
+<span class="line"><i>298</i>        targets: list[TargetReplica],</span>
+<span class="line"><i>299</i>        blocking: bool,</span>
+<span class="line"><i>300</i>    ) -&gt; None:</span>
+<span class="line"><i>301</i>        &quot;&quot;&quot;Apply desired replica targets to one participant.</span>
+<span class="line"><i>302</i></span>
+<span class="line"><i>303</i>        Raises ``DynamoGraphDeploymentNotReadyError`` when the participant is not</span>
+<span class="line"><i>304</i>        in a state that can accept scaling; the orchestrator maps that to a soft</span>
+<span class="line"><i>305</i>        rejection.</span>
+<span class="line"><i>306</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>307</i>        connector = self.connectors[participant_id]</span>
+<span class="line"><i>308</i>        await connector.set_component_replicas(targets, blocking=blocking)</span>
+<span class="line"><i>309</i></span>
+<span class="line"><i>310</i>    def current_replicas(self, participant_id: str) -&gt; dict[str, int]:</span>
+<span class="line"><i>311</i>        connector = self.connectors[participant_id]</span>
+<span class="line"><i>312</i>        role_hints = self._component_roles.get(participant_id, {})</span>
+<span class="line"><i>313</i>        current_replicas: dict[str, int] = {}</span>
+<span class="line"><i>314</i>        components_by_pool: dict[str, str] = {}</span>
+<span class="line"><i>315</i>        deployment = connector.kube_api.get_graph_deployment(connector.parent_dgd_name)</span>
+<span class="line"><i>316</i>        for component_name, component in get_components_by_name(deployment).items():</span>
+<span class="line"><i>317</i>            sub_type = self._component_role(component_name, component, role_hints)</span>
+<span class="line"><i>318</i>            if sub_type:</span>
+<span class="line"><i>319</i>                self._record_pool_component(</span>
+<span class="line"><i>320</i>                    components_by_pool,</span>
+<span class="line"><i>321</i>                    sub_type,</span>
+<span class="line"><i>322</i>                    component_name,</span>
+<span class="line"><i>323</i>                    connector.parent_dgd_name,</span>
+<span class="line"><i>324</i>                )</span>
+<span class="line"><i>325</i>                current_replicas[sub_type] = Service(</span>
+<span class="line"><i>326</i>                    name=component_name, service=component</span>
+<span class="line"><i>327</i>                ).number_replicas()</span>
+<span class="line"><i>328</i>        return current_replicas</span></code></pre></details><p>Orchestrator 先缓存 intent，即使本次被拒，后续互补池仍可配对；再计算 GPU delta、预算边界和候选 partner，执行经 CapacityManager 抽象。预算决定不是请求路由；缩容申请被接受也不证明新副本已 ready。该处存在边界恢复与 partner 排序 TODO，不能宣称是全局最优分配器。</p></section><section id="global-routing-planner-observe" class="lesson"><div class="sectionhead"><h2>13 / 伸缩观测：no-operation、授权声称与真实执行分开</h2><label class="done"><input type="checkbox" data-read="global-routing-planner-observe"> 已读</label></div><details class="source" id="src-global-routing-24"><summary><b>源码 · caller 检查、no-operation 与 request 日志</b><small>components/src/dynamo/global_planner/scale_handler.py:138–190</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/global_planner/scale_handler.py#L138-L190" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>138</i>    async def scale_request(self, request: ScaleRequest):</span>
+<span class="line"><i>139</i>        &quot;&quot;&quot;Process scaling request from a Planner.</span>
+<span class="line"><i>140</i></span>
+<span class="line"><i>141</i>        Args:</span>
+<span class="line"><i>142</i>            request: ScaleRequest with target replicas and DGD info</span>
+<span class="line"><i>143</i></span>
+<span class="line"><i>144</i>        Yields:</span>
+<span class="line"><i>145</i>            ScaleResponse with status and current replica counts</span>
+<span class="line"><i>146</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>147</i>        try:</span>
+<span class="line"><i>148</i>            # Validate caller namespace (if authorization is enabled)</span>
+<span class="line"><i>149</i>            # TODO(global-planner): Authenticate a trusted runtime principal</span>
+<span class="line"><i>150</i>            # instead of relying on payload-claimed caller_namespace, and bind</span>
+<span class="line"><i>151</i>            # authorization to the requested Kubernetes namespace and DGD.</span>
+<span class="line"><i>152</i>            if not self.orchestrator.is_authorized(request.caller_namespace):</span>
+<span class="line"><i>153</i>                yield {</span>
+<span class="line"><i>154</i>                    &quot;status&quot;: ScaleStatus.ERROR.value,</span>
+<span class="line"><i>155</i>                    &quot;message&quot;: f&quot;Namespace {request.caller_namespace} not authorized&quot;,</span>
+<span class="line"><i>156</i>                    &quot;current_replicas&quot;: {},</span>
+<span class="line"><i>157</i>                }</span>
+<span class="line"><i>158</i>                return</span>
+<span class="line"><i>159</i></span>
+<span class="line"><i>160</i>            # No-operation mode: log and return success without touching the backend</span>
+<span class="line"><i>161</i>            if self.no_operation:</span>
+<span class="line"><i>162</i>                replicas_summary = {</span>
+<span class="line"><i>163</i>                    r.sub_component_type.value: r.desired_replicas</span>
+<span class="line"><i>164</i>                    for r in request.target_replicas</span>
+<span class="line"><i>165</i>                }</span>
+<span class="line"><i>166</i>                logger.info(</span>
+<span class="line"><i>167</i>                    f&quot;[NO-OP] Scale request from {request.caller_namespace} &quot;</span>
+<span class="line"><i>168</i>                    f&quot;for DGD {request.graph_deployment_name} &quot;</span>
+<span class="line"><i>169</i>                    f&quot;in K8s namespace {request.k8s_namespace}: {replicas_summary}&quot;</span>
+<span class="line"><i>170</i>                )</span>
+<span class="line"><i>171</i>                yield {</span>
+<span class="line"><i>172</i>                    &quot;status&quot;: ScaleStatus.SUCCESS.value,</span>
+<span class="line"><i>173</i>                    &quot;message&quot;: &quot;[no-operation] Scale request received and logged (not executed)&quot;,</span>
+<span class="line"><i>174</i>                    &quot;current_replicas&quot;: {},</span>
+<span class="line"><i>175</i>                }</span>
+<span class="line"><i>176</i>                return</span>
+<span class="line"><i>177</i></span>
+<span class="line"><i>178</i>            logger.info(</span>
+<span class="line"><i>179</i>                f&quot;Processing scale request from {request.caller_namespace} &quot;</span>
+<span class="line"><i>180</i>                f&quot;for DGD {request.graph_deployment_name} &quot;</span>
+<span class="line"><i>181</i>                f&quot;in K8s namespace {request.k8s_namespace}&quot;</span>
+<span class="line"><i>182</i>            )</span>
+<span class="line"><i>183</i></span>
+<span class="line"><i>184</i>            # Register the participant (idempotent) so it can be observed and</span>
+<span class="line"><i>185</i>            # scaled and counts toward the budget. Map the wire fields onto the</span>
+<span class="line"><i>186</i>            # orchestrator&#x27;s neutral vocabulary.</span>
+<span class="line"><i>187</i>            participant_id = f&quot;{request.k8s_namespace}/{request.graph_deployment_name}&quot;</span>
+<span class="line"><i>188</i>            self.orchestrator.register(</span>
+<span class="line"><i>189</i>                participant_id,</span>
+<span class="line"><i>190</i>                caller_name=request.caller_namespace,</span></code></pre></details><p>no-operation 明确可返回 SUCCESS 但不触碰 backend；因此审计应同时看响应语义、日志和实际 replicas。caller_namespace 当前来自 payload，源码 TODO 要求使用可信 runtime principal 并绑定 Kubernetes 目标；不能把命名空间字符串检查说成已完成跨租户身份认证。请求级 Trace/metrics 需要确认具体 endpoint 接入，本文不虚构专用 Global Router counter。</p></section><section id="global-routing-integration" class="lesson"><div class="sectionhead"><h2>14 / 真正接入跨域路由还需完成什么</h2><label class="done"><input type="checkbox" data-read="global-routing-integration"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>工作</th><th>验收证据</th></tr></thead><tbody><tr><td>固定实现与范围</td><td>Python grid router / Relay consumer / 自定义策略的实际入口与版本</td></tr><tr><td>建立网络与身份</td><td>请求、响应、event、discovery、Relay 的作用域和可信认证</td></tr><tr><td>核对兼容域</td><td>模型/tokenizer/hash/LoRA、KV layout、后端协议和 PD 传输可达</td></tr><tr><td>维护视图</td><td>producer generation、snapshot、delta、heartbeat、coverage、disconnect</td></tr><tr><td>接线策略</td><td>显式记录谁读取 Relay load/CKF，如何筛除 stale/unsupported 与选择目标</td></tr><tr><td>观测验收</td><td>同请求 pool→local worker→engine 归因，拒绝/重试/清理可解释</td></tr><tr><td>故障演练</td><td>源重连、落后 subscriber、部分 snapshot、跨池失败和 Decode KV 缺失</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>同版本官方仓库文档</th><th>阅读用途</th></tr></thead><tbody><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/global_router/README.md">Global Router</a></td><td>实际 Python 模式与后端限制</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/components/src/dynamo/pool_relay/README.md">Pool Relay</a></td><td>部署范围与运行诊断</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/docs/fern/pages/developer-guide/knowledge-base/modular-components/router/multi-dc-kv-routing.md">Multi-DC KV routing</a></td><td>跨域事实与概念</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/9734418e5bc71027e6bd04a09314bf1765208c72/lib/llm/src/pool_relay/docs/grpc-contract.md">Relay gRPC contract</a></td><td>版本、snapshot/delta 与错误码</td></tr></tbody></table></div><p>未部署跨集群系统或验证 WAN 性能；邻章为<a href="planner.html">Planner</a>与<a href="control-plane.html">控制面</a>。</p></section><section id="global-routing-diagram" class="lesson"><div class="sectionhead"><h2>15 / 架构分层图与交叉阅读</h2><label class="done"><input type="checkbox" data-read="global-routing-diagram"> 已读</label></div><div class="diagram"><div class="lane"><b>现有选池</b><span>Python Global Router grid / priority → local Router → worker</span></div><div class="lane"><b>跨域事实</b><span>Discovery + KV / scheduler / Frontend frames → Pool Relay → WAN RPC</span></div><div class="lane"><b>视图工具</b><span>global discovery client / PoolViews；consumer wiring and merge policy are separate</span></div><div class="lane"><b>容量控制</b><span>local Planner intent → Global Planner budget → CapacityManager → DGD</span></div></div><p><a href="global-routing-architecture.mmd">Mermaid 图源</a>按职责分泳道；泳道之间不暗示已经实现自动接线。离线 HTML 无外部渲染依赖。<a href="system-map.html">系统地图</a> / <a href="index.html">全部章节</a>。</p></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 9734418e5bc71027e6bd04a09314bf1765208c72。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

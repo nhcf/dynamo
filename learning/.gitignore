@@ -3,3 +3,4 @@ __pycache__/
 *-validation-report.json
 validation-report.json
 *-coverage.json
+maintenance/skillpack-issue-draft-*.md

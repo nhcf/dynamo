@@ -1,0 +1,200 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "分别分析 Python 分层 Global Router、Pool Relay 的跨域事实、Rust 视图工具和 Global Planner 容量仲裁，避免把独立模块视为已连通系统。",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "global-routing-1",
+      "path": "lib/global-router/src/lib.rs",
+      "start": 1,
+      "end": 4,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "df97e94a31ca83c386180e12d8613cbae9d3c2b40b24dea1ec82a315d79ae050"
+    },
+    {
+      "id": "global-routing-2",
+      "path": "lib/global-frontend/src/lib.rs",
+      "start": 1,
+      "end": 4,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f1d810ad2ada571048e0c702f9644c3dc89a58e7bd99a6494e93305d8baa920b"
+    },
+    {
+      "id": "global-routing-3",
+      "path": "lib/global-view-broadcaster/src/lib.rs",
+      "start": 1,
+      "end": 4,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "424489681a976e2ecc12534fac5920dc413d9a0aa40ccbb9f21e7707c2368a7d"
+    },
+    {
+      "id": "global-routing-4",
+      "path": "components/src/dynamo/global_router/handler.py",
+      "start": 38,
+      "end": 73,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "33f8a3412980ce8d4824cfa4288b974553a60b5008d1ce8670ab74f8451e1672"
+    },
+    {
+      "id": "global-routing-5",
+      "path": "components/src/dynamo/global_router/handler.py",
+      "start": 219,
+      "end": 274,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "33f8a3412980ce8d4824cfa4288b974553a60b5008d1ce8670ab74f8451e1672"
+    },
+    {
+      "id": "global-routing-6",
+      "path": "components/src/dynamo/global_router/pool_selection.py",
+      "start": 153,
+      "end": 191,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "1543789d9626e2f7b7ffbc3c2e94f0894e1cb203cbeaad151ea4ff7a22f901f0"
+    },
+    {
+      "id": "global-routing-7",
+      "path": "components/src/dynamo/global_router/pool_selection.py",
+      "start": 224,
+      "end": 262,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "1543789d9626e2f7b7ffbc3c2e94f0894e1cb203cbeaad151ea4ff7a22f901f0"
+    },
+    {
+      "id": "global-routing-8",
+      "path": "components/src/dynamo/global_router/pool_selection.py",
+      "start": 308,
+      "end": 373,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "1543789d9626e2f7b7ffbc3c2e94f0894e1cb203cbeaad151ea4ff7a22f901f0"
+    },
+    {
+      "id": "global-routing-9",
+      "path": "components/src/dynamo/global_router/handler.py",
+      "start": 75,
+      "end": 147,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "33f8a3412980ce8d4824cfa4288b974553a60b5008d1ce8670ab74f8451e1672"
+    },
+    {
+      "id": "global-routing-10",
+      "path": "lib/llm/src/pool_relay/wan/grpc/protocol/relay.proto",
+      "start": 8,
+      "end": 42,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "d7f3a907cacb51b31a111de264784961fa4c285ce62560f3a5408eaf441bc7eb"
+    },
+    {
+      "id": "global-routing-11",
+      "path": "lib/global-discovery-client/src/client.rs",
+      "start": 58,
+      "end": 121,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "36bfc59c13c54be0643c14c0f100e97e25ac50c84d8037e77b758db1449deba6"
+    },
+    {
+      "id": "global-routing-12",
+      "path": "lib/global-discovery-client/src/watch.rs",
+      "start": 5,
+      "end": 28,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "430d84257cdb4e734a3d7ba8ae15311aa1096a4de9ad8c8d774ab9186b660945"
+    },
+    {
+      "id": "global-routing-13",
+      "path": "lib/global-view-receiver/src/lib.rs",
+      "start": 14,
+      "end": 36,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c2e6628dab9c3510cf7f1bdf312ba822e2456c79b61a1bfc93ff1630f05a980d"
+    },
+    {
+      "id": "global-routing-14",
+      "path": "lib/global-view-receiver/src/lib.rs",
+      "start": 63,
+      "end": 122,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c2e6628dab9c3510cf7f1bdf312ba822e2456c79b61a1bfc93ff1630f05a980d"
+    },
+    {
+      "id": "global-routing-15",
+      "path": "lib/global-view-receiver/src/lib.rs",
+      "start": 125,
+      "end": 172,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c2e6628dab9c3510cf7f1bdf312ba822e2456c79b61a1bfc93ff1630f05a980d"
+    },
+    {
+      "id": "global-routing-16",
+      "path": "lib/llm/src/pool_relay/load.rs",
+      "start": 39,
+      "end": 59,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "299ec071db03e7d408969d21982601d93bd82ab13ee50fa75a3a6dd96b17e5f5"
+    },
+    {
+      "id": "global-routing-17",
+      "path": "lib/llm/src/pool_relay/serving_load.rs",
+      "start": 5,
+      "end": 16,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c80aac24b0f36eeccd5cbdbd489d6450cb40418505e5a696a3c9e3a6b68d8ff3"
+    },
+    {
+      "id": "global-routing-18",
+      "path": "lib/llm/src/pool_relay/serving_load.rs",
+      "start": 49,
+      "end": 97,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c80aac24b0f36eeccd5cbdbd489d6450cb40418505e5a696a3c9e3a6b68d8ff3"
+    },
+    {
+      "id": "global-routing-19",
+      "path": "lib/llm/src/pool_relay/serving_load/frontend.rs",
+      "start": 320,
+      "end": 389,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "01fa8480a409acce026f6b5913e41f7f3be88f65386e604f2b338b15b72b7b91"
+    },
+    {
+      "id": "global-routing-20",
+      "path": "lib/llm/src/pool_relay/serving_load/frontend.rs",
+      "start": 415,
+      "end": 447,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "01fa8480a409acce026f6b5913e41f7f3be88f65386e604f2b338b15b72b7b91"
+    },
+    {
+      "id": "global-routing-21",
+      "path": "lib/llm/src/pool_relay/wan/grpc/protocol/relay.proto",
+      "start": 387,
+      "end": 441,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "d7f3a907cacb51b31a111de264784961fa4c285ce62560f3a5408eaf441bc7eb"
+    },
+    {
+      "id": "global-routing-22",
+      "path": "components/src/dynamo/global_planner/orchestrator.py",
+      "start": 437,
+      "end": 504,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "1bff75b2243b12d47e2817e5d11a09f12de913b26e1b14e02d0e43726f1edc5c"
+    },
+    {
+      "id": "global-routing-23",
+      "path": "components/src/dynamo/global_planner/kubernetes_capacity_manager.py",
+      "start": 295,
+      "end": 328,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c7f5135f94ec4912d735a7591bfc23d0c8ad0aa5211d87b967e15ae0491b1155"
+    },
+    {
+      "id": "global-routing-24",
+      "path": "components/src/dynamo/global_planner/scale_handler.py",
+      "start": 138,
+      "end": 190,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "a2a11f6d88c5326271d6ae40c1fbee429b094684f8a1616aa620c758632cccec"
+    }
+  ]
+}

@@ -1,0 +1,368 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "KVBM logical/physical/engine and legacy metrics, NIXL telemetry, consolidator and event-plane observability",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "se-block-state",
+      "path": "lib/kvbm-logical/src/blocks/mod.rs",
+      "start": 4,
+      "end": 33,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "79e7e7cd9063a2b95655100f311e87de573288a28188e4e6506145dafa01d0fa"
+    },
+    {
+      "id": "se-atomics",
+      "path": "lib/kvbm-logical/src/metrics/pool_metrics.rs",
+      "start": 15,
+      "end": 45,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "fb5011aedbf30df0e653a91589d7485020e65f3d86c7b046fe1a2a2a4bb99841"
+    },
+    {
+      "id": "se-increments",
+      "path": "lib/kvbm-logical/src/metrics/pool_metrics.rs",
+      "start": 81,
+      "end": 141,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "fb5011aedbf30df0e653a91589d7485020e65f3d86c7b046fe1a2a2a4bb99841"
+    },
+    {
+      "id": "se-match",
+      "path": "lib/kvbm-logical/src/manager/mod.rs",
+      "start": 135,
+      "end": 168,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "12f9b6740125a37df7426c92779bbd134001997a4a9479cf1eda768c2212ff9e"
+    },
+    {
+      "id": "se-agg-wire",
+      "path": "lib/kvbm-logical/src/manager/builder.rs",
+      "start": 450,
+      "end": 463,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "cd4259dea3abda8b71d6ec0a1a0f570f2239cefcc20f081237a298faa98ca415"
+    },
+    {
+      "id": "se-agg-register",
+      "path": "lib/kvbm-logical/src/metrics/collector.rs",
+      "start": 144,
+      "end": 172,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "9eebbd71a1b3b3b3650987639d518a0337af6e80433b46990c6507c68fb73cc5"
+    },
+    {
+      "id": "se-agg-collect",
+      "path": "lib/kvbm-logical/src/metrics/collector.rs",
+      "start": 181,
+      "end": 210,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "9eebbd71a1b3b3b3650987639d518a0337af6e80433b46990c6507c68fb73cc5"
+    },
+    {
+      "id": "se-stats",
+      "path": "lib/kvbm-logical/src/metrics/stats.rs",
+      "start": 99,
+      "end": 166,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "01ade44f4b3973ac9093f6283cfd8dbadbf7fe5bfb8a6fa751fa134374617158"
+    },
+    {
+      "id": "se-legacy-fields",
+      "path": "lib/llm/src/block_manager/metrics_kvbm.rs",
+      "start": 21,
+      "end": 62,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "cce41a4476750722974b12252e4edbe269f9c87c33f85666bd35751f528e25ee"
+    },
+    {
+      "id": "se-legacy-endpoint",
+      "path": "lib/llm/src/block_manager/metrics_kvbm.rs",
+      "start": 155,
+      "end": 192,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "cce41a4476750722974b12252e4edbe269f9c87c33f85666bd35751f528e25ee"
+    },
+    {
+      "id": "se-legacy-update",
+      "path": "lib/llm/src/block_manager/metrics_kvbm.rs",
+      "start": 240,
+      "end": 253,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "cce41a4476750722974b12252e4edbe269f9c87c33f85666bd35751f528e25ee"
+    },
+    {
+      "id": "se-legacy-registry",
+      "path": "lib/llm/src/block_manager/metrics_kvbm.rs",
+      "start": 268,
+      "end": 298,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "cce41a4476750722974b12252e4edbe269f9c87c33f85666bd35751f528e25ee"
+    },
+    {
+      "id": "se-legacy-attempt",
+      "path": "lib/llm/src/block_manager/offload.rs",
+      "start": 478,
+      "end": 499,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "979221d1d6dcf2604e05f1bbcf0c3a1e1f101f10085094e18a6826fdc21dc2d0"
+    },
+    {
+      "id": "se-pipeline-wiring",
+      "path": "lib/kvbm-engine/src/offload/pipeline.rs",
+      "start": 347,
+      "end": 382,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c46b35dfa679ffbff860c10148d75b16f2abd9c82eb019bd8d686bc0826c27f8"
+    },
+    {
+      "id": "se-timing",
+      "path": "lib/kvbm-engine/src/offload/batch.rs",
+      "start": 24,
+      "end": 42,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "8cc6461e99f52defdb7e3a026de67a27937ed53b0d006007df8e9438b463d287"
+    },
+    {
+      "id": "se-batch-log",
+      "path": "lib/kvbm-engine/src/offload/pipeline.rs",
+      "start": 1600,
+      "end": 1650,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c46b35dfa679ffbff860c10148d75b16f2abd9c82eb019bd8d686bc0826c27f8"
+    },
+    {
+      "id": "se-timing-finish",
+      "path": "lib/kvbm-engine/src/offload/pipeline.rs",
+      "start": 1691,
+      "end": 1710,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c46b35dfa679ffbff860c10148d75b16f2abd9c82eb019bd8d686bc0826c27f8"
+    },
+    {
+      "id": "se-precondition-timeout",
+      "path": "lib/kvbm-engine/src/offload/pipeline.rs",
+      "start": 1262,
+      "end": 1295,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c46b35dfa679ffbff860c10148d75b16f2abd9c82eb019bd8d686bc0826c27f8"
+    },
+    {
+      "id": "se-onboard-status",
+      "path": "lib/kvbm-engine/src/leader/onboarding.rs",
+      "start": 10,
+      "end": 66,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "67f3c658d70195dfaa8784c60c524ca9e437f9158629b6f590f8e3d42498586a"
+    },
+    {
+      "id": "se-object-lock-contract",
+      "path": "lib/kvbm-engine/src/object/mod.rs",
+      "start": 277,
+      "end": 309,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "6bcc75a046c18c47ba0c62893772310f8f8e732e87008023c743c6fcf2d453c0"
+    },
+    {
+      "id": "se-object-results",
+      "path": "lib/kvbm-engine/src/offload/pipeline.rs",
+      "start": 1935,
+      "end": 1979,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c46b35dfa679ffbff860c10148d75b16f2abd9c82eb019bd8d686bc0826c27f8"
+    },
+    {
+      "id": "se-object-meta",
+      "path": "lib/kvbm-engine/src/offload/pipeline.rs",
+      "start": 1982,
+      "end": 2018,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c46b35dfa679ffbff860c10148d75b16f2abd9c82eb019bd8d686bc0826c27f8"
+    },
+    {
+      "id": "se-strategy",
+      "path": "lib/kvbm-physical/src/transfer/strategy.rs",
+      "start": 16,
+      "end": 76,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7b54ca35ae3cce5350da283ca9382bec3652264c7096184610781613299f8a5c"
+    },
+    {
+      "id": "se-nixl-post",
+      "path": "lib/kvbm-physical/src/transfer/executor/nixl.rs",
+      "start": 351,
+      "end": 381,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "ee98407b1b1586080eb184d7c1651928c00a864960e0a2e193944582cc891b26"
+    },
+    {
+      "id": "se-slow",
+      "path": "lib/kvbm-physical/src/transfer/notifications/mod.rs",
+      "start": 54,
+      "end": 75,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "bed93357f0ffc59aac1ca381ac92317c946643c2a82f6ace9a3cfb6450787337"
+    },
+    {
+      "id": "se-poll",
+      "path": "lib/kvbm-physical/src/transfer/notifications/mod.rs",
+      "start": 111,
+      "end": 157,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "bed93357f0ffc59aac1ca381ac92317c946643c2a82f6ace9a3cfb6450787337"
+    },
+    {
+      "id": "se-nixl-enable",
+      "path": "components/src/dynamo/common/utils/nixl_telemetry.py",
+      "start": 100,
+      "end": 130,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "bcb2a390b179c040fa297027860870b08ec62835aff6752684668414badc44e5"
+    },
+    {
+      "id": "se-nixl-rank",
+      "path": "components/src/dynamo/common/utils/nixl_telemetry.py",
+      "start": 151,
+      "end": 172,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "bcb2a390b179c040fa297027860870b08ec62835aff6752684668414badc44e5"
+    },
+    {
+      "id": "se-sglang-env",
+      "path": "components/src/dynamo/sglang/nixl_telemetry.py",
+      "start": 132,
+      "end": 149,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "ebeedcd710b0811122c359190b653189633dd86cb9c476065ea660335887f00a"
+    },
+    {
+      "id": "se-kvbm-protocol",
+      "path": "lib/kvbm-logical/src/events/protocol.rs",
+      "start": 24,
+      "end": 61,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "0f83b9de93ee7120cc0afbf06e0f54332a2356cc91721bd8aa37dd6e9fe608ba"
+    },
+    {
+      "id": "se-kvbm-emit",
+      "path": "lib/kvbm-logical/src/events/manager.rs",
+      "start": 153,
+      "end": 201,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7968ca8ee3c7e328ba698840868f6460583ccc1940a78bb6afb85106656fedda"
+    },
+    {
+      "id": "se-kvbm-publish",
+      "path": "lib/kvbm-logical/src/events/publisher.rs",
+      "start": 133,
+      "end": 163,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "d4818393f2a4088c2ed57e5ddcc5dc061c49e186b688fec8663838982ae1200b"
+    },
+    {
+      "id": "se-consolidator",
+      "path": "lib/kvbm-consolidator/src/lib.rs",
+      "start": 4,
+      "end": 19,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "917ae9759c3c3d0bf5d39a6e9d46a7fd8b89604555636d6ffb71210e5feb584c"
+    },
+    {
+      "id": "se-bridge",
+      "path": "lib/kvbm-consolidator/src/ingress/kvbm_bridge.rs",
+      "start": 4,
+      "end": 17,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "a5d6e78742b7f88e554de93a0d756b6e2368406ac01086ddc24b6e0948aa973a"
+    },
+    {
+      "id": "se-consolidator-out",
+      "path": "lib/kvbm-consolidator/src/egress/zmq_publisher.rs",
+      "start": 153,
+      "end": 201,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c56c67053f15f2a8dcbd3c2ac12044a192d5995212c5a4dbcb77c3ed10eaa88f"
+    },
+    {
+      "id": "se-envelope",
+      "path": "lib/runtime/src/transports/event_plane/traits.rs",
+      "start": 12,
+      "end": 25,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "923611abce2bed194dea64c9a4bbaffe70edf891587e9704ab53b146e7993f8e"
+    },
+    {
+      "id": "se-event-publish",
+      "path": "lib/runtime/src/transports/event_plane/mod.rs",
+      "start": 662,
+      "end": 683,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "dcd6137a776855a98819ca84a4faf29f5d87ce98ca0fab1568eb70d6f51bda49"
+    },
+    {
+      "id": "se-zmq-frames",
+      "path": "lib/runtime/src/transports/event_plane/zmq_transport.rs",
+      "start": 281,
+      "end": 300,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "85f039dd8b38a5f3a8c046dfea1ffc9916c368cc66ce4242ee4c384807bc578e"
+    },
+    {
+      "id": "se-nats-publish",
+      "path": "lib/runtime/src/distributed.rs",
+      "start": 739,
+      "end": 750,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "4352592e0bb83d326ccc6026ce59b2e4e77256be0176b55c16774583e4926452"
+    },
+    {
+      "id": "se-relay-stages",
+      "path": "lib/llm/src/kv_router/publisher/zmq_listener.rs",
+      "start": 186,
+      "end": 226,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "163eaf71bf1bd02368a5f76ccd4a7524056d1c91611363e03bdb8ad810342984"
+    },
+    {
+      "id": "se-input-gap",
+      "path": "lib/llm/src/kv_router/publisher/event_processor.rs",
+      "start": 54,
+      "end": 78,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "c81591d118e646fa0b8d43c358dd39f71f10ec8ebf95c34bf625b281e612fc1a"
+    },
+    {
+      "id": "se-output-id",
+      "path": "lib/llm/src/kv_router/publisher/batching.rs",
+      "start": 218,
+      "end": 239,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "f26491ba4706a35333467e0f33e31a182c67777d23ef9b45e0010aa57f165eff"
+    },
+    {
+      "id": "se-relay-metrics",
+      "path": "lib/llm/src/kv_router/metrics.rs",
+      "start": 95,
+      "end": 174,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "385d6ca0d39471e5bc3b1dbaf6449a2dce31885b8704941acf86d04dae867fb3"
+    },
+    {
+      "id": "se-local-admit",
+      "path": "lib/llm/src/kv_router/publisher/sinks.rs",
+      "start": 153,
+      "end": 165,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7f26ac3b94335bcea18111720cea752df1f9e6b277c48a681bf77b38601a7150"
+    },
+    {
+      "id": "se-heartbeat",
+      "path": "lib/llm/src/kv_router/publisher/zmq_listener.rs",
+      "start": 101,
+      "end": 120,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "163eaf71bf1bd02368a5f76ccd4a7524056d1c91611363e03bdb8ad810342984"
+    }
+  ]
+}

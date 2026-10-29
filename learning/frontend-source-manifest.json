@@ -1,0 +1,152 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "从 Python 启动、模型准入到 Rust HTTP、预处理、生成和流式投影，逐层核对协议语义与观测时点。",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "frontend-1",
+      "path": "components/src/dynamo/frontend/main.py",
+      "start": 370,
+      "end": 418,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "4049a54c5ece274da5f56eeb5fb70cbe85e3c1f9ffe22c4876a13bcbaf1fa66b"
+    },
+    {
+      "id": "frontend-2",
+      "path": "components/src/dynamo/frontend/main.py",
+      "start": 435,
+      "end": 481,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "4049a54c5ece274da5f56eeb5fb70cbe85e3c1f9ffe22c4876a13bcbaf1fa66b"
+    },
+    {
+      "id": "frontend-3",
+      "path": "lib/llm/src/discovery/model_manager.rs",
+      "start": 1686,
+      "end": 1732,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "596af47437bee21aa1a67702768321804c1aeb82b07654f613af23918ce95792"
+    },
+    {
+      "id": "frontend-4",
+      "path": "lib/llm/src/http/service/openai.rs",
+      "start": 2486,
+      "end": 2535,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "270928ba898e40db8bedcadbae181b52cf7cc93f94497c35407e72761f837cd3"
+    },
+    {
+      "id": "frontend-5",
+      "path": "lib/llm/src/http/service/service_v2.rs",
+      "start": 542,
+      "end": 576,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2228192ad73dc77f8b7454e9cab061d30ed87d70e8f3f4dbbaba936160316972"
+    },
+    {
+      "id": "frontend-6",
+      "path": "lib/llm/src/http/service/openai.rs",
+      "start": 3520,
+      "end": 3555,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "270928ba898e40db8bedcadbae181b52cf7cc93f94497c35407e72761f837cd3"
+    },
+    {
+      "id": "frontend-7",
+      "path": "lib/llm/src/http/service/openai.rs",
+      "start": 3550,
+      "end": 3615,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "270928ba898e40db8bedcadbae181b52cf7cc93f94497c35407e72761f837cd3"
+    },
+    {
+      "id": "frontend-8",
+      "path": "lib/llm/src/preprocessor.rs",
+      "start": 3255,
+      "end": 3300,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "32583f0bae4aac357d418048608cf2bb8da8714668c68787bd20f05019a0f83f"
+    },
+    {
+      "id": "frontend-9",
+      "path": "lib/llm/src/preprocessor.rs",
+      "start": 3300,
+      "end": 3351,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "32583f0bae4aac357d418048608cf2bb8da8714668c68787bd20f05019a0f83f"
+    },
+    {
+      "id": "frontend-10",
+      "path": "lib/llm/src/preprocessor.rs",
+      "start": 5886,
+      "end": 5923,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "32583f0bae4aac357d418048608cf2bb8da8714668c68787bd20f05019a0f83f"
+    },
+    {
+      "id": "frontend-11",
+      "path": "lib/llm/src/preprocessor.rs",
+      "start": 5925,
+      "end": 5964,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "32583f0bae4aac357d418048608cf2bb8da8714668c68787bd20f05019a0f83f"
+    },
+    {
+      "id": "frontend-12",
+      "path": "lib/llm/src/http/service/openai.rs",
+      "start": 3720,
+      "end": 3763,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "270928ba898e40db8bedcadbae181b52cf7cc93f94497c35407e72761f837cd3"
+    },
+    {
+      "id": "frontend-13",
+      "path": "lib/llm/src/http/service/openai.rs",
+      "start": 3764,
+      "end": 3800,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "270928ba898e40db8bedcadbae181b52cf7cc93f94497c35407e72761f837cd3"
+    },
+    {
+      "id": "frontend-14",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 800,
+      "end": 845,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "frontend-15",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 847,
+      "end": 891,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "frontend-16",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 2674,
+      "end": 2725,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "3f8bc74f729552cadb2aa8c12a30febfb82869daa22ff5e9677d89dada736958"
+    },
+    {
+      "id": "frontend-17",
+      "path": "lib/llm/src/frontend_load.rs",
+      "start": 36,
+      "end": 45,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "add8c05878046ea0d91607fb6d6250236732242ea666bca7ccf1b464a617e497"
+    },
+    {
+      "id": "frontend-18",
+      "path": "lib/llm/src/frontend_load.rs",
+      "start": 130,
+      "end": 175,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "add8c05878046ea0d91607fb6d6250236732242ea666bca7ccf1b464a617e497"
+    }
+  ]
+}

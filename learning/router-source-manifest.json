@@ -1,0 +1,192 @@
+{
+  "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+  "analysis_date": "2026-10-29",
+  "scope": "沿缓存索引、候选资格、默认插件评分、队列准入、生命周期负载与观测归因解释一次 Worker 选择。",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "router-1",
+      "path": "lib/llm/src/kv_router.rs",
+      "start": 1304,
+      "end": 1365,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "b8f2166bef4624f765357948f92f51baf424fc2332976bbf7450b2c72ae5b2f1"
+    },
+    {
+      "id": "router-2",
+      "path": "lib/kv-router/src/indexer/traits.rs",
+      "start": 90,
+      "end": 134,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "07d442a39d18a0dff86e83311fc95f9232e5c4b9e62d693ea30e4356d1993a1a"
+    },
+    {
+      "id": "router-3",
+      "path": "lib/kv-router/src/services/selection/core/run.rs",
+      "start": 71,
+      "end": 110,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "0c1d5ccd8db2c9d3ef5022db430045ae24478c7079bb7b62d388c640cdd9e9fb"
+    },
+    {
+      "id": "router-4",
+      "path": "lib/kv-router/src/services/selection/core/run.rs",
+      "start": 119,
+      "end": 154,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "0c1d5ccd8db2c9d3ef5022db430045ae24478c7079bb7b62d388c640cdd9e9fb"
+    },
+    {
+      "id": "router-5",
+      "path": "lib/llm/src/kv_router/routing_host/kv_selection.rs",
+      "start": 109,
+      "end": 162,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "97d27e8f42e5b068715eedbded6f64b1fcfc72ffa7b2fa2874e14924e47b8e58"
+    },
+    {
+      "id": "router-6",
+      "path": "lib/kv-router/src/plugins/worker_selection.rs",
+      "start": 45,
+      "end": 98,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "ab85f8ab38b636f79d1c8029ed83c51476f38504774ec7ead6028b259745e3d0"
+    },
+    {
+      "id": "router-7",
+      "path": "lib/router-plugins/builtin/src/default/scorer.rs",
+      "start": 109,
+      "end": 139,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "570306a34a567dd4e81c1c6d60557544ce351f3416668cf4e7ea80bdc40b9763"
+    },
+    {
+      "id": "router-8",
+      "path": "lib/router-plugins/builtin/src/default/scorer.rs",
+      "start": 141,
+      "end": 195,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "570306a34a567dd4e81c1c6d60557544ce351f3416668cf4e7ea80bdc40b9763"
+    },
+    {
+      "id": "router-9",
+      "path": "lib/router-plugins/builtin/src/default/scorer.rs",
+      "start": 195,
+      "end": 237,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "570306a34a567dd4e81c1c6d60557544ce351f3416668cf4e7ea80bdc40b9763"
+    },
+    {
+      "id": "router-10",
+      "path": "lib/router-plugins/builtin/src/default/picker.rs",
+      "start": 82,
+      "end": 125,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "23c524d58eaa550497a0e8384fd2c441aef3584d8cb8f8a1e2dc37f1d7af21ab"
+    },
+    {
+      "id": "router-11",
+      "path": "lib/router-plugins/builtin/src/default/picker.rs",
+      "start": 126,
+      "end": 162,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "23c524d58eaa550497a0e8384fd2c441aef3584d8cb8f8a1e2dc37f1d7af21ab"
+    },
+    {
+      "id": "router-12",
+      "path": "lib/kv-router/src/scheduling/policy_queue.rs",
+      "start": 779,
+      "end": 828,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "a689510cd0b129a2a609865f9e5b7cc3942bd271295293a78b7f61b27cbbc6de"
+    },
+    {
+      "id": "router-13",
+      "path": "lib/kv-router/src/scheduling/policy.rs",
+      "start": 86,
+      "end": 114,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "7763ba534c06b7998d190b9509ed21d999b3388ede2a33bad937cfc3a497d7ec"
+    },
+    {
+      "id": "router-14",
+      "path": "lib/kv-router/src/scheduling/queue.rs",
+      "start": 1270,
+      "end": 1315,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "8c48cab45a40d64bdd842972fcd82b77097e7c8b49eece7ec790747024d570b1"
+    },
+    {
+      "id": "router-15",
+      "path": "lib/kv-router/src/scheduling/queue.rs",
+      "start": 1810,
+      "end": 1873,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "8c48cab45a40d64bdd842972fcd82b77097e7c8b49eece7ec790747024d570b1"
+    },
+    {
+      "id": "router-16",
+      "path": "lib/llm/src/kv_router/routing_host/kv.rs",
+      "start": 239,
+      "end": 297,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "1fd14a2cc682402502c71fdb9ec8e16dbf2b3cc86d20d01ada2d5f46d63a8fef"
+    },
+    {
+      "id": "router-17",
+      "path": "lib/kv-router/src/sequences/single.rs",
+      "start": 199,
+      "end": 230,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2b7f16eb644b7c6ec75059ca9c31796cc707d4d371fbf7b0a97c2833a330002e"
+    },
+    {
+      "id": "router-18",
+      "path": "lib/kv-router/src/sequences/single.rs",
+      "start": 262,
+      "end": 281,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "2b7f16eb644b7c6ec75059ca9c31796cc707d4d371fbf7b0a97c2833a330002e"
+    },
+    {
+      "id": "router-19",
+      "path": "lib/kv-router/src/sequences/prompt_registry.rs",
+      "start": 304,
+      "end": 345,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "688c03e30d3499031f06254a67f6c9d3a1b221c0874d823ef47a9f263c4276be"
+    },
+    {
+      "id": "router-20",
+      "path": "lib/llm/src/kv_router/metrics.rs",
+      "start": 970,
+      "end": 996,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "385d6ca0d39471e5bc3b1dbaf6449a2dce31885b8704941acf86d04dae867fb3"
+    },
+    {
+      "id": "router-21",
+      "path": "lib/llm/src/kv_router.rs",
+      "start": 1480,
+      "end": 1515,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "b8f2166bef4624f765357948f92f51baf424fc2332976bbf7450b2c72ae5b2f1"
+    },
+    {
+      "id": "router-22",
+      "path": "lib/llm/src/kv_router/metrics.rs",
+      "start": 1250,
+      "end": 1278,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "385d6ca0d39471e5bc3b1dbaf6449a2dce31885b8704941acf86d04dae867fb3"
+    },
+    {
+      "id": "router-23",
+      "path": "lib/llm/src/kv_router/metrics.rs",
+      "start": 654,
+      "end": 673,
+      "revision": "9734418e5bc71027e6bd04a09314bf1765208c72",
+      "sha256": "385d6ca0d39471e5bc3b1dbaf6449a2dce31885b8704941acf86d04dae867fb3"
+    }
+  ]
+}
