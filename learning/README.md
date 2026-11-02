@@ -22,7 +22,10 @@ The commit message and maintenance instructions use English; tutorial prose rema
 - [PD trace capabilities and boundaries](pd-trace.html)
 - [Storage and events architecture and observability](storage-events.html)
 - [ACK deployment and trace checklist](ack-LB97i2CZNR/index.html)
+- [ACK request-plane span design](ack-LB97i2CZNR/request-path-trace-design.html)
+- [ACK request-plane trace walkthrough](ack-LB97i2CZNR/request-path-trace-walkthrough.html)
 - [maas-dev historical platform audit](maas-dev-deployment/index.html)
+- [maas-dev Higress metrics collection plan](maas-dev-deployment/higress-metrics-collection-plan.md)
 
 All roadmap modules now have architecture and selected source analysis.
 This is not an exhaustive file audit or a claim that every feature was runtime-tested.
@@ -70,7 +73,7 @@ live in the builder. The other `.mmd` diagrams remain directly maintained.
 
 The HTML walkthroughs and source manifests are generated artifacts. Update their
 Python builders and regenerate them instead of editing the outputs directly.
-The ACK landing page, deployment snapshot, checklist, and YAML fragment are maintained directly.
+The ACK landing page, deployment snapshot, checklist, YAML fragment, span-design page, walkthrough, and collector reference are maintained directly.
 
 ## Browser validation
 
