@@ -2,6 +2,7 @@
 
 > 时间：2026-10-29 ｜ 目标集群：`ack-LB97i2CZNR`（服务端）｜ 来源集群：`maas-dev`（调用端）
 > 前置：[07-verification-report.md](./07-verification-report.md)（独立 Trace 栈已就绪）
+> 2026-11-02 更新：30000 的后端已由 `dynamo-trace-demo` 交接到 `dynamo-trace-demo-mixed`，并新增 PD 路由；拓扑见 §1，交接过程见 §10。
 
 ---
 
@@ -14,10 +15,15 @@
 client
   → litellm (maas-dev:4000, simple-shuffle + otel callback)
   → 10.202.72.x:30000 (ack-LB NodePort)
-  → dynamo-trace-demo-frontend (nhi)
-  → aggregated worker (SGLang, Qwen3.8-27B)
-  → OTel → otel-collector(nhi) → vector-agg-traces → ClickHouse ✓
+  → dynamo-trace-demo-mixed-frontend (nhi)
+      ├── aggregated worker (SGLang, Qwen3.8-27B, tp4)
+      └── prefill + decode (SGLang, Qwen2.5-7B-Instruct, mooncake_tcp)
+  → OTel → otel-collector(nhi) → vector-agg-traces → Kafka ✓
 ```
+
+> 10-29 首轮验收时，30000 的后端是单模型的 `dynamo-trace-demo-frontend`（只有 aggregated）；
+> 11-02 起换成 `dynamo-trace-demo-mixed`，一个 Frontend 同时服务 aggregated 与 PD 两种模式，
+> 交接原因与过程见 §10。trace 出口口径也已从 ClickHouse 查询改为确认推送至 Kafka。
 
 `litellm` 侧本就开启了 OTel（`OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector.maas-dev.svc.cluster.local:4317`），
 因此这条跨集群调用会产生**两段独立 trace**：maas-dev 的 litellm span 与 ack-LB 的 dynamo span，
@@ -36,7 +42,8 @@ client
 | 端到端推理 | 成功，1.30s，`finish_reason: stop`，usage 59/39/98 |
 | trace 落库 | 成功，单 trace `a844f08ba32e1c7d4a1999fcd5e8b789`，**32 span** |
 | 既有故障清理 | `Qwen3-Coder-Next-FP8` / `Qwen3-Coder-Probe` 已从 litellm 移除 |
-| 4090d 部署 | **未做任何变更**（经核实，其当前部署与 Qwen3-Coder 无关，详见 §6） |
+| 4090d 部署 | **未做任何变更**（经核实，其当前部署与 Qwen3-Coder 无关，详见 §6）|
+| PD 路由复用同一 Frontend | 成功（11-02）：新建 `dynamo-trace-demo-mixed`（4 组件 6 卡）+ 切 30000 selector，**零端口申请、零中断**，详见 §10 |
 
 ---
 
@@ -461,3 +468,74 @@ kubectl --kubeconfig=ack-LB97i2CZNR.kubeconfig -n nhi delete svc dynamo-trace-de
 | ACL 是单端口白名单 | 新增端口需重新申请，不能按端口段放通 | 生产化时连同端口申请一并纳入变更流程 |
 | 两段 trace 不互联 | litellm 与 dynamo 的 span 分属不同集群、不同 ClickHouse，无 traceparent 传递 | 若要串联全链路，需让 litellm 把 `traceparent` 透传给后端（现 `forward_client_headers_to_llm_api: true` 已具备条件），并统一 trace 后端 |
 | 动态注册与 config.yaml 双源 | DB 模型（UUID id）与 config 模型（hash id）并存，排障易混淆 | 长期看应选定单一事实来源 |
+
+---
+
+## 10. 复用同一 Frontend 承载 PD（2026-11-02）
+
+### 10.1 诉求与两条被证伪的路
+
+目标：让 PD 分离实例也走 trace 链路，但**不新增端口申请**。已知的跨集群 ACL 是 `IP:端口` 精确白名单，新端口意味着一轮外部申请，因此考虑复用已有的 30000。
+
+| 方案 | 结论 | 证据 |
+|---|---|---|
+| 把 prefill/decode 加进 `dynamo-trace-demo` | **机制上不可能** | operator 准入 webhook 按**组件名集合做差集**校验拓扑不可变，`spec.components: Forbidden: component topology is immutable...components added: [decode prefill]`（[dynamographdeployment.go:887-905](../../../deploy/operator/internal/webhook/validation/dynamographdeployment.go)）；重命名组件等同一增一删，同样禁止，只有 reorder 允许；dry-run 阶段即拒绝，不会部分生效 |
+| PD 单独建 DGD、跨 DGD 共享一个 Frontend | **服务发现不认** | operator 按 DGD 名注入 `DYN_NAMESPACE` / `DYN_NAMESPACE_PREFIX`，worker pod 带 `nvidia.com/dynamo-namespace` + `nvidia.com/dynamo-discovery-enabled=true`；`DYN_DISCOVERY_BACKEND=kubernetes` 下 Frontend 严格按该 label 过滤，异名 DGD 的 worker 不可见 |
+| 新建承载完整拓扑的 DGD + 切 NodePort selector | **采用** | 现网已有先例：`nhss-job/dynamo-qwen38-27b-mixed-demo` 的 `frontendComponents=1`，同一 Frontend 挂 aggregated（`-agg`）与 prefill+decode（`-pd`）两种模式，靠同 DGD 内不同 model namespace 区分；Frontend 自身不带 `--namespace` |
+
+### 10.2 实施
+
+```bash
+# 1. 备份 live 对象（含 status，仅作快照，不可直接 apply 回滚）
+# 2. 从 live deepcopy 生成 mixed：4 组件（Frontend + aggregated + prefill + decode），6 卡
+#    剔除 operator 私有状态 annotation（current-worker-hash-v2 / origin-version）
+#    与 last-applied-configuration；同步改写 podAntiAffinity labelSelector 里的旧 DGD 名
+kubectl -n nhi apply -f deploy/nhi-trace-demo-mixed-dgd.yaml   # 2m55s 到 READY=True
+# 3. 验证 mixed 自身两模型就绪后，才切 30000 后端
+kubectl -n nhi patch svc dynamo-trace-demo-frontend-nodeport -p \
+  '{"spec":{"selector":{"nvidia.com/dynamo-namespace":"nhi-dynamo-trace-demo-mixed"}}}'
+```
+
+顺序是「先建新、验证、再切 selector」，因此旧的两个 DGD 在整个过程中 pod 未被重启（`4d3h Running`），30000 无中断。selector 三个 label 均为 DGD 身份级（不含 `pod-template-hash`），推理滚动更新不会造成 endpoint 失配。
+
+> 命名从初稿的 `-v2` 改为 `-mixed`：live annotation key 原文就是 `nvidia.com/current-worker-hash-v2`，`-v2` 后缀会与 operator 的内部概念撞名；且该 annotation 的值 `a6ac8e74` 正是旧 aggregated deployment 名里的 hash 段，属 operator 私有状态，必须从新对象剔除。
+
+### 10.3 验证
+
+| 项 | 结果 |
+|---|---|
+| mixed `/v1/models` | 2 个模型：`Qwen3.8-27B`、`Qwen2.5-7B-Instruct` |
+| PD 路径（7B） | `content='12'`，`finish=stop`，usage 42/3/45，`cached_tokens=24` |
+| aggregated 路径（27B） | `content='\n\n12'` + `reasoning_content`，usage 65/39/104，`cached_tokens=64`（reasoning 模型，`max_tokens` 给小时 content 为空、`finish=length`，不是故障） |
+| 跨集群 `:30000` | `10.202.72.20 / .8 / .6` 三节点全 OPEN，各自返回 2 个模型 |
+| endpoint | `172.22.10.136` → `172.22.4.154`，`ready=True` |
+| litellm 新路由 | `dynamo-trace-demo-Qwen2.5-7B-Instruct` 注册成功（`model_info.id` 36 位 UUID = DB 来源），端到端 3/3 成功，均返回 `7` |
+| litellm 旧路由回归 | `dynamo-trace-demo-Qwen3.8-27B` HTTP OK，usage 58/24/82 |
+
+### 10.4 trace → Kafka 守恒（回收后复测）
+
+collector 自监控指标须 `port-forward` 到 **pod**（`svc/otel-collector` 只映射 4317，pf 到 svc 的 8888 会 exit 1）；启动 pf 后加就绪断言再采样，否则拿到的是空串而不是「无数据」。
+
+```
+A(start)     accepted=1044 sent_kafka=1044 failed=0 refused=0
+B(silent)    accepted=1044 sent_kafka=1044 failed=0 refused=0   # 静默 60s，Δ=0 → 无背景噪声
+C(after)     accepted=1149 sent_kafka=1149 failed=0 refused=0   # 3 次 litellm PD 请求后
+D(converged) accepted=1149 sent_kafka=1149 failed=0 refused=0
+```
+
+`Δ = 1149 − 1044 = +105 = 3 × 35 spans/请求`，与交接前独立测得的单请求 span 数吻合；`accepted == sent_kafka` 且 `failed = refused = 0`，PD 链路的 span 完整推达 Kafka。
+
+### 10.5 资源回收与回退材料
+
+验证通过后删除 `dynamo-trace-demo` 与 `dynamo-trace-pd`，`nhi` 命名空间 GPU 占用 **12 卡 → 6 卡**，DGD 仅剩 `dynamo-trace-demo-mixed`（READY=True）。共享的 `nhi-dynamo-trace-models-pvc` 未受影响（`Bound`，`ownerReferences` 为空、PV 为 `Retain`，不随 DGD 生命周期删除）。
+
+回退材料（三份均对 live 做过 `apply --dry-run=server` 并返回 `unchanged`，即字段级等价、可原样重建）：
+
+| 对象 | 文件 |
+|---|---|
+| `dynamo-trace-demo`（aggregated，4 卡） | [deploy/nhi-dgd.json](../deploy/nhi-dgd.json) |
+| `dynamo-trace-pd`（PD，2 卡） | [deploy/nhi-trace-pd-dgd.yaml](../deploy/nhi-trace-pd-dgd.yaml) |
+| `dynamo-trace-demo-mixed`（当前形态，6 卡） | [deploy/nhi-trace-demo-mixed-dgd.yaml](../deploy/nhi-trace-demo-mixed-dgd.yaml) |
+| 30000 入口 + selector 回退说明 | [deploy/nhi-frontend-nodeport.yaml](../deploy/nhi-frontend-nodeport.yaml) |
+
+回退顺序：先 `kubectl apply -f deploy/nhi-dgd.json` 建回旧 DGD，再把 NodePort 的 `nvidia.com/dynamo-namespace` 选择器改回 `nhi-dynamo-trace-demo`。

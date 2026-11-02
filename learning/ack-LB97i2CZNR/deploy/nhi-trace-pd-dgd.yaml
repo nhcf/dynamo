@@ -1,0 +1,344 @@
+# nhi 命名空间的 Dynamo PD 分离实例 —— 用于验证 request-plane trace 跨 prefill/decode 串联。
+# 骨架复制自同命名空间的 dynamo-trace-demo（同镜像/PVC/亲和性/OTEL env）。
+# 两处与 nhss-job 现网 mixed-demo 有意不同：
+#   1) transfer backend 用 mooncake_tcp 而非 nixl —— 4090 节点无 RDMA，nixl 会静默回落 TCP，
+#      mooncake_tcp 显式设 MC_FORCE_TCP=1 并打 info 日志，传输路径可验证。
+#   2) 模型用 Qwen2.5-7B-Instruct + tp1（2 卡），而非 Qwen3.8-27B + tp4（8 卡）。
+# 已去掉 7B 不适用的 --enable-multimodal / --mamba-radix-cache-strategy / --dyn-*-parser
+#   / --disable-piecewise-cuda-graph，并把 context-length 从 262144 降到 32768。
+apiVersion: nvidia.com/v1beta1
+kind: DynamoGraphDeployment
+metadata:
+  name: dynamo-trace-pd
+  namespace: nhi
+spec:
+  components:
+  - name: Frontend
+    podTemplate:
+      metadata:
+        labels:
+          app.kubernetes.io/component: frontend
+          app.kubernetes.io/name: dynamo-trace-pd
+      spec:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: dros.zjlab.io/clusterEnv
+                  operator: In
+                  values:
+                  - drosInCluster
+                - key: dros.zjlab.io/spec
+                  operator: In
+                  values:
+                  - GPU_Z2280_24GB
+                - key: dros.zjlab.io/resourcepool
+                  operator: DoesNotExist
+                - key: dros.zjlab.io/reserve
+                  operator: DoesNotExist
+                - key: dros.zjlab.io/nodegroup
+                  operator: DoesNotExist
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: frontend
+                    app.kubernetes.io/name: dynamo-trace-demo
+                topologyKey: kubernetes.io/hostname
+              weight: 100
+        containers:
+        - env:
+          - name: DYN_ROUTER_MODE
+            value: kv
+          - name: DYN_REQUEST_PLANE
+            value: tcp
+          - name: DYN_EVENT_PLANE
+            value: zmq
+          - name: DYN_HTTP_BODY_LIMIT_MB
+            value: '200'
+          - name: OTEL_EXPORT_ENABLED
+            value: 'true'
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: grpc
+          - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+            value: http://otel-collector.nhi.svc.cluster.local:4317
+          - name: OTEL_SERVICE_NAME
+            value: dynamo-trace-pd-frontend
+          - name: OTEL_TRACES_SAMPLE_RATIO
+            value: '1.0'
+          image: 10.200.88.53/nhss/dynamo-sglang-runtime:1.4.1-amd64
+          name: main
+          resources:
+            limits:
+              memory: 32Gi
+            requests:
+              cpu: '4'
+              memory: 8Gi
+          volumeMounts:
+          - mountPath: /mnt/nfs-models/default
+            name: model-storage
+            readOnly: true
+            subPath: default
+        imagePullSecrets:
+        - name: docker-registry-secret
+        terminationGracePeriodSeconds: 60
+        tolerations:
+        - effect: NoSchedule
+          key: node-role.alibabacloud.com/bmcp
+          operator: Exists
+        volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: nhi-dynamo-trace-models-pvc
+    replicas: 1
+    type: frontend
+  - name: prefill
+    podTemplate:
+      metadata:
+        labels:
+          app.kubernetes.io/component: prefill
+          app.kubernetes.io/name: dynamo-trace-pd
+      spec:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: dros.zjlab.io/clusterEnv
+                  operator: In
+                  values:
+                  - drosInCluster
+                - key: dros.zjlab.io/spec
+                  operator: In
+                  values:
+                  - GPU_Z2280_24GB
+                - key: dros.zjlab.io/resourcepool
+                  operator: DoesNotExist
+                - key: dros.zjlab.io/reserve
+                  operator: DoesNotExist
+                - key: dros.zjlab.io/nodegroup
+                  operator: DoesNotExist
+        containers:
+        - args:
+          - --model-path
+          - /mnt/nfs-models/default/Qwen/Qwen2.5-7B-Instruct
+          - --served-model-name
+          - Qwen2.5-7B-Instruct
+          - --context-length
+          - '32768'
+          - --page-size
+          - '1'
+          - --tp
+          - '1'
+          - --trust-remote-code
+          - --chunked-prefill-size
+          - '2048'
+          - --mem-fraction-static
+          - '0.85'
+          - --host
+          - 0.0.0.0
+          - --enable-metrics
+          - --kv-events-config
+          - '{"publisher":"zmq","topic":"kv-events","endpoint":"tcp://*:5557"}'
+          - --disaggregation-mode
+          - prefill
+          - --disaggregation-transfer-backend
+          - mooncake_tcp
+          - --disaggregation-bootstrap-port
+          - '8998'
+          - --enable-trace
+          - --otlp-traces-endpoint
+          - otel-collector.nhi.svc.cluster.local:4317
+          - --sglang-trace-level
+          - '2'
+          - --namespace
+          - nhi-dynamo-trace-pd-pd
+          command:
+          - python3
+          - -m
+          - dynamo.sglang
+          env:
+          - name: DYN_REQUEST_PLANE
+            value: tcp
+          - name: DYN_EVENT_PLANE
+            value: zmq
+          - name: DYN_WORKER_GRACEFUL_SHUTDOWN_TIMEOUT
+            value: '300'
+          - name: NCCL_DEBUG
+            value: WARN
+          - name: OTEL_EXPORT_ENABLED
+            value: 'true'
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: grpc
+          - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+            value: http://otel-collector.nhi.svc.cluster.local:4317
+          - name: OTEL_SERVICE_NAME
+            value: dynamo-trace-pd-prefill
+          - name: OTEL_TRACES_SAMPLE_RATIO
+            value: '1.0'
+          image: 10.200.88.53/nhss/dynamo-sglang-runtime:1.4.1-amd64
+          name: main
+          resources:
+            limits:
+              nvidia.com/gpu: '1'
+              memory: 64Gi
+            requests:
+              cpu: '8'
+              memory: 32Gi
+              nvidia.com/gpu: '1'
+              ephemeral-storage: 8Gi
+          securityContext:
+            capabilities:
+              add:
+              - IPC_LOCK
+              - SYS_RESOURCE
+          volumeMounts:
+          - mountPath: /mnt/nfs-models/default
+            name: model-storage
+            readOnly: true
+            subPath: default
+          - mountPath: /dev/shm
+            name: dshm
+          workingDir: /workspace/examples/backends/sglang
+        imagePullSecrets:
+        - name: docker-registry-secret
+        terminationGracePeriodSeconds: 300
+        tolerations:
+        - effect: NoSchedule
+          key: node-role.alibabacloud.com/bmcp
+          operator: Exists
+        volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: nhi-dynamo-trace-models-pvc
+        - emptyDir:
+            medium: Memory
+            sizeLimit: 64Gi
+          name: dshm
+    replicas: 1
+    type: prefill
+  - name: decode
+    podTemplate:
+      metadata:
+        labels:
+          app.kubernetes.io/component: decode
+          app.kubernetes.io/name: dynamo-trace-pd
+      spec:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: dros.zjlab.io/clusterEnv
+                  operator: In
+                  values:
+                  - drosInCluster
+                - key: dros.zjlab.io/spec
+                  operator: In
+                  values:
+                  - GPU_Z2280_24GB
+                - key: dros.zjlab.io/resourcepool
+                  operator: DoesNotExist
+                - key: dros.zjlab.io/reserve
+                  operator: DoesNotExist
+                - key: dros.zjlab.io/nodegroup
+                  operator: DoesNotExist
+        containers:
+        - args:
+          - --model-path
+          - /mnt/nfs-models/default/Qwen/Qwen2.5-7B-Instruct
+          - --served-model-name
+          - Qwen2.5-7B-Instruct
+          - --context-length
+          - '32768'
+          - --page-size
+          - '1'
+          - --tp
+          - '1'
+          - --trust-remote-code
+          - --chunked-prefill-size
+          - '2048'
+          - --mem-fraction-static
+          - '0.85'
+          - --host
+          - 0.0.0.0
+          - --enable-metrics
+          - --kv-events-config
+          - '{"publisher":"zmq","topic":"kv-events","endpoint":"tcp://*:5557"}'
+          - --disaggregation-mode
+          - decode
+          - --disaggregation-transfer-backend
+          - mooncake_tcp
+          - --enable-trace
+          - --otlp-traces-endpoint
+          - otel-collector.nhi.svc.cluster.local:4317
+          - --sglang-trace-level
+          - '2'
+          - --namespace
+          - nhi-dynamo-trace-pd-pd
+          command:
+          - python3
+          - -m
+          - dynamo.sglang
+          env:
+          - name: DYN_REQUEST_PLANE
+            value: tcp
+          - name: DYN_EVENT_PLANE
+            value: zmq
+          - name: DYN_WORKER_GRACEFUL_SHUTDOWN_TIMEOUT
+            value: '300'
+          - name: NCCL_DEBUG
+            value: WARN
+          - name: OTEL_EXPORT_ENABLED
+            value: 'true'
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: grpc
+          - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+            value: http://otel-collector.nhi.svc.cluster.local:4317
+          - name: OTEL_SERVICE_NAME
+            value: dynamo-trace-pd-decode
+          - name: OTEL_TRACES_SAMPLE_RATIO
+            value: '1.0'
+          image: 10.200.88.53/nhss/dynamo-sglang-runtime:1.4.1-amd64
+          name: main
+          resources:
+            limits:
+              nvidia.com/gpu: '1'
+              memory: 64Gi
+            requests:
+              cpu: '8'
+              memory: 32Gi
+              nvidia.com/gpu: '1'
+              ephemeral-storage: 8Gi
+          securityContext:
+            capabilities:
+              add:
+              - IPC_LOCK
+              - SYS_RESOURCE
+          volumeMounts:
+          - mountPath: /mnt/nfs-models/default
+            name: model-storage
+            readOnly: true
+            subPath: default
+          - mountPath: /dev/shm
+            name: dshm
+          workingDir: /workspace/examples/backends/sglang
+        imagePullSecrets:
+        - name: docker-registry-secret
+        terminationGracePeriodSeconds: 300
+        tolerations:
+        - effect: NoSchedule
+          key: node-role.alibabacloud.com/bmcp
+          operator: Exists
+        volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: nhi-dynamo-trace-models-pvc
+        - emptyDir:
+            medium: Memory
+            sizeLimit: 64Gi
+          name: dshm
+    replicas: 1
+    type: decode

@@ -11,7 +11,17 @@
 #   需要重写整个 DGD 结构且 Operator 行为不同，代价远大于一条独立 Service。
 #   故 30000 的绑定由此文件单独声明式管理，dynamo 运行时不需改动或重启。
 #
-# 回退：kubectl -n nhi delete svc dynamo-trace-demo-frontend-nodeport
+# selector 指向哪个 DGD（2026-11-02 起）：
+#   DGD 组件拓扑创建后不可增删（operator 准入 webhook 按组件名集合做差集校验），
+#   所以 PD 无法并入本 DGD，改为新建承载完整拓扑的 dynamo-trace-demo-mixed，
+#   再把此 Service 的 selector 从 nhi-dynamo-trace-demo 换到 nhi-dynamo-trace-demo-mixed。
+#   顺序是「先建新 DGD 并验证就绪，再切 selector」，30000 全程没有中断。
+#   selector 三个 label 都是 DGD 身份级（不含 pod-template-hash），推理滚动更新不会失配。
+#
+# 回退：
+#   服务回退 —— 把 selector 的 nvidia.com/dynamo-namespace 改回 nhi-dynamo-trace-demo，
+#     并重新 apply deploy/nhi-dgd.json（该 DGD 若已删除需先建回）。
+#   整体删除：kubectl -n nhi delete svc dynamo-trace-demo-frontend-nodeport
 ---
 apiVersion: v1
 kind: Service
@@ -19,7 +29,7 @@ metadata:
   name: dynamo-trace-demo-frontend-nodeport
   namespace: nhi
   labels:
-    app.kubernetes.io/name: dynamo-trace-demo
+    app.kubernetes.io/name: dynamo-trace-demo-mixed
     app.kubernetes.io/part-of: dynamo-tracing
     purpose: cross-cluster-access
 spec:
@@ -27,7 +37,7 @@ spec:
   selector:
     nvidia.com/dynamo-component: Frontend
     nvidia.com/dynamo-component-type: frontend
-    nvidia.com/dynamo-namespace: nhi-dynamo-trace-demo
+    nvidia.com/dynamo-namespace: nhi-dynamo-trace-demo-mixed
   ports:
     - name: http
       port: 8000
