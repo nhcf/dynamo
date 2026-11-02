@@ -3,20 +3,26 @@
 # 来源：dynamo-test-deployment.md（2026-10-28）；本次未修改集群。
 # 使用前核查实际私有镜像/CRD，替换所有 Collector 示例地址。
 # 按 name 合并到真实配置源，保留原 envs、服务配置、资源与启动参数。
-# 三个 Worker 的完整现有命令还需追加：
+# 三个 Worker 的完整现有命令（见 dynamo-test-deployment.md 的平铺 16 参数记录）只在末尾追加：
 # --enable-trace --otlp-traces-endpoint <真实Collector-FQDN>:4317
-# command/args 原始结构尚未提供，因此不生成替换数组。
+# 追加示意（省略号代表原有参数，一律保留；这里是追加，不是替换）：
+#   --model-path ... --tp 4 ... --kv-events-config '{"publisher":"zmq",...}' \
+#   --enable-trace --otlp-traces-endpoint <真实Collector-FQDN>:4317
+# 不要把 command/args 换成只含这两个新增参数的数组，否则会丢掉模型、并行度、分片与 KV 事件配置。
 spec:
   envs:
     - name: DYN_LOGGING_JSONL
       value: "true"
     - name: OTEL_EXPORT_ENABLED
       value: "true"
+    # 注意：observability 命名空间与 otel-collector 服务名只是占位示例，不能视为集群中已存在；
+    # 必须替换为平台确认的 Collector FQDN，并保留 :4317。
     - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
-      value: "http://otel-collector.observability.svc.cluster.local:4317"
+      value: "http://otel-collector.observability.svc.cluster.local:4317" # 占位，需替换
     # 以下先核对实际镜像支持和现有 signal-specific 配置优先级。
+    # 这是与上一项不同的变量名（通用 fallback），不要合并或去重。
     - name: OTEL_EXPORTER_OTLP_ENDPOINT
-      value: "http://otel-collector.observability.svc.cluster.local:4317"
+      value: "http://otel-collector.observability.svc.cluster.local:4317" # 占位，需替换
     - name: OTEL_EXPORTER_OTLP_PROTOCOL
       value: "grpc"
     - name: OTEL_TRACES_SAMPLE_RATIO

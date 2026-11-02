@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# 只读引用 nhss-job 现有模型 NFS，供 nhi/dynamo-trace-demo 使用。
+# 与 nhss-job-stor-nfs-mode-0a4aa44e-pv 指向同一 NFS 路径，但 accessModes 为只读，
+# 因此不会对现有部署的模型目录产生任何写入影响。
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nhi-dynamo-trace-models-pv
+spec:
+  capacity:
+    storage: 1Pi
+  accessModes:
+    - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  volumeMode: Filesystem
+  nfs:
+    server: 10.202.72.31
+    path: /var/lib/container/models
+  mountOptions:
+    - ro
+    - nfsvers=3
+    - noatime
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nhi-dynamo-trace-models-pvc
+  namespace: nhi
+spec:
+  accessModes:
+    - ReadOnlyMany
+  storageClassName: ""
+  volumeName: nhi-dynamo-trace-models-pv
+  resources:
+    requests:
+      storage: 1Pi

@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# 跨集群访问用的 NodePort 暴露：
+#   maas-dev 集群 -> ack-LB 集群，实测仅 2049 / 9990 / 30000 三个端口被 ACL 放通。
+#   30000 是本项目预先申请并预留的端口，专用于 litellm 网关访问 trace demo frontend。
+#
+# 为什么是独立的 Service 而不是写进 DGD：
+#   本 DGD 使用 v1beta1，其 spec 只有 components/podTemplate，没有 services 字段；
+#   只有 v1alpha1 的 spec.services 才能声明 Service 类型与 nodePort。降级 CRD 版本
+#   需要重写整个 DGD 结构且 Operator 行为不同，代价远大于一条独立 Service。
+#   故 30000 的绑定由此文件单独声明式管理，dynamo 运行时不需改动或重启。
+#
+# 回退：kubectl -n nhi delete svc dynamo-trace-demo-frontend-nodeport
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dynamo-trace-demo-frontend-nodeport
+  namespace: nhi
+  labels:
+    app.kubernetes.io/name: dynamo-trace-demo
+    app.kubernetes.io/part-of: dynamo-tracing
+    purpose: cross-cluster-access
+spec:
+  type: NodePort
+  selector:
+    nvidia.com/dynamo-component: Frontend
+    nvidia.com/dynamo-component-type: frontend
+    nvidia.com/dynamo-namespace: nhi-dynamo-trace-demo
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      nodePort: 30000
+      protocol: TCP

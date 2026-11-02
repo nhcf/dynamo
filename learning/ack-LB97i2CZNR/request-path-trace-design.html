@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ACK Request Plane Trace：主链路 Span 设计</title>
+<style>body{margin:0;background:#f4f7fb;color:#253449;font:16px/1.8 system-ui}main{max-width:1120px;margin:auto;padding:30px 22px}h1,h2{color:#173f6d}section{background:white;border:1px solid #dce4ef;border-radius:12px;padding:24px;margin:22px 0}pre{background:#13243b;color:#e1edfc;padding:18px;overflow:auto;border-radius:8px}code{overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #dce4ef;padding:10px;text-align:left;vertical-align:top}.scroll{overflow:auto}.note{border-left:4px solid #df9e27;background:#fff7e5;padding:14px}.meta{color:#52647d;font-size:14px}a{color:#1261ac}input{margin-right:8px}nav a{margin-right:14px}button{padding:8px 14px}@media print{body{background:white}button{display:none}section{break-inside:avoid}}</style></head><body><main>
+<nav><a href="../index.html">教程首页</a><a href="dynamo-test-deployment.md">用户部署记录</a><a href="request-plane-trace-checklist.html">工作清单</a><a href="request-path-trace-design.html">链路设计</a><a href="request-path-trace-walkthrough.html">链路走查</a><a href="otel-collector-reference.yaml">采集参考</a><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a><a href="../pd-trace.html">源码能力分析</a></nav>
+<h1>ACK Request Plane Trace：主链路 Span 设计</h1>
+<p>对象：<code>nhss-job / dynamo-qwen38-27b-mixed-demo</code>，Frontend、prefill、decode、aggregated 各一副本，Worker TP=4，Request Plane=tcp。本文只回答一个问题：<b>一次请求在哪些位置产生 span、这些 span 之间靠什么关联、哪些是线上 1.4.1 可以指望的、哪些只是 1.7.0 的设计目标。</b>落地步骤与验收标准在 <a href="request-plane-trace-checklist.html">工作清单</a>，读图与查询方式在 <a href="request-path-trace-walkthrough.html">链路走查</a>。</p>
+<p class="meta">编制日期：2026-10-29 · 部署快照：2026-10-28 · 本文为设计文档，未连接集群、未修改资源。</p>
+<button onclick="print()">打印 / 保存 PDF</button>
+
+<section id="scope"><h2>1. 证据边界：两套来源不能互相替代</h2>
+<div class="scroll"><table><tr><th>来源</th><th>内容</th><th>能证明什么</th><th>不能证明什么</th></tr>
+<tr><td>本仓库源码（pinned <code>2f296b59274867529ea8deef994e6954520024b6</code>，版本线 1.7.0）</td><td>span 名称、属性、instrument 位置、开关与默认值</td><td>spans 在代码层面的存在与语义</td><td>私有镜像里是否被裁剪、是否默认开启</td></tr>
+<tr><td>用户现场快照 <a href="dynamo-test-deployment.md">dynamo-test-deployment.md</a>（2026-10-28）</td><td>Operator 1.4.1、镜像 tag、DGD/Deployment 名、启动命令与 env</td><td>线上拓扑、镜像来源、现有开关</td><td>容器内 Dynamo/SGLang 的实际版本与私有修改</td></tr></table></div>
+<p>因此下文每个 span 都标注<b>保证程度</b>，共三级：</p>
+<ul><li><b>稳定</b>：由 OTel 语义约定或长期存在的实现保证，1.4.1 上大概率可直接看到，仍以现场核对为准。</li>
+<li><b>需核实</b>：代码中存在，但受日志级别、采样或环境变量控制，默认配置下可能看不到。</li>
+<li><b>仅 1.7.0</b>：本仓库设计目标。私有镜像若不包含对应提交，则<b>不产生</b>这些 span，验收不得以“应该有”为前提。</li></ul>
+<p class="note">本文不做“1.4.1 与 1.7.0 完全相同”的推断。核对方法是工作清单 T01 的包版本与 <code>--help</code> 取证，而不是比对文档。</p></section>
+
+<section id="chain"><h2>2. 请求主链路逐跳清单</h2>
+<p>主链路定义为：外部客户端 →（可选上游网关）→ Frontend HTTP 处理 → 路由/派发 → 传输层（tcp）→ Worker 处理 → SGLang 引擎 → 响应流式回传 → 客户端。下表按时间顺序排列，不含旁路（metrics、KV events、NIXL 传输）。</p>
+<div class="scroll"><table><tr><th>#</th><th>位置</th><th>Span</th><th>源码位置</th><th>保证程度</th><th>说明</th></tr>
+<tr><td>0</td><td>外部客户端 / 上游网关</td><td>无（或网关自有 span）</td><td>—</td><td>取决于上游</td><td>客户端注入 W3C <code>traceparent</code>/<code>tracestate</code>。curl 只提供外部 parent，不导出客户端 span；界面不显示外部父节点不等于断链。</td></tr>
+<tr><td>1</td><td>Frontend handler</td><td><code>completions</code>、<code>completions_single</code>、<code>completions_batch</code>、<code>embeddings</code>、<code>classify</code>、<code>rerank</code>、<code>pooling</code>、<code>anthropic_messages</code>、<code>connection_monitor</code></td><td><code>lib/llm/src/http/service/openai.rs</code> 1269/1299/1597/1836/1990/2102/2346/4157；<code>anthropic.rs</code> 469；<code>disconnect.rs</code> 320</td><td>需核实</td><td><code>#[tracing::instrument]</code> 属性展开，受日志级别过滤。多数为默认 <code>info</code>；<code>responses</code> 为 <code>debug</code>；<code>connection_monitor</code> 为 <code>trace</code>。级别不足时该 span 不创建，其子 span 会直接挂到上一层。</td></tr>
+<tr><td>2</td><td>Frontend 派发</td><td><code>generate</code></td><td><code>generate.rs</code> 155（函数）、156（span 字面量）、157（<code>target: "request_span"</code>）、1033（<code>.instrument(dispatch_span)</code>）；<code>sglang_generate.rs</code> 360/375</td><td>稳定</td><td>请求级派发边界，属性含 <code>request_id</code>、<code>model</code>。这是 Frontend 与后端之间最可靠的一条定位线索。</td></tr>
+<tr><td>3</td><td>KV 路由选择</td><td><code>kv_router.select_worker</code></td><td><code>lib/llm/src/kv_router/routing_host/kv.rs</code> 53</td><td>仅 1.7.0</td><td>KV 路由自己的选点 span，<b>不属于</b> lifecycle schema。同文件 560 还有一处 kv-router 局部 <code>route_span</code>，二者不要混为一谈。</td></tr>
+<tr><td>4</td><td>Frontend → Worker 出口</td><td><code>handle_payload</code>（client）</td><td><code>lib/runtime/src/pipeline/network/egress/tcp/client.rs</code> 822</td><td>稳定</td><td>tcp request plane 的客户端侧。请求头在此注入 <code>traceparent</code>。</td></tr>
+<tr><td>5</td><td>通用出口路由</td><td><code>route_span</code></td><td><code>lib/runtime/src/pipeline/network/egress/route_span.rs</code> 516；调用点 <code>push_router.rs</code> 1856、2186</td><td>仅 1.7.0</td><td>仅覆盖派发阶段，不含实际调度决策。与 #3 是不同机制，验收时不要用其中任一证明另一个存在。</td></tr>
+<tr><td>6</td><td>Worker 入口</td><td><code>handle_payload</code>（server）</td><td><code>lib/runtime/src/pipeline/network/ingress/push_endpoint.rs</code> ≈105</td><td>稳定</td><td>带 <code>otel.kind = "server"</code>，标记服务端语义；与 #4 同名但 kind 不同，图中应区分。</td></tr>
+<tr><td>7</td><td>Worker 处理</td><td><code>handle_payload</code>（handler）<br>+ lifecycle 各阶段</td><td><code>push_handler.rs</code> 1296；阶段见 §3：<code>:755</code> <code>RequestDispatch</code>、<code>:898</code> <code>WorkerAdmission</code>、<code>:758</code> <code>worker.operation</code>、<code>:824</code>/<code>:827</code> response streaming</td><td><code>handle_payload</code> 稳定；阶段 span 仅 1.7.0</td><td>Worker 同时是 lifecycle 的“worker”侧记录者。P/D 拆分时 prefill 与 decode 各自产生一组。</td></tr>
+<tr><td>8</td><td>引擎调用</td><td><code>engine.generate</code></td><td><code>lib/backend-common/src/adapter.rs</code> 244–261；Link 270–285</td><td>稳定</td><td>target <code>request_span</code>。属性含 <code>model</code>、<code>input_tokens</code>、<code>disagg_role</code>、<code>ttft_ms</code>、<code>output_tokens</code>、<code>finish_reason</code>、<code>cancelled</code>、<code>error_kind</code>、<code>avg_itl_ms</code> 及 <code>itl_p50/p99/max_ms</code>。同时建立指向引擎前驱的 OTel <b>Link</b>，见 §4。</td></tr>
+<tr><td>9</td><td>SGLang 引擎内部</td><td>引擎自定义 span</td><td>需要 <code>--enable-trace</code> 与 <code>--otlp-traces-endpoint</code></td><td>需核实</td><td>名称由引擎决定，本仓库不保证。开启后引擎通过 <code>context.trace_headers()</code> 参与传播（<a href="../pd-trace.html">pd-trace</a> 有该属性摘录）。</td></tr>
+<tr><td>10</td><td>响应流式回传</td><td>Frontend 侧 <code>response.streaming*</code></td><td>同 §3</td><td>仅 1.7.0</td><td>SSE 逐段回传的边界。取消与错误在该阶段结束 span，见走查用例 C。</td></tr></table></div>
+<p>图中应有的父子关系是 <code>generate</code> → <code>handle_payload(client)</code> → <code>handle_payload(server)</code> → <code>engine.generate</code>；lifecycle 各阶段作为旁挂的语义层叠加在上面。抓不到某一段时，先判断是<b>级别过滤</b>还是<b>版本缺失</b>，再判断是<b>传播断链</b>。</p></section>
+
+<section id="lifecycle"><h2>3. Dynamo lifecycle schema：根与 13 个阶段</h2>
+<p>lifecycle 用固定 target <code>dynamo.request_lifecycle</code> 记录一次请求在各阶段的归属。契约：schema <code>v1</code>、profile <code>generic.v1</code>、mode <code>core</code>。</p>
+<p>根 span 在 <code>lib/runtime/src/telemetry.rs</code> 185–187 创建，名称 <code>request.lifecycle</code>，强制带 <code>dynamo.request.id</code>。生产侧在 <code>openai.rs</code> 2620 以 <code>.instrument(request_lifecycle.or_current())</code> 挂到请求 future 上；没有 lifecycle 上下文时退回当前 span，不额外造树。</p>
+<div class="scroll"><table><tr><th>#</th><th>Stage 枚举</th><th>Span 名</th><th><code>dynamo.component</code></th><th>源码</th></tr>
+<tr><td>1</td><td><code>RequestLifecycle</code></td><td><code>request.lifecycle</code></td><td>frontend</td><td><code>telemetry.rs</code> 185–187</td></tr>
+<tr><td>2</td><td><code>RequestPreprocessing</code></td><td><code>request.preprocessing</code></td><td>frontend</td><td><code>telemetry.rs</code> 203</td></tr>
+<tr><td>3</td><td><code>WorkerAdmission</code></td><td><code>worker.admission</code></td><td>worker</td><td><code>telemetry.rs</code> 204</td></tr>
+<tr><td>4</td><td><code>RequestDispatch</code></td><td><code>request.dispatch</code></td><td>worker</td><td><code>telemetry.rs</code> 205</td></tr>
+<tr><td>5</td><td><code>WorkerOperation</code></td><td><code>worker.operation</code></td><td>worker</td><td><code>telemetry.rs</code> 206</td></tr>
+<tr><td>6</td><td><code>WorkerOperationEncode</code></td><td><code>worker.operation.encode</code></td><td>worker</td><td><code>telemetry.rs</code> 207</td></tr>
+<tr><td>7</td><td><code>WorkerOperationPrefill</code></td><td><code>worker.operation.prefill</code></td><td>worker</td><td><code>telemetry.rs</code> 208</td></tr>
+<tr><td>8</td><td><code>WorkerOperationDecode</code></td><td><code>worker.operation.decode</code></td><td>worker</td><td><code>telemetry.rs</code> 209</td></tr>
+<tr><td>9</td><td><code>ResponseStreaming</code></td><td><code>response.streaming</code></td><td>frontend</td><td><code>telemetry.rs</code> 210</td></tr>
+<tr><td>10</td><td><code>ResponseStreamingEncode</code></td><td><code>response.streaming.encode</code></td><td>worker</td><td><code>telemetry.rs</code> 211</td></tr>
+<tr><td>11</td><td><code>ResponseStreamingPrefill</code></td><td><code>response.streaming.prefill</code></td><td>worker</td><td><code>telemetry.rs</code> 212</td></tr>
+<tr><td>12</td><td><code>ResponseStreamingDecode</code></td><td><code>response.streaming.decode</code></td><td>worker</td><td><code>telemetry.rs</code> 213</td></tr>
+<tr><td>13</td><td><code>ResponseStreamingWorker</code></td><td><code>response.streaming.worker</code></td><td>worker</td><td><code>telemetry.rs</code> 214</td></tr></table></div>
+<p><code>dynamo.component</code> 的取值规则：<code>RequestLifecycle</code>、<code>RequestPreprocessing</code>、<code>ResponseStreaming</code> 为 <code>frontend</code>，其余为 <code>worker</code>。因此 Frontend 会同时记录 <code>request.dispatch</code> 的发起侧与 Worker 记录的处理侧，同名 span 靠 <code>dynamo.component</code> 与 <code>dynamo.instance.id</code> 区分。</p>
+<h3>属性约定</h3>
+<div class="scroll"><table><tr><th>属性</th><th>含义</th><th>备注</th></tr>
+<tr><td><code>dynamo.request.id</code></td><td>请求标识</td><td>根 span 强制存在</td></tr>
+<tr><td><code>dynamo.operation.id</code></td><td>本次操作标识</td><td>与 request.id 不同：一次请求可有多次操作</td></tr>
+<tr><td><code>dynamo.operation.role</code></td><td>角色（prefill / decode / aggregated 等）</td><td>P/D 拆分时用于区分两端</td></tr>
+<tr><td><code>dynamo.lifecycle.schema</code> /<code>.profile</code> /<code>.mode</code></td><td><code>v1</code> / <code>generic.v1</code> / <code>core</code></td><td>解析方按 profile 决定读哪些阶段</td></tr>
+<tr><td><code>dynamo.component</code></td><td><code>frontend</code> 或 <code>worker</code></td><td>见上表</td></tr>
+<tr><td><code>dynamo.instance.id</code></td><td>实例标识</td><td>区分同角色的多个 Pod</td></tr>
+<tr><td><code>dynamo.process.epoch</code></td><td>进程世代</td><td>重启后变化，可区分同 Pod 的不同进程</td></tr>
+<tr><td><code>dynamo.lifecycle.identity.state</code></td><td><code>complete</code> 或 <code>missing_request_id</code></td><td>后者表示调用方未提供 request id，身份不完整</td></tr>
+<tr><td><code>dynamo.session.id</code> /<code>.source</code></td><td>会话标识与来源</td><td>终态字段，默认空</td></tr>
+<tr><td><code>dynamo.request.terminal.outcome</code> /<code>.error</code> /<code>.timestamp_unix_ns</code></td><td>终态结果、错误、时间戳</td><td>默认空，结束时填写</td></tr></table></div>
+<p class="note">路由的排队与选点阶段在 lifecycle schema 中<b>刻意未实现</b>。源码原文：<q>Router queue and selection stages are intentionally deferred. A later instrumentation milestone will add spans at the actual scheduling boundaries together with the router-specific metrics and invariants needed to interpret them.</q>这句话只约束 lifecycle schema，不代表进程里完全没有路由相关 span——kv-router 自有的 <code>kv_router.select_worker</code>（§2 #3）与其局部 <code>route_span</code> 是另一回事。</p></section>
+
+<section id="engine"><h2>4. 引擎侧 span 与 P/D Link</h2>
+<p><code>engine.generate</code>（<code>adapter.rs</code> 244–261）是 Dynamo 看到的引擎调用边界。它除了常规属性，还在 270–285 建立一个 OTel <b>Link</b>，指向前驱阶段：</p>
+<pre>SpanContext::new(trace_id, span_id, TraceFlags::SAMPLED, true /* is_remote */, TraceState::default())</pre>
+<p>Link 而非 parent 的原因：disaggregated 场景下 prefill 与 decode 是两个独立执行体，谁也不是谁的时间父节点。验收时<b>不能只按父子关系判断</b>，要同时看 Link。前驱上下文缺失时，<code>worker_trace_link</code> 会以 trace 级别告警，因此“看不到 Link”可能是级别问题而非实现缺失。</p>
+<p class="note">源码原文：<q>WorkerOperationPrefill and WorkerOperationDecode are coarse Dynamo runtime boundaries around the worker operation; they are not direct engine execution measurements.</q>即 <code>worker.operation.prefill</code>/<code>.decode</code> 的耗时是 runtime 边界，不等于引擎内部的 prefill/decode 执行时间。要引擎级数字，必须靠 §2 #9 的引擎 span。</p></section>
+
+<section id="gaps"><h2>5. 明确不在主链路内的东西</h2>
+<div class="scroll"><table><tr><th>项目</th><th>为什么不算主链路</th></tr>
+<tr><td>Worker <code>:9090/metrics</code>、Frontend <code>:8000/metrics</code>、PodMonitor</td><td>指标抓取，与 trace 采集是两条独立管道。指标正常不证明 trace 已开启。</td></tr>
+<tr><td><code>nixl:19090</code>、bootstrap <code>12345</code></td><td>KV 传输与握手端口，不是 OTLP 目标，也不应作为 trace endpoint 填写。</td></tr>
+<tr><td>ZMQ KV events（<code>tcp://*:5557</code>）</td><td>Event Plane，供路由决策使用，不承载 span。</td></tr>
+<tr><td><code>"http-request"</code> span</td><td>本仓库中仅出现在测试 <code>lifecycle_disabled_spawn_preserves_http_parent()</code>（<code>openai.rs</code> 7471 附近），<b>不是生产 span</b>，不得写入验收预期。</td></tr>
+<tr><td><code>DYN_LIFECYCLE_TRACE_ENABLED</code> / <code>DYN_LIFECYCLE_TRACE_MODE</code></td><td>1.7.0 源码树的开关。线上 1.4.1 是否识别需现场核实，不能当作既定配置下发。</td></tr></table></div>
+<p class="note">本仓库源码为 1.7.0。DYN_LIFECYCLE_TRACE_ENABLED、当前新增 span 名称及 P/D Link 实现不作为线上 1.4.1 的既定能力或必配项；验收按实际镜像契约确认。</p></section>
+
+<section id="sampling"><h2>6. 关联键、采样与缺口判定</h2>
+<ul><li><b>主关联键是 Trace ID</b>，由入站 <code>traceparent</code> 固定；<code>x-request-id</code> 只用于辅助检索日志，不能替代 Trace ID 判定链路完整性。</li>
+<li><b>第二关联键是 <code>dynamo.request.id</code></b>。引擎 span 可能不含该属性，此时用 Trace ID + Link 关联。</li>
+<li><b>采样要在三处对齐</b>：上游是否透传 <code>sampled=01</code>、Dynamo 侧 <code>OTEL_TRACES_SAMPLE_RATIO</code>、引擎与 Collector 的采样。任一处丢弃都会造成“看起来断链”的假象。联调期统一设为 1.0。</li>
+<li><b>判缺口顺序</b>：① 该 span 版本是否存在（对照 §2 保证程度）→ ② 日志级别是否放行（handler span 常见）→ ③ 采样是否丢弃 → ④ 传播是否断开（<code>tokio::spawn</code> 未用 <code>in_current_span()</code> 会丢当前 span）→ ⑤ Collector 是否拒收。</li>
+<li><b>开销</b>：引擎 span 粒度由 <code>SGLANG_TRACE_LEVEL</code> 控制，本仓库对 1.4.1 建议先用 1 或 2，不默认开高详细级别。</li></ul></section>
+
+<section id="related"><h2>7. 文档关系</h2>
+<ul><li><a href="request-plane-trace-checklist.html">工作清单</a>：T01–T09 执行顺序、命令与验收用例。</li>
+<li><a href="request-path-trace-walkthrough.html">链路走查</a>：一次 PD 请求和一次 aggregated 请求的 span 时间线，以及查询方法。</li>
+<li><a href="otel-collector-reference.yaml">采集参考</a>：Collector 与查询后端的参考清单，命名空间与镜像 tag 均为待确认项。</li>
+<li><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a>：DGD 合并参考，非完整清单。</li>
+<li><a href="../pd-trace.html">源码能力分析</a>：更细的源码摘录与 P/D 传播路径。</li></ul>
+<p>以上文档都不替代现场验收。</p></section>
+</main></body></html>

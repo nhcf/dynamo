@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ACK Request Plane Trace：链路走查</title>
+<style>body{margin:0;background:#f4f7fb;color:#253449;font:16px/1.8 system-ui}main{max-width:1120px;margin:auto;padding:30px 22px}h1,h2{color:#173f6d}section{background:white;border:1px solid #dce4ef;border-radius:12px;padding:24px;margin:22px 0}pre{background:#13243b;color:#e1edfc;padding:18px;overflow:auto;border-radius:8px}code{overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #dce4ef;padding:10px;text-align:left;vertical-align:top}.scroll{overflow:auto}.note{border-left:4px solid #df9e27;background:#fff7e5;padding:14px}.meta{color:#52647d;font-size:14px}a{color:#1261ac}input{margin-right:8px}nav a{margin-right:14px}button{padding:8px 14px}@media print{body{background:white}button{display:none}section{break-inside:avoid}}</style></head><body><main>
+<nav><a href="../index.html">教程首页</a><a href="dynamo-test-deployment.md">用户部署记录</a><a href="request-plane-trace-checklist.html">工作清单</a><a href="request-path-trace-design.html">链路设计</a><a href="request-path-trace-walkthrough.html">链路走查</a><a href="otel-collector-reference.yaml">采集参考</a><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a><a href="../pd-trace.html">源码能力分析</a></nav>
+<h1>ACK Request Plane Trace：链路走查</h1>
+<p>本页回答两件事：<b>一棵请求 trace 应该长什么样</b>，以及<b>在查询界面上怎么找到它、抓不到时怎么判</b>。对象仍是 <code>nhss-job / dynamo-qwen38-27b-mixed-demo</code>（Frontend、prefill、decode、aggregated 各一副本，Worker TP=4，Request Plane=tcp）。span 的来源、源码行号与三级保证程度见 <a href="request-path-trace-design.html">链路设计</a>，执行顺序与验收命令见 <a href="request-plane-trace-checklist.html">工作清单</a>；本页引用的保证程度与该设计文档一致，不另立标准。</p>
+<p class="meta">编制日期：2026-10-29 · 部署快照：2026-10-28 · 本文为走查文档，未连接集群、未修改资源；下文时间戳均为示意值，不是现场采集数据。</p>
+<button onclick="print()">打印 / 保存 PDF</button>
+
+<section id="read"><h2>1. 读图约定（先读这一节再看用例）</h2>
+<ul>
+<li><b>缩进表示父子</b>，与设计 §2 的主链一致：<code>generate</code> → <code>handle_payload</code>(client) → <code>handle_payload</code>(server) → <code>engine.generate</code>。同一缩进深度的并列子树之间只按时间先后排序，<b>不要仅凭缩进推断它们是父子</b>。</li>
+<li>每行后标注三项：<b>所在角色</b>（frontend / prefill / decode / aggregated）、<b>span 名</b>、<b>保证程度</b>（稳定 / 需核实 / 仅 1.7.0）。低于“稳定”的 span 在 1.4.1 私有镜像上可能根本不产生。</li>
+<li><b>lifecycle 阶段是旁挂的语义层。</b><code>request.dispatch</code>、<code>worker.operation.prefill</code> 等挂在请求 future 上，用来标注阶段归属，不代替传输层的父子边。同名 span 在 Frontend 与 Worker 两侧都可能出现，靠 <code>dynamo.component</code> 与 <code>dynamo.instance.id</code> 区分。</li>
+<li><b>外部父节点不显示是正常的。</b>客户端只用 <code>traceparent</code> 注入一个外部 parent，自身并不产生 span；界面里最顶层 span 没有父节点，不等于断链。</li>
+<li><b><code>handle_payload</code> 有同名两份</b>：Frontend 出口侧是 client（<code>otel.kind</code> 为 client 语义），Worker 入口侧带 <code>otel.kind = "server"</code>。看到两个同名的要按 kind 分辨，不要当成重复上报。</li>
+<li><b>P/D 之间不是父子关系。</b>prefill 与 decode 是两个独立执行体，它们与前驱之间用 OTel <b>Link</b> 关联（设计 §4）。只看父子边会得出“decode 没有来源”的错误结论。</li>
+</ul></section>
+
+<section id="pd"><h2>2. 用例 A：PD 请求（prefill + decode）</h2>
+<p>先在 Frontend 生成一次请求，路由到 prefill 完成首段计算，再由 decode 继续出 token。两条 Worker 子树共享同一个 Trace ID 与同一个 <code>dynamo.request.id</code>；<b>第二次派发（去 decode）与 prefill 子树的先后关系用时间戳判断</b>，不要强行画成一条单链。</p>
+<pre>trace 4bf9…4736   request_id=…   model=Qwen3.8-27B      （t+ 为示意值）
+t+0ms    ├─ completions                   frontend     需核实
+t+0ms    │  └─ generate                   frontend     稳定      request_id, model
+t+2ms    │     ├─ handle_payload(client)  frontend     稳定      traceparent 在此注入
+t+3ms    │     │  └─ handle_payload(srv)  prefill      稳定      otel.kind=server
+t+3ms    │     │     ├─ request.dispatch  prefill      仅 1.7.0
+t+3ms    │     │     ├─ worker.admission  prefill      仅 1.7.0
+t+4ms    │     │     ├─ worker.operation  prefill      仅 1.7.0
+t+4ms    │     │     │  └─ worker.operation.prefill    仅 1.7.0
+t+4ms    │     │     └─ engine.generate   prefill      稳定      disagg_role=prefill, ttft_ms
+t+310ms  │     │        ── prefill 结束；KV 经 NIXL 转到 decode，该传输不在主链路 span 内 ──
+t+312ms  │     ├─ handle_payload(client)  frontend     稳定      第二次派发：选到 decode
+t+313ms  │     │  └─ handle_payload(srv)  decode       稳定      otel.kind=server
+t+313ms  │     │     ├─ request.dispatch  decode       仅 1.7.0
+t+314ms  │     │     ├─ worker.operation  decode       仅 1.7.0
+t+314ms  │     │     │  └─ worker.operation.decode     仅 1.7.0
+t+314ms  │     │     └─ engine.generate   decode       稳定      disagg_role=decode, output_tokens
+t+2.4s   │     └─ response.streaming      frontend     仅 1.7.0  SSE 回传边界
+t+2.4s   └─ (客户端收到 last chunk)</pre>
+<p>要点：</p>
+<ul>
+<li><b>两个 <code>engine.generate</code> 是判断 P/D 分工的唯一稳定锚点</b>：它们的 <code>disagg_role</code> 分别是 prefill 与 decode，属性里带 <code>ttft_ms</code>、<code>output_tokens</code>、<code>itl_p50/p99/max_ms</code> 等。TTFT 应落在 prefill 段的结束处，而不是 decode 段的开头。</li>
+<li>decode 的 <code>engine.generate</code> 上会有一条指向前驱的 <b>Link</b>，指向 prefill 侧上下文；Link 在多数查询界面上不画成边，需展开 span 详情查看 References。找不到 Link 时可能是前驱上下文缺失触发的 trace 级告警（<code>worker_trace_link</code>），先确认日志级别再判定实现缺失。</li>
+<li><code>worker.operation.prefill</code> / <code>.decode</code> 的耗时是 <b>runtime 边界</b>，不等于引擎内部 prefill/decode 执行时间。要引擎级数字看 <code>engine.generate</code> 属性或引擎自身 span。</li>
+<li><code>response.streaming</code> 只有一个，出现在 Frontend 侧；按设计 §3 它属于 frontend 组件，不要到 Worker 上找。</li>
+</ul></section>
+
+<section id="agg"><h2>3. 用例 B：aggregated 请求</h2>
+<p>路由到 aggregated 副本时，只有一条 Worker 子树，没有 P/D 的第二次派发，也没有跨机 KV 传输。这是最简单的形态，适合用来<b>先确认采集链路本身通了</b>，再去排 PD。</p>
+<pre>trace 9d2c…1a07   request_id=…   model=Qwen3.8-27B      （t+ 为示意值）
+t+0ms    ├─ completions                         frontend     需核实
+t+0ms    │  └─ generate                         frontend     稳定
+t+1ms    │     ├─ handle_payload(client)        frontend     稳定
+t+2ms    │     │  └─ handle_payload(srv)        aggregated   稳定      otel.kind=server
+t+2ms    │     │     ├─ request.dispatch        aggregated   仅 1.7.0
+t+2ms    │     │     ├─ worker.admission        aggregated   仅 1.7.0
+t+3ms    │     │     ├─ worker.operation        aggregated   仅 1.7.0
+t+3ms    │     │     │  ├─ worker.operation.prefill   aggregated   仅 1.7.0   首段
+t+3ms    │     │     │  └─ worker.operation.decode    aggregated   仅 1.7.0   续段
+t+3ms    │     │     └─ engine.generate         aggregated   稳定      disagg_role=aggregated
+t+1.9s   │     └─ response.streaming            frontend     仅 1.7.0
+t+1.9s   └─ (客户端收到 last chunk)</pre>
+<p>判读方式：这条链上<b>不出现 decode 副本的名字</b>就是正常结果；如果出现了，说明路由把请求派到了别的副本，与 trace 无关，应回到部署记录核对副本与标签。aggregated 场景下 <code>worker.operation.prefill</code> 与 <code>.decode</code> 可能同时存在，因为它们描述的是同一进程内的两个阶段，不是两台机器。</p></section>
+
+<section id="cancel"><h2>4. 用例 C：取消与错误</h2>
+<p>设计 §2 #10 约定“取消与错误在响应流式阶段结束 span”。这一类请求<span>最容易</span>被误判成“链路断了”，需要按下面的形态读，而不是看 span 是否成对出现。</p>
+<pre>形态一：客户端主动断开（cancelled）
+t+0ms    ├─ completions                 frontend     需核实      以取消结束
+t+0ms    │  └─ generate                 frontend     稳定
+t+2ms    │     ├─ handle_payload(client) frontend    稳定
+t+2ms    │     │  └─ handle_payload(srv) decode      稳定
+t+2ms    │     │     └─ engine.generate  decode      稳定      cancelled=true
+t+700ms  │     └─ response.streaming     frontend    仅 1.7.0  提前结束，不是等满
+
+形态二：引擎侧报错
+t+2ms    │     │     └─ engine.generate  decode      稳定      error_kind=…
+（对应请求在 Frontend 侧以错误结束；是否额外产生 response.streaming 视版本而定）
+
+形态三：Worker 侧因传播断链而没有父节点
+t+2ms    (独立根 span) handle_payload(srv) decode   稳定      没有 traceparent → 新起 trace</pre>
+<ul>
+<li><b>形态一/二是“有 span、有异常属性”</b>：链路完整，结论应写成“请求被取消/失败，耗时至取消点为止”。<code>cancelled</code>、<code>error_kind</code>、<code>finish_reason</code> 三者一起看，不要只看 HTTP 状态码。</li>
+<li>取消时 Frontend 侧与 Worker 侧的结束时刻<b>允许不重合</b>：Frontend 在客户端断开时收尾，Worker 要等引擎响应取消。两段时长不同不是错误。</li>
+<li><b>形态三是“真的断链”</b>：Worker 侧出现独立 trace、<code>dynamo.request.id</code> 也与前端不一致，才是传播问题。排查按 §6 的顺序，不要先怀疑采集端。</li>
+<li>输出被截断但 <code>finish_reason</code> 为正常值，通常不是 trace 问题，而是上游 <code>max_tokens</code> 或客户端断开时机，属另一类问题。</li>
+</ul></section>
+
+<section id="query"><h2>5. 查询方法</h2>
+<p>以下假设按 <a href="otel-collector-reference.yaml">采集参考</a> 起了 Collector 与查询后端，且 <a href="request-plane-trace-env.fragment.yaml">环境变量片段</a> 已合入 DGD。<b>Collector 的命名空间与服务名是占位值</b>，执行前替换成平台确认过的实际值。</p>
+<h3>5.1 打开查询界面</h3>
+<pre>kubectl -n &lt;collector-namespace&gt; port-forward svc/jaeger 16686:16686
+# 浏览器打开 http://127.0.0.1:16686</pre>
+<h3>5.2 三种查法，按可靠性排序</h3>
+<div class="scroll"><table><tr><th>查法</th><th>入口</th><th>适用</th><th>注意</th></tr>
+<tr><td><b>Trace ID 直查</b></td><td>Search → Trace ID</td><td>已知 <code>traceparent</code> 的那一次请求；PD 跨副本时最可靠</td><td>粘贴 traceparent 的第 2 段（32 位十六进制），不要带 <code>00-</code> 前缀与采样位</td></tr>
+<tr><td><b>标签查</b></td><td>Search → Tags：<code>dynamo.request.id=…</code></td><td>只有业务侧 request id、没有 traceparent 时</td><td>该属性由 lifecycle 提供；若版本不含 lifecycle，则查不到</td></tr>
+<tr><td><b>服务 + 操作查</b></td><td>Service 下拉 + Operation 过滤</td><td>确认某副本是否在上报；看整体形态</td><td>Service 名来自 <code>OTEL_SERVICE_NAME</code>，必须与 DGD 实际值一致</td></tr></table></div>
+<p>按 Service 过滤时，四个副本的服务名由环境变量片段提供，形如 <code>dynamo-qwen38-27b-frontend</code>、<code>-prefill</code>、<code>-decode</code>、<code>-aggregated</code>。<b>这些名字是本机候选值，未经集群核实</b>；若下拉里的名字与之一致，说明该副本的 env 已生效。</p>
+<p>常用 Operation 过滤值：<code>generate</code>（Frontend 派发边界）、<code>engine.generate</code>（引擎调用边界）、<code>handle_payload</code>（传输层两侧）、<code>request.lifecycle</code>（lifecycle 根）。</p>
+<h3>5.3 界面上的局限，先知道再看图</h3>
+<ul>
+<li><b>Jaeger 的图只画父子边，不画 Link。</b>PD 的 prefill↔decode 关联要靠 Trace ID + 时间戳 + <code>dynamo.request.id</code> 手工对照，或在 span 详情的 References 里找 Link。</li>
+<li><b>“没有父节点”≠ 断链。</b>外部客户端只注入 traceparent，不产生 span，顶层无父属正常（用例 A/B 的 <code>completions</code> 行）。</li>
+<li><b>时间轴按 span 起止时间排，不按上报时间。</b>跨副本时钟偏差过大时，P/D 的先后会看起来错乱；此时以 <code>dynamo.request.id</code> 与 <code>dynamo.process.epoch</code> 判定归属，不要用肉眼排序下结论。</li>
+</ul>
+<h3>5.4 区分“没产生”与“没入库”</h3>
+<p>采集参考里的 Collector 配置带了一个 <code>debug</code> exporter。用它可以快速把两类失败分开：</p>
+<pre>kubectl -n &lt;collector-namespace&gt; logs deploy/otel-collector --tail=200 | grep -E 'Trace ID|span'
+# 有 span 输出 → 已发送，问题在后端存储或查询条件
+# 无 span 输出 → 应用侧没有产生，回到 §6 判定顺序</pre>
+<p>若连 Collector 日志都没有，先确认 Collector 是否在跑、Service 端口是否为 <code>4317</code>、应用侧 <code>OTEL_EXPORTER_OTLP_TRACES_ENDPOINT</code> 指向的是 <code>otel-collector:4317</code> 而不是 Worker 的 <code>:9090</code> 或 NIXL 的 <code>19090</code>——后两者不是 OTLP 目标。</p></section>
+
+<section id="gaps"><h2>6. 抓不到时怎么判</h2>
+<p>顺序不能乱：<b>先判断是级别过滤还是版本缺失，再判断是传播断链</b>。乱序排查最常见的后果是把“版本里没有这个 span”当成“采集没配好”，然后反复改环境变量。</p>
+<ol>
+<li><b>该 span 在版本里是否存在</b>——对照 <a href="request-path-trace-design.html">链路设计</a> §2 的保证程度。标“仅 1.7.0”的阶段在 1.4.1 私有镜像上不产生，这是预期，不是故障。取证方式是工作清单 T01 的包版本与 <code>--help</code>。</li>
+<li><b>日志级别是否放行</b>——handler span 由 <code>#[tracing::instrument]</code> 展开，级别不足则 span 根本不创建，其子 span 会直接挂到上一层。表现为“少了一层”而不是“整条没有”。<code>responses</code> 为 debug、<code>connection_monitor</code> 为 trace，其余多为 info。</li>
+<li><b>采样是否丢弃</b>——三处必须对齐：上游是否透传 <code>sampled=01</code>、Dynamo 侧 <code>OTEL_TRACES_SAMPLE_RATIO</code>、Collector/后端采样。任一处丢弃都会造成“看起来断链”。联调期统一设 1.0。</li>
+<li><b>传播是否断开</b>——<code>tokio::spawn</code> 未使用 <code>in_current_span()</code> 会丢当前 span，Worker 侧会另起一个根。表现为用例 C 的形态三。</li>
+<li><b>Collector 是否拒收</b>——看 <code>debug</code> exporter 有无输出、看 Collector 自身日志里是否有拒绝或队列溢出。到这一步才动采集端配置。</li>
+</ol>
+<div class="note">三个高频误判：① 顶层没有父节点——外部客户端本来就不产生 span；② <code>handle_payload</code> 出现两次——client 与 server 同名不同 kind；③ decode 找不到来源——P/D 之间是 Link 而非父子。三条都在 <a href="#read">§1</a> 有对应说明。</div></section>
+
+<section id="related"><h2>7. 文档关系</h2>
+<ul><li><a href="request-path-trace-design.html">链路设计</a>：每个 span 的源码位置、属性与三级保证程度，是判读的权威依据。</li>
+<li><a href="request-plane-trace-checklist.html">工作清单</a>：T01–T09 执行顺序、环境变量合并方式与验收命令（含 curl 注入 traceparent 的用例）。</li>
+<li><a href="otel-collector-reference.yaml">采集参考</a>：Collector 与查询后端的参考清单，命名空间与镜像 tag 均为待确认项。</li>
+<li><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a>：DGD 合并参考，非完整清单。</li>
+<li><a href="../pd-trace.html">源码能力分析</a>：更细的源码摘录与 P/D 传播路径。</li></ul>
+<p>本页给的是读图与查询方法，不替代现场验收；具体结论以集群上实际查到的 span 为准。</p></section>
+</main></body></html>

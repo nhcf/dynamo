@@ -440,3 +440,108 @@ kubectl -n nhss-job port-forward svc/dynamo-qwen38-27b-mixed-demo-frontend 8000:
 | P2 | 评估 CRD 从 `v1alpha1` 迁移到 `v1beta1` |
 | P3 | 为 Worker 设置 CPU limit，避免资源挤占 |
 | P3 | 关注 Operator 因 apiserver 超时丢失 leader 的历史重启，评估租约超时参数 |
+
+---
+
+## 11. 集群内接口验证记录（2026-10-29）
+
+> 采集时间：2026-10-29
+> 执行位置：本机，使用既有 kubeconfig 指向的 context
+> 结论：**两条请求均未取得 HTTP 响应**，本次可访问的 context 上无法完成验证。本节是新的独立观测，不覆盖、也不替代第 5.3 节 2026-10-28 的快照证据。
+
+### 11.1 待验证请求
+
+按给出的集群内接口测试原样记录：
+
+```bash
+# 1. 模型列表
+curl -s http://172.23.159.229:8000/v1/models
+
+# 2. 非流式对话
+curl -s http://172.23.159.229:8000/v1/chat/completions \
+     -H 'Content-Type: application/json' \
+     -d '{"model":"IGD-agg","messages":[{"role":"user","content":"你好，用一句话介绍你自己"}],"max_tokens":64}'
+```
+
+目标端点 `http://172.23.159.229:8000`，模型名 `IGD-agg`。
+
+### 11.2 实测结果
+
+对目标地址发起第 1 条请求：
+
+```bash
+curl -sS -m 8 -o /dev/null \
+  -w 'http_code=%{http_code} connect=%{time_connect}s total=%{time_total}s\n' \
+  http://172.23.159.229:8000/v1/models
+```
+
+实测输出：
+
+```text
+curl: (28) Connection timed out after 8004 milliseconds
+http_code=000 connect=0.000000s total=8.004775s
+exit=28
+```
+
+判读：
+
+- `connect=0.000000s` 且 `http_code=000` 说明 **TCP 握手根本没有发生**。这不是 HTTP 4xx/5xx，也不是 connection refused（后者会立即返回 RST，`time_connect` 接近 0 但 curl 会报 `Connection refused`）。
+- 因此属于**路由/可达性失败**：目标地址在当前网络环境下没有可达的监听者。
+- 由于第 1 条已证明端点不可达，**第 2 条（`/v1/chat/completions`）未再发送**。这是基于已测结论的主动省略，不是漏做；端点不可达时继续发第二条只会复现同一个超时，不产生新信息。
+
+### 11.3 为什么无法在集群内验证
+
+"集群内接口测试"需要在集群内有一个执行环境（`kubectl exec` 进已有 Pod，或临时调试 Pod）。当前 context 上两条路径都不可用：
+
+| 检查项 | 命令 | 结果 |
+|---|---|---|
+| 命名空间内是否有 Pod | `kubectl -n nhss-job get pods` | `No resources found in nhss-job namespace.`（命名空间本身存在，`184d`） |
+| 是否有 Service 暴露 `:8000` | `kubectl get svc -A -o wide \| grep ':8000'` | exit 1，无匹配 |
+| 是否有 Service 持有该 IP | `kubectl get svc -A -o wide \| grep '172.23.159.229'` | exit 1，无匹配 |
+| 本 context 的 Service 地址段 | `kubectl get svc -A -o wide` | `172.21.x.x`，不是 `172.23.x.x` |
+| `igd-*` 工作负载状态 | `kubectl -n nhss-job get infergraphdeployment` | `igd-142-agg  Failed  20h` |
+| Dynamo CRD 是否安装 | `kubectl get crd \| grep -Ei 'dynamo\|infergraph'` | 仅 `dynamoworkermetadatas.nvidia.com`、`infergraphdeployments.nanhu-tech.io`、`infergraphscalingadapters.nanhu-tech.io`；**没有** `dynamographdeployments.nvidia.com` |
+| 当前 context | `kubectl config current-context` | `kubernetes-admin@c642d589f7b3e478f88bce2572e5b8ce7`（`https://10.200.88.247:6443`） |
+
+与本文第 1–6 节记录的 2026-10-28 集群对比：
+
+- 记录的 context 是 `kubernetes-admin-c37065475b3804893815ca672b2ed3643`，当前 context 是 `c642d589f7b3e478f88bce2572e5b8ce7`，**不是同一个**。
+- 第 3 节列有 `dynamographdeployments.nvidia.com`（创建于 2026-08-25T01:14:02Z），当前 context **没有**该 CRD。
+- 第 5.2 节的 Service ClusterIP 全部落在 `172.23.x.x`，当前 context 的 Service IP 落在 `172.21.x.x`——Service CIDR 不一致。
+
+综合判断：当前 kubeconfig 指向的是**另一套集群**，不是 2026-10-28 采集的那一套。记录的 kubeconfig 路径
+`/data/home/bage/kubeconfig/ack-LB97i2CZNR.kubeconfig` 在本机不存在，无法切回目标集群。
+
+### 11.4 目标地址与模型名的归属
+
+- `172.23.159.229` 不在第 5.2 节记录的 Dynamo DGD Service 列表中（frontend 实际为 `172.23.234.143:8000`），只是落在同一个 `172.23.x.x` 地址段内。
+- 模型名 `IGD-agg` 与 Dynamo DGD 实际服务的 `Qwen3.8-27B` 不同，而与第 8 节记录的 nanhu-tech `igd-*` 系列吻合（该系列中 `igd-142-agg-0-router-ep-0` 的 NodePort 为 `8000:31024`）。
+- 因此这两条请求**不是**对第 1–6 节 `dynamo-qwen38-27b-mixed-demo` 的验证，不应据此更新该 DGD 的健康结论。
+
+### 11.5 如何补做
+
+要真正完成这两条验证，需满足其一：
+
+1. 提供指向 2026-10-28 那套集群的 kubeconfig（或 `ack-LB97i2CZNR.kubeconfig` 在本机的实际路径），并确保 `nhss-job` 中存在可 `kubectl exec` 的 Pod——这样两条 curl 可原样执行；
+2. 若 `igd-142-agg` 才是要验证的对象，先修复其 `Failed` 状态（属于修改集群，需另行授权），再在集群内发起上述两条 curl。
+
+在此之前，本节结论保持为：**未验证（端点不可达）**，不作为通过证据。
+
+## 12. 配套材料索引
+
+本节列出本目录内与本部署记录配套的材料，便于从结论回溯到原始证据。
+
+| 路径 | 内容 | 性质 |
+|------|------|------|
+| [`trace-collection-plan.md`](trace-collection-plan.md) | Request Plane trace 采集方案（草案，待确认） | 方案文档 |
+| [`request-path-trace-design.html`](request-path-trace-design.html) | span 设计（前驱关系、属性归属） | 方案文档 |
+| [`request-path-trace-walkthrough.html`](request-path-trace-walkthrough.html) | 端到端链路走查 | 方案文档 |
+| [`otel-collector-reference.yaml`](otel-collector-reference.yaml) | collector 配置参考（多文档） | 配置参考 |
+| [`request-plane-trace-env.fragment.yaml`](request-plane-trace-env.fragment.yaml) | 注入到工作负载的 env 片段 | 合并参考，非完整清单 |
+| [`deploy/nhi-dgd.json`](deploy/nhi-dgd.json) | DGD 实例导出 | 集群快照 |
+| [`deploy/nhi-frontend-nodeport.yaml`](deploy/nhi-frontend-nodeport.yaml)、[`deploy/nhi-models-pv-pvc.yaml`](deploy/nhi-models-pv-pvc.yaml) | 请求面新建的 NodePort 与 PV/PVC | 可 apply 清单 |
+| `evidence/01`–`04` | DGD 快照、工作负载宽表、patch 前后对比 | 原始证据 |
+| `evidence/05`–`08` | 实例清单 → 独立栈设计 → 部署验收 → litellm 跨集群接入验收 | 阶段报告 |
+| `backup/otel-collector-config-before-*.yaml` | 两次变更前从集群导出的 ConfigMap | 回滚参照，**凭证已脱敏** |
+
+`backup/` 下的两份快照里 `x-br-acid` 已替换为占位符（真实值只保存在本地被 gitignore 的 `.vscode/`），因此它们**只能用于结构对照，不能直接 `kubectl apply`**；真要回滚需先从集群直取或把占位符换回真实值。
