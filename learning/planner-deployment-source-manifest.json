@@ -1,0 +1,199 @@
+{
+  "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+  "analysis_date": "2026-11-03",
+  "runtime_verified": false,
+  "excerpts": [
+    {
+      "id": "planner-deploy-1",
+      "path": "components/src/dynamo/planner/__main__.py",
+      "start": 33,
+      "end": 67,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "01b82cbb34a220909a27b68e7463ef553d6e556281386375dbd5f9248455b128"
+    },
+    {
+      "id": "planner-deploy-2",
+      "path": "components/src/dynamo/planner/config/planner_config.py",
+      "start": 1103,
+      "end": 1123,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "c6a71d7c5f1e40044a2e33ddbd48c8bedebf0cca5660cac3ffb69daa099a8d02"
+    },
+    {
+      "id": "planner-deploy-3",
+      "path": "components/src/dynamo/profiler/utils/dgd_generation.py",
+      "start": 497,
+      "end": 545,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "4af25855786465bbb130e65cca0b85b5fb680c33d0606af10fa50e1e9a98ebfe"
+    },
+    {
+      "id": "planner-deploy-4",
+      "path": "components/src/dynamo/profiler/utils/dgd_generation.py",
+      "start": 337,
+      "end": 371,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "4af25855786465bbb130e65cca0b85b5fb680c33d0606af10fa50e1e9a98ebfe"
+    },
+    {
+      "id": "planner-deploy-5",
+      "path": "examples/backends/sglang/deploy/disagg_planner.yaml",
+      "start": 7,
+      "end": 52,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "3c8468554ef6980a96b51388c4343548e8ed2cbd9abbc4a877a75c45c9a6458a"
+    },
+    {
+      "id": "planner-deploy-6",
+      "path": "components/src/dynamo/planner/connectors/kubernetes.py",
+      "start": 92,
+      "end": 119,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "9e6c51e0f18983284499eeb7b0258627884b3c8c1edd08064ac55c2e1331c4f7"
+    },
+    {
+      "id": "planner-deploy-7",
+      "path": "deploy/operator/internal/dynamo/component_common.go",
+      "start": 102,
+      "end": 124,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "e64a8efc8521e82992daaf52a0a36253790f4a6bdf9c3faacd46508ab7dbb5a0"
+    },
+    {
+      "id": "planner-deploy-8",
+      "path": "deploy/operator/internal/dynamo/component_common.go",
+      "start": 195,
+      "end": 204,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "e64a8efc8521e82992daaf52a0a36253790f4a6bdf9c3faacd46508ab7dbb5a0"
+    },
+    {
+      "id": "planner-deploy-9",
+      "path": "deploy/operator/internal/dynamo/component_planner.go",
+      "start": 60,
+      "end": 89,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "63f62d3493d440e17ea9c3c4fbb62d43ce4b6f200d0bbcfe8738b81974ff7843"
+    },
+    {
+      "id": "planner-deploy-10",
+      "path": "components/src/dynamo/planner/core/planner_factory.py",
+      "start": 32,
+      "end": 68,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "a36e1c46b714257ed927f009e14572e5e6dc384191ffce815b9e56fda5c38313"
+    },
+    {
+      "id": "planner-deploy-11",
+      "path": "components/src/dynamo/planner/connectors/virtual.py",
+      "start": 32,
+      "end": 46,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "2f0685882f5c360412be48b7d332ac57a2cc677b72f569f2bd1c6e93b6829d3b"
+    },
+    {
+      "id": "planner-deploy-12",
+      "path": "lib/llm/src/http/service/metrics.rs",
+      "start": 1784,
+      "end": 1796,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "9e49455fae180b95693e6bd3753ff238353d98bf382b45fe1c16bd73aaeff102"
+    },
+    {
+      "id": "planner-deploy-13",
+      "path": "components/src/dynamo/planner/environment/metrics_provider/prometheus_traffic_provider.py",
+      "start": 34,
+      "end": 62,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "1d9069c8ef6f20f9fe2d21d4e60f600540129f9bf0949349bf3c8ea13f6e4324"
+    },
+    {
+      "id": "planner-deploy-14",
+      "path": "components/src/dynamo/planner/monitoring/traffic_metrics.py",
+      "start": 145,
+      "end": 162,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "5b39d68813e822f9fb88da03502e72a0934e6289648298c3615ef71c17fa052f"
+    },
+    {
+      "id": "planner-deploy-15",
+      "path": "components/src/dynamo/planner/monitoring/traffic_metrics.py",
+      "start": 386,
+      "end": 433,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "5b39d68813e822f9fb88da03502e72a0934e6289648298c3615ef71c17fa052f"
+    },
+    {
+      "id": "planner-deploy-16",
+      "path": "components/src/dynamo/planner/monitoring/traffic_metrics.py",
+      "start": 209,
+      "end": 242,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "5b39d68813e822f9fb88da03502e72a0934e6289648298c3615ef71c17fa052f"
+    },
+    {
+      "id": "planner-deploy-17",
+      "path": "components/src/dynamo/planner/environment/metrics_provider/prometheus_traffic_provider.py",
+      "start": 167,
+      "end": 190,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "1d9069c8ef6f20f9fe2d21d4e60f600540129f9bf0949349bf3c8ea13f6e4324"
+    },
+    {
+      "id": "planner-deploy-18",
+      "path": "components/src/dynamo/planner/environment/metrics_provider/runtime_provider.py",
+      "start": 144,
+      "end": 181,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "e80103ae4ae2e9d9b6bd937292132c0d55722178c7462f496707a49847ccc0a5"
+    },
+    {
+      "id": "planner-deploy-19",
+      "path": "components/src/dynamo/planner/core/planner_factory.py",
+      "start": 109,
+      "end": 136,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "a36e1c46b714257ed927f009e14572e5e6dc384191ffce815b9e56fda5c38313"
+    },
+    {
+      "id": "planner-deploy-20",
+      "path": "components/src/dynamo/planner/connectors/kubernetes.py",
+      "start": 1563,
+      "end": 1583,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "9e6c51e0f18983284499eeb7b0258627884b3c8c1edd08064ac55c2e1331c4f7"
+    },
+    {
+      "id": "planner-deploy-21",
+      "path": "components/src/dynamo/planner/connectors/kubernetes.py",
+      "start": 1597,
+      "end": 1611,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "9e6c51e0f18983284499eeb7b0258627884b3c8c1edd08064ac55c2e1331c4f7"
+    },
+    {
+      "id": "planner-deploy-22",
+      "path": "components/src/dynamo/planner/core/base.py",
+      "start": 128,
+      "end": 141,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "3a738f0ab2387492fd30375c06c994b0ab5d93ad3f66e69beaaa393a03f22dca"
+    },
+    {
+      "id": "planner-deploy-23",
+      "path": "components/src/dynamo/planner/connectors/kubernetes.py",
+      "start": 134,
+      "end": 162,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "9e6c51e0f18983284499eeb7b0258627884b3c8c1edd08064ac55c2e1331c4f7"
+    },
+    {
+      "id": "planner-deploy-24",
+      "path": "components/src/dynamo/planner/connectors/kubernetes.py",
+      "start": 1193,
+      "end": 1213,
+      "revision": "a908c1a14501b4bb03a7c80833edec0f0e571986",
+      "sha256": "9e6c51e0f18983284499eeb7b0258627884b3c8c1edd08064ac55c2e1331c4f7"
+    }
+  ]
+}

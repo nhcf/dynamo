@@ -579,7 +579,7 @@ index += section(
 index += section(
     "planner-topic",
     "专题 / Planner 与可观测数据",
-    '<p>已展开 Prometheus 查询、FPM 事件与 rank 完整性、性能模型、预测与扩缩容，以及 Planner 自身指标的来源、单位和失效边界。</p><p><a href="planner.html">进入 Planner 源码解读 →</a></p>',
+    '<p>已展开 Prometheus 查询、FPM 事件与 rank 完整性、性能模型、预测与扩缩容，以及 Planner 自身指标的来源、单位和失效边界。</p><p><a href="planner.html">进入 Planner 源码解读 →</a> · <a href="planner-deployment.html">部署与 Frontend 交互（2026-11-03）→</a></p>',
 )
 index += section(
     "pd-serving-topic",

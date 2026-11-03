@@ -15,6 +15,7 @@ The commit message and maintenance instructions use English; tutorial prose rema
 - [06 Prefill/decode disaggregation](pd-serving.html)
 - [07 KV cache and memory management](kv-cache.html)
 - [08 Planner source walkthrough](planner.html)
+- [Planner deployment and Frontend interaction](planner-deployment.html)
 - [09 Control-plane architecture and observability](control-plane.html)
 - [10 Reliability and streaming lifecycle](reliability.html)
 - [11 Global routing and pool views](global-routing.html)
@@ -38,9 +39,11 @@ identified separately from implemented request paths.
 
 The original observability, Planner, PD Trace, and index source excerpts are pinned to
 `2f296b59274867529ea8deef994e6954520024b6`. All other source chapters use
-`9734418e5bc71027e6bd04a09314bf1765208c72`; compare revisions before combining claims.
-This source revision precedes the learning-documentation commits; source links
-therefore avoid documentation-only SHAs. Builders read their pinned Git revision,
+`9734418e5bc71027e6bd04a09314bf1765208c72`, except the 2026-11-03 Planner
+deployment chapter, pinned to `a908c1a14501b4bb03a7c80833edec0f0e571986`.
+Compare revisions before combining claims.
+Source revisions identify upstream code commits; source links avoid local
+documentation-only SHAs. Builders read their pinned Git revision,
 independently of the current checkout.
 The `*-source-manifest.json` files and `source-manifest.json` retain excerpt paths,
 line ranges, revisions, and source hashes; they are part of the documentation.
@@ -63,6 +66,7 @@ python3 learning/build_storage_events.py
 python3 learning/build_reliability.py
 python3 learning/build_pd_serving.py
 python3 learning/build_remaining.py
+python3 learning/build_planner_deployment.py
 python3 learning/maas-dev-deployment/render.py
 ```
 
@@ -90,6 +94,7 @@ node learning/validate.mjs control-plane.html
 node learning/validate.mjs storage-events.html
 node learning/validate.mjs reliability.html
 node learning/validate.mjs pd-serving.html
+node learning/validate.mjs planner-deployment.html
 for page in system-map frontend runtime router backends kv-cache global-routing validation; do
   node learning/validate.mjs "$page.html" || exit 1
 done

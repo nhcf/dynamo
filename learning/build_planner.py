@@ -519,6 +519,11 @@ function plannerWeighted(){var n=+document.getElementById('pl-n').value;document
 document.getElementById('pl-n').addEventListener('input',plannerWeighted);plannerWeighted();
 </script>"""
 result = result.replace("</body>", extra + "</body>")
+result = result.replace(
+    "</header>",
+    '</header><aside class="note">新增专题（2026-11-03 / a908c1a14）：<a href="planner-deployment.html">Planner 部署方式与 Frontend 交互</a>。本页保留原有算法分析基线，请按版本对照。</aside>',
+    1,
+)
 (OUT / "planner.html").write_text(result)
 (OUT / "planner-source-manifest.json").write_text(
     json.dumps(

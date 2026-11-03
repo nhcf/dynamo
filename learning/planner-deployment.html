@@ -1,0 +1,655 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Dynamo 源码解读：系统阅读路线与可观测性实现"><title>Planner 的部署与 Frontend 交互 · Dynamo 源码解读</title><style>
+main{min-width:0;overflow-wrap:anywhere}.sectionhead h2{min-width:0}.tab-panel{overflow-wrap:anywhere}.sourcebar{gap:12px;flex-wrap:wrap}
+:root{--bg:#f5f5f0;--paper:#fff;--ink:#1e2935;--muted:#5d6c76;--line:#dbe1df;--accent:#146c59;--soft:#eaf4ef;--side:260px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}a{color:var(--accent);text-underline-offset:3px}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:7px 12px;color:var(--ink)}button:hover{border-color:var(--accent)}aside.nav{position:fixed;inset:0 auto 0 0;width:var(--side);padding:28px 20px;background:#edf0ea;border-right:1px solid var(--line);overflow:auto}.brand{font-size:12px;letter-spacing:.13em;color:var(--accent);font-weight:800}.nav h2{font-size:21px;margin:12px 0 20px}.nav a{display:block;padding:5px 0;text-decoration:none;font-size:14px;color:var(--muted)}.nav a.active{color:var(--accent);font-weight:750}.nav input[type=search]{width:100%;margin:15px 0;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)}main{margin-left:var(--side);max-width:1400px;padding:45px 5vw 80px}.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:13px;font-weight:750;letter-spacing:.08em}h1{font-size:clamp(30px,4vw,50px);line-height:1.25;letter-spacing:-.035em;margin:16px 0}h2{font-size:24px;line-height:1.4;margin:0}h3{font-size:19px;margin-top:25px}.lede{font-size:19px;color:var(--muted)}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.pill{background:var(--soft);color:var(--accent);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:650}.draft{background:#fff0d7;color:#965b14}.lesson{padding:35px 0;border-bottom:1px solid var(--line)}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:15px}.done{font-size:12px;white-space:nowrap;color:var(--muted)}p{margin:16px 0}code{font:13px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#e9ede9;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#17252c;color:#d9e9e3;padding:18px;border-radius:9px;font:13px/1.75 ui-monospace,monospace;max-height:520px}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}pre .line{display:block;white-space:pre}pre .line i{display:inline-block;min-width:47px;text-align:right;padding-right:15px;color:#7f999e;user-select:none;font-style:normal}.tablewrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eaf0e9}td:first-child{min-width:110px}.note{background:var(--soft);border-left:3px solid var(--accent);padding:15px 20px;margin:22px 0;font-size:14px}.note.warn{background:#fff3df;border-color:#a15c12}.flow{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.flow>div{flex:1;min-width:155px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:14px}.flow b{display:block;font:12px ui-monospace,monospace;color:var(--accent);margin-bottom:7px}.source{background:var(--paper);border:1px solid var(--line);border-radius:9px;margin:16px 0;overflow:hidden}.source summary{padding:14px 18px;cursor:pointer;font-size:14px}.source small{display:block;font:11px/1.7 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.sourcebar{display:flex;justify-content:space-between;align-items:center;padding:0 18px 10px;font-size:12px}.source pre{margin:0;border-radius:0}.exercise{padding:14px 18px;background:#eff2f7;margin-top:25px;border-radius:8px;font-size:14px}.exercise summary{cursor:pointer;font-weight:650}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:22px 0}.card{padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}.card h3{margin:8px 0}.card p{font-size:14px;color:var(--muted)}.num{font:12px ui-monospace,monospace;color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.fine{font-size:12px;color:var(--muted)}.sim,.diagram{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:23px}.sim label{display:block;margin:10px 0;font-size:14px}.sim input{width:100%;accent-color:var(--accent)}.sim-output{font:16px/1.8 ui-monospace,monospace;color:var(--accent);background:var(--soft);padding:15px;margin-top:16px;white-space:pre-line}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.tabs button[aria-selected=true]{background:var(--accent);color:white}.tab-panel{border:1px solid var(--line);border-radius:9px;padding:20px;background:var(--paper)}[hidden]{display:none!important}.lane{display:grid;grid-template-columns:125px 1fr;gap:16px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}.lane:last-child{border:0}.lane b{font-size:13px;color:var(--accent)}.lane span{font-size:14px}.progress{height:5px;background:var(--line);margin-top:15px;border-radius:4px;overflow:hidden}.progress div{height:100%;width:0;background:var(--accent)}footer{margin-top:35px;font-size:12px;color:var(--muted)}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #cf9b2b;outline-offset:3px}@media(max-width:850px){aside.nav{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--line)}.nav h2{margin-bottom:8px}.nav nav{display:flex;gap:12px;overflow:auto;white-space:nowrap}.nav input[type=search]{max-width:400px}main{margin:0;padding:28px 20px 60px}.sectionhead{align-items:flex-start}.lane{grid-template-columns:1fr}}@media print{aside.nav,.toolbar,.done,.copy,.tabs{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}h1{font-size:28pt}pre{max-height:none;white-space:pre-wrap;font-size:9pt}.lesson{padding:20px 0}.tab-panel[hidden]{display:block!important}}
+</style></head><body><aside class="nav"><div class="brand">DYNAMO / SOURCE NOTES</div><h2>源码解读教程</h2><a href="index.html">← 全部章节与系统地图</a><a href="system-map.html">00 · 系统地图与运行形态</a><a href="observability.html">01 · 可观测性源码</a><a href="frontend.html">02 · Frontend 协议流水线</a><a href="runtime.html">03 · Runtime 与通信</a><a href="router.html">04 · KV Router 与调度</a><a href="backends.html">05 · 引擎适配与 Sidecar</a><a href="pd-serving.html">06 · Prefill / Decode 分离</a><a href="kv-cache.html">07 · KV 缓存与内存管理</a><a href="planner.html">08 · Planner / Profiler</a><a href="control-plane.html">09 · Kubernetes 控制面</a><a href="reliability.html">10 · 可靠性与流式生命周期</a><a href="global-routing.html">11 · 多集群与全局路由</a><a href="validation.html">12 · 验证、回放与性能实验</a><a href="pd-trace.html">专题 · PD 全链路 Trace</a><a href="storage-events.html">专题 · Storage &amp; Events</a><input id="search" type="search" aria-label="搜索章节" placeholder="搜索章节 / 函数 / 配置"><nav aria-label="本页目录"><a href="#scope">01 / 先明确结论与版本</a><a href="#architecture">02 / 交互全图：一条请求路径、三条控制链</a><a href="#axes">03 / 部署位置、Connector、运行模式、优化策略分别选</a><a href="#dgdr">04 / 方式一：DGDR 自动生成 Planner（新部署）</a><a href="#manual-dgd">05 / 方式二：已有 DGD 增加 Planner component</a><a href="#operator">06 / Operator 注入什么：身份、Prometheus、RBAC、探针</a><a href="#non-k8s">07 / 方式三：本地/自定义环境与全局仲裁</a><a href="#frontend">08 / Frontend 如何成为 Planner 的观测源</a><a href="#promql">09 / 具体读取什么，以及怎样处理多副本与缺失</a><a href="#fpm">10 / Frontend 指标不是唯一输入：FPM 直接来自 Worker</a><a href="#scale">11 / Planner 改变 Worker；Frontend 经发现面感知</a><a href="#readiness">12 / 两个 namespace、初始化与故障边界</a><a href="#checklist">13 / 接入工作清单与排查顺序</a><a href="#mixed-dgd-audit">14 / 现有混合 DGD 清单：没有 Planner，需先确定管理范围</a><a href="#references">15 / 同版本官方资料与相邻专题</a></nav><div class="progress"><div id="progress"></div></div><p id="progress-label" class="fine"></p><p class="fine">离线可读 · 无外部脚本<br>代码基线 a908c1a14</p></aside><main><header class="hero"><div class="eyebrow">学习路径 / 源码证据 / 工程验证</div><h1>Planner 的部署与 Frontend 交互</h1><p class="lede">独立部署、双观测通道、Worker 伸缩和 Frontend 路由反馈。</p><div class="meta"><span class="pill">2026-11-03</span><span class="pill">commit a908c1a14</span><span class="pill ">Planner 部署专题 v1.0</span></div><div class="toolbar"><button id="expand">展开全部源码</button><button id="collapse">折叠全部源码</button><button id="print">打印 / 保存 PDF</button></div></header><p id="no-results" hidden>没有匹配的章节，清空搜索恢复全文。</p><section id="scope" class="lesson"><div class="sectionhead"><h2>01 / 先明确结论与版本</h2><label class="done"><input type="checkbox" data-read="scope"> 已读</label></div><p><strong>Planner 是独立容量控制组件。Frontend 负责请求服务，Planner 观察流量和 Worker 状态并调整 Worker 副本，正常推理请求不经过 Planner。</strong>二者主要通过 Prometheus 观测和 Worker 成员变化形成反馈，不需要把 Planner 地址配置成 Frontend 的请求下一跳。</p><aside class="note ">本章于 2026-11-03 核对，源码固定于官方代码提交 a908c1a14501b4bb03a7c80833edec0f0e571986，与旧 Planner 教程的 2f296b592 基线分开。分析本地源码和同版本官方仓库文档，未读取实时集群、运行推理或修改部署。</aside></section><section id="architecture" class="lesson"><div class="sectionhead"><h2>02 / 交互全图：一条请求路径、三条控制链</h2><label class="done"><input type="checkbox" data-read="architecture"> 已读</label></div><div class="diagram"><div class="lane"><b>推理请求</b><span>Client → Frontend / Router → Prefill、Decode 或 aggregated Worker → Client。Planner 不处在这条同步调用链上。</span></div><div class="lane"><b>流量观测</b><span>Frontend /metrics → Prometheus scrape → Planner PrometheusTrafficProvider → 流量预测与 SLA throughput proposal。</span></div><div class="lane"><b>引擎负载</b><span>Worker/rank FPM → Runtime Event Plane → Planner RuntimeFpmProvider → load proposal / 性能模型。</span></div><div class="lane"><b>副本反馈</b><span>Planner → Kubernetes Connector → DGDSA /scale 或兼容 DGD 写入 → Operator / workload provider → Worker 注册/撤销 → Frontend 发现并更新路由。</span></div></div><p><a href="planner-deployment-interaction.mmd">Mermaid 交互图源</a>。Frontend 不需要逐请求向 Planner 请示，Planner 的 generate endpoint 也不是推理转发服务。</p><details class="source" id="src-planner-deploy-1"><summary><b>源码 · 初始化、健康用途 mock endpoint 与 --config</b><small>components/src/dynamo/planner/__main__.py:33–67</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/__main__.py#L33-L67" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>33</i>async def start_planner(runtime: DistributedRuntime, config: PlannerConfig):</span>
+<span class="line"><i>34</i>    planner = construct_planner(runtime=runtime, config=config)</span>
+<span class="line"><i>35</i>    await planner._async_init()</span>
+<span class="line"><i>36</i></span>
+<span class="line"><i>37</i>    async def generate(request: RequestType):</span>
+<span class="line"><i>38</i>        yield &quot;mock endpoint&quot;</span>
+<span class="line"><i>39</i></span>
+<span class="line"><i>40</i>    generate_endpoint = runtime.endpoint(f&quot;{config.namespace}.Planner.generate&quot;)</span>
+<span class="line"><i>41</i></span>
+<span class="line"><i>42</i>    # serve_endpoint registers a health check target and sets HealthStatus::Ready</span>
+<span class="line"><i>43</i>    # once the handler is registered with the transport.  Running it concurrently</span>
+<span class="line"><i>44</i>    # with planner.run() ensures the system server (/health, /live) reports the</span>
+<span class="line"><i>45</i>    # planner as ready only after _async_init() has completed.</span>
+<span class="line"><i>46</i>    await asyncio.gather(</span>
+<span class="line"><i>47</i>        generate_endpoint.serve_endpoint(</span>
+<span class="line"><i>48</i>            generate,  # type: ignore[arg-type]</span>
+<span class="line"><i>49</i>            health_check_payload={&quot;text&quot;: &quot;health&quot;},</span>
+<span class="line"><i>50</i>        ),</span>
+<span class="line"><i>51</i>        planner.run(),</span>
+<span class="line"><i>52</i>    )</span>
+<span class="line"><i>53</i></span>
+<span class="line"><i>54</i></span>
+<span class="line"><i>55</i>async def init_planner(runtime: DistributedRuntime, config: PlannerConfig):</span>
+<span class="line"><i>56</i>    await start_planner(runtime, config)</span>
+<span class="line"><i>57</i></span>
+<span class="line"><i>58</i></span>
+<span class="line"><i>59</i>def _parse_config() -&gt; PlannerConfig:</span>
+<span class="line"><i>60</i>    parser = argparse.ArgumentParser(description=&quot;Dynamo Planner&quot;)</span>
+<span class="line"><i>61</i>    parser.add_argument(</span>
+<span class="line"><i>62</i>        &quot;--config&quot;,</span>
+<span class="line"><i>63</i>        required=True,</span>
+<span class="line"><i>64</i>        help=&quot;JSON string or path to a JSON/YAML config file&quot;,</span>
+<span class="line"><i>65</i>    )</span>
+<span class="line"><i>66</i>    args = parser.parse_args()</span>
+<span class="line"><i>67</i>    return PlannerConfig.from_config_arg(args.config)</span></code></pre></details></section><section id="axes" class="lesson"><div class="sectionhead"><h2>03 / 部署位置、Connector、运行模式、优化策略分别选</h2><label class="done"><input type="checkbox" data-read="axes"> 已读</label></div><details class="source" id="src-planner-deploy-2"><summary><b>源码 · environment、namespace、backend、mode 与默认目标</b><small>components/src/dynamo/planner/config/planner_config.py:1103–1123</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/config/planner_config.py#L1103-L1123" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1103</i>    environment: Literal[</span>
+<span class="line"><i>1104</i>        &quot;kubernetes&quot;, &quot;virtual&quot;, &quot;global-planner&quot;</span>
+<span class="line"><i>1105</i>    ] = SLAPlannerDefaults.environment</span>
+<span class="line"><i>1106</i>    namespace: str = Field(</span>
+<span class="line"><i>1107</i>        default_factory=lambda: os.environ.get(&quot;DYN_NAMESPACE&quot;, &quot;dynamo&quot;),</span>
+<span class="line"><i>1108</i>        exclude=True,</span>
+<span class="line"><i>1109</i>    )</span>
+<span class="line"><i>1110</i>    backend: Literal[&quot;vllm&quot;, &quot;sglang&quot;, &quot;trtllm&quot;, &quot;mocker&quot;] = SLAPlannerDefaults.backend</span>
+<span class="line"><i>1111</i>    mode: Literal[&quot;disagg&quot;, &quot;prefill&quot;, &quot;decode&quot;, &quot;agg&quot;] = SLAPlannerDefaults.mode</span>
+<span class="line"><i>1112</i>    optimization_target: Literal[&quot;throughput&quot;, &quot;latency&quot;, &quot;load&quot;, &quot;sla&quot;] = Field(</span>
+<span class="line"><i>1113</i>        default=&quot;throughput&quot;,</span>
+<span class="line"><i>1114</i>        description=(</span>
+<span class="line"><i>1115</i>            &quot;Scaling optimization target. &quot;</span>
+<span class="line"><i>1116</i>            &quot;&#x27;throughput&#x27; (default) and &#x27;latency&#x27; use static thresholds on queue &quot;</span>
+<span class="line"><i>1117</i>            &quot;depth and KV cache utilization — no SLA targets or profiling needed. &quot;</span>
+<span class="line"><i>1118</i>            &quot;&#x27;load&#x27; uses user-defined prefill queue token and decode KV &quot;</span>
+<span class="line"><i>1119</i>            &quot;utilization thresholds. &quot;</span>
+<span class="line"><i>1120</i>            &quot;&#x27;sla&#x27; uses the AISimulate performance model to target specific &quot;</span>
+<span class="line"><i>1121</i>            &quot;ttft_ms/itl_ms values.&quot;</span>
+<span class="line"><i>1122</i>        ),</span>
+<span class="line"><i>1123</i>    )</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>维度</th><th>取值 / 建议</th><th>不要混淆</th></tr></thead><tbody><tr><td>进程/Pod</td><td>一般每个受管 DGD 配 1 个 Planner component；使用专用 planner image</td><td>不是 Frontend 线程，也不是每个 Frontend Pod 配一个 Planner</td></tr><tr><td>environment</td><td>kubernetes / virtual / global-planner</td><td>决定伸缩执行出口，不决定推理是聚合还是 PD</td></tr><tr><td>mode</td><td>agg / disagg / prefill / decode</td><td>决定受管 Worker 角色，不是 Connector 类型</td></tr><tr><td>optimization_target</td><td>throughput / latency / load / sla</td><td>throughput 目标与 SLA enable_throughput_scaling 是不同开关</td></tr></tbody></table></div><p>单副本是当前示例的常规形态。不能将多副本 Planner 直接当作已具备 HA leader election 的配置，也应避免同一目标同时由不协调的 HPA/KEDA/另一个 Planner 写入。</p></section><section id="dgdr" class="lesson"><div class="sectionhead"><h2>04 / 方式一：DGDR 自动生成 Planner（新部署）</h2><label class="done"><input type="checkbox" data-read="dgdr"> 已读</label></div><p>在 DynamoGraphDeploymentRequest 的 <code>spec.features.planner</code> 开启/填写 PlannerConfig；Profiler 生成最终 DGD，添加 Planner component、配置 ConfigMap 和挂载，并传入 <code>--config /.../planner_config.json</code>。有额外性能引导数据时还会准备相应数据挂载；不是所有路径都必须有 profiling NPZ。</p><details class="source" id="src-planner-deploy-3"><summary><b>源码 · 专用 Planner image、ConfigMap 和挂载</b><small>components/src/dynamo/profiler/utils/dgd_generation.py:497–545</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/profiler/utils/dgd_generation.py#L497-L545" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>497</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>498</i>    planner_cfg = _build_planner_config(</span>
+<span class="line"><i>499</i>        dgdr,</span>
+<span class="line"><i>500</i>        best_prefill_mapping,</span>
+<span class="line"><i>501</i>        best_decode_mapping,</span>
+<span class="line"><i>502</i>        aic_spec,</span>
+<span class="line"><i>503</i>        ais_perf_model,</span>
+<span class="line"><i>504</i>    )</span>
+<span class="line"><i>505</i>    planner_cfg.profile_results_dir = PROFILE_DATA_MOUNT</span>
+<span class="line"><i>506</i></span>
+<span class="line"><i>507</i>    planner_component = DgdPlannerComponentConfig()</span>
+<span class="line"><i>508</i>    if dgdr.image:</span>
+<span class="line"><i>509</i>        get_main_container(planner_component).image = derive_planner_image(dgdr.image)</span>
+<span class="line"><i>510</i></span>
+<span class="line"><i>511</i>    planner_dict = planner_component.model_dump(exclude_unset=False)</span>
+<span class="line"><i>512</i></span>
+<span class="line"><i>513</i>    planner_config_cm_name = _make_cm_name(PLANNER_CONFIG_PREFIX)</span>
+<span class="line"><i>514</i></span>
+<span class="line"><i>515</i>    # --- ConfigMap: planner config ---</span>
+<span class="line"><i>516</i>    planner_config_cm = {</span>
+<span class="line"><i>517</i>        &quot;apiVersion&quot;: &quot;v1&quot;,</span>
+<span class="line"><i>518</i>        &quot;kind&quot;: &quot;ConfigMap&quot;,</span>
+<span class="line"><i>519</i>        &quot;metadata&quot;: {&quot;name&quot;: planner_config_cm_name},</span>
+<span class="line"><i>520</i>        &quot;data&quot;: {</span>
+<span class="line"><i>521</i>            &quot;planner_config.json&quot;: planner_cfg.model_dump_json(),</span>
+<span class="line"><i>522</i>        },</span>
+<span class="line"><i>523</i>    }</span>
+<span class="line"><i>524</i></span>
+<span class="line"><i>525</i>    # --- Mount planner-config ConfigMap into the planner component ---</span>
+<span class="line"><i>526</i>    pod_spec = planner_dict.setdefault(&quot;podTemplate&quot;, {}).setdefault(&quot;spec&quot;, {})</span>
+<span class="line"><i>527</i>    planner_volumes = pod_spec.get(&quot;volumes&quot;) or []</span>
+<span class="line"><i>528</i>    pod_spec[&quot;volumes&quot;] = planner_volumes</span>
+<span class="line"><i>529</i>    mc_dict = get_main_container_dict(planner_dict)</span>
+<span class="line"><i>530</i>    if mc_dict is None:</span>
+<span class="line"><i>531</i>        raise ValueError(&quot;Generated Planner component has no main container&quot;)</span>
+<span class="line"><i>532</i>    mc_mounts = mc_dict.get(&quot;volumeMounts&quot;) or []</span>
+<span class="line"><i>533</i>    mc_dict[&quot;volumeMounts&quot;] = mc_mounts</span>
+<span class="line"><i>534</i></span>
+<span class="line"><i>535</i>    planner_volumes.append(</span>
+<span class="line"><i>536</i>        {</span>
+<span class="line"><i>537</i>            &quot;name&quot;: planner_config_cm_name,</span>
+<span class="line"><i>538</i>            &quot;configMap&quot;: {&quot;name&quot;: planner_config_cm_name},</span>
+<span class="line"><i>539</i>        }</span>
+<span class="line"><i>540</i>    )</span>
+<span class="line"><i>541</i>    mc_mounts.append(</span>
+<span class="line"><i>542</i>        {</span>
+<span class="line"><i>543</i>            &quot;name&quot;: planner_config_cm_name,</span>
+<span class="line"><i>544</i>            &quot;mountPath&quot;: PLANNER_CONFIG_MOUNT,</span>
+<span class="line"><i>545</i>            &quot;readOnly&quot;: True,</span></code></pre></details><details class="source" id="src-planner-deploy-4"><summary><b>源码 · 非 advisory 的 Worker scaling adapter opt-in</b><small>components/src/dynamo/profiler/utils/dgd_generation.py:337–371</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/profiler/utils/dgd_generation.py#L337-L371" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>337</i>def enable_planner_worker_scaling_adapters(</span>
+<span class="line"><i>338</i>    config_dict: dict, planner_config: PlannerConfig</span>
+<span class="line"><i>339</i>) -&gt; None:</span>
+<span class="line"><i>340</i>    &quot;&quot;&quot;Opt worker components into DGDSA when Planner manages replicas.&quot;&quot;&quot;</span>
+<span class="line"><i>341</i>    if planner_config.advisory:</span>
+<span class="line"><i>342</i>        return</span>
+<span class="line"><i>343</i></span>
+<span class="line"><i>344</i>    components = config_dict.get(&quot;spec&quot;, {}).get(&quot;components&quot;, [])</span>
+<span class="line"><i>345</i>    if not isinstance(components, list):</span>
+<span class="line"><i>346</i>        return</span>
+<span class="line"><i>347</i></span>
+<span class="line"><i>348</i>    target_subcomponents = _planner_scaling_subcomponents(planner_config.mode)</span>
+<span class="line"><i>349</i>    untyped_worker_count = sum(</span>
+<span class="line"><i>350</i>        1</span>
+<span class="line"><i>351</i>        for component in components</span>
+<span class="line"><i>352</i>        if isinstance(component, dict)</span>
+<span class="line"><i>353</i>        and component.get(&quot;type&quot;) == &quot;worker&quot;</span>
+<span class="line"><i>354</i>        and _infer_subcomponent_from_component_name(component.get(&quot;name&quot;, &quot;&quot;)) is None</span>
+<span class="line"><i>355</i>    )</span>
+<span class="line"><i>356</i></span>
+<span class="line"><i>357</i>    for component in components:</span>
+<span class="line"><i>358</i>        if not isinstance(component, dict):</span>
+<span class="line"><i>359</i>            continue</span>
+<span class="line"><i>360</i>        if not _is_planner_scalable_worker_component(</span>
+<span class="line"><i>361</i>            component,</span>
+<span class="line"><i>362</i>            target_subcomponents,</span>
+<span class="line"><i>363</i>            planner_config.mode,</span>
+<span class="line"><i>364</i>            untyped_worker_count,</span>
+<span class="line"><i>365</i>        ):</span>
+<span class="line"><i>366</i>            continue</span>
+<span class="line"><i>367</i>        scaling_adapter = component.setdefault(&quot;scalingAdapter&quot;, {})</span>
+<span class="line"><i>368</i>        if not isinstance(scaling_adapter, dict):</span>
+<span class="line"><i>369</i>            component[&quot;scalingAdapter&quot;] = {&quot;enabled&quot;: True}</span>
+<span class="line"><i>370</i>            continue</span>
+<span class="line"><i>371</i>        scaling_adapter[&quot;enabled&quot;] = True</span></code></pre></details><p>参考完整例子 <code>examples/deployments/dgdr/planner.yaml</code>。其 <code>searchStrategy: rapid</code> 是部署前配置搜索；Planner 的 <code>pre_deployment_sweeping_mode</code> 是运行性能模型引导设置，两者不能仅按相同 rapid 字样混为一步。<code>autoApply: true</code> 才进入自动应用生成部署的路径。</p></section><section id="manual-dgd" class="lesson"><div class="sectionhead"><h2>05 / 方式二：已有 DGD 增加 Planner component</h2><label class="done"><input type="checkbox" data-read="manual-dgd"> 已读</label></div><details class="source" id="src-planner-deploy-5"><summary><b>源码 · Frontend 与独立 Planner component 的实际示例</b><small>examples/backends/sglang/deploy/disagg_planner.yaml:7–52</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/examples/backends/sglang/deploy/disagg_planner.yaml#L7-L52" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>7</i>  name: sglang-disagg-planner</span>
+<span class="line"><i>8</i>spec:</span>
+<span class="line"><i>9</i>  components:</span>
+<span class="line"><i>10</i>  - name: Frontend</span>
+<span class="line"><i>11</i>    podTemplate:</span>
+<span class="line"><i>12</i>      spec:</span>
+<span class="line"><i>13</i>        containers:</span>
+<span class="line"><i>14</i>        - image: my-registry/sglang-runtime:my-tag</span>
+<span class="line"><i>15</i>          name: main</span>
+<span class="line"><i>16</i>    replicas: 1</span>
+<span class="line"><i>17</i>    type: frontend</span>
+<span class="line"><i>18</i>  - name: Planner</span>
+<span class="line"><i>19</i>    podTemplate:</span>
+<span class="line"><i>20</i>      spec:</span>
+<span class="line"><i>21</i>        containers:</span>
+<span class="line"><i>22</i>        - args:</span>
+<span class="line"><i>23</i>          - --config</span>
+<span class="line"><i>24</i>          - &#x27;{&quot;environment&quot;: &quot;kubernetes&quot;, &quot;backend&quot;: &quot;sglang&quot;, &quot;optimization_target&quot;: &quot;sla&quot;,</span>
+<span class="line"><i>25</i>            &quot;enable_throughput_scaling&quot;: true, &quot;enable_load_scaling&quot;: true, &quot;pre_deployment_sweeping_mode&quot;:</span>
+<span class="line"><i>26</i>            &quot;none&quot;, &quot;throughput_adjustment_interval_seconds&quot;: 60, &quot;load_adjustment_interval_seconds&quot;: 5}&#x27;</span>
+<span class="line"><i>27</i>          command:</span>
+<span class="line"><i>28</i>          - python3</span>
+<span class="line"><i>29</i>          - -m</span>
+<span class="line"><i>30</i>          - dynamo.planner</span>
+<span class="line"><i>31</i>          envFrom:</span>
+<span class="line"><i>32</i>          - secretRef:</span>
+<span class="line"><i>33</i>              name: hf-token-secret</span>
+<span class="line"><i>34</i>          # Planner image selection:</span>
+<span class="line"><i>35</i>          #   Dynamo &gt;= 1.1.0: use the dedicated planner image</span>
+<span class="line"><i>36</i>          #     &lt;registry&gt;/dynamo-planner:&lt;version&gt;</span>
+<span class="line"><i>37</i>          #     (backend runtime images no longer ship planner runtime deps</span>
+<span class="line"><i>38</i>          #     such as kubernetes_asyncio, pmdarima, prophet, aiconfigurator).</span>
+<span class="line"><i>39</i>          #   Dynamo &lt;  1.1.0: use the backend runtime image</span>
+<span class="line"><i>40</i>          #     &lt;registry&gt;/sglang-runtime:&lt;version&gt;.</span>
+<span class="line"><i>41</i>          image: my-registry/dynamo-planner:my-tag</span>
+<span class="line"><i>42</i>          name: main</span>
+<span class="line"><i>43</i>    replicas: 1</span>
+<span class="line"><i>44</i>    type: planner</span>
+<span class="line"><i>45</i>  - name: decode</span>
+<span class="line"><i>46</i>    podTemplate:</span>
+<span class="line"><i>47</i>      spec:</span>
+<span class="line"><i>48</i>        containers:</span>
+<span class="line"><i>49</i>        - args:</span>
+<span class="line"><i>50</i>          - --model-path</span>
+<span class="line"><i>51</i>          - Qwen/Qwen3-0.6B</span>
+<span class="line"><i>52</i>          - --served-model-name</span></code></pre></details><p>Planner 使用 <code>type: planner</code>、<code>replicas: 1</code>，容器运行 <code>python3 -m dynamo.planner --config ...</code>；配置既可内联 JSON，也可挂载 JSON/YAML 文件。SGLang/vLLM/TensorRT-LLM 分别有 disagg_planner.yaml 示例；替换 registry/tag、模型及并行参数后再使用，不要覆盖现有私有镜像配置。</p><p>从 1.1.0 起这些示例要求专用 dynamo-planner image：backend runtime 不保证包含 Planner 的完整依赖。当前 mode=agg 与 PD 均支持；单纯需要 reactive 扩缩容时不必先完成真实 GPU profiling。</p><details class="source" id="src-planner-deploy-6"><summary><b>源码 · 手工独立运行时必须知道受管 DGD 身份</b><small>components/src/dynamo/planner/connectors/kubernetes.py:92–119</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/connectors/kubernetes.py#L92-L119" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>92</i>    def __init__(</span>
+<span class="line"><i>93</i>        self,</span>
+<span class="line"><i>94</i>        dynamo_namespace: str,</span>
+<span class="line"><i>95</i>        model_name: Optional[str] = None,</span>
+<span class="line"><i>96</i>        k8s_namespace: Optional[str] = None,</span>
+<span class="line"><i>97</i>        parent_dgd_name: Optional[str] = None,</span>
+<span class="line"><i>98</i>        raise_not_ready: bool = False,</span>
+<span class="line"><i>99</i>    ):</span>
+<span class="line"><i>100</i>        self.kube_api = KubernetesAPI(k8s_namespace)</span>
+<span class="line"><i>101</i></span>
+<span class="line"><i>102</i>        self.user_provided_model_name: Optional[str] = None</span>
+<span class="line"><i>103</i>        if model_name:</span>
+<span class="line"><i>104</i>            self.user_provided_model_name = (</span>
+<span class="line"><i>105</i>                model_name.lower()</span>
+<span class="line"><i>106</i>            )  # normalize model name to lowercase (MDC)</span>
+<span class="line"><i>107</i></span>
+<span class="line"><i>108</i>        # Allow overriding parent DGD name for centralized planner</span>
+<span class="line"><i>109</i>        if parent_dgd_name:</span>
+<span class="line"><i>110</i>            self.parent_dgd_name = parent_dgd_name</span>
+<span class="line"><i>111</i>        else:</span>
+<span class="line"><i>112</i>            graph_deployment_name = os.getenv(&quot;DYN_PARENT_DGD_K8S_NAME&quot;)</span>
+<span class="line"><i>113</i>            if not graph_deployment_name:</span>
+<span class="line"><i>114</i>                raise DeploymentValidationError(</span>
+<span class="line"><i>115</i>                    [&quot;DYN_PARENT_DGD_K8S_NAME environment variable is not set&quot;]</span>
+<span class="line"><i>116</i>                )</span>
+<span class="line"><i>117</i>            self.parent_dgd_name = graph_deployment_name</span>
+<span class="line"><i>118</i></span>
+<span class="line"><i>119</i>        # For backwards compatibility</span></code></pre></details></section><section id="operator" class="lesson"><div class="sectionhead"><h2>06 / Operator 注入什么：身份、Prometheus、RBAC、探针</h2><label class="done"><input type="checkbox" data-read="operator"> 已读</label></div><details class="source" id="src-planner-deploy-7"><summary><b>源码 · DYN_NAMESPACE 与受管 DGD 名称/命名空间</b><small>deploy/operator/internal/dynamo/component_common.go:102–124</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/deploy/operator/internal/dynamo/component_common.go#L102-L124" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>102</i>	AddStandardEnvVars(&amp;container, context.Infrastructure)</span>
+<span class="line"><i>103</i>	AddTransportTLSEnvVars(&amp;container, context.Infrastructure)</span>
+<span class="line"><i>104</i></span>
+<span class="line"><i>105</i>	// Runtime identity is independent of the infrastructure configuration.</span>
+<span class="line"><i>106</i>	container.Env = append(container.Env, []corev1.EnvVar{</span>
+<span class="line"><i>107</i>		{</span>
+<span class="line"><i>108</i>			Name:  commonconsts.DynamoNamespaceEnvVar,</span>
+<span class="line"><i>109</i>			Value: context.DynamoNamespace,</span>
+<span class="line"><i>110</i>		},</span>
+<span class="line"><i>111</i>		{</span>
+<span class="line"><i>112</i>			Name:  commonconsts.DynamoComponentEnvVar,</span>
+<span class="line"><i>113</i>			Value: context.ComponentType,</span>
+<span class="line"><i>114</i>		},</span>
+<span class="line"><i>115</i>		{</span>
+<span class="line"><i>116</i>			Name:  &quot;DYN_PARENT_DGD_K8S_NAME&quot;,</span>
+<span class="line"><i>117</i>			Value: context.ParentGraphDeploymentName,</span>
+<span class="line"><i>118</i>		},</span>
+<span class="line"><i>119</i>		{</span>
+<span class="line"><i>120</i>			Name:  &quot;DYN_PARENT_DGD_K8S_NAMESPACE&quot;,</span>
+<span class="line"><i>121</i>			Value: context.ParentGraphDeploymentNamespace,</span>
+<span class="line"><i>122</i>		},</span>
+<span class="line"><i>123</i>		{</span>
+<span class="line"><i>124</i>			Name: &quot;POD_NAME&quot;,</span></code></pre></details><details class="source" id="src-planner-deploy-8"><summary><b>源码 · 基础设施 Prometheus URL 注入</b><small>deploy/operator/internal/dynamo/component_common.go:195–204</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/deploy/operator/internal/dynamo/component_common.go#L195-L204" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>195</i>	}</span>
+<span class="line"><i>196</i>	if infrastructure.PrometheusEndpoint != &quot;&quot; {</span>
+<span class="line"><i>197</i>		standardEnvVars = append(standardEnvVars, corev1.EnvVar{</span>
+<span class="line"><i>198</i>			Name:  &quot;PROMETHEUS_ENDPOINT&quot;,</span>
+<span class="line"><i>199</i>			Value: infrastructure.PrometheusEndpoint,</span>
+<span class="line"><i>200</i>		})</span>
+<span class="line"><i>201</i>	}</span>
+<span class="line"><i>202</i>	// merge the env vars to allow users to override the standard env vars</span>
+<span class="line"><i>203</i>	container.Env = MergeEnvs(standardEnvVars, container.Env)</span>
+<span class="line"><i>204</i>}</span></code></pre></details><details class="source" id="src-planner-deploy-9"><summary><b>源码 · 较长 startup probe、指标端口与 ServiceAccount</b><small>deploy/operator/internal/dynamo/component_planner.go:60–89</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/deploy/operator/internal/dynamo/component_planner.go#L60-L89" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>60</i>	// Startup probe with generous timeout: the planner waits for worker</span>
+<span class="line"><i>61</i>	// services to become ready before it can initialise, so it needs more</span>
+<span class="line"><i>62</i>	// time than a typical worker.</span>
+<span class="line"><i>63</i>	container.StartupProbe = &amp;corev1.Probe{</span>
+<span class="line"><i>64</i>		HTTPGet: &amp;corev1.HTTPGetAction{</span>
+<span class="line"><i>65</i>			Path: &quot;/live&quot;,</span>
+<span class="line"><i>66</i>			Port: intstr.FromString(commonconsts.DynamoSystemPortName),</span>
+<span class="line"><i>67</i>		},</span>
+<span class="line"><i>68</i>		PeriodSeconds:    10,</span>
+<span class="line"><i>69</i>		TimeoutSeconds:   5,</span>
+<span class="line"><i>70</i>		FailureThreshold: 720, // 10s * 720 = 7200s = 2h</span>
+<span class="line"><i>71</i>	}</span>
+<span class="line"><i>72</i></span>
+<span class="line"><i>73</i>	container.Env = append(container.Env, []corev1.EnvVar{</span>
+<span class="line"><i>74</i>		{</span>
+<span class="line"><i>75</i>			Name:  &quot;PLANNER_PROMETHEUS_PORT&quot;,</span>
+<span class="line"><i>76</i>			Value: fmt.Sprintf(&quot;%d&quot;, commonconsts.DynamoPlannerMetricsPort),</span>
+<span class="line"><i>77</i>		},</span>
+<span class="line"><i>78</i>		{</span>
+<span class="line"><i>79</i>			Name:  &quot;DYN_SYSTEM_PORT&quot;,</span>
+<span class="line"><i>80</i>			Value: fmt.Sprintf(&quot;%d&quot;, commonconsts.DynamoSystemPort),</span>
+<span class="line"><i>81</i>		},</span>
+<span class="line"><i>82</i>	}...)</span>
+<span class="line"><i>83</i>	return container, nil</span>
+<span class="line"><i>84</i>}</span>
+<span class="line"><i>85</i></span>
+<span class="line"><i>86</i>func (p *PlannerDefaults) GetBasePodSpec(context ComponentContext) (corev1.PodSpec, error) {</span>
+<span class="line"><i>87</i>	podSpec := p.getCommonPodSpec()</span>
+<span class="line"><i>88</i>	podSpec.ServiceAccountName = commonconsts.PlannerServiceAccountName</span>
+<span class="line"><i>89</i>	return podSpec, nil</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>配置/端口</th><th>用途</th><th>检查内容</th></tr></thead><tbody><tr><td>DYN_NAMESPACE</td><td>Dynamo 逻辑部署作用域</td><td>不能直接当 Kubernetes namespace 或 Prometheus job</td></tr><tr><td>DYN_PARENT_DGD_K8S_NAME / NAMESPACE</td><td>受管 Kubernetes DGD 的定位</td><td>Planner 放到不同 Pod 不等于自动知道目标 DGD</td></tr><tr><td>PROMETHEUS_ENDPOINT</td><td>Planner 查询的 Prometheus HTTP API</td><td>必须是实际可达地址，不能指向 Frontend /metrics</td></tr><tr><td>Planner 9085</td><td>PLANNER_PROMETHEUS_PORT，自身决策/诊断指标</td><td>不是输入流量采集地址</td></tr><tr><td>Planner 9090</td><td>DYN_SYSTEM_PORT，/live /health</td><td>与 Frontend HTTP API/metrics 端口分开</td></tr><tr><td>planner-serviceaccount</td><td>读模型/Pod/EndpointSlice、修改 DGD/DGDSA</td><td>对应 namespace 的 RoleBinding 和 /scale 权限</td></tr></tbody></table></div><p>端口值来自当前 Operator 常量，Pod template 可覆盖时应以渲染结果为准。Helm 的 <code>components/operator/templates/planner.yaml</code> 定义权限；cluster-wide chart 模式依然通过 namespace-scoped RoleBinding 限定 Planner 权限。单独建 Deployment 时要自行提供环境变量、ServiceAccount/RoleBinding、配置挂载和相应发现权限。</p></section><section id="non-k8s" class="lesson"><div class="sectionhead"><h2>07 / 方式三：本地/自定义环境与全局仲裁</h2><label class="done"><input type="checkbox" data-read="non-k8s"> 已读</label></div><details class="source" id="src-planner-deploy-10"><summary><b>源码 · 三种 Connector 的真实选择</b><small>components/src/dynamo/planner/core/planner_factory.py:32–68</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/core/planner_factory.py#L32-L68" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>32</i>    config: PlannerConfig,</span>
+<span class="line"><i>33</i>    runtime: Optional[DistributedRuntime] = None,</span>
+<span class="line"><i>34</i>    worker_info_provider: Optional[WorkerInfoProvider] = None,</span>
+<span class="line"><i>35</i>) -&gt; PlannerConnector:</span>
+<span class="line"><i>36</i>    if config.environment == &quot;global-planner&quot;:</span>
+<span class="line"><i>37</i>        if runtime is None:</span>
+<span class="line"><i>38</i>            raise ValueError(&quot;runtime is required for environment=&#x27;global-planner&#x27;&quot;)</span>
+<span class="line"><i>39</i>        if not config.global_planner_namespace:</span>
+<span class="line"><i>40</i>            raise ValueError(</span>
+<span class="line"><i>41</i>                &quot;global_planner_namespace is required for environment=&#x27;global-planner&#x27;&quot;</span>
+<span class="line"><i>42</i>            )</span>
+<span class="line"><i>43</i>        return GlobalPlannerConnector(</span>
+<span class="line"><i>44</i>            runtime=runtime,</span>
+<span class="line"><i>45</i>            dynamo_namespace=config.namespace,</span>
+<span class="line"><i>46</i>            global_planner_namespace=config.global_planner_namespace,</span>
+<span class="line"><i>47</i>            global_planner_component=&quot;GlobalPlanner&quot;,</span>
+<span class="line"><i>48</i>            model_name=config.model_name,</span>
+<span class="line"><i>49</i>        )</span>
+<span class="line"><i>50</i>    if config.environment == &quot;kubernetes&quot;:</span>
+<span class="line"><i>51</i>        return KubernetesConnector(</span>
+<span class="line"><i>52</i>            dynamo_namespace=config.namespace,</span>
+<span class="line"><i>53</i>            model_name=config.model_name,</span>
+<span class="line"><i>54</i>        )</span>
+<span class="line"><i>55</i>    if config.environment == &quot;virtual&quot;:</span>
+<span class="line"><i>56</i>        if runtime is None:</span>
+<span class="line"><i>57</i>            raise ValueError(&quot;runtime is required for environment=&#x27;virtual&#x27;&quot;)</span>
+<span class="line"><i>58</i>        if worker_info_provider is None:</span>
+<span class="line"><i>59</i>            raise ValueError(</span>
+<span class="line"><i>60</i>                &quot;worker_info_provider is required for environment=&#x27;virtual&#x27;&quot;</span>
+<span class="line"><i>61</i>            )</span>
+<span class="line"><i>62</i>        return VirtualConnector(</span>
+<span class="line"><i>63</i>            runtime=runtime,</span>
+<span class="line"><i>64</i>            dynamo_namespace=config.namespace,</span>
+<span class="line"><i>65</i>            worker_info_provider=worker_info_provider,</span>
+<span class="line"><i>66</i>            model_name=config.model_name,</span>
+<span class="line"><i>67</i>        )</span>
+<span class="line"><i>68</i>    raise ValueError(f&quot;Invalid environment: {config.environment}&quot;)</span></code></pre></details><details class="source" id="src-planner-deploy-11"><summary><b>源码 · Virtual 只发布决策，由外部环境执行并回报</b><small>components/src/dynamo/planner/connectors/virtual.py:32–46</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/connectors/virtual.py#L32-L46" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>32</i>    &quot;&quot;&quot;Coordinate planner scaling decisions for non-native environments.</span>
+<span class="line"><i>33</i></span>
+<span class="line"><i>34</i>    The connector does not scale a deployment directly. It publishes decisions</span>
+<span class="line"><i>35</i>    through the Dynamo runtime&#x27;s ``VirtualConnectorCoordinator``; the deployment</span>
+<span class="line"><i>36</i>    environment consumes them with ``VirtualConnectorClient`` and reports scaling</span>
+<span class="line"><i>37</i>    status back to the coordinator.</span>
+<span class="line"><i>38</i></span>
+<span class="line"><i>39</i>    Virtual deployments do not have a Kubernetes API from which to derive worker</span>
+<span class="line"><i>40</i>    component and endpoint metadata. They therefore require a</span>
+<span class="line"><i>41</i>    ``worker_info_provider`` that resolves ``WorkerInfo`` from runtime MDC. The</span>
+<span class="line"><i>42</i>    planner factory normally supplies its ``RuntimeFpmProvider``, sharing the same</span>
+<span class="line"><i>43</i>    runtime discovery source used for forward-pass metrics.</span>
+<span class="line"><i>44</i>    &quot;&quot;&quot;</span>
+<span class="line"><i>45</i></span>
+<span class="line"><i>46</i>    def __init__(</span></code></pre></details><p>命令统一为 <code>python3 -m dynamo.planner --config planner.yaml</code>。<code>environment: virtual</code> 需要 model_name、Runtime 发现/FPM，以及消费 VirtualConnectorCoordinator 决策的客户端；仅启动 Planner 并不会替你创建/销毁引擎进程。</p><p><code>environment: global-planner</code> 则把局部伸缩意图送到 Global Planner，做共享预算仲裁后执行。Global Router 的跨池选路与 Global Planner 容量协调是独立职责；pool-local Planner 可用 <code>throughput_metrics_source: router</code> 观察局部流量，而不是每个池都读取公共 Frontend 的全局请求量。</p></section><section id="frontend" class="lesson"><div class="sectionhead"><h2>08 / Frontend 如何成为 Planner 的观测源</h2><label class="done"><input type="checkbox" data-read="frontend"> 已读</label></div><details class="source" id="src-planner-deploy-12"><summary><b>源码 · Frontend 接受请求时递增 started counter</b><small>lib/llm/src/http/service/metrics.rs:1784–1796</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/lib/llm/src/http/service/metrics.rs#L1784-L1796" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1784</i></span>
+<span class="line"><i>1785</i>    /// Increment the counter for requests accepted by the frontend handler.</span>
+<span class="line"><i>1786</i>    fn inc_request_started_counter(</span>
+<span class="line"><i>1787</i>        &amp;self,</span>
+<span class="line"><i>1788</i>        model: &amp;str,</span>
+<span class="line"><i>1789</i>        endpoint: &amp;Endpoint,</span>
+<span class="line"><i>1790</i>        request_type: &amp;RequestType,</span>
+<span class="line"><i>1791</i>    ) {</span>
+<span class="line"><i>1792</i>        self.request_started_counter</span>
+<span class="line"><i>1793</i>            .with_label_values(&amp;[model, endpoint.as_str(), request_type.as_str()])</span>
+<span class="line"><i>1794</i>            .inc()</span>
+<span class="line"><i>1795</i>    }</span>
+<span class="line"><i>1796</i></span></code></pre></details><details class="source" id="src-planner-deploy-13"><summary><b>源码 · Provider 持有 Prometheus API client，并指定 namespace/source</b><small>components/src/dynamo/planner/environment/metrics_provider/prometheus_traffic_provider.py:34–62</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/environment/metrics_provider/prometheus_traffic_provider.py#L34-L62" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>34</i>    def __init__(</span>
+<span class="line"><i>35</i>        self,</span>
+<span class="line"><i>36</i>        *,</span>
+<span class="line"><i>37</i>        config: PlannerConfig,</span>
+<span class="line"><i>38</i>        state_source: DeploymentStateSource,</span>
+<span class="line"><i>39</i>        metrics_state: Metrics,</span>
+<span class="line"><i>40</i>        namespace_source: Optional[RuntimeNamespaceSource] = None,</span>
+<span class="line"><i>41</i>    ) -&gt; None:</span>
+<span class="line"><i>42</i>        self._collection_lock = asyncio.Lock()</span>
+<span class="line"><i>43</i>        self._collection_task: Optional[asyncio.Task[Metrics]] = None</span>
+<span class="line"><i>44</i>        self.config = config</span>
+<span class="line"><i>45</i>        self.state_source = state_source</span>
+<span class="line"><i>46</i>        self.metrics_state = metrics_state</span>
+<span class="line"><i>47</i>        self.namespace_source = namespace_source</span>
+<span class="line"><i>48</i>        self.prometheus_traffic_client = PrometheusAPIClient(</span>
+<span class="line"><i>49</i>            config.metric_pulling_prometheus_endpoint,</span>
+<span class="line"><i>50</i>            config.namespace,</span>
+<span class="line"><i>51</i>            metrics_source=config.throughput_metrics_source,</span>
+<span class="line"><i>52</i>            bearer_token=config.metric_pulling_prometheus_token,</span>
+<span class="line"><i>53</i>            bearer_token_file=config.metric_pulling_prometheus_token_file,</span>
+<span class="line"><i>54</i>            ssl_verify=config.metric_pulling_prometheus_ssl_verify,</span>
+<span class="line"><i>55</i>            extra_query_params=config.metric_pulling_prometheus_extra_query_params,</span>
+<span class="line"><i>56</i>            ca_bundle=config.metric_pulling_prometheus_ca_bundle,</span>
+<span class="line"><i>57</i>            request_timeout_seconds=(</span>
+<span class="line"><i>58</i>                config.metric_pulling_prometheus_request_timeout_seconds</span>
+<span class="line"><i>59</i>            ),</span>
+<span class="line"><i>60</i>        )</span>
+<span class="line"><i>61</i>        if config.throughput_metrics_source == &quot;router&quot;:</span>
+<span class="line"><i>62</i>            self.prometheus_traffic_client.warn_if_router_not_scraped()</span></code></pre></details><details class="source" id="src-planner-deploy-14"><summary><b>源码 · 按 model 与 dynamo_namespace 汇总多 Frontend 实例</b><small>components/src/dynamo/planner/monitoring/traffic_metrics.py:145–162</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/monitoring/traffic_metrics.py#L145-L162" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>145</i>    def _sum_frontend_metric(self, result, model_name: str) -&gt; Optional[float]:</span>
+<span class="line"><i>146</i>        if not result:</span>
+<span class="line"><i>147</i>            return None</span>
+<span class="line"><i>148</i></span>
+<span class="line"><i>149</i>        metrics_containers = parse_frontend_metric_containers(result)</span>
+<span class="line"><i>150</i>        total = 0.0</span>
+<span class="line"><i>151</i>        matched = False</span>
+<span class="line"><i>152</i>        for container in metrics_containers:</span>
+<span class="line"><i>153</i>            # Frontend lowercases model names in Prometheus labels.</span>
+<span class="line"><i>154</i>            if (</span>
+<span class="line"><i>155</i>                container.metric.model</span>
+<span class="line"><i>156</i>                and container.metric.model.lower() == model_name.lower()</span>
+<span class="line"><i>157</i>                and container.metric.dynamo_namespace == self.dynamo_namespace</span>
+<span class="line"><i>158</i>                and not math.isnan(container.value[1])</span>
+<span class="line"><i>159</i>            ):</span>
+<span class="line"><i>160</i>                matched = True</span>
+<span class="line"><i>161</i>                total += container.value[1]</span>
+<span class="line"><i>162</i>        return total if matched else None</span></code></pre></details><p>Prometheus 抓取各 Frontend 的 <code>/metrics</code>，Planner 查询 Prometheus，而非逐个轮询 Frontend HTTP 或订阅每次请求通知。正常情况下不需要向 Planner 配置 Frontend Service URL。多个 Frontend 负载均衡后，Planner 汇总匹配模型和逻辑 namespace 的序列；不能只抓一个 Pod，或让抓取 relabel 丢失/重写这些业务标签。</p></section><section id="promql" class="lesson"><div class="sectionhead"><h2>09 / 具体读取什么，以及怎样处理多副本与缺失</h2><label class="done"><input type="checkbox" data-read="promql"> 已读</label></div><details class="source" id="src-planner-deploy-15"><summary><b>源码 · 优先 increase(requests_started_total)，缺失才回退 completed</b><small>components/src/dynamo/planner/monitoring/traffic_metrics.py:386–433</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/monitoring/traffic_metrics.py#L386-L433" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>386</i>        # This function follows a different query pattern than the other metrics:</span>
+<span class="line"><i>387</i>        # use frontend-started requests so throughput planning sees offered load,</span>
+<span class="line"><i>388</i>        # not only completed responses.</span>
+<span class="line"><i>389</i>        try:</span>
+<span class="line"><i>390</i>            requests_started_metric = self._frontend_metric_name(</span>
+<span class="line"><i>391</i>                prometheus_names.frontend_service.REQUESTS_STARTED_TOTAL</span>
+<span class="line"><i>392</i>            )</span>
+<span class="line"><i>393</i>            started_res = self.prom.custom_query(</span>
+<span class="line"><i>394</i>                query=f&quot;increase({requests_started_metric}[{interval}])&quot;</span>
+<span class="line"><i>395</i>            )</span>
+<span class="line"><i>396</i>            started_count = self._sum_frontend_metric(started_res, model_name)</span>
+<span class="line"><i>397</i>            if started_count is not None:</span>
+<span class="line"><i>398</i>                return started_count</span>
+<span class="line"><i>399</i></span>
+<span class="line"><i>400</i>            logger.warning(</span>
+<span class="line"><i>401</i>                f&quot;No prometheus metric data available for {requests_started_metric} &quot;</span>
+<span class="line"><i>402</i>                f&quot;with model {model_name} and dynamo namespace &quot;</span>
+<span class="line"><i>403</i>                f&quot;{self.dynamo_namespace}; falling back to completed request count&quot;</span>
+<span class="line"><i>404</i>            )</span>
+<span class="line"><i>405</i></span>
+<span class="line"><i>406</i>            requests_total_metric = self._frontend_metric_name(</span>
+<span class="line"><i>407</i>                prometheus_names.frontend_service.REQUESTS_TOTAL</span>
+<span class="line"><i>408</i>            )</span>
+<span class="line"><i>409</i>            completed_res = self.prom.custom_query(</span>
+<span class="line"><i>410</i>                query=f&quot;increase({requests_total_metric}[{interval}])&quot;</span>
+<span class="line"><i>411</i>            )</span>
+<span class="line"><i>412</i>            completed_count = self._sum_frontend_metric(completed_res, model_name)</span>
+<span class="line"><i>413</i>            if completed_count is None:</span>
+<span class="line"><i>414</i>                logger.warning(</span>
+<span class="line"><i>415</i>                    &quot;No prometheus metric data available for %s or %s with model &quot;</span>
+<span class="line"><i>416</i>                    &quot;%s and dynamo namespace %s; demand is UNKNOWN, not zero&quot;,</span>
+<span class="line"><i>417</i>                    requests_started_metric,</span>
+<span class="line"><i>418</i>                    requests_total_metric,</span>
+<span class="line"><i>419</i>                    model_name,</span>
+<span class="line"><i>420</i>                    self.dynamo_namespace,</span>
+<span class="line"><i>421</i>                )</span>
+<span class="line"><i>422</i>                return None</span>
+<span class="line"><i>423</i>            return (</span>
+<span class="line"><i>424</i>                completed_count</span>
+<span class="line"><i>425</i>                if math.isfinite(completed_count) and completed_count &gt; 0</span>
+<span class="line"><i>426</i>                else None</span>
+<span class="line"><i>427</i>            )</span>
+<span class="line"><i>428</i>        except Exception:</span>
+<span class="line"><i>429</i>            # Never propagate: the tick loop catches only GPUShapeUnavailableError</span>
+<span class="line"><i>430</i>            # (core/base.py:1042), so anything else here shuts the planner down.</span>
+<span class="line"><i>431</i>            # An unreadable metric must degrade to unknown demand, not to no planner.</span>
+<span class="line"><i>432</i>            logger.exception(&quot;Error getting avg request count; demand is UNKNOWN&quot;)</span>
+<span class="line"><i>433</i>            return None</span></code></pre></details><details class="source" id="src-planner-deploy-16"><summary><b>源码 · Histogram sum/count 的窗口加权平均</b><small>components/src/dynamo/planner/monitoring/traffic_metrics.py:209–242</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/monitoring/traffic_metrics.py#L209-L242" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>209</i>                if not full_metric_name.startswith(</span>
+<span class="line"><i>210</i>                    prometheus_names.name_prefix.FRONTEND</span>
+<span class="line"><i>211</i>                ):</span>
+<span class="line"><i>212</i>                    full_metric_name = (</span>
+<span class="line"><i>213</i>                        f&quot;{prometheus_names.name_prefix.FRONTEND}_{full_metric_name}&quot;</span>
+<span class="line"><i>214</i>                    )</span>
+<span class="line"><i>215</i>                # Aggregate observations, not per-instance averages: idle</span>
+<span class="line"><i>216</i>                # instances contribute zero count increases, and busy instances</span>
+<span class="line"><i>217</i>                # retain their weight. Keep model/namespace labels for filtering.</span>
+<span class="line"><i>218</i>                query = (</span>
+<span class="line"><i>219</i>                    f&quot;sum by (model, dynamo_namespace) (increase({full_metric_name}_sum[{interval}])) / &quot;</span>
+<span class="line"><i>220</i>                    f&quot;sum by (model, dynamo_namespace) (increase({full_metric_name}_count[{interval}]))&quot;</span>
+<span class="line"><i>221</i>                )</span>
+<span class="line"><i>222</i>                result = self.prom.custom_query(query=query)</span>
+<span class="line"><i>223</i>                if not result:</span>
+<span class="line"><i>224</i>                    logger.warning(</span>
+<span class="line"><i>225</i>                        f&quot;No prometheus metric data available for {full_metric_name}, use 0 instead&quot;</span>
+<span class="line"><i>226</i>                    )</span>
+<span class="line"><i>227</i>                    return 0</span>
+<span class="line"><i>228</i>                metrics_containers = parse_frontend_metric_containers(result)</span>
+<span class="line"><i>229</i>                for container in metrics_containers:</span>
+<span class="line"><i>230</i>                    # Frontend lowercases model names for Prometheus labels so we need to do case-insensitive comparison</span>
+<span class="line"><i>231</i>                    if (</span>
+<span class="line"><i>232</i>                        container.metric.model</span>
+<span class="line"><i>233</i>                        and container.metric.model.lower() == model_name.lower()</span>
+<span class="line"><i>234</i>                        and container.metric.dynamo_namespace == self.dynamo_namespace</span>
+<span class="line"><i>235</i>                    ):</span>
+<span class="line"><i>236</i>                        return container.value[1]</span>
+<span class="line"><i>237</i>                logger.warning(</span>
+<span class="line"><i>238</i>                    &quot;No prometheus metric data available for %s with model %s &quot;</span>
+<span class="line"><i>239</i>                    &quot;and dynamo namespace %s, use 0 instead&quot;,</span>
+<span class="line"><i>240</i>                    full_metric_name,</span>
+<span class="line"><i>241</i>                    model_name,</span>
+<span class="line"><i>242</i>                    self.dynamo_namespace,</span></code></pre></details><details class="source" id="src-planner-deploy-17"><summary><b>源码 · TTFT/ITL 秒转毫秒与 ISL/OSL/请求量</b><small>components/src/dynamo/planner/environment/metrics_provider/prometheus_traffic_provider.py:167–190</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/environment/metrics_provider/prometheus_traffic_provider.py#L167-L190" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>167</i>        if scope == &quot;traffic&quot;:</span>
+<span class="line"><i>168</i>            ttft = self.prometheus_traffic_client.get_avg_time_to_first_token(</span>
+<span class="line"><i>169</i>                interval_str, context.model_name</span>
+<span class="line"><i>170</i>            )</span>
+<span class="line"><i>171</i>            m.ttft = ttft * 1000 if ttft is not None else None</span>
+<span class="line"><i>172</i>            itl = self.prometheus_traffic_client.get_avg_inter_token_latency(</span>
+<span class="line"><i>173</i>                interval_str, context.model_name</span>
+<span class="line"><i>174</i>            )</span>
+<span class="line"><i>175</i>            m.itl = itl * 1000 if itl is not None else None</span>
+<span class="line"><i>176</i>            m.num_req = self.prometheus_traffic_client.get_avg_request_count(</span>
+<span class="line"><i>177</i>                interval_str, context.model_name</span>
+<span class="line"><i>178</i>            )</span>
+<span class="line"><i>179</i>            m.request_duration = (</span>
+<span class="line"><i>180</i>                self.prometheus_traffic_client.get_avg_request_duration(</span>
+<span class="line"><i>181</i>                    interval_str, context.model_name</span>
+<span class="line"><i>182</i>                )</span>
+<span class="line"><i>183</i>            )</span>
+<span class="line"><i>184</i>            m.isl = self.prometheus_traffic_client.get_avg_input_sequence_tokens(</span>
+<span class="line"><i>185</i>                interval_str, context.model_name</span>
+<span class="line"><i>186</i>            )</span>
+<span class="line"><i>187</i>            m.osl = self.prometheus_traffic_client.get_avg_output_sequence_tokens(</span>
+<span class="line"><i>188</i>                interval_str, context.model_name</span>
+<span class="line"><i>189</i>            )</span>
+<span class="line"><i>190</i>        if scope != &quot;accept_length&quot;:</span></code></pre></details><div class="tablewrap"><table><thead><tr><th>Frontend 信号</th><th>Planner 的使用</th><th>解释边界</th></tr></thead><tbody><tr><td>dynamo_frontend_requests_started_total</td><td>窗口 increase 的接纳/开始请求数，用于流量预测</td><td>不是只看完成请求；函数名 count/avg 不能当 RPS，换率要除窗口秒数</td></tr><tr><td>requests_total fallback</td><td>兼容未暴露 started 系列的版本</td><td>仅完成量可能低估在途压力；缺失不能当无流量</td></tr><tr><td>input_sequence_tokens / output_sequence_tokens</td><td>窗口 ISL / OSL</td><td>通过 Histogram 的 sum/count 估计形状</td></tr><tr><td>time_to_first_token_seconds / inter_token_latency_seconds</td><td>TTFT / ITL，Provider 转为毫秒</td><td>此处是窗口平均，不是 histogram_quantile P95</td></tr></tbody></table></div><p>Histogram 先把各实例的 sum/count 增量分别相加，再相除，不能平均各 Pod 的均值。started 明确测到 0 可表达闲时；没有可用请求计数返回 None/UNKNOWN，避免误判零需求。其他 Histogram helper 某些失败返回 0，语义与 demand 的 None 不同，排障应逐信号检查。</p></section><section id="fpm" class="lesson"><div class="sectionhead"><h2>10 / Frontend 指标不是唯一输入：FPM 直接来自 Worker</h2><label class="done"><input type="checkbox" data-read="fpm"> 已读</label></div><details class="source" id="src-planner-deploy-18"><summary><b>源码 · 按实际 worker component/endpoint 创建 FpmEventSubscriber</b><small>components/src/dynamo/planner/environment/metrics_provider/runtime_provider.py:144–181</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/environment/metrics_provider/runtime_provider.py#L144-L181" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>144</i>    async def _init_fpm_subscriber(self, component: str):</span>
+<span class="line"><i>145</i>        # Avoid loading binding-heavy dynamo.llm until runtime FPM is configured.</span>
+<span class="line"><i>146</i>        from dynamo.llm import FpmEventSubscriber</span>
+<span class="line"><i>147</i></span>
+<span class="line"><i>148</i>        if self.state_source is None or self.namespace_source is None:</span>
+<span class="line"><i>149</i>            logger.warning(</span>
+<span class="line"><i>150</i>                &quot;Runtime FPM provider is missing state or namespace source, &quot;</span>
+<span class="line"><i>151</i>                &quot;cannot create FPM subscriber for %s&quot;,</span>
+<span class="line"><i>152</i>                component,</span>
+<span class="line"><i>153</i>            )</span>
+<span class="line"><i>154</i>            return None</span>
+<span class="line"><i>155</i>        state = self.state_source.deployment_state()</span>
+<span class="line"><i>156</i>        worker_info = (</span>
+<span class="line"><i>157</i>            state.prefill.info if component == &quot;prefill&quot; else state.decode.info</span>
+<span class="line"><i>158</i>        )</span>
+<span class="line"><i>159</i>        if (</span>
+<span class="line"><i>160</i>            worker_info is None</span>
+<span class="line"><i>161</i>            or not worker_info.component_name</span>
+<span class="line"><i>162</i>            or not worker_info.endpoint</span>
+<span class="line"><i>163</i>        ):</span>
+<span class="line"><i>164</i>            logger.warning(</span>
+<span class="line"><i>165</i>                &quot;WorkerInfo missing for %s, cannot create FPM subscriber&quot;, component</span>
+<span class="line"><i>166</i>            )</span>
+<span class="line"><i>167</i>            return None</span>
+<span class="line"><i>168</i></span>
+<span class="line"><i>169</i>        runtime_namespace = self.namespace_source.runtime_namespace()</span>
+<span class="line"><i>170</i>        endpoint = self.runtime.endpoint(</span>
+<span class="line"><i>171</i>            f&quot;{runtime_namespace}.{worker_info.component_name}.{worker_info.endpoint}&quot;</span>
+<span class="line"><i>172</i>        )</span>
+<span class="line"><i>173</i>        sub = FpmEventSubscriber(endpoint)</span>
+<span class="line"><i>174</i>        sub.start_tracking(max_age_seconds=self.max_fpm_age_seconds)</span>
+<span class="line"><i>175</i>        logger.info(</span>
+<span class="line"><i>176</i>            &quot;FPM tracker started for %s.%s.%s&quot;,</span>
+<span class="line"><i>177</i>            runtime_namespace,</span>
+<span class="line"><i>178</i>            worker_info.component_name,</span>
+<span class="line"><i>179</i>            worker_info.endpoint,</span>
+<span class="line"><i>180</i>        )</span>
+<span class="line"><i>181</i>        return sub</span></code></pre></details><details class="source" id="src-planner-deploy-19"><summary><b>源码 · 连接 FPM 与 Traffic 两类 provider</b><small>components/src/dynamo/planner/core/planner_factory.py:109–136</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/core/planner_factory.py#L109-L136" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>109</i>            resolver=cast(RuntimeNamespaceResolver, connector),</span>
+<span class="line"><i>110</i>        )</span>
+<span class="line"><i>111</i>        environment.runtime_namespace_source = namespace_binding</span>
+<span class="line"><i>112</i></span>
+<span class="line"><i>113</i>    if runtime is not None and namespace_binding is not None:</span>
+<span class="line"><i>114</i>        if fpm_provider is None:</span>
+<span class="line"><i>115</i>            fpm_provider = RuntimeFpmProvider(</span>
+<span class="line"><i>116</i>                require_prefill=require_prefill,</span>
+<span class="line"><i>117</i>                require_decode=require_decode,</span>
+<span class="line"><i>118</i>                backend=config.backend,</span>
+<span class="line"><i>119</i>                model_name=config.model_name,</span>
+<span class="line"><i>120</i>                runtime=runtime,</span>
+<span class="line"><i>121</i>                max_fpm_age_seconds=3.0 * config.load_adjustment_interval_seconds,</span>
+<span class="line"><i>122</i>                state_source=environment,</span>
+<span class="line"><i>123</i>                namespace_source=namespace_binding,</span>
+<span class="line"><i>124</i>            )</span>
+<span class="line"><i>125</i>        else:</span>
+<span class="line"><i>126</i>            fpm_provider.bind_sources(</span>
+<span class="line"><i>127</i>                state_source=environment,</span>
+<span class="line"><i>128</i>                namespace_source=namespace_binding,</span>
+<span class="line"><i>129</i>            )</span>
+<span class="line"><i>130</i>        environment.fpm_provider = fpm_provider</span>
+<span class="line"><i>131</i></span>
+<span class="line"><i>132</i>    environment.traffic_provider = PrometheusTrafficProvider(</span>
+<span class="line"><i>133</i>        config=config,</span>
+<span class="line"><i>134</i>        state_source=environment,</span>
+<span class="line"><i>135</i>        metrics_state=environment.metrics_state(),</span>
+<span class="line"><i>136</i>        namespace_source=namespace_binding,</span></code></pre></details><p>FPM 描述引擎/rank 的排队、运行、KV 与 forward-pass 工作量，经 Runtime Event Plane 进入 Planner；它既不是 Frontend 的 HTTP 指标，也不需要先导入 Prometheus。启用 load-based scaling 时，订阅发现、事件面连通、所需 rank 覆盖与数据新鲜度是核心前提。</p><p><code>optimization_target: throughput/latency/load</code> 自动采用负载型逻辑，主要依赖 FPM；<code>sla + enable_throughput_scaling</code> 才让 Frontend 流量预测成为容量下界的重要依据。两种 SLA scaling 同时开启时，预测给下界，load 在其上调整并经预算约束。因此 Prometheus、FPM 两条链要分别验收。</p></section><section id="scale" class="lesson"><div class="sectionhead"><h2>11 / Planner 改变 Worker；Frontend 经发现面感知</h2><label class="done"><input type="checkbox" data-read="scale"> 已读</label></div><details class="source" id="src-planner-deploy-20"><summary><b>源码 · 按是否声明 scalingAdapter 选择副本权威</b><small>components/src/dynamo/planner/connectors/kubernetes.py:1563–1583</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/connectors/kubernetes.py#L1563-L1583" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1563</i>    def _authoritative_replica_state(</span>
+<span class="line"><i>1564</i>        self, deployment: dict, service: Service</span>
+<span class="line"><i>1565</i>    ) -&gt; tuple[int, dict | None]:</span>
+<span class="line"><i>1566</i>        &quot;&quot;&quot;Resolve desired replicas from the authority declared by the DGD.&quot;&quot;&quot;</span>
+<span class="line"><i>1567</i>        if &quot;scalingAdapter&quot; not in service.service:</span>
+<span class="line"><i>1568</i>            return service.number_replicas(), None</span>
+<span class="line"><i>1569</i>        scaling_adapter = self.kube_api.get_service_scaling_adapter(</span>
+<span class="line"><i>1570</i>            self.graph_deployment_name, service.name</span>
+<span class="line"><i>1571</i>        )</span>
+<span class="line"><i>1572</i>        adapter_rejection = self._scaling_adapter_rejection(</span>
+<span class="line"><i>1573</i>            deployment, service.name, scaling_adapter</span>
+<span class="line"><i>1574</i>        )</span>
+<span class="line"><i>1575</i>        if adapter_rejection is not None:</span>
+<span class="line"><i>1576</i>            raise ValueError(adapter_rejection)</span>
+<span class="line"><i>1577</i>        writer_rejection = self._batch_writer_annotation_rejection(scaling_adapter)</span>
+<span class="line"><i>1578</i>        if writer_rejection is not None:</span>
+<span class="line"><i>1579</i>            raise ValueError(writer_rejection)</span>
+<span class="line"><i>1580</i>        current_replicas = self.kube_api.get_scaling_adapter_desired_replicas(</span>
+<span class="line"><i>1581</i>            scaling_adapter</span>
+<span class="line"><i>1582</i>        )</span>
+<span class="line"><i>1583</i>        return current_replicas, scaling_adapter</span></code></pre></details><details class="source" id="src-planner-deploy-21"><summary><b>源码 · DGDSA /scale 与旧 DGD 写入路径</b><small>components/src/dynamo/planner/connectors/kubernetes.py:1597–1611</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/connectors/kubernetes.py#L1597-L1611" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1597</i>    def _write_preflighted_replica_target(</span>
+<span class="line"><i>1598</i>        self, service: Service, replicas: int, scaling_adapter: dict | None</span>
+<span class="line"><i>1599</i>    ) -&gt; None:</span>
+<span class="line"><i>1600</i>        &quot;&quot;&quot;Write through the same replica authority selected during preflight.&quot;&quot;&quot;</span>
+<span class="line"><i>1601</i>        if scaling_adapter is None:</span>
+<span class="line"><i>1602</i>            self.kube_api.update_dgd_replicas_directly(</span>
+<span class="line"><i>1603</i>                self.graph_deployment_name, service.name, replicas</span>
+<span class="line"><i>1604</i>            )</span>
+<span class="line"><i>1605</i>            return</span>
+<span class="line"><i>1606</i>        self.kube_api.update_scaling_adapter_replicas(</span>
+<span class="line"><i>1607</i>            self.graph_deployment_name,</span>
+<span class="line"><i>1608</i>            service.name,</span>
+<span class="line"><i>1609</i>            replicas,</span>
+<span class="line"><i>1610</i>            resource_version=scaling_adapter[&quot;metadata&quot;][&quot;resourceVersion&quot;],</span>
+<span class="line"><i>1611</i>        )</span></code></pre></details><p>目标是 Prefill/Decode（agg 映射到相应受管 Worker），常规伸缩不负责增加 Frontend HTTP 副本。已经声明 scalingAdapter 的组件从 DGDSA 读取权威 desired 并写 /scale；未声明时仍有兼容的 DGD replicas 更新。Operator/provider 再创建/删除工作负载，ready Worker 发布模型与端点，Frontend 更新可路由成员。</p><p>这个反馈经过调谐、调度、模型加载、就绪与发现传播，有延迟。Frontend 会在成员/准入约束内继续做每请求选择；新增 Pod 不等于马上获得可服务容量。当前在线 NativePlannerBase 明确拒绝 config.retune，提示该版本为 replay-only；因此不能把回放中的 Router 调参当作线上 Planner 已向 Frontend 下发配置。常规扩缩容更不是每请求调度指令。</p><details class="source" id="src-planner-deploy-22"><summary><b>源码 · 当前在线 Planner 拒绝 replay-only retune</b><small>components/src/dynamo/planner/core/base.py:128–141</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/core/base.py#L128-L141" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>128</i>    def __init__(</span>
+<span class="line"><i>129</i>        self,</span>
+<span class="line"><i>130</i>        runtime: Optional[DistributedRuntime],</span>
+<span class="line"><i>131</i>        config: PlannerConfig,</span>
+<span class="line"><i>132</i>        environment: PlannerEnvironment,</span>
+<span class="line"><i>133</i>    ) -&gt; None:</span>
+<span class="line"><i>134</i>        if config.retune is not None:</span>
+<span class="line"><i>135</i>            raise ValueError(&quot;planner.retune is replay-only in this release&quot;)</span>
+<span class="line"><i>136</i>        self.runtime = runtime</span>
+<span class="line"><i>137</i>        self.config = config</span>
+<span class="line"><i>138</i>        self.environment = environment</span>
+<span class="line"><i>139</i>        self.namespace = config.namespace</span>
+<span class="line"><i>140</i></span>
+<span class="line"><i>141</i>        self.prometheus_port = config.metric_reporting_prometheus_port</span></code></pre></details></section><section id="readiness" class="lesson"><div class="sectionhead"><h2>12 / 两个 namespace、初始化与故障边界</h2><label class="done"><input type="checkbox" data-read="readiness"> 已读</label></div><details class="source" id="src-planner-deploy-23"><summary><b>源码 · 从 Worker status.runtimeNamespace 解析当前世代</b><small>components/src/dynamo/planner/connectors/kubernetes.py:134–162</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/connectors/kubernetes.py#L134-L162" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>134</i>    def get_worker_runtime_namespace(self, base_dynamo_namespace: str) -&gt; str:</span>
+<span class="line"><i>135</i>        &quot;&quot;&quot;Return the Dynamo namespace used by the current worker generation.</span>
+<span class="line"><i>136</i></span>
+<span class="line"><i>137</i>        Newer operators publish the effective runtime namespace on the worker</span>
+<span class="line"><i>138</i>        component status. Older operators expose only the active worker hash, so</span>
+<span class="line"><i>139</i>        the planner falls back to appending that hash only for Deployment-backed</span>
+<span class="line"><i>140</i>        and LeaderWorkerSet-backed workers.</span>
+<span class="line"><i>141</i>        &quot;&quot;&quot;</span>
+<span class="line"><i>142</i>        deployment = self.kube_api.get_graph_deployment(self.graph_deployment_name)</span>
+<span class="line"><i>143</i>        worker_status = self._get_first_worker_component_status(deployment)</span>
+<span class="line"><i>144</i>        if worker_status:</span>
+<span class="line"><i>145</i>            runtime_namespace = worker_status.get(&quot;runtimeNamespace&quot;)</span>
+<span class="line"><i>146</i>            if runtime_namespace:</span>
+<span class="line"><i>147</i>                # Newer operators report the effective namespace directly.</span>
+<span class="line"><i>148</i>                return runtime_namespace</span>
+<span class="line"><i>149</i></span>
+<span class="line"><i>150</i>        worker_hash = self._get_current_worker_hash(deployment)</span>
+<span class="line"><i>151</i>        if not worker_hash:</span>
+<span class="line"><i>152</i>            # No active managed worker hash means workers use the base namespace.</span>
+<span class="line"><i>153</i>            return base_dynamo_namespace</span>
+<span class="line"><i>154</i>        if worker_status is None and self._has_worker_component(deployment):</span>
+<span class="line"><i>155</i>            # A hash with no worker status leaves the backing kind unknown.</span>
+<span class="line"><i>156</i>            raise PlannerError(</span>
+<span class="line"><i>157</i>                &quot;Worker component status is not available yet; runtime namespace is indeterminate&quot;</span>
+<span class="line"><i>158</i>            )</span>
+<span class="line"><i>159</i>        if not self._worker_status_uses_namespace_suffix(worker_status):</span>
+<span class="line"><i>160</i>            # Only old Deployment/LWS-backed workers used the hash as a namespace suffix.</span>
+<span class="line"><i>161</i>            return base_dynamo_namespace</span>
+<span class="line"><i>162</i>        return f&quot;{base_dynamo_namespace}-{worker_hash}&quot;</span></code></pre></details><details class="source" id="src-planner-deploy-24"><summary><b>源码 · 仅 Frontend 不 ready 时，允许继续 Worker 伸缩的窄例外</b><small>components/src/dynamo/planner/connectors/kubernetes.py:1193–1213</small></summary><div class="sourcebar"><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/components/src/dynamo/planner/connectors/kubernetes.py#L1193-L1213" target="_blank" rel="noopener">固定提交原文 ↗</a><button class="copy">复制源码</button></div><pre><code><span class="line"><i>1193</i></span>
+<span class="line"><i>1194</i>        deployment = self.kube_api.get_graph_deployment(self.graph_deployment_name)</span>
+<span class="line"><i>1195</i>        deployment_ready = self.kube_api.is_deployment_ready(deployment)</span>
+<span class="line"><i>1196</i>        # A stuck Frontend Pod keeps the DGD unready but does not affect</span>
+<span class="line"><i>1197</i>        # worker scaling, so treat that case as ready.</span>
+<span class="line"><i>1198</i>        frontend_only_unready = (</span>
+<span class="line"><i>1199</i>            not deployment_ready and self.kube_api.only_frontend_unready(deployment)</span>
+<span class="line"><i>1200</i>        )</span>
+<span class="line"><i>1201</i>        if frontend_only_unready:</span>
+<span class="line"><i>1202</i>            logger.info(</span>
+<span class="line"><i>1203</i>                &quot;Deployment %s is not Ready only because of Frontend components; &quot;</span>
+<span class="line"><i>1204</i>                &quot;scaling workers anyway&quot;,</span>
+<span class="line"><i>1205</i>                self.graph_deployment_name,</span>
+<span class="line"><i>1206</i>            )</span>
+<span class="line"><i>1207</i>            deployment_ready = True</span>
+<span class="line"><i>1208</i>        ready = deployment_ready</span>
+<span class="line"><i>1209</i></span>
+<span class="line"><i>1210</i>        # Validate the DGD snapshot before reading an authoritative adapter on</span>
+<span class="line"><i>1211</i>        # either narrow unready path (startup cancellation or batch bootstrap).</span>
+<span class="line"><i>1212</i>        if not deployment_ready:</span>
+<span class="line"><i>1213</i>            rejection = self._unready_recovery_dgd_rejection(deployment)</span></code></pre></details><p>配置的基础逻辑 namespace 与实际 Worker generation namespace 可以不同，Connector 根据 status.runtimeNamespace 或旧 backing-kind/hash 规则解析；不能手工盲目拼后缀。FPM 按解析后的 Worker endpoint 订阅，Prometheus 流量仍须匹配公共 Frontend 的模型与 namespace 标签。</p><p>Planner._async_init 完成后才注册健康用途 generate endpoint，Operator startup probe 允许等待 Worker 启动。当前 Connector 对“仅 Frontend 不 ready”有继续伸缩 Worker 的窄例外，仍检查 Worker 生命周期；不能将其推广为所有不 ready 都可以缩容。</p><p>稳定运行且 Worker 健康时，Planner 故障主要意味着容量决策停止，不应让每个推理请求失去必需下一跳；Frontend 故障则影响请求入口和流量可见性。额外配置的部署依赖、全部 Worker 不可用或模型准入异常会改变具体结果。</p></section><section id="checklist" class="lesson"><div class="sectionhead"><h2>13 / 接入工作清单与排查顺序</h2><label class="done"><input type="checkbox" data-read="checklist"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>顺序</th><th>需要拿到的证据</th></tr></thead><tbody><tr><td>1. 固定版本与模型</td><td>Operator / Planner / backend 镜像 tag/digest、model、TP/PP/DP，与线上私有版本区别</td></tr><tr><td>2. 选部署入口</td><td>已有 DGD 增 Planner，或 DGDR features.planner 自动生成；一般单副本专用 CPU Planner Pod</td></tr><tr><td>3. 定位控制目标</td><td>K8s namespace、parent DGD、基础/实际 Dynamo namespace、受管 role 与 GPU预算</td></tr><tr><td>4. 准备权限与网络</td><td>ServiceAccount/RoleBinding、DGD/DGDSA /scale、Discovery/Event Plane 和 Prometheus 可达</td></tr><tr><td>5. 先验指标</td><td>Prometheus 有完整 Frontend 标签；started/ISL/OSL/TTFT/ITL 查询命中，FPM/rank 新鲜</td></tr><tr><td>6. 选策略</td><td>throughput/latency/load 用 FPM；SLA 明确目标与预测开关、性能模型 warmup</td></tr><tr><td>7. 先观察建议</td><td>advisory:true 时核对建议、诊断、metrics；不会执行容量变更</td></tr><tr><td>8. 验证整个闭环</td><td>决策 → DGDSA/DGD desired → ready Pod → Discovery → Frontend 实际 worker 归因</td></tr></tbody></table></div><p>Planner 自身 9085 metrics 只能证明它发布了哪些决策信号；不证明它成功读到了 Frontend，也不证明 Operator 已把目标副本变成 ready GPU。HPA/KEDA 对 Frontend 的扩缩容可另行配置，避免与 Worker 容量控制混在一起。</p><p>可从已保存的 <a href="ack-LB97i2CZNR/dynamo-test-deployment.md">ACK 部署快照</a>反查是否已有 Planner、Prometheus 和权限，但该快照属于历史私有镜像证据，本次未重新核验集群。</p></section><section id="mixed-dgd-audit" class="lesson"><div class="sectionhead"><h2>14 / 现有混合 DGD 清单：没有 Planner，需先确定管理范围</h2><label class="done"><input type="checkbox" data-read="mixed-dgd-audit"> 已读</label></div><p>已核查本地 <a href="ack-LB97i2CZNR/deploy/nhi-trace-demo-mixed-dgd.yaml">nhi-trace-demo-mixed-dgd.yaml</a>：DGD 为 <code>nhi/dynamo-trace-demo-mixed</code>，仅包含下列四个组件。</p><div class="tablewrap"><table><thead><tr><th>组件</th><th>类型</th><th>副本</th><th>Worker 逻辑 namespace</th></tr></thead><tbody><tr><td>Frontend</td><td>frontend</td><td>1</td><td>按 Operator / Frontend 的命名空间配置发现</td></tr><tr><td>aggregated</td><td>worker</td><td>1</td><td>nhi-dynamo-trace-demo-mixed-agg</td></tr><tr><td>prefill</td><td>prefill</td><td>1</td><td>nhi-dynamo-trace-demo-mixed-pd</td></tr><tr><td>decode</td><td>decode</td><td>1</td><td>nhi-dynamo-trace-demo-mixed-pd</td></tr></tbody></table></div><p>该文件没有 type: planner 或运行 dynamo.planner 的容器，也未显式声明 Worker scalingAdapter。它可用于固定副本推理与 Trace 验证，但本清单本身没有配置 Planner 自动扩缩容；不能据此判断集群是否另有独立控制器。</p><p>启用时先明确只管理 PD 池还是聚合池，以及对应的流量、FPM namespace 与 Worker 选择。不要直接假设一个普通 Planner 同时管理两种运行模式的三类 Worker。私有 SGLang 1.4.1 还需匹配版本的 Planner image、配置和 Operator 权限。</p><p>文件头记录了组件集合不可原地增删的准入约束；新增 Planner 前需核对线上 Operator/webhook，不能将追加组件并直接 apply 视为已验证的操作。本项是本地清单核查，没有修改此 YAML 或连接集群。</p></section><section id="references" class="lesson"><div class="sectionhead"><h2>15 / 同版本官方资料与相邻专题</h2><label class="done"><input type="checkbox" data-read="references"> 已读</label></div><div class="tablewrap"><table><thead><tr><th>资料</th><th>用途</th></tr></thead><tbody><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/docs/fern/pages/kubernetes/auto-deployment/dynamo-planner.mdx">Tune the Planner</a></td><td>策略与两种 SLA scaling 的区别</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/docs/fern/pages/developer-guide/knowledge-base/modular-components/planner/planner-guide.md">Planner Guide</a></td><td>配置与 advisory、数据源和生成部署</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/docs/fern/pages/developer-guide/knowledge-base/modular-components/planner/planner-examples.md">Planner Examples</a></td><td>手工部署与 virtual 接入</td></tr><tr><td><a href="https://github.com/ai-dynamo/dynamo/blob/a908c1a14501b4bb03a7c80833edec0f0e571986/examples/deployments/dgdr/planner.yaml">DGDR example</a></td><td>自动生成 DGD 的完整入口</td></tr></tbody></table></div><p>相邻章节：<a href="planner.html">Planner 算法与观测源码（旧基线）</a> · <a href="frontend.html">Frontend</a> · <a href="control-plane.html">控制面</a> · <a href="global-routing.html">全局路由</a>。</p></section><footer>静态源码与官方文档交叉核对；未运行推理集群或负载实验。源码摘录固定于完整提交 a908c1a14501b4bb03a7c80833edec0f0e571986。<br>交互示例解释实现，不代表真实性能测量。禁用本地存储时，阅读进度仅在本次页面有效。</footer></main><script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function progress(){let xs=$$('[data-read]'),n=xs.filter(x=>x.checked).length;$('#progress').style.width=(xs.length?100*n/xs.length:0)+'%';$('#progress-label').textContent='已读 '+n+' / '+xs.length+' 节'}
+try{const state=JSON.parse(localStorage.getItem('dynamo-read-v1')||'[]');$$('[data-read]').forEach(x=>x.checked=state.includes(x.dataset.read))}catch{}
+$$('[data-read]').forEach(x=>x.onchange=()=>{try{localStorage.setItem('dynamo-read-v1',JSON.stringify($$('[data-read]').filter(x=>x.checked).map(x=>x.dataset.read)))}catch{}progress()});progress();
+$('#search').oninput=e=>{let q=e.target.value.trim().toLowerCase(),n=0;$$('section.lesson').forEach(s=>{s.hidden=!!q&&!s.textContent.toLowerCase().includes(q);if(!s.hidden)n++});$('#no-results').hidden=n>0};
+$$('.copy').forEach(b=>b.onclick=async()=>{let t=[...b.closest('details').querySelectorAll('.line')].map(x=>x.textContent.slice(x.querySelector('i').textContent.length)).join('\n');try{await navigator.clipboard.writeText(t);b.textContent='已复制'}catch{b.textContent='请选中代码复制'}});
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!==b.dataset.tab)});
+function sim(){if(!$('#ttft'))return;let f=+$('#ttft').value,g=+$('#gap').value,t=+$('#tokens').value;$('#ttft-value').textContent=f;$('#gap-value').textContent=g;$('#tokens-value').textContent=t;$('#sim-output').textContent='首块：TTFT = '+f+' ms；不记录 ITL\n第二块：ITL = '+g+' / '+t+' = '+(g/t).toFixed(2)+' ms\nHistogram 新增 '+t+' 个 ITL 观测值，每个值相同。'}
+$$('.sim input').forEach(x=>x.oninput=sim);sim();
+$('#expand').onclick=()=>$$('details.source').forEach(x=>x.open=true);
+$('#collapse').onclick=()=>$$('details.source').forEach(x=>x.open=false);
+$('#print').onclick=()=>window.print();
+if('IntersectionObserver'in window){let o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('.nav nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+e.target.id))}),{rootMargin:'-10% 0px -70% 0px'});$$('main section').forEach(s=>o.observe(s))}
+</script></body></html>

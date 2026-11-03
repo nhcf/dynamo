@@ -9,6 +9,7 @@ const page = process.argv[2] || "pd-trace.html";
 const expected = {
   "observability.html": 32,
   "planner.html": 45,
+  "planner-deployment.html": 24,
   "pd-trace.html": 31,
   "control-plane.html": 37,
   "storage-events.html": 45,

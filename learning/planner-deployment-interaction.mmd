@@ -1,0 +1,13 @@
+%% SPDX-License-Identifier: Apache-2.0
+flowchart LR
+    Client --> Frontend
+    Frontend --> Workers[Prefill / Decode or aggregated workers]
+    Frontend -->|metrics scrape| Prometheus
+    Prometheus -->|traffic queries| Planner
+    Workers -->|FPM via Runtime Event Plane| Planner
+    Planner -->|desired worker replicas| Connector[Kubernetes Connector]
+    Connector -->|DGDSA scale or legacy DGD update| Operator
+    Operator -->|reconcile workload| Workers
+    Workers -->|register / withdraw ready endpoints| Discovery
+    Discovery -->|admitted membership updates| Frontend
+    Planner -->|own diagnostics| PlannerMetrics[Planner metrics :9085]
