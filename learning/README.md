@@ -24,8 +24,10 @@ The commit message and maintenance instructions use English; tutorial prose rema
 - [ACK deployment and trace checklist](ack-LB97i2CZNR/index.html)
 - [ACK request-plane span design](ack-LB97i2CZNR/request-path-trace-design.html)
 - [ACK request-plane trace walkthrough](ack-LB97i2CZNR/request-path-trace-walkthrough.html)
+- [ACK Dynamo Grafana dashboards](ack-LB97i2CZNR/dashboard/README.md)
 - [maas-dev historical platform audit](maas-dev-deployment/index.html)
 - [maas-dev Higress metrics collection plan](maas-dev-deployment/higress-metrics-collection-plan.md)
+- [maas-dev otel-collector metrics removal backup](maas-dev-deployment/backup/otel-collector-config-before-metrics-removal-20261102-170238.yaml)
 
 All roadmap modules now have architecture and selected source analysis.
 This is not an exhaustive file audit or a claim that every feature was runtime-tested.

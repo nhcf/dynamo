@@ -1,0 +1,3225 @@
+{
+  "uid": "dynamo-acklb-overview",
+  "title": "Dynamo · ack-LB (nhi · trace-demo-mixed)",
+  "tags": [
+    "dynamo",
+    "ack-LB",
+    "generated"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "panels": [],
+      "title": "概览 · 采集健康与关键水位",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "采集目标在线数",
+      "description": "job=dynamo-frontend / dynamo-worker 的 scrape 目标健康度（应恒为 4）",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "id": 2,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(up{job=~\"dynamo-.*\",cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "注册 Worker 数",
+      "description": "dynamo_component_router_worker_registered：KV router 当前登记的 worker",
+      "gridPos": {
+        "x": 4,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "id": 3,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_component_router_worker_registered{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "Inflight 请求",
+      "description": "dynamo_request_plane_inflight_requests：请求面在途",
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "id": 4,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_request_plane_inflight_requests{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "Router 决策 KV 命中率",
+      "description": "dynamo_component_router_kv_hit_rate 近样本均值",
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "id": 5,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "percentunit",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "avg(dynamo_component_router_kv_hit_rate_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"} / dynamo_component_router_kv_hit_rate_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "Frontend 总请求（累计）",
+      "description": "dynamo_frontend_requests_total 累计（计数器，重启清零）",
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "id": 6,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_frontend_requests_total{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "Worker scrape 目标",
+      "description": "job=dynamo-worker 的 scrape 目标数",
+      "gridPos": {
+        "x": 20,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "id": 7,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "count(up{job=\"dynamo-worker\",cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Scrape 目标健康（up）",
+      "description": "up 时序，跌 0 表示 otel-collector 采不到该组件",
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 5
+      },
+      "id": 8,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "none",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "up{job=~\"dynamo-.*\",cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}",
+          "legendFormat": "{{job}} · {{dynamo_component}} {{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "id": 9,
+      "panels": [],
+      "title": "Frontend · 流量与延迟",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Frontend 请求速率",
+      "description": "dynamo_frontend_requests_total rate，按 status 分",
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 8,
+        "h": 8
+      },
+      "id": 10,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (status) (rate(dynamo_frontend_requests_total{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "{{status}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Active / Queued 请求",
+      "description": "dynamo_frontend_active/queued/inflight_requests",
+      "gridPos": {
+        "x": 8,
+        "y": 11,
+        "w": 8,
+        "h": 8
+      },
+      "id": 11,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_frontend_active_requests{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "active",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_frontend_queued_requests{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "queued",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_frontend_inflight_requests{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "inflight",
+          "range": true,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "输出 Token 吞吐",
+      "description": "dynamo_frontend_output_tokens_total rate（tokens/s）",
+      "gridPos": {
+        "x": 16,
+        "y": 11,
+        "w": 8,
+        "h": 8
+      },
+      "id": 12,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "reqps",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (model) (rate(dynamo_frontend_output_tokens_total{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "{{model}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "平均 TTFT",
+      "description": "time_to_first_token sum/count（秒）—— 无流量时为空属正常",
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 8,
+        "h": 8
+      },
+      "id": 13,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (model) (rate(dynamo_frontend_time_to_first_token_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_frontend_time_to_first_token_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "{{model}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "平均请求时延（E2E）",
+      "description": "request_duration_seconds sum/count（秒）",
+      "gridPos": {
+        "x": 8,
+        "y": 19,
+        "w": 8,
+        "h": 8
+      },
+      "id": 14,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (model) (rate(dynamo_frontend_request_duration_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_frontend_request_duration_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "{{model}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "平均 ITL（token 间时延）",
+      "description": "inter_token_latency_seconds sum/count（秒）",
+      "gridPos": {
+        "x": 16,
+        "y": 19,
+        "w": 8,
+        "h": 8
+      },
+      "id": 15,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (model) (rate(dynamo_frontend_inter_token_latency_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_frontend_inter_token_latency_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "{{model}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "TTFT 分位数",
+      "description": "histogram_quantile over dynamo_frontend_time_to_first_token_seconds_bucket",
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 8,
+        "h": 8
+      },
+      "id": 16,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (model) (histogram_quantile(0.50, sum by (le, model) (rate(dynamo_frontend_time_to_first_token_seconds_bucket{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))))",
+          "legendFormat": "{{model}} p50",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (model) (histogram_quantile(0.90, sum by (le, model) (rate(dynamo_frontend_time_to_first_token_seconds_bucket{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))))",
+          "legendFormat": "{{model}} p90",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (model) (histogram_quantile(0.99, sum by (le, model) (rate(dynamo_frontend_time_to_first_token_seconds_bucket{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))))",
+          "legendFormat": "{{model}} p99",
+          "range": true,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "平均输入/输出长度",
+      "description": "input/output_sequence_tokens sum/count（tokens）",
+      "gridPos": {
+        "x": 8,
+        "y": 27,
+        "w": 8,
+        "h": 8
+      },
+      "id": 17,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "none",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(dynamo_frontend_input_sequence_tokens_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_frontend_input_sequence_tokens_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "avg ISL",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(dynamo_frontend_output_sequence_tokens_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_frontend_output_sequence_tokens_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "avg OSL",
+          "range": true,
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "请求面时延分解",
+      "description": "dynamo_request_plane queue / send / roundtrip_ttft sum/count",
+      "gridPos": {
+        "x": 16,
+        "y": 27,
+        "w": 8,
+        "h": 8
+      },
+      "id": 18,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(dynamo_request_plane_queue_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_request_plane_queue_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "queue",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(dynamo_request_plane_send_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_request_plane_send_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "send",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(dynamo_request_plane_roundtrip_ttft_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_request_plane_roundtrip_ttft_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "roundtrip_ttft",
+          "range": true,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "id": 19,
+      "panels": [],
+      "title": "Router · KV 决策与开销",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Router KV 命中率（随请求）",
+      "description": "dynamo_component_router_kv_hit_rate sum/count",
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 8,
+        "h": 8
+      },
+      "id": 20,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percentunit",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (model) (rate(dynamo_component_router_kv_hit_rate_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_component_router_kv_hit_rate_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "{{model}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Router 决策开销分解",
+      "description": "dynamo_router_overhead_*：scheduling / indexer / hashing / total（ms）",
+      "gridPos": {
+        "x": 8,
+        "y": 36,
+        "w": 12,
+        "h": 8
+      },
+      "id": 21,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ms",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(dynamo_router_overhead_scheduling_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_router_overhead_scheduling_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "scheduling",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(dynamo_router_overhead_indexer_find_matches_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_router_overhead_indexer_find_matches_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "indexer_find_matches",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(dynamo_router_overhead_block_hashing_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_router_overhead_block_hashing_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "block_hashing",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(dynamo_router_overhead_total_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_router_overhead_total_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "total",
+          "range": true,
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Router 选中请求速率",
+      "description": "dynamo_component_router_requests_total rate",
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 8,
+        "h": 8
+      },
+      "id": 22,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (model) (rate(dynamo_component_router_requests_total{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "{{model}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Router 排队水位",
+      "description": "router_queue_pending_* ：排队请求数 / ISL / cached tokens",
+      "gridPos": {
+        "x": 8,
+        "y": 44,
+        "w": 8,
+        "h": 8
+      },
+      "id": 23,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_frontend_router_queue_pending_requests{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "pending requests",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_frontend_router_queue_pending_isl_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "pending ISL tokens",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_frontend_router_queue_pending_cached_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "pending cached tokens",
+          "range": true,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Router worker 视图",
+      "description": "worker_registered 与 active decode blocks / prefill tokens",
+      "gridPos": {
+        "x": 16,
+        "y": 44,
+        "w": 8,
+        "h": 8
+      },
+      "id": 24,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_component_router_worker_registered{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "registered workers",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_frontend_worker_active_decode_blocks{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "active decode blocks",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_frontend_worker_active_prefill_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "active prefill tokens",
+          "range": true,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 52
+      },
+      "id": 25,
+      "panels": [],
+      "title": "Worker 组件 · prefill / decode / aggregated",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Worker 组件请求速率",
+      "description": "dynamo_component_requests_total rate，按 prefill/decode/aggregated",
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 8,
+        "h": 8
+      },
+      "id": 26,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (dynamo_component) (rate(dynamo_component_requests_total{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",dynamo_component=~\"prefill|decode|aggregated\"}[$window]))",
+          "legendFormat": "{{dynamo_component}} {{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "GPU KV Cache 使用率",
+      "description": "dynamo_component_gpu_cache_usage_percent（%）",
+      "gridPos": {
+        "x": 8,
+        "y": 53,
+        "w": 8,
+        "h": 8
+      },
+      "id": 27,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "avg by (dynamo_component) (dynamo_component_gpu_cache_usage_percent{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",dynamo_component=~\"prefill|decode|aggregated\"})",
+          "legendFormat": "{{dynamo_component}} {{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Worker inflight",
+      "description": "dynamo_component_inflight_requests",
+      "gridPos": {
+        "x": 16,
+        "y": 53,
+        "w": 8,
+        "h": 8
+      },
+      "id": 28,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (dynamo_component) (dynamo_component_inflight_requests{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",dynamo_component=~\"prefill|decode|aggregated\"})",
+          "legendFormat": "{{dynamo_component}} {{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Worker 平均处理时延",
+      "description": "dynamo_component_request_duration_seconds sum/count（秒）",
+      "gridPos": {
+        "x": 0,
+        "y": 61,
+        "w": 12,
+        "h": 8
+      },
+      "id": 29,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (dynamo_component) (rate(dynamo_component_request_duration_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",dynamo_component=~\"prefill|decode|aggregated\"}[$window]) / rate(dynamo_component_request_duration_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",dynamo_component=~\"prefill|decode|aggregated\"}[$window]))",
+          "legendFormat": "{{dynamo_component}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "KV Block 池",
+      "description": "dynamo_component_total_blocks（各 worker 组件的 KV block 总量）",
+      "gridPos": {
+        "x": 12,
+        "y": 61,
+        "w": 12,
+        "h": 8
+      },
+      "id": 30,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum by (dynamo_component) (dynamo_component_total_blocks{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",dynamo_component=~\"prefill|decode|aggregated\"})",
+          "legendFormat": "{{dynamo_component}} {{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 69
+      },
+      "id": 31,
+      "panels": [],
+      "title": "SGLang 引擎内部",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "引擎生成吞吐",
+      "description": "sglang_gen_throughput（tok/s，按 worker 组件）",
+      "gridPos": {
+        "x": 0,
+        "y": 70,
+        "w": 8,
+        "h": 8
+      },
+      "id": 32,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_gen_throughput{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "{{dynamo_component}} {{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "引擎前缀缓存命中率",
+      "description": "sglang_cache_hit_rate",
+      "gridPos": {
+        "x": 8,
+        "y": 70,
+        "w": 8,
+        "h": 8
+      },
+      "id": 33,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percentunit",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_cache_hit_rate{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "{{dynamo_component}} {{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Token 池水位",
+      "description": "full_token_usage（比例）与 used/available tokens",
+      "gridPos": {
+        "x": 16,
+        "y": 70,
+        "w": 8,
+        "h": 8
+      },
+      "id": 34,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_full_token_usage{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "usage {{dynamo_component}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_num_used_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "used {{dynamo_component}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_kv_available_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "available {{dynamo_component}}",
+          "range": true,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "引擎请求排队 / 运行",
+      "description": "num_running_reqs / num_queue_reqs / retracted",
+      "gridPos": {
+        "x": 0,
+        "y": 78,
+        "w": 8,
+        "h": 8
+      },
+      "id": 35,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_num_running_reqs{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "running {{dynamo_component}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_num_queue_reqs{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "queued {{dynamo_component}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_num_retracted_reqs{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "retracted {{dynamo_component}}",
+          "range": true,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "PD 分离队列",
+      "description": "bootstrap / inflight / transfer 队列长度（disagg 关键水位）",
+      "gridPos": {
+        "x": 8,
+        "y": 78,
+        "w": 8,
+        "h": 8
+      },
+      "id": 36,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_num_prefill_bootstrap_queue_reqs{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "bootstrap {{dynamo_component}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_num_prefill_inflight_queue_reqs{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "inflight {{dynamo_component}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_num_decode_transfer_queue_reqs{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "decode_transfer {{dynamo_component}}",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (sglang_num_decode_prealloc_queue_reqs{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "legendFormat": "decode_prealloc {{dynamo_component}}",
+          "range": true,
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "KV 传输性能（引擎侧）",
+      "description": "sglang_kv_transfer_*：speed GB/s 与 latency ms 均值",
+      "gridPos": {
+        "x": 16,
+        "y": 78,
+        "w": 8,
+        "h": 8
+      },
+      "id": 37,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (rate(sglang_kv_transfer_speed_gb_s_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(sglang_kv_transfer_speed_gb_s_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "GB/s {{dynamo_component}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max by (dynamo_component) (rate(sglang_kv_transfer_latency_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(sglang_kv_transfer_latency_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "legendFormat": "ms {{dynamo_component}}",
+          "range": true,
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 86
+      },
+      "id": 38,
+      "panels": [],
+      "title": "GPU 节点 · DCGM",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "GPU 利用率",
+      "description": "DCGM_FI_DEV_GPU_UTIL（%），namespace 内 dynamo pod 所在节点 GPU",
+      "gridPos": {
+        "x": 0,
+        "y": 87,
+        "w": 8,
+        "h": 8
+      },
+      "id": 39,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_GPU_UTIL{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\"}",
+          "legendFormat": "{{node}} GPU{{gpu}} {{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "GPU 显存占用",
+      "description": "DCGM_FI_DEV_FB_USED（MiB）",
+      "gridPos": {
+        "x": 8,
+        "y": 87,
+        "w": 8,
+        "h": 8
+      },
+      "id": 40,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "mbytes",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_FB_USED{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\"}",
+          "legendFormat": "{{node}} GPU{{gpu}} {{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "GPU 显存带宽利用",
+      "description": "DCGM_FI_DEV_MEM_COPY_UTIL（%）",
+      "gridPos": {
+        "x": 16,
+        "y": 87,
+        "w": 8,
+        "h": 8
+      },
+      "id": 41,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_MEM_COPY_UTIL{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\"}",
+          "legendFormat": "{{node}} GPU{{gpu}} {{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "namespace",
+        "type": "query",
+        "label": "Namespace",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+        },
+        "query": "label_values(cluster=\"ack-LB97i2CZNR\", namespace)",
+        "current": {
+          "text": "nhi",
+          "value": "nhi"
+        },
+        "refresh": 1,
+        "hide": 0,
+        "includeAll": false,
+        "multi": false
+      },
+      {
+        "name": "dgd",
+        "type": "query",
+        "label": "DGD",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+        },
+        "query": "label_values(dynamo_frontend_requests_total{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\"}, dynamo_dgd)",
+        "current": {
+          "text": "dynamo-trace-demo-mixed",
+          "value": "dynamo-trace-demo-mixed"
+        },
+        "refresh": 1,
+        "hide": 0,
+        "includeAll": false,
+        "multi": false
+      },
+      {
+        "name": "window",
+        "type": "custom",
+        "label": "Rate window",
+        "query": "5m,30m,1h,6h,24h",
+        "current": {
+          "text": "1h",
+          "value": "1h"
+        },
+        "hide": 0,
+        "options": [
+          {
+            "selected": false,
+            "text": "5m",
+            "value": "5m"
+          },
+          {
+            "selected": false,
+            "text": "30m",
+            "value": "30m"
+          },
+          {
+            "selected": false,
+            "text": "1h",
+            "value": "1h"
+          },
+          {
+            "selected": false,
+            "text": "6h",
+            "value": "6h"
+          },
+          {
+            "selected": false,
+            "text": "24h",
+            "value": "24h"
+          }
+        ]
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  }
+}

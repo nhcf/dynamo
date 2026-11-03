@@ -539,3 +539,63 @@ D(converged) accepted=1149 sent_kafka=1149 failed=0 refused=0
 | 30000 入口 + selector 回退说明 | [deploy/nhi-frontend-nodeport.yaml](../deploy/nhi-frontend-nodeport.yaml) |
 
 回退顺序：先 `kubectl apply -f deploy/nhi-dgd.json` 建回旧 DGD，再把 NodePort 的 `nvidia.com/dynamo-namespace` 选择器改回 `nhi-dynamo-trace-demo`。
+
+## 11. 走完整入口链的 curl（Higress → LiteLLM → Dynamo，2026-11-02）
+
+前面 §5–§7 的 curl 直连 litellm NodePort（`10.200.44.107:37400`）。本节记录经 Higress 网关的对外形态，即生产入口链路的完整四段。
+
+### 11.1 网关节点与路由
+
+`maas-dev` 集群 `higress-system`：
+
+| 组件 | Service | NodePort |
+|---|---|---|
+| Higress 网关 | `higress-gateway` | `80:62703`（`443:30444`） |
+| LiteLLM | `litellm` | `4000:37400` |
+
+网关侧有两条 Ingress 指向**同一个** litellm 后端（`higress.io/destination: litellm.litellm-system.svc.cluster.local:4000`）：
+
+| Ingress | path | 重写 | 说明 |
+|---|---|---|---|
+| `litellm-service-gpt-4o-mini` | `/maas/(v1/)?(v1/.*)` | `rewrite-target: /$2` | 正则捕获，`/maas/v1/chat/completions` → `/v1/chat/completions` |
+| `litellm-service-trace-test` | `/trace-test/`（Prefix） | `rewrite-path: /` | trace 链路专用前缀 |
+
+### 11.2 两个测试 URL
+
+`SK` 取 Higress `ext-auth` WasmPlugin 白名单里的项目 SK（**不是** litellm master key），从环境变量注入，不落盘：
+
+```bash
+export HIGRESS_SK=<ext-auth 白名单 SK>
+export GW=10.200.44.107:62703
+
+# URL 1 —— aggregated 分支（Qwen3.8-27B，tp4，单实例 prefill+decode 同进程）
+curl -s http://$GW/maas/v1/chat/completions \
+  -H "Authorization: Bearer $HIGRESS_SK" -H 'Content-Type: application/json' \
+  -d '{"model":"dynamo-trace-demo-Qwen3.8-27B",
+       "messages":[{"role":"user","content":"1+1=? answer with the number only"}],
+       "max_tokens":400}'
+
+# URL 2 —— PD 分离分支（Qwen2.5-7B-Instruct，prefill + decode 跨进程 mooncake_tcp）
+curl -s http://$GW/trace-test/v1/chat/completions \
+  -H "Authorization: Bearer $HIGRESS_SK" -H 'Content-Type: application/json' \
+  -d '{"model":"dynamo-trace-demo-Qwen2.5-7B-Instruct",
+       "messages":[{"role":"user","content":"1+1=? answer with the number only"}],
+       "max_tokens":64}'
+```
+
+实测（2026-11-02，回收后 mixed 独占 6 卡）：
+
+| path | model | HTTP | content | finish | total tokens | 时延 |
+|---|---|---|---|---|---|---|
+| `/maas` | Qwen3.8-27B | 200 | `'\n\n2'` | stop | 88 | 0.67 s |
+| `/trace-test` | Qwen2.5-7B-Instruct | 200 | `'2'` | stop | 40 | 0.21 s |
+| `/maas` | Qwen2.5-7B-Instruct | 200 | `'2'` | stop | 40 | 0.14 s |
+| `/trace-test` | Qwen3.8-27B | 200 | `'\n\n2'` | stop | 95 | 0.78 s |
+
+### 11.3 三个必须知道的边界
+
+1. **path 不选择模型分支**。上表后两行是交叉验证：`/maas` + PD 模型、`/trace-test` + agg 模型同样 200 且返回正确的对应模型。真正决定走 aggregated 还是 prefill/decode 的是请求体 `model` 字段——两条 Ingress 的后端是同一个 litellm，差别只在 URL 前缀。因此这两个 URL 是**演示意义上的分流**，不是隔离通道；若需要 path 硬绑定模型，得在网关侧加 `model-mapper` / `model-router` 规则注入 model，属于网关配置变更。
+2. **必须用白名单 SK**。`ext-auth` WasmPlugin 拦截 POST；拿 litellm master key 过 litellm 鉴权后仍会被网关打回 `401 PROJECT_SK_NOT_EXIST`。
+3. **reasoning 模型的 token 预算**。`Qwen3.8-27B` 先产 `reasoning_content`，`max_tokens` 给小了会出现 `content: null` + `finish_reason: length` 的假故障，聚合分支保持 400 以上。
+
+网关入口不存在单点：`10.200.44.107` / `.109` / `.110` 三个节点的 `62703` 均返回 200 且 `/v1/models` 列表一致（含两个 dynamo 模型），URL 里的节点 IP 可互换。注意 `/v1/models` 仍带着 `DeepSeek-V4-Flash`、`021SFM-Instruct` 两条死注册（见 §9 清理项）。

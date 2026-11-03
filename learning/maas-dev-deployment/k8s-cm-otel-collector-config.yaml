@@ -1,6 +1,9 @@
 # maas-dev otel-collector 的参考配置副本（整理自集群内同名 ConfigMap）。
-# 凭证已脱敏：x-br-acid / bearer_token 的真实值只保存在本地 .vscode/credentials.local.md
+# 凭证已脱敏：x-br-acid 的真实值只保存在本地 .vscode/credentials.local.md
 # （该目录已被 .gitignore 忽略，不会入库）。直接 apply 前需先替换回真实值。
+# 2026-11-02：已移除全部 metrics 相关配置（prometheus receiver / resource processor /
+# prometheusremotewrite exporter / metrics pipeline），collector 现在只服务 traces 链路；
+# litellm 指标不再采集。回退材料见 backup/otel-collector-config-before-metrics-removal-*.yaml。
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -15,17 +18,6 @@ data:
         protocols:
           grpc:
             endpoint: 0.0.0.0:4317
-
-      prometheus:
-        config:
-          scrape_configs:
-            - job_name: 'litellm'
-              scrape_interval: 15s
-              static_configs:
-                - targets:
-                    - 'litellm.litellm-system.svc.cluster.local:4000'
-              metrics_path: /metrics/
-              bearer_token: '<REDACTED-LITELLM-MASTER-KEY>'   # 实测不带此 token 也返回 200，可删除
 
     processors:
       k8sattributes:
@@ -106,15 +98,6 @@ data:
         limit_mib: 640
         spike_limit_mib: 128
 
-      resource:
-        attributes:
-          - key: service.name
-            value: litellm
-            action: upsert
-          - key: cluster
-            value: maas-dev
-            action: upsert
-
     exporters:
       kafka:
         brokers:
@@ -135,14 +118,6 @@ data:
           num_consumers: 10
           queue_size: 1000
 
-      prometheusremotewrite:
-        endpoint: "http://10.107.205.20:58897/integration/prometheus/metric/63e4f890-a942-4372-a2c8-7fc830ae414f"
-        resource_to_telemetry_conversion:
-          enabled: true
-        remote_write_queue:
-          num_consumers: 5
-          queue_size: 1000
-
       otlphttp:
         #endpoint: "https://oneupload.bonree.com/APM/otel"
         endpoint: "http://10.107.205.20:58897/APM/otel"
@@ -161,10 +136,6 @@ data:
           receivers: [otlp]
           processors: [memory_limiter, k8sattributes, transform, batch]
           exporters: [kafka,otlphttp,debug]
-        metrics:
-          receivers: [prometheus]
-          processors: [memory_limiter, resource, batch]
-          exporters: [prometheusremotewrite]
       telemetry:
         logs:
           level: info
