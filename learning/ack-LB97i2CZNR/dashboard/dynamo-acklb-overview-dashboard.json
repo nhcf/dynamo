@@ -3126,6 +3126,1294 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 95
+      },
+      "id": 42,
+      "panels": [],
+      "title": "Planner · 自动伸缩与 SLA",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "Planner scrape",
+      "description": "planner 组件 :9085 采集健康",
+      "gridPos": {
+        "x": 0,
+        "y": 96,
+        "w": 4,
+        "h": 4
+      },
+      "id": 43,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(up{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "当前 Prefill 副本",
+      "description": "dynamo_planner_num_prefill_replicas",
+      "gridPos": {
+        "x": 4,
+        "y": 96,
+        "w": 4,
+        "h": 4
+      },
+      "id": 44,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_planner_num_prefill_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "当前 Decode 副本",
+      "description": "dynamo_planner_num_decode_replicas",
+      "gridPos": {
+        "x": 8,
+        "y": 96,
+        "w": 4,
+        "h": 4
+      },
+      "id": 45,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_planner_num_decode_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "累计 GPU 时长",
+      "description": "dynamo_planner_gpu_hours（累计值）",
+      "gridPos": {
+        "x": 12,
+        "y": 96,
+        "w": 4,
+        "h": 4
+      },
+      "id": 46,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "h",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(dynamo_planner_gpu_hours{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "Tick 滞后",
+      "description": "dynamo_planner_tick_lag_seconds（决策循环健康度）",
+      "gridPos": {
+        "x": 16,
+        "y": 96,
+        "w": 4,
+        "h": 4
+      },
+      "id": 47,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "s",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_tick_lag_seconds{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "stat",
+      "title": "TTFT SLA 目标",
+      "description": "dynamo_planner_sla_target_ttft_ms",
+      "gridPos": {
+        "x": 20,
+        "y": 96,
+        "w": 4,
+        "h": 4
+      },
+      "id": 48,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "ms",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_sla_target_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "伸缩决策（吞吐维度）",
+      "description": "throughput_scaling_decision 枚举展开，活跃取值每 tick 为 1；unset=不扩不缩",
+      "gridPos": {
+        "x": 0,
+        "y": 100,
+        "w": 8,
+        "h": 7
+      },
+      "id": 49,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "none",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "dynamo_planner_throughput_scaling_decision{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"}",
+          "legendFormat": "{{__name__}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "伸缩决策（负载维度）",
+      "description": "load_scaling_decision 枚举展开，活跃取值每 tick 为 1",
+      "gridPos": {
+        "x": 8,
+        "y": 100,
+        "w": 8,
+        "h": 7
+      },
+      "id": 50,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "none",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "dynamo_planner_load_scaling_decision{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"}",
+          "legendFormat": "{{__name__}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "插件健康与熔断",
+      "description": "plugin_circuit_state / override_active / evaluations 速率",
+      "gridPos": {
+        "x": 16,
+        "y": 100,
+        "w": 8,
+        "h": 7
+      },
+      "id": 51,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_plugin_circuit_state{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "circuit_state",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_plugin_override_active{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "override_active",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(dynamo_planner_plugin_evaluations_total{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"}[$window]))",
+          "legendFormat": "evaluations/s",
+          "range": true,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "观测 vs 预测 RPS",
+      "description": "observed/predicted requests_per_second",
+      "gridPos": {
+        "x": 0,
+        "y": 107,
+        "w": 8,
+        "h": 7
+      },
+      "id": 52,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "reqps",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_observed_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "observed rps",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_predicted_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "predicted rps",
+          "range": true,
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "TTFT：观测 / 估计 / SLA",
+      "description": "observed_ttft_ms vs estimated_ttft_ms vs sla_target_ttft_ms",
+      "gridPos": {
+        "x": 8,
+        "y": 107,
+        "w": 8,
+        "h": 7
+      },
+      "id": 53,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ms",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_observed_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "observed",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_estimated_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "estimated",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_sla_target_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "sla target",
+          "range": true,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "ITL：观测 / 估计 / SLA",
+      "description": "observed_itl_ms vs estimated_itl_ms vs sla_target_itl_ms",
+      "gridPos": {
+        "x": 16,
+        "y": 107,
+        "w": 8,
+        "h": 7
+      },
+      "id": 54,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ms",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_observed_itl_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "observed",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_estimated_itl_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "estimated",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_sla_target_itl_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "sla target",
+          "range": true,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "副本规划：当前 vs 预测",
+      "description": "num/predicted_num prefill+decode replicas",
+      "gridPos": {
+        "x": 0,
+        "y": 114,
+        "w": 8,
+        "h": 7
+      },
+      "id": 55,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_num_prefill_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "prefill 当前",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_predicted_num_prefill_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "prefill 预测",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_num_decode_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "decode 当前",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_predicted_num_decode_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "decode 预测",
+          "range": true,
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "Token 长度：观测 vs 预测",
+      "description": "observed/predicted ISL·OSL",
+      "gridPos": {
+        "x": 8,
+        "y": 114,
+        "w": 8,
+        "h": 7
+      },
+      "id": 56,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_observed_input_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "observed ISL",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_predicted_input_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "predicted ISL",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_observed_output_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "observed OSL",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_predicted_output_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "predicted OSL",
+          "range": true,
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "引擎容量与 Tick 耗时",
+      "description": "prefill/decode capacity requests_per_second 与 tick 平均耗时",
+      "gridPos": {
+        "x": 16,
+        "y": 114,
+        "w": 8,
+        "h": 7
+      },
+      "id": 57,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_engine_prefill_capacity_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "prefill capacity rps",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(dynamo_planner_engine_decode_capacity_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "legendFormat": "decode capacity rps",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "max(rate(dynamo_planner_tick_duration_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"}[$window]) / rate(dynamo_planner_tick_duration_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"}[$window]))",
+          "legendFormat": "tick avg duration",
+          "range": true,
+          "refId": "C"
+        }
+      ]
     }
   ],
   "templating": {
@@ -3138,7 +4426,7 @@
           "type": "prometheus",
           "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
         },
-        "query": "label_values(cluster=\"ack-LB97i2CZNR\", namespace)",
+        "query": "label_values({cluster=\"ack-LB97i2CZNR\"}, namespace)",
         "current": {
           "text": "nhi",
           "value": "nhi"

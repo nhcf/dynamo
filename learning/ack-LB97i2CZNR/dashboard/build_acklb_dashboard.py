@@ -228,6 +228,69 @@ ts("GPU 显存带宽利用", "DCGM_FI_DEV_MEM_COPY_UTIL（%）",
    [(f'DCGM_FI_DEV_MEM_COPY_UTIL{{{GSEL}}}', "{{node}} GPU{{gpu}} {{pod}}")], 16, y, 8, 8, "percent")
 y += 8
 
+# ============ Row 7: Planner ============
+y = row("Planner · 自动伸缩与 SLA", y=y)
+# planner 是独立 DGD（dynamo-trace-demo-planner），用 job 定位，不随顶部 $dgd 切换
+PSEL = f'{CL},namespace="$namespace",job="dynamo-planner"'
+stat("Planner scrape", "planner 组件 :9085 采集健康",
+     f'sum(up{{{PSEL}}})', 0, y, 4, 4, "none")
+stat("当前 Prefill 副本", "dynamo_planner_num_prefill_replicas",
+     f'sum(dynamo_planner_num_prefill_replicas{{{PSEL}}})', 4, y, 4, 4, "none")
+stat("当前 Decode 副本", "dynamo_planner_num_decode_replicas",
+     f'sum(dynamo_planner_num_decode_replicas{{{PSEL}}})', 8, y, 4, 4, "none")
+stat("累计 GPU 时长", "dynamo_planner_gpu_hours（累计值）",
+     f'sum(dynamo_planner_gpu_hours{{{PSEL}}})', 12, y, 4, 4, "h")
+stat("Tick 滞后", "dynamo_planner_tick_lag_seconds（决策循环健康度）",
+     f'max(dynamo_planner_tick_lag_seconds{{{PSEL}}})', 16, y, 4, 4, "s")
+stat("TTFT SLA 目标", "dynamo_planner_sla_target_ttft_ms",
+     f'max(dynamo_planner_sla_target_ttft_ms{{{PSEL}}})', 20, y, 4, 4, "ms")
+y += 4
+ts("伸缩决策（吞吐维度）", "throughput_scaling_decision 枚举展开，活跃取值每 tick 为 1；unset=不扩不缩", 
+   [(f'dynamo_planner_throughput_scaling_decision{{{PSEL}}}', "{{__name__}}")],
+   0, y, 8, 7, "none")
+ts("伸缩决策（负载维度）", "load_scaling_decision 枚举展开，活跃取值每 tick 为 1", 
+   [(f'dynamo_planner_load_scaling_decision{{{PSEL}}}', "{{__name__}}")],
+   8, y, 8, 7, "none")
+ts("插件健康与熔断", "plugin_circuit_state / override_active / evaluations 速率",
+   [(f'max(dynamo_planner_plugin_circuit_state{{{PSEL}}})', "circuit_state"),
+    (f'max(dynamo_planner_plugin_override_active{{{PSEL}}})', "override_active"),
+    (f'sum(rate(dynamo_planner_plugin_evaluations_total{{{PSEL}}}[{W}]))', "evaluations/s")],
+   16, y, 8, 7)
+y += 7
+ts("观测 vs 预测 RPS", "observed/predicted requests_per_second", 
+   [(f'max(dynamo_planner_observed_requests_per_second{{{PSEL}}})', "observed rps"),
+    (f'max(dynamo_planner_predicted_requests_per_second{{{PSEL}}})', "predicted rps")],
+   0, y, 8, 7, "reqps")
+ts("TTFT：观测 / 估计 / SLA", "observed_ttft_ms vs estimated_ttft_ms vs sla_target_ttft_ms", 
+   [(f'max(dynamo_planner_observed_ttft_ms{{{PSEL}}})', "observed"),
+    (f'max(dynamo_planner_estimated_ttft_ms{{{PSEL}}})', "estimated"),
+    (f'max(dynamo_planner_sla_target_ttft_ms{{{PSEL}}})', "sla target")],
+   8, y, 8, 7, "ms")
+ts("ITL：观测 / 估计 / SLA", "observed_itl_ms vs estimated_itl_ms vs sla_target_itl_ms", 
+   [(f'max(dynamo_planner_observed_itl_ms{{{PSEL}}})', "observed"),
+    (f'max(dynamo_planner_estimated_itl_ms{{{PSEL}}})', "estimated"),
+    (f'max(dynamo_planner_sla_target_itl_ms{{{PSEL}}})', "sla target")],
+   16, y, 8, 7, "ms")
+y += 7
+ts("副本规划：当前 vs 预测", "num/predicted_num prefill+decode replicas",
+   [(f'max(dynamo_planner_num_prefill_replicas{{{PSEL}}})', "prefill 当前"),
+    (f'max(dynamo_planner_predicted_num_prefill_replicas{{{PSEL}}})', "prefill 预测"),
+    (f'max(dynamo_planner_num_decode_replicas{{{PSEL}}})', "decode 当前"),
+    (f'max(dynamo_planner_predicted_num_decode_replicas{{{PSEL}}})', "decode 预测")],
+   0, y, 8, 7)
+ts("Token 长度：观测 vs 预测", "observed/predicted ISL·OSL",
+   [(f'max(dynamo_planner_observed_input_sequence_tokens{{{PSEL}}})', "observed ISL"),
+    (f'max(dynamo_planner_predicted_input_sequence_tokens{{{PSEL}}})', "predicted ISL"),
+    (f'max(dynamo_planner_observed_output_sequence_tokens{{{PSEL}}})', "observed OSL"),
+    (f'max(dynamo_planner_predicted_output_sequence_tokens{{{PSEL}}})', "predicted OSL")],
+   8, y, 8, 7)
+ts("引擎容量与 Tick 耗时", "prefill/decode capacity requests_per_second 与 tick 平均耗时",
+   [(f'max(dynamo_planner_engine_prefill_capacity_requests_per_second{{{PSEL}}})', "prefill capacity rps"),
+    (f'max(dynamo_planner_engine_decode_capacity_requests_per_second{{{PSEL}}})', "decode capacity rps"),
+    (f'max(rate(dynamo_planner_tick_duration_seconds_sum{{{PSEL}}}[{W}]) / rate(dynamo_planner_tick_duration_seconds_count{{{PSEL}}}[{W}]))', "tick avg duration")],
+   16, y, 8, 7)
+y += 7
+
 dashboard = {
     "uid": "dynamo-acklb-overview",
     "title": "Dynamo · ack-LB (nhi · trace-demo-mixed)",
@@ -242,7 +305,7 @@ dashboard = {
     "panels": panels,
     "templating": {"list": [
         {"name": "namespace", "type": "query", "label": "Namespace",
-         "datasource": DS, "query": f'label_values({CL}, namespace)',
+         'datasource': DS, "query": f'label_values({{{CL}}}, namespace)',  # 第一参数必须是合法 selector：裸 label=值 会被 VM 的 match[] 解析拒绝
          "current": {"text": "nhi", "value": "nhi"}, "refresh": 1, "hide": 0,
          "includeAll": False, "multi": False},
         {"name": "dgd", "type": "query", "label": "DGD",
