@@ -5,9 +5,12 @@ The commit message and maintenance instructions use English; tutorial prose rema
 
 ## Entry points
 
+- [模型服务自动调优平台设计与实施方案 V0.1](model-serving-autotuning-design-v0.1.md)
 - [Complete 00–12 module navigation](index.html)
 - [00 System architecture and runtime shapes](system-map.html)
 - [01 Observability source walkthrough](observability.html)
+- [Prometheus metrics classification and usage](prometheus-metrics-guide.html)
+- [HiCache and Mooncake metrics and tracing](kvstore-hicache-metrics.html)
 - [02 Frontend and protocol pipeline](frontend.html)
 - [03 Runtime and communications](runtime.html)
 - [04 KV-aware routing and scheduling](router.html)
@@ -26,6 +29,7 @@ The commit message and maintenance instructions use English; tutorial prose rema
 - [ACK request-plane span design](ack-LB97i2CZNR/request-path-trace-design.html)
 - [ACK request-plane trace walkthrough](ack-LB97i2CZNR/request-path-trace-walkthrough.html)
 - [ACK Dynamo Grafana dashboards](ack-LB97i2CZNR/dashboard/README.md)
+- [Mooncake Master Grafana dashboard](mooncake/dashboard/README.md)
 - [maas-dev historical platform audit](maas-dev-deployment/index.html)
 - [maas-dev Higress metrics collection plan](maas-dev-deployment/higress-metrics-collection-plan.md)
 - [maas-dev otel-collector metrics removal backup](maas-dev-deployment/backup/otel-collector-config-before-metrics-removal-20261102-170238.yaml)

@@ -1,0 +1,81 @@
+{
+  "deployed_at_utc": "2026-11-03T11:20:47.904485+00:00",
+  "uid": "dynamo-acklb-overview",
+  "url": "http://isg.fed.zhejianglab.org/grafana/d/dynamo-acklb-overview/dynamo-c2b7-ack-lb-nhi-c2b7-trace-demo-mixed",
+  "previous_version": 4,
+  "version": 5,
+  "backup_path": "/home/chenxd/.local/state/dynamo/grafana-backups/dynamo-acklb-overview-v4-20261103T112045Z.json",
+  "local_json_sha256": "3ec8bf7519ffe0dd7933f04e2d06b410852d5d88e8c9180aa4a5a824677714b0",
+  "panel_count": 59,
+  "query_count": 91,
+  "history_range_checks": [
+    {
+      "panel_id": 58,
+      "series": 11,
+      "points": 671
+    },
+    {
+      "panel_id": 59,
+      "series": 16,
+      "points": 976
+    }
+  ],
+  "saved_panels_match_local": true,
+  "initial_version": 3,
+  "initial_backup_path": "/home/chenxd/.local/state/dynamo/grafana-backups/dynamo-acklb-overview-v3-20261103T111658Z.json",
+  "scope_checks": {
+    "gpu_series_per_dgd": 6,
+    "mixed_has_no_actual_planner_series": true,
+    "mixed_status_cards_show_explicit_absent_label": true,
+    "planner_has_one_active_state_per_dimension": true,
+    "active_and_absent_status_queries_are_mutually_exclusive": true
+  },
+  "validation_summary": [
+    {
+      "dgd": "dynamo-trace-demo-mixed",
+      "window": "1h",
+      "queries_passed": 91
+    },
+    {
+      "dgd": "dynamo-trace-demo-mixed",
+      "window": "5m",
+      "queries_passed": 91
+    },
+    {
+      "dgd": "dynamo-trace-demo-planner",
+      "window": "1h",
+      "queries_passed": 91
+    },
+    {
+      "dgd": "dynamo-trace-demo-planner",
+      "window": "5m",
+      "queries_passed": 91
+    }
+  ],
+  "browser_checks": [
+    {
+      "panel_id": 49,
+      "dgd": "dynamo-trace-demo-planner",
+      "expected": "unset",
+      "pass": true
+    },
+    {
+      "panel_id": 50,
+      "dgd": "dynamo-trace-demo-planner",
+      "expected": "no_fpm_data",
+      "pass": true
+    },
+    {
+      "panel_id": 27,
+      "dgd": "dynamo-trace-demo-planner",
+      "expected": "2%",
+      "pass": true
+    },
+    {
+      "panel_id": 49,
+      "dgd": "dynamo-trace-demo-mixed",
+      "expected": "无状态：未部署 Planner 或采集缺失",
+      "pass": true
+    }
+  ]
+}

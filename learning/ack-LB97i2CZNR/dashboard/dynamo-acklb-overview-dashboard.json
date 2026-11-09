@@ -214,7 +214,7 @@
       },
       "type": "stat",
       "title": "Router 决策 KV 命中率",
-      "description": "dynamo_component_router_kv_hit_rate 近样本均值",
+      "description": "所选 rate window 内按请求样本数加权；无新增样本时无值",
       "gridPos": {
         "x": 12,
         "y": 1,
@@ -259,7 +259,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "avg(dynamo_component_router_kv_hit_rate_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"} / dynamo_component_router_kv_hit_rate_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"})",
+          "expr": "sum(rate(dynamo_component_router_kv_hit_rate_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum(rate(dynamo_component_router_kv_hit_rate_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -832,7 +832,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum by (model) (rate(dynamo_frontend_time_to_first_token_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_frontend_time_to_first_token_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum by (model) (rate(dynamo_frontend_time_to_first_token_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum by (model) (rate(dynamo_frontend_time_to_first_token_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "{{model}}",
           "range": true,
           "refId": "A"
@@ -916,7 +916,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum by (model) (rate(dynamo_frontend_request_duration_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_frontend_request_duration_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum by (model) (rate(dynamo_frontend_request_duration_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum by (model) (rate(dynamo_frontend_request_duration_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "{{model}}",
           "range": true,
           "refId": "A"
@@ -1000,7 +1000,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum by (model) (rate(dynamo_frontend_inter_token_latency_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_frontend_inter_token_latency_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum by (model) (rate(dynamo_frontend_inter_token_latency_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum by (model) (rate(dynamo_frontend_inter_token_latency_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "{{model}}",
           "range": true,
           "refId": "A"
@@ -1190,7 +1190,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(rate(dynamo_frontend_input_sequence_tokens_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_frontend_input_sequence_tokens_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum(rate(dynamo_frontend_input_sequence_tokens_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum(rate(dynamo_frontend_input_sequence_tokens_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "avg ISL",
           "range": true,
           "refId": "A"
@@ -1201,7 +1201,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(rate(dynamo_frontend_output_sequence_tokens_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_frontend_output_sequence_tokens_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum(rate(dynamo_frontend_output_sequence_tokens_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum(rate(dynamo_frontend_output_sequence_tokens_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "avg OSL",
           "range": true,
           "refId": "B"
@@ -1285,7 +1285,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(rate(dynamo_request_plane_queue_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_request_plane_queue_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum(rate(dynamo_request_plane_queue_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum(rate(dynamo_request_plane_queue_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "queue",
           "range": true,
           "refId": "A"
@@ -1296,7 +1296,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(rate(dynamo_request_plane_send_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_request_plane_send_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum(rate(dynamo_request_plane_send_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum(rate(dynamo_request_plane_send_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "send",
           "range": true,
           "refId": "B"
@@ -1307,7 +1307,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(rate(dynamo_request_plane_roundtrip_ttft_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_request_plane_roundtrip_ttft_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum(rate(dynamo_request_plane_roundtrip_ttft_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum(rate(dynamo_request_plane_roundtrip_ttft_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "roundtrip_ttft",
           "range": true,
           "refId": "C"
@@ -1404,7 +1404,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum by (model) (rate(dynamo_component_router_kv_hit_rate_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_component_router_kv_hit_rate_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum by (model) (rate(dynamo_component_router_kv_hit_rate_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum by (model) (rate(dynamo_component_router_kv_hit_rate_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "{{model}}",
           "range": true,
           "refId": "A"
@@ -1488,7 +1488,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(rate(dynamo_router_overhead_scheduling_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_router_overhead_scheduling_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum(rate(dynamo_router_overhead_scheduling_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum(rate(dynamo_router_overhead_scheduling_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "scheduling",
           "range": true,
           "refId": "A"
@@ -1499,7 +1499,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(rate(dynamo_router_overhead_indexer_find_matches_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_router_overhead_indexer_find_matches_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum(rate(dynamo_router_overhead_indexer_find_matches_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum(rate(dynamo_router_overhead_indexer_find_matches_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "indexer_find_matches",
           "range": true,
           "refId": "B"
@@ -1510,7 +1510,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(rate(dynamo_router_overhead_block_hashing_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_router_overhead_block_hashing_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum(rate(dynamo_router_overhead_block_hashing_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum(rate(dynamo_router_overhead_block_hashing_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "block_hashing",
           "range": true,
           "refId": "C"
@@ -1521,7 +1521,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(rate(dynamo_router_overhead_total_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(dynamo_router_overhead_total_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum(rate(dynamo_router_overhead_total_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum(rate(dynamo_router_overhead_total_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "total",
           "range": true,
           "refId": "D"
@@ -1928,7 +1928,7 @@
       },
       "type": "timeseries",
       "title": "GPU KV Cache 使用率",
-      "description": "dynamo_component_gpu_cache_usage_percent（%）",
+      "description": "原始值范围 0–1，按百分比显示：0.02 = 2%；按角色取平均",
       "gridPos": {
         "x": 8,
         "y": 53,
@@ -1941,7 +1941,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "unit": "percent",
+          "unit": "percentunit",
           "mappings": [],
           "custom": {
             "axisBorderShow": false,
@@ -1973,7 +1973,9 @@
                 "color": "green"
               }
             ]
-          }
+          },
+          "min": 0,
+          "max": 1
         },
         "overrides": []
       },
@@ -1999,7 +2001,7 @@
           },
           "editorMode": "code",
           "expr": "avg by (dynamo_component) (dynamo_component_gpu_cache_usage_percent{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",dynamo_component=~\"prefill|decode|aggregated\"})",
-          "legendFormat": "{{dynamo_component}} {{pod}}",
+          "legendFormat": "{{dynamo_component}}",
           "range": true,
           "refId": "A"
         }
@@ -2166,7 +2168,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum by (dynamo_component) (rate(dynamo_component_request_duration_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",dynamo_component=~\"prefill|decode|aggregated\"}[$window]) / rate(dynamo_component_request_duration_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",dynamo_component=~\"prefill|decode|aggregated\"}[$window]))",
+          "expr": "sum by (dynamo_component) (rate(dynamo_component_request_duration_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",dynamo_component=~\"prefill|decode|aggregated\"}[$window])) / sum by (dynamo_component) (rate(dynamo_component_request_duration_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",dynamo_component=~\"prefill|decode|aggregated\"}[$window]))",
           "legendFormat": "{{dynamo_component}}",
           "range": true,
           "refId": "A"
@@ -2844,7 +2846,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max by (dynamo_component) (rate(sglang_kv_transfer_speed_gb_s_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(sglang_kv_transfer_speed_gb_s_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum by (dynamo_component) (rate(sglang_kv_transfer_speed_gb_s_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum by (dynamo_component) (rate(sglang_kv_transfer_speed_gb_s_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "GB/s {{dynamo_component}}",
           "range": true,
           "refId": "A"
@@ -2855,7 +2857,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max by (dynamo_component) (rate(sglang_kv_transfer_latency_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]) / rate(sglang_kv_transfer_latency_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
+          "expr": "sum by (dynamo_component) (rate(sglang_kv_transfer_latency_ms_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window])) / sum by (dynamo_component) (rate(sglang_kv_transfer_latency_ms_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\"}[$window]))",
           "legendFormat": "ms {{dynamo_component}}",
           "range": true,
           "refId": "B"
@@ -2882,7 +2884,7 @@
       },
       "type": "timeseries",
       "title": "GPU 利用率",
-      "description": "DCGM_FI_DEV_GPU_UTIL（%），namespace 内 dynamo pod 所在节点 GPU",
+      "description": "DCGM_FI_DEV_GPU_UTIL（%），仅所选 DGD 的 Worker pod；up=0 仍保留关联",
       "gridPos": {
         "x": 0,
         "y": 87,
@@ -2952,7 +2954,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_GPU_UTIL{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\"}",
+          "expr": "DCGM_FI_DEV_GPU_UTIL{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\"} and on (cluster, namespace, pod) max by (cluster, namespace, pod) (up{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-worker\"})",
           "legendFormat": "{{node}} GPU{{gpu}} {{pod}}",
           "range": true,
           "refId": "A"
@@ -3036,7 +3038,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_FB_USED{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\"}",
+          "expr": "DCGM_FI_DEV_FB_USED{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\"} and on (cluster, namespace, pod) max by (cluster, namespace, pod) (up{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-worker\"})",
           "legendFormat": "{{node}} GPU{{gpu}} {{pod}}",
           "range": true,
           "refId": "A"
@@ -3120,7 +3122,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_MEM_COPY_UTIL{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\"}",
+          "expr": "DCGM_FI_DEV_MEM_COPY_UTIL{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\"} and on (cluster, namespace, pod) max by (cluster, namespace, pod) (up{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-worker\"})",
           "legendFormat": "{{node}} GPU{{gpu}} {{pod}}",
           "range": true,
           "refId": "A"
@@ -3137,7 +3139,7 @@
       },
       "id": 42,
       "panels": [],
-      "title": "Planner · 自动伸缩与 SLA",
+      "title": "Planner · $dgd · 自动伸缩与 SLA",
       "type": "row"
     },
     {
@@ -3192,7 +3194,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(up{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "sum(up{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -3251,7 +3253,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(dynamo_planner_num_prefill_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "sum(dynamo_planner_num_prefill_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -3310,7 +3312,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(dynamo_planner_num_decode_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "sum(dynamo_planner_num_decode_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -3369,7 +3371,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(dynamo_planner_gpu_hours{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "sum(dynamo_planner_gpu_hours{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -3428,7 +3430,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_tick_lag_seconds{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_tick_lag_seconds{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -3487,7 +3489,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_sla_target_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_sla_target_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -3499,9 +3501,9 @@
         "type": "prometheus",
         "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
       },
-      "type": "timeseries",
-      "title": "伸缩决策（吞吐维度）",
-      "description": "throughput_scaling_decision 枚举展开，活跃取值每 tick 为 1；unset=不扩不缩",
+      "type": "stat",
+      "title": "当前吞吐决策",
+      "description": "活跃 one-hot 状态；unset 表示状态未设置，不能据此判断预测有效。无值时检查所选 DGD 是否部署 Planner。",
       "gridPos": {
         "x": 0,
         "y": 100,
@@ -3511,57 +3513,25 @@
       "id": 49,
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
           "unit": "none",
-          "mappings": [],
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 5,
-            "gradientMode": "none",
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 4,
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              }
-            ]
+          "noValue": "无状态：未部署 Planner 或采集缺失",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
           }
         },
         "overrides": []
       },
       "options": {
-        "legend": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "name",
+        "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
+          "fields": "",
+          "values": false
         }
       },
       "targets": [
@@ -3571,10 +3541,23 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "dynamo_planner_throughput_scaling_decision{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"}",
-          "legendFormat": "{{__name__}}",
-          "range": true,
-          "refId": "A"
+          "expr": "dynamo_planner_throughput_scaling_decision{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"} == 1",
+          "legendFormat": "{{dynamo_planner_throughput_scaling_decision}}",
+          "range": false,
+          "refId": "A",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "label_replace(absent(dynamo_planner_throughput_scaling_decision{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"} == 1), \"dynamo_planner_throughput_scaling_decision\", \"无状态：未部署 Planner 或采集缺失\", \"\", \"\")",
+          "legendFormat": "{{dynamo_planner_throughput_scaling_decision}}",
+          "range": false,
+          "refId": "B",
+          "instant": true
         }
       ]
     },
@@ -3583,9 +3566,9 @@
         "type": "prometheus",
         "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
       },
-      "type": "timeseries",
-      "title": "伸缩决策（负载维度）",
-      "description": "load_scaling_decision 枚举展开，活跃取值每 tick 为 1",
+      "type": "stat",
+      "title": "当前负载决策",
+      "description": "活跃 one-hot 状态；no_fpm_data 表示缺少 FPM 数据，预测 0 不能直接解读为缩容建议。无值时检查所选 DGD 是否部署 Planner。",
       "gridPos": {
         "x": 8,
         "y": 100,
@@ -3595,57 +3578,25 @@
       "id": 50,
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
           "unit": "none",
-          "mappings": [],
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 5,
-            "gradientMode": "none",
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 4,
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              }
-            ]
+          "noValue": "无状态：未部署 Planner 或采集缺失",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
           }
         },
         "overrides": []
       },
       "options": {
-        "legend": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "name",
+        "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
+          "fields": "",
+          "values": false
         }
       },
       "targets": [
@@ -3655,10 +3606,23 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "dynamo_planner_load_scaling_decision{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"}",
-          "legendFormat": "{{__name__}}",
-          "range": true,
-          "refId": "A"
+          "expr": "dynamo_planner_load_scaling_decision{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"} == 1",
+          "legendFormat": "{{dynamo_planner_load_scaling_decision}}",
+          "range": false,
+          "refId": "A",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "label_replace(absent(dynamo_planner_load_scaling_decision{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"} == 1), \"dynamo_planner_load_scaling_decision\", \"无状态：未部署 Planner 或采集缺失\", \"\", \"\")",
+          "legendFormat": "{{dynamo_planner_load_scaling_decision}}",
+          "range": false,
+          "refId": "B",
+          "instant": true
         }
       ]
     },
@@ -3739,7 +3703,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_plugin_circuit_state{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_plugin_circuit_state{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "circuit_state",
           "range": true,
           "refId": "A"
@@ -3750,7 +3714,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_plugin_override_active{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_plugin_override_active{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "override_active",
           "range": true,
           "refId": "B"
@@ -3761,7 +3725,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "sum(rate(dynamo_planner_plugin_evaluations_total{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"}[$window]))",
+          "expr": "sum(rate(dynamo_planner_plugin_evaluations_total{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"}[$window]))",
           "legendFormat": "evaluations/s",
           "range": true,
           "refId": "C"
@@ -3845,7 +3809,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_observed_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_observed_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "observed rps",
           "range": true,
           "refId": "A"
@@ -3856,7 +3820,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_predicted_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_predicted_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "predicted rps",
           "range": true,
           "refId": "B"
@@ -3940,7 +3904,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_observed_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_observed_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "observed",
           "range": true,
           "refId": "A"
@@ -3951,7 +3915,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_estimated_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_estimated_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "estimated",
           "range": true,
           "refId": "B"
@@ -3962,7 +3926,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_sla_target_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_sla_target_ttft_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "sla target",
           "range": true,
           "refId": "C"
@@ -4046,7 +4010,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_observed_itl_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_observed_itl_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "observed",
           "range": true,
           "refId": "A"
@@ -4057,7 +4021,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_estimated_itl_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_estimated_itl_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "estimated",
           "range": true,
           "refId": "B"
@@ -4068,7 +4032,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_sla_target_itl_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_sla_target_itl_ms{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "sla target",
           "range": true,
           "refId": "C"
@@ -4081,8 +4045,8 @@
         "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
       },
       "type": "timeseries",
-      "title": "副本规划：当前 vs 预测",
-      "description": "num/predicted_num prefill+decode replicas",
+      "title": "副本：当前 vs 原始预测（需结合决策状态）",
+      "description": "原始预测不是已应用的扩缩容目标。no_fpm_data / unset 时预测 0 不代表缩容到 0；先查看上方当前决策和数据有效性。",
       "gridPos": {
         "x": 0,
         "y": 114,
@@ -4152,7 +4116,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_num_prefill_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_num_prefill_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "prefill 当前",
           "range": true,
           "refId": "A"
@@ -4163,8 +4127,8 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_predicted_num_prefill_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
-          "legendFormat": "prefill 预测",
+          "expr": "max(dynamo_planner_predicted_num_prefill_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
+          "legendFormat": "prefill 原始预测（非执行目标）",
           "range": true,
           "refId": "B"
         },
@@ -4174,7 +4138,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_num_decode_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_num_decode_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "decode 当前",
           "range": true,
           "refId": "C"
@@ -4185,8 +4149,8 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_predicted_num_decode_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
-          "legendFormat": "decode 预测",
+          "expr": "max(dynamo_planner_predicted_num_decode_replicas{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
+          "legendFormat": "decode 原始预测（非执行目标）",
           "range": true,
           "refId": "D"
         }
@@ -4269,7 +4233,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_observed_input_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_observed_input_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "observed ISL",
           "range": true,
           "refId": "A"
@@ -4280,7 +4244,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_predicted_input_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_predicted_input_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "predicted ISL",
           "range": true,
           "refId": "B"
@@ -4291,7 +4255,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_observed_output_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_observed_output_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "observed OSL",
           "range": true,
           "refId": "C"
@@ -4302,7 +4266,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_predicted_output_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_predicted_output_sequence_tokens{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "predicted OSL",
           "range": true,
           "refId": "D"
@@ -4386,7 +4350,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_engine_prefill_capacity_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_engine_prefill_capacity_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "prefill capacity rps",
           "range": true,
           "refId": "A"
@@ -4397,7 +4361,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(dynamo_planner_engine_decode_capacity_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"})",
+          "expr": "max(dynamo_planner_engine_decode_capacity_requests_per_second{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"})",
           "legendFormat": "decode capacity rps",
           "range": true,
           "refId": "B"
@@ -4408,10 +4372,182 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "max(rate(dynamo_planner_tick_duration_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"}[$window]) / rate(dynamo_planner_tick_duration_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",job=\"dynamo-planner\"}[$window]))",
+          "expr": "sum(rate(dynamo_planner_tick_duration_seconds_sum{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"}[$window])) / sum(rate(dynamo_planner_tick_duration_seconds_count{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"}[$window]))",
           "legendFormat": "tick avg duration",
           "range": true,
           "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "吞吐决策历史（1=活跃）",
+      "description": "每条曲线对应一种决策原因；0=未激活，1=激活，空白=无采集数据。",
+      "gridPos": {
+        "x": 0,
+        "y": 121,
+        "w": 12,
+        "h": 7
+      },
+      "id": 58,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "none",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "dynamo_planner_throughput_scaling_decision{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"}",
+          "legendFormat": "{{dynamo_planner_throughput_scaling_decision}}",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+      },
+      "type": "timeseries",
+      "title": "负载决策历史（1=活跃）",
+      "description": "每条曲线对应一种决策原因；0=未激活，1=激活，空白=无采集数据。",
+      "gridPos": {
+        "x": 12,
+        "y": 121,
+        "w": 12,
+        "h": 7
+      },
+      "id": 59,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "none",
+          "mappings": [],
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "dynamo_planner_load_scaling_decision{cluster=\"ack-LB97i2CZNR\",namespace=\"$namespace\",dynamo_dgd=\"$dgd\",job=\"dynamo-planner\"}",
+          "legendFormat": "{{dynamo_planner_load_scaling_decision}}",
+          "range": true,
+          "refId": "A"
         }
       ]
     }

@@ -1,0 +1,88 @@
+{
+  "checked_at_utc": "2026-11-09T06:49:58.034226+00:00",
+  "uid": "mooncake-master-overview",
+  "dashboard_sha256": "236f98b0d3c9151ec932195018ab7e82231245ce0dcfdcb4c1de3fa543e1eb84",
+  "panel_count": 35,
+  "query_count": 75,
+  "targets": [
+    {
+      "cluster": "v5000_prod_ack01",
+      "endpoint": "http://172.20.123.90:19003/metrics",
+      "namespace": "nanhu",
+      "pod": "mooncake-prod-mc0312p1-02-master-0",
+      "active_scrape_series": 1
+    },
+    {
+      "cluster": "v5000_prod_ack01",
+      "endpoint": "http://172.20.3.115:19003/metrics",
+      "namespace": "nanhu",
+      "pod": "mooncake-prod-mc0310p2-02-master-0",
+      "active_scrape_series": 1
+    },
+    {
+      "cluster": "v5000_prod_ack01",
+      "endpoint": "http://172.20.8.242:19003/metrics",
+      "namespace": "nanhu",
+      "pod": "mooncake-prod-mc0310p2-03-master-0",
+      "active_scrape_series": 1
+    }
+  ],
+  "scrape_transition": {
+    "headless_has_no_samples_2m": true,
+    "ordinary_services_up": true,
+    "max_sample_age_seconds": 3.5339999198913574
+  },
+  "backup_path": "/home/chenxd/.local/state/dynamo/grafana-backups/mooncake-master-overview-v1-20261109T064958Z.json",
+  "deployment": {
+    "status": "success",
+    "version": 2,
+    "url": "http://isg.fed.zhejianglab.org/grafana/d/mooncake-master-overview/3697b384-cac1-5b6a-8fd9-75b8bd2b7e33",
+    "readback_match": true
+  },
+  "validation_summary": {
+    "queries_passed": 442,
+    "instant_checks": 375,
+    "range_checks": 67,
+    "pod_isolation": true,
+    "duplicate_service_labels_removed": true,
+    "finite_nonnegative_values": true,
+    "ratios_within_unit_interval": true
+  },
+  "metric_names_per_pod": {
+    "mooncake-prod-mc0310p2-02-master-0": 90,
+    "mooncake-prod-mc0310p2-03-master-0": 90,
+    "mooncake-prod-mc0312p1-02-master-0": 140
+  },
+  "browser_checks": [
+    {
+      "name": "all",
+      "expected": "80 GiB",
+      "pass": true,
+      "errors": []
+    },
+    {
+      "name": "selected",
+      "expected": "40 GiB",
+      "pass": true,
+      "errors": []
+    },
+    {
+      "name": "missing",
+      "expected": "无数据",
+      "pass": true,
+      "errors": []
+    },
+    {
+      "name": "health",
+      "expected": "UP",
+      "pass": true,
+      "errors": []
+    },
+    {
+      "name": "scrape",
+      "expected": "同 endpoint 活跃抓取序列数（2m）",
+      "pass": true,
+      "errors": []
+    }
+  ]
+}
