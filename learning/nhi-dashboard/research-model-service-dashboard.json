@@ -1,0 +1,1405 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": 550,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "服务水位 = 当前有效并发 ÷ 该模型容量上限 × 100%。每个模型的容量上限独立设置，默认 100 并发，待压测标定。缺失数据不补零，超过 100% 时保留实际读数。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "mappings": [
+            {
+              "options": {
+                "-1": {
+                  "color": "gray",
+                  "text": "暂无数据"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "max": 100,
+          "min": 0,
+          "noValue": "暂无数据",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "displayMode": "basic",
+        "maxVizHeight": 44,
+        "minVizHeight": 32,
+        "minVizWidth": 8,
+        "namePlacement": "left",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "text": {
+          "titleSize": 14,
+          "valueSize": 24
+        },
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * 100 / ${capacity_021sfm_thinking_7e070d3e:raw}) and on() (vector(${capacity_021sfm_thinking_7e070d3e:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * -1)",
+          "format": "time_series",
+          "instant": true,
+          "legendFormat": "021SFM-236B-Thinking",
+          "range": false,
+          "refId": "A"
+        },
+        {
+          "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\"))) * 100 / ${capacity_021sfm_instruct_a895da2e:raw}) and on() (vector(${capacity_021sfm_instruct_a895da2e:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\"))) * -1)",
+          "format": "time_series",
+          "instant": true,
+          "legendFormat": "021SFM-236B-Instruct",
+          "range": false,
+          "refId": "B"
+        },
+        {
+          "expr": "((((label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\"))) * 100 / ${capacity_deepseek_v4_flash_25ff2f3e:raw}) and on() (vector(${capacity_deepseek_v4_flash_25ff2f3e:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\"))) * -1)",
+          "format": "time_series",
+          "instant": true,
+          "legendFormat": "DeepSeek-V4-Flash-0731",
+          "range": false,
+          "refId": "D"
+        },
+        {
+          "expr": "((((label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m]))) != 2)))), \"model\", \"Kimi-K3\", \"\", \".*\"))) * 100 / ${capacity_kimi_k3_0ec81e52:raw}) and on() (vector(${capacity_kimi_k3_0ec81e52:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\"))) * -1)",
+          "format": "time_series",
+          "instant": true,
+          "legendFormat": "Kimi-K3",
+          "range": false,
+          "refId": "E"
+        },
+        {
+          "expr": "((((label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"GLM-5.3\", \"\", \".*\"))) * 100 / ${capacity_glm_5_3_a8bfe9eb:raw}) and on() (vector(${capacity_glm_5_3_a8bfe9eb:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "format": "time_series",
+          "instant": true,
+          "legendFormat": "GLM-5.3",
+          "range": false,
+          "refId": "F"
+        },
+        {
+          "expr": "((((label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\"))) * 100 / ${capacity_deepseek_v4_1_flash:raw}) and on() (vector(${capacity_deepseek_v4_1_flash:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\"))) * -1)",
+          "format": "time_series",
+          "instant": true,
+          "legendFormat": "DeepSeek-V4.1-Flash-1017",
+          "range": false,
+          "refId": "G"
+        }
+      ],
+      "title": "模型服务水位 · 各模型独立容量上限（暂定）",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "处理中与排队分别汇总，水位按两者之和计算。延迟展示近 5 分钟 P95 / P99；TTFT 至少 10 个样本，TPOT 至少 20 个样本。TTFT 固定单位为秒，TPOT 固定单位为毫秒，均保留一位小数。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "-1": {
+                  "color": "gray",
+                  "text": "暂无数据"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "min": 0,
+          "noValue": "暂无数据",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "模型"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 360
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TTFT P95"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix:s"
+              },
+              {
+                "id": "noValue",
+                "value": "暂无数据"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "-1": {
+                        "color": "gray",
+                        "text": "暂无数据"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TPOT P95"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix:ms"
+              },
+              {
+                "id": "noValue",
+                "value": "暂无数据"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "-1": {
+                        "color": "gray",
+                        "text": "暂无数据"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TTFT P99"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix:s"
+              },
+              {
+                "id": "noValue",
+                "value": "暂无数据"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "-1": {
+                        "color": "gray",
+                        "text": "暂无数据"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TPOT P99"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix:ms"
+              },
+              {
+                "id": "noValue",
+                "value": "暂无数据"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "-1": {
+                        "color": "gray",
+                        "text": "暂无数据"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "模型"
+          }
+        ]
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "expr": "(label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{model}}",
+          "range": false,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "expr": "((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time(vllm:num_requests_running{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m]))) != 2)))), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{model}}",
+          "range": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "expr": "((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time(vllm:num_requests_waiting{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m]))) != 2)))), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{model}}",
+          "range": false,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{model}}",
+          "range": false,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{model}}",
+          "range": false,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{model}}",
+          "range": false,
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+          },
+          "editorMode": "code",
+          "expr": "((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{model}}",
+          "range": false,
+          "refId": "G"
+        }
+      ],
+      "title": "模型服务概览",
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "model",
+            "mode": "outerTabular"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "model",
+                "Value #A",
+                "Value #B",
+                "Value #C",
+                "Value #D",
+                "Value #E",
+                "Value #F",
+                "Value #G"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value #A": true
+            },
+            "indexByName": {
+              "Value #B": 1,
+              "Value #C": 2,
+              "Value #D": 3,
+              "Value #E": 4,
+              "Value #F": 5,
+              "Value #G": 6,
+              "model": 0
+            },
+            "renameByName": {
+              "Value #B": "处理中",
+              "Value #C": "排队",
+              "Value #D": "TTFT P95",
+              "Value #E": "TPOT P95",
+              "Value #F": "TTFT P99",
+              "Value #G": "TPOT P99",
+              "model": "模型"
+            }
+          }
+        },
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "TPOT P95": {
+                "aggregations": [
+                  "max"
+                ],
+                "operation": "aggregate"
+              },
+              "TPOT P99": {
+                "aggregations": [
+                  "max"
+                ],
+                "operation": "aggregate"
+              },
+              "TTFT P95": {
+                "aggregations": [
+                  "max"
+                ],
+                "operation": "aggregate"
+              },
+              "TTFT P99": {
+                "aggregations": [
+                  "max"
+                ],
+                "operation": "aggregate"
+              },
+              "处理中": {
+                "aggregations": [
+                  "max"
+                ],
+                "operation": "aggregate"
+              },
+              "排队": {
+                "aggregations": [
+                  "max"
+                ],
+                "operation": "aggregate"
+              },
+              "模型": {
+                "aggregations": [],
+                "operation": "groupby"
+              }
+            }
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "^(.*) \\(max\\)$",
+            "renamePattern": "$1"
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "id": 12,
+      "panels": [],
+      "title": "用户访问统计 · 6个模型 · HTTP 429 请求比例 · 过去24h",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "过去24h的429请求比例：每条匹配访问日志以429=1、其他状态码=0取平均，再乘100；与429数/总请求数等价，每个面板只扫描一次。仅本看板6个模型、i-nhi.zhejianglab.org/maas/v1及其下属接口，排除指定API Key。无请求或无数据时不补0。看板默认每5分钟刷新。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 2,
+          "max": 100,
+          "min": 0,
+          "noValue": "暂无请求数据",
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 23
+      },
+      "hideTimeOverride": false,
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 42
+        },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "100 * avg_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" | drop request_key, request_path | label_format route_name=\"{{ if eq .route_name \\\"litellm-service-021sfm-thinking\\\" }}021SFM-236B-Thinking{{ else if eq .route_name \\\"litellm-service-021sfm-instruct\\\" }}021SFM-236B-Instruct{{ else if eq .route_name \\\"litellm-service-deepseek-v4-flash\\\" }}DeepSeek-V4-Flash-0731{{ else if eq .route_name \\\"litellm-service-deepseek-v4-1-flash\\\" }}DeepSeek-V4.1-Flash-1017{{ else if eq .route_name \\\"litellm-service-glm-5-3\\\" }}GLM-5.3{{ else if eq .route_name \\\"litellm-service-kimi-k3\\\" }}Kimi-K3{{ else }}{{ .route_name }}{{ end }}\" | label_format http_429_flag=`{{ if eq .response_code \"429\" }}1{{ else }}0{{ end }}` | unwrap http_429_flag | __error__=\"\" [24h]) by (authority)",
+          "legendFormat": "429 请求比例",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "24h",
+      "title": "过去24h · 总体 HTTP 429 请求比例",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "过去24h的429请求比例：每条匹配访问日志以429=1、其他状态码=0取平均，再乘100；与429数/总请求数等价，每个面板只扫描一次。仅本看板6个模型、i-nhi.zhejianglab.org/maas/v1及其下属接口，排除指定API Key。无请求或无数据时不补0。看板默认每5分钟刷新。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 2,
+          "max": 100,
+          "min": 0,
+          "noValue": "暂无请求数据",
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 16,
+        "x": 8,
+        "y": 23
+      },
+      "hideTimeOverride": false,
+      "id": 14,
+      "options": {
+        "displayMode": "basic",
+        "maxVizHeight": 50,
+        "minVizHeight": 28,
+        "namePlacement": "left",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^(?!.*(?:Time|route_name)$).+$/",
+          "values": true
+        },
+        "showUnfilled": false,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "100 * avg_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" | drop request_key, request_path | label_format route_name=\"{{ if eq .route_name \\\"litellm-service-021sfm-thinking\\\" }}021SFM-236B-Thinking{{ else if eq .route_name \\\"litellm-service-021sfm-instruct\\\" }}021SFM-236B-Instruct{{ else if eq .route_name \\\"litellm-service-deepseek-v4-flash\\\" }}DeepSeek-V4-Flash-0731{{ else if eq .route_name \\\"litellm-service-deepseek-v4-1-flash\\\" }}DeepSeek-V4.1-Flash-1017{{ else if eq .route_name \\\"litellm-service-glm-5-3\\\" }}GLM-5.3{{ else if eq .route_name \\\"litellm-service-kimi-k3\\\" }}Kimi-K3{{ else }}{{ .route_name }}{{ end }}\" | label_format http_429_flag=`{{ if eq .response_code \"429\" }}1{{ else }}0{{ end }}` | unwrap http_429_flag | __error__=\"\" [24h]) by (route_name)",
+          "legendFormat": "{{route_name}}",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "24h",
+      "title": "过去24h · 各模型 HTTP 429 请求比例",
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "route_name"
+          }
+        }
+      ],
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "过去24h，每个点为前15分钟的HTTP 429请求数量。仅统计本看板6个模型及/maas/v1接口，排除指定API Key。15分钟步长、最多96个点，以减少Loki查询负载。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "decimals": 0,
+          "min": 0,
+          "noValue": "暂无数据",
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 27
+      },
+      "hideTimeOverride": false,
+      "id": 15,
+      "interval": "15m",
+      "maxDataPoints": 96,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "sum by (route_name)(count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",response_code=\"429\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" | drop request_key, request_path | label_format route_name=\"{{ if eq .route_name \\\"litellm-service-021sfm-thinking\\\" }}021SFM-236B-Thinking{{ else if eq .route_name \\\"litellm-service-021sfm-instruct\\\" }}021SFM-236B-Instruct{{ else if eq .route_name \\\"litellm-service-deepseek-v4-flash\\\" }}DeepSeek-V4-Flash-0731{{ else if eq .route_name \\\"litellm-service-deepseek-v4-1-flash\\\" }}DeepSeek-V4.1-Flash-1017{{ else if eq .route_name \\\"litellm-service-glm-5-3\\\" }}GLM-5.3{{ else if eq .route_name \\\"litellm-service-kimi-k3\\\" }}Kimi-K3{{ else }}{{ .route_name }}{{ end }}\" [15m])) or label_replace(vector(0), \"route_name\", \"021SFM-236B-Thinking\", \"\", \".*\") or label_replace(vector(0), \"route_name\", \"021SFM-236B-Instruct\", \"\", \".*\") or label_replace(vector(0), \"route_name\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\") or label_replace(vector(0), \"route_name\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\") or label_replace(vector(0), \"route_name\", \"GLM-5.3\", \"\", \".*\") or label_replace(vector(0), \"route_name\", \"Kimi-K3\", \"\", \".*\")",
+          "legendFormat": "{{route_name}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "24h",
+      "title": "过去24h · 各模型 HTTP 429 数量趋势（每15分钟）",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": true,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "noValue": "暂无数据",
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "id": 8,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "fillOpacity": 8,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0,
+              "noValue": "暂无数据",
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 24,
+            "x": 0,
+            "y": 36
+          },
+          "id": 4,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "(label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m]))) != 2)))), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"GLM-5.3\", \"\", \".*\"))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "{{model}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "当前有效并发趋势",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "模型水位百分比 = 有效并发(running+waiting) / 手填容量上限 × 100%。容量上限由上方 textbox 变量提供；若长期 >100%，说明该变量填得偏小。",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 8,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 1,
+              "mappings": [],
+              "min": 0,
+              "noValue": "暂无数据",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 80
+                  },
+                  {
+                    "color": "red",
+                    "value": 100
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 24,
+            "x": 0,
+            "y": 45
+          },
+          "id": 9,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "editorMode": "code",
+              "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * 100 / ${capacity_021sfm_thinking_7e070d3e:raw}) and on() (vector(${capacity_021sfm_thinking_7e070d3e:raw}) > 0))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "021SFM-236B-Thinking",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "editorMode": "code",
+              "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\"))) * 100 / ${capacity_021sfm_instruct_a895da2e:raw}) and on() (vector(${capacity_021sfm_instruct_a895da2e:raw}) > 0))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "021SFM-236B-Instruct",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "editorMode": "code",
+              "expr": "((((label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\"))) * 100 / ${capacity_deepseek_v4_flash_25ff2f3e:raw}) and on() (vector(${capacity_deepseek_v4_flash_25ff2f3e:raw}) > 0))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "DeepSeek-V4-Flash-0731",
+              "range": true,
+              "refId": "D"
+            },
+            {
+              "editorMode": "code",
+              "expr": "((((label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m]))) != 2)))), \"model\", \"Kimi-K3\", \"\", \".*\"))) * 100 / ${capacity_kimi_k3_0ec81e52:raw}) and on() (vector(${capacity_kimi_k3_0ec81e52:raw}) > 0))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "Kimi-K3",
+              "range": true,
+              "refId": "E"
+            },
+            {
+              "editorMode": "code",
+              "expr": "((((label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"GLM-5.3\", \"\", \".*\"))) * 100 / ${capacity_glm_5_3_a8bfe9eb:raw}) and on() (vector(${capacity_glm_5_3_a8bfe9eb:raw}) > 0))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "GLM-5.3",
+              "range": true,
+              "refId": "F"
+            },
+            {
+              "editorMode": "code",
+              "expr": "((((label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\"))) * 100 / ${capacity_deepseek_v4_1_flash:raw}) and on() (vector(${capacity_deepseek_v4_1_flash:raw}) > 0))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "DeepSeek-V4.1-Flash-1017",
+              "range": true,
+              "refId": "G"
+            }
+          ],
+          "title": "模型水位趋势",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "fillOpacity": 8,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0,
+              "noValue": "暂无数据",
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 54
+          },
+          "id": 5,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "(label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "{{model}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "TTFT P95 趋势",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "fillOpacity": 8,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0,
+              "noValue": "暂无数据",
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 54
+          },
+          "id": 6,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "(label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "{{model}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "TPOT P95 趋势",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "fillOpacity": 8,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0,
+              "noValue": "暂无数据",
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 63
+          },
+          "id": 10,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "(label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "{{model}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "TTFT P99 趋势",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "fillOpacity": 8,
+                "lineWidth": 2,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0,
+              "noValue": "暂无数据",
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 63
+          },
+          "id": 11,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "(label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "{{model}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "TPOT P99 趋势",
+          "type": "timeseries"
+        }
+      ],
+      "title": "历史趋势",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 7,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "**服务水位 = 有效并发 ÷ 容量上限 × 100%**，有效并发为正在执行与等待执行的请求总数。每个模型的容量上限默认 100 并发，待压测标定。修改后回车，保存时勾选“Save current variable values as dashboard default”才能保留容量值。TTFT 为首响应耗时，TPOT 为生成耗时，均展示近 5 分钟 P95 / P99。“暂无数据”表示采集不完整或样本不足，不代表零负载。每 30 秒刷新。",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.1.0",
+      "title": "指标说明",
+      "type": "text"
+    }
+  ],
+  "refresh": "5m",
+  "schemaVersion": 39,
+  "tags": [
+    "sglang",
+    "maas",
+    "model-waterlevel"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "victoriametrics",
+          "value": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "label": "指标数据源",
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "100",
+          "value": "100"
+        },
+        "description": "仅用于 021SFM-236B-Thinking 的水位计算，默认 100 并发，填值后回车；保存时勾选 Save current variable values as dashboard default。",
+        "hide": 0,
+        "label": "021SFM-236B-Thinking 容量上限",
+        "name": "capacity_021sfm_thinking_7e070d3e",
+        "options": [
+          {
+            "selected": true,
+            "text": "100",
+            "value": "100"
+          }
+        ],
+        "query": "100",
+        "skipUrlSync": false,
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "32",
+          "value": "32"
+        },
+        "description": "仅用于 021SFM-236B-Instruct 的水位计算，默认 100 并发，填值后回车；保存时勾选 Save current variable values as dashboard default。",
+        "hide": 0,
+        "label": "021SFM-236B-Instruct 容量上限",
+        "name": "capacity_021sfm_instruct_a895da2e",
+        "options": [
+          {
+            "selected": true,
+            "text": "32",
+            "value": "32"
+          }
+        ],
+        "query": "32",
+        "skipUrlSync": false,
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "320",
+          "value": "320"
+        },
+        "description": "仅用于 DeepSeek-V4-Flash-0731 的水位计算，默认 100 并发，填值后回车；保存时勾选 Save current variable values as dashboard default。",
+        "hide": 0,
+        "label": "DeepSeek-V4-Flash-0731 容量上限",
+        "name": "capacity_deepseek_v4_flash_25ff2f3e",
+        "options": [
+          {
+            "selected": true,
+            "text": "320",
+            "value": "320"
+          }
+        ],
+        "query": "320",
+        "skipUrlSync": false,
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "80",
+          "value": "80"
+        },
+        "description": "仅用于 Kimi-K3 的水位计算，默认 100 并发，填值后回车；保存时勾选 Save current variable values as dashboard default。",
+        "hide": 0,
+        "label": "Kimi-K3 容量上限",
+        "name": "capacity_kimi_k3_0ec81e52",
+        "options": [
+          {
+            "selected": true,
+            "text": "80",
+            "value": "80"
+          }
+        ],
+        "query": "80",
+        "skipUrlSync": false,
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "32",
+          "value": "32"
+        },
+        "description": "仅用于 GLM-5.3 的水位计算，默认 100 并发，填值后回车；保存时勾选 Save current variable values as dashboard default。",
+        "hide": 0,
+        "label": "GLM-5.3 容量上限",
+        "name": "capacity_glm_5_3_a8bfe9eb",
+        "options": [
+          {
+            "selected": true,
+            "text": "32",
+            "value": "32"
+          }
+        ],
+        "query": "32",
+        "skipUrlSync": false,
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "256",
+          "value": "256"
+        },
+        "description": "仅用于 DeepSeek-V4.1-Flash-1017 的水位计算，默认 100 并发，填值后回车；保存时勾选 Save current variable values as dashboard default。",
+        "hide": 0,
+        "label": "DeepSeek-V4.1-Flash-1017 容量上限",
+        "name": "capacity_deepseek_v4_1_flash",
+        "options": [
+          {
+            "selected": true,
+            "text": "256",
+            "value": "256"
+          }
+        ],
+        "query": "256",
+        "skipUrlSync": false,
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "Asia/Shanghai",
+  "title": "实验室科研模型服务水位",
+  "uid": "sglang-model-service-waterlevel",
+  "version": 48,
+  "weekStart": ""
+}
