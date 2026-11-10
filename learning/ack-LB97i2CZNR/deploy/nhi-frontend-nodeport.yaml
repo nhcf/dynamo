@@ -18,6 +18,12 @@
 #   顺序是「先建新 DGD 并验证就绪，再切 selector」，30000 全程没有中断。
 #   selector 三个 label 都是 DGD 身份级（不含 pod-template-hash），推理滚动更新不会失配。
 #
+# Service 端口与 Frontend 容器端口对齐（2026-11-06 起）：
+#   mixed DGD 已把 Frontend 的 DYN_HTTP_PORT 从 operator 默认的 8000 覆盖到 9990，
+#   故这里 Service.port 同步从 8000 改成 9990，避免 Service 端口与实际容器端口不一致。
+#   targetPort 仍走命名端口 http（解析到 containerPort 9990），无需改动。
+#   跨集群入口 nodePort 30000 由 ACL 预留，不变。
+#
 # 回退：
 #   服务回退 —— 把 selector 的 nvidia.com/dynamo-namespace 改回 nhi-dynamo-trace-demo，
 #     并重新 apply deploy/nhi-dgd.json（该 DGD 若已删除需先建回）。
@@ -40,7 +46,7 @@ spec:
     nvidia.com/dynamo-namespace: nhi-dynamo-trace-demo-mixed
   ports:
     - name: http
-      port: 8000
+      port: 9990
       targetPort: http
       nodePort: 30000
       protocol: TCP

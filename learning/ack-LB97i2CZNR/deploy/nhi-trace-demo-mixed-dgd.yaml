@@ -75,6 +75,11 @@ spec:
             value: zmq
           - name: DYN_HTTP_BODY_LIMIT_MB
             value: '200'
+          # 覆盖 operator 默认注入的 DYN_HTTP_PORT=8000（MergeEnvs 以用户 env 为准）
+          - name: DYN_HTTP_PORT
+            value: '9990'
+          - name: DYNAMO_PORT
+            value: '9990'
           - name: OTEL_EXPORT_ENABLED
             value: 'true'
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
@@ -87,6 +92,10 @@ spec:
             value: '1.0'
           image: 10.200.88.53/nhss/dynamo-sglang-runtime:1.4.1-amd64
           name: main
+          ports:
+          - name: http
+            containerPort: 9990
+            protocol: TCP
           resources:
             limits:
               memory: 32Gi
@@ -185,6 +194,9 @@ spec:
             value: zmq
           - name: DYN_WORKER_GRACEFUL_SHUTDOWN_TIMEOUT
             value: '300'
+          # 覆盖 operator 默认注入的 DYN_SYSTEM_PORT=9090
+          - name: DYN_SYSTEM_PORT
+            value: '8000'
           - name: NCCL_DEBUG
             value: WARN
           - name: OTEL_EXPORT_ENABLED
@@ -199,6 +211,10 @@ spec:
             value: '1.0'
           image: 10.200.88.53/nhss/dynamo-sglang-runtime:1.4.1-amd64
           name: main
+          ports:
+          - name: system
+            containerPort: 8000
+            protocol: TCP
           resources:
             limits:
               memory: 256Gi
@@ -310,6 +326,9 @@ spec:
             value: zmq
           - name: DYN_WORKER_GRACEFUL_SHUTDOWN_TIMEOUT
             value: '300'
+          # 覆盖 operator 默认注入的 DYN_SYSTEM_PORT=9090
+          - name: DYN_SYSTEM_PORT
+            value: '8000'
           - name: NCCL_DEBUG
             value: WARN
           - name: OTEL_EXPORT_ENABLED
@@ -324,6 +343,10 @@ spec:
             value: '1.0'
           image: 10.200.88.53/nhss/dynamo-sglang-runtime:1.4.1-amd64
           name: main
+          ports:
+          - name: system
+            containerPort: 8000
+            protocol: TCP
           resources:
             limits:
               memory: 64Gi
@@ -433,6 +456,9 @@ spec:
             value: zmq
           - name: DYN_WORKER_GRACEFUL_SHUTDOWN_TIMEOUT
             value: '300'
+          # 覆盖 operator 默认注入的 DYN_SYSTEM_PORT=9090
+          - name: DYN_SYSTEM_PORT
+            value: '8000'
           - name: NCCL_DEBUG
             value: WARN
           - name: OTEL_EXPORT_ENABLED
@@ -447,6 +473,10 @@ spec:
             value: '1.0'
           image: 10.200.88.53/nhss/dynamo-sglang-runtime:1.4.1-amd64
           name: main
+          ports:
+          - name: system
+            containerPort: 8000
+            protocol: TCP
           resources:
             limits:
               memory: 64Gi
