@@ -68,7 +68,7 @@
         "h": 4,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 11
       },
       "id": 10,
       "options": {
@@ -96,12 +96,12 @@
         {
           "expr": "vector(${capacity:raw})",
           "instant": true,
-          "legendFormat": "021SFM-236B-Thinking",
+          "legendFormat": "021SFM-236B-Thinking-1030",
           "range": false,
           "refId": "A"
         }
       ],
-      "title": "021SFM-236B-Thinking · 服务容量",
+      "title": "021SFM-236B-Thinking-1030 · 服务容量",
       "type": "stat"
     },
     {
@@ -151,7 +151,7 @@
         "h": 4,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 11
       },
       "id": 11,
       "options": {
@@ -179,12 +179,12 @@
         {
           "expr": "vector(${capacity_32b:raw})",
           "instant": true,
-          "legendFormat": "021SFM-32B-Thinking",
+          "legendFormat": "021SFM-32B-Thinking-1024",
           "range": false,
           "refId": "A"
         }
       ],
-      "title": "021SFM-32B-Thinking · 服务容量",
+      "title": "021SFM-32B-Thinking-1024 · 服务容量",
       "type": "stat"
     },
     {
@@ -192,7 +192,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "服务水位 = 该模型有效并发 ÷ 该模型启用服务的 concurrency_capacity 合计 × 100%。映射及容量来自 mysql-odre.llm_service_business；两个模型独立计算。容量无效或指标不完整时显示暂无数据。",
+      "description": "服务水位 = 该模型有效并发 ÷ 该模型启用服务的 concurrency_capacity 合计 × 100%。映射及容量来自 mysql-odre.llm_service_business；两个模型独立计算。容量无效或指标不完整时显示暂无数据。 分子改用 Router 指标 smg_worker_requests_active。",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -267,18 +267,18 @@
       "pluginVersion": "11.1.0",
       "targets": [
         {
-          "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * 100 / ${capacity:raw}) and on() (vector(${capacity:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * -1)",
+          "expr": "((label_replace(sum(max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=\"smg_worker_requests_active\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=\"nhi-zero2x\"}[2m]))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\") * 100 / ${capacity:raw}) and on() (vector(${capacity:raw}) > 0)) or (label_replace(vector(1), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\") * -1)",
           "format": "time_series",
           "instant": true,
-          "legendFormat": "021SFM-236B-Thinking",
+          "legendFormat": "021SFM-236B-Thinking-1030",
           "range": false,
           "refId": "C"
         },
         {
-          "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m]))) != 2))))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\"))) * 100 / ${capacity_32b:raw}) and on() (vector(${capacity_32b:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\"))) * -1)",
+          "expr": "((label_replace(sum(max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=\"smg_worker_requests_active\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=\"nhi-zero2x\"}[2m]))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\") * 100 / ${capacity_32b:raw}) and on() (vector(${capacity_32b:raw}) > 0)) or (label_replace(vector(1), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\") * -1)",
           "format": "time_series",
           "instant": true,
-          "legendFormat": "021SFM-32B-Thinking",
+          "legendFormat": "021SFM-32B-Thinking-1024",
           "range": false,
           "refId": "D"
         }
@@ -515,7 +515,7 @@
             "type": "prometheus",
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
-          "expr": "(label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\"))",
+          "expr": "(label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\"))",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -527,7 +527,7 @@
             "type": "prometheus",
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
-          "expr": "((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) * -1)) or ((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m]))) != 2))))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) * -1))",
+          "expr": "((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) * -1)) or ((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[2m]))) != 2))))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) * -1))",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -539,7 +539,7 @@
             "type": "prometheus",
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
-          "expr": "((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) * -1)) or ((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m]))) != 2))))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) * -1))",
+          "expr": "((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) * -1)) or ((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[2m]))) != 2))))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) * -1))",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -552,7 +552,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) * -1)) or ((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 10))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) * -1))",
+          "expr": "((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) * -1)) or ((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 10))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) * -1))",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -565,7 +565,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) * -1)) or ((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 20))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) * -1))",
+          "expr": "((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) * -1)) or ((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 20))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) * -1))",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -578,7 +578,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) * -1)) or ((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 10))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) * -1))",
+          "expr": "((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) * -1)) or ((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 10))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) * -1))",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -591,7 +591,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) * -1)) or ((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 20))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\")) * -1))",
+          "expr": "((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) * -1)) or ((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 20))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) or ((label_replace((vector(1)), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\")) * -1))",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -740,7 +740,7 @@
       },
       "id": 14,
       "panels": [],
-      "title": "用户访问统计 · 021sfm-thinking · 指定用户 · HTTP 429 · 过去24h",
+      "title": "用户访问统计 · 021sfm-thinking · API Key 请求分布与 HTTP 429 · 过去24h",
       "type": "row"
     },
     {
@@ -1010,6 +1010,198 @@
       "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "最近 6 小时内 021sfm-thinking 路由的去重用户统计。数据来自 nhi-higress-loki。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0,
+          "min": 0,
+          "noValue": "暂无数据",
+          "unit": "short",
+          "max": 100
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 37
+      },
+      "hideTimeOverride": false,
+      "id": 19,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 36
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "count(sum by (api_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=\"litellm-service-021sfm-thinking\"} |= \"authorization\" | json api_key=\"authorization\", request_path=\"path\" | __error__=\"\" | api_key!=\"\" | request_path=~\"^/maas/v1(/.*)?$\" [6h]))) or vector(0)",
+          "legendFormat": "活跃用户数",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "6h",
+      "title": "活跃用户数（去重 API Key）",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "最近 6 小时内 021sfm-thinking 路由的去重用户统计。数据来自 nhi-higress-loki。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0,
+          "min": 0,
+          "noValue": "暂无数据",
+          "unit": "short",
+          "max": 100
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 37
+      },
+      "hideTimeOverride": false,
+      "id": 20,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 36
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "count(sum by (api_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=\"litellm-service-021sfm-thinking\",response_code=\"429\"} |= \"authorization\" | json api_key=\"authorization\", request_path=\"path\" | __error__=\"\" | api_key!=\"\" | request_path=~\"^/maas/v1(/.*)?$\" [6h]))) or vector(0)",
+          "legendFormat": "429 用户数",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "6h",
+      "title": "429 用户数（去重 API Key）",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "最近 6 小时内 021sfm-thinking 路由的去重用户统计。数据来自 nhi-higress-loki。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 1,
+          "min": 0,
+          "noValue": "暂无数据",
+          "unit": "percent",
+          "max": 100
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 37
+      },
+      "hideTimeOverride": false,
+      "id": 21,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 36
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "100 * count(sum by (api_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=\"litellm-service-021sfm-thinking\",response_code=\"429\"} |= \"authorization\" | json api_key=\"authorization\", request_path=\"path\" | __error__=\"\" | api_key!=\"\" | request_path=~\"^/maas/v1(/.*)?$\" [6h]))) / count(sum by (api_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=\"litellm-service-021sfm-thinking\"} |= \"authorization\" | json api_key=\"authorization\", request_path=\"path\" | __error__=\"\" | api_key!=\"\" | request_path=~\"^/maas/v1(/.*)?$\" [6h])))",
+          "legendFormat": "429 用户占比",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "6h",
+      "title": "429 用户占比",
+      "type": "stat"
+    },
+    {
       "collapsed": false,
       "fieldConfig": {
         "defaults": {
@@ -1026,7 +1218,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 37
+        "y": 47
       },
       "id": 8,
       "panels": [],
@@ -1116,7 +1308,7 @@
       },
       "targets": [
         {
-          "expr": "(label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m]))) != 2))))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\"))",
+          "expr": "(label_replace((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=\"smg_worker_requests_active\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[2m])))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\") or label_replace((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=\"smg_worker_requests_active\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[2m])))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\"))",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{model}}",
@@ -1125,14 +1317,15 @@
         }
       ],
       "title": "当前有效并发趋势",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "分子改用 Router 指标 smg_worker_requests_active。"
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "模型水位百分比 = 有效并发(running+waiting) / 手填容量上限 × 100%。容量上限由上方 textbox 变量提供；若长期 >100%，说明该变量填得偏小。",
+      "description": "模型水位百分比 = 有效并发(running+waiting) / 手填容量上限 × 100%。容量上限由上方 textbox 变量提供；若长期 >100%，说明该变量填得偏小。 分子改用 Router 指标 smg_worker_requests_active。",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1199,7 +1392,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 47
+        "y": 57
       },
       "id": 9,
       "options": {
@@ -1217,19 +1410,19 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * 100 / ${capacity:raw}) and on() (vector(${capacity:raw}) > 0))",
+          "expr": "((label_replace(sum(max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=\"smg_worker_requests_active\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=\"nhi-zero2x\"}[2m]))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\") * 100 / ${capacity:raw}) and on() (vector(${capacity:raw}) > 0)) or (label_replace(vector(1), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\") * -1)",
           "format": "time_series",
           "instant": false,
-          "legendFormat": "021SFM-236B-Thinking",
+          "legendFormat": "021SFM-236B-Thinking-1030",
           "range": true,
           "refId": "C"
         },
         {
           "editorMode": "code",
-          "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[2m]))) != 2))))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\"))) * 100 / ${capacity_32b:raw}) and on() (vector(${capacity_32b:raw}) > 0))",
+          "expr": "((label_replace(sum(max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=\"smg_worker_requests_active\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=\"nhi-zero2x\"}[2m]))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\") * 100 / ${capacity_32b:raw}) and on() (vector(${capacity_32b:raw}) > 0)) or (label_replace(vector(1), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\") * -1)",
           "format": "time_series",
           "instant": false,
-          "legendFormat": "021SFM-32B-Thinking",
+          "legendFormat": "021SFM-32B-Thinking-1024",
           "range": true,
           "refId": "D"
         }
@@ -1303,7 +1496,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 56
+        "y": 55
       },
       "id": 5,
       "options": {
@@ -1320,7 +1513,7 @@
       },
       "targets": [
         {
-          "expr": "(label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 10))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\"))",
+          "expr": "(label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 10))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\"))",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{model}}",
@@ -1397,7 +1590,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 56
+        "y": 55
       },
       "id": 6,
       "options": {
@@ -1414,7 +1607,7 @@
       },
       "targets": [
         {
-          "expr": "(label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 20))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\"))",
+          "expr": "(label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 20))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\"))",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{model}}",
@@ -1492,7 +1685,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 65
+        "y": 75
       },
       "id": 12,
       "options": {
@@ -1509,7 +1702,7 @@
       },
       "targets": [
         {
-          "expr": "(label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 10))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\"))",
+          "expr": "(label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 10))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\"))",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{model}}",
@@ -1587,7 +1780,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 65
+        "y": 75
       },
       "id": 13,
       "options": {
@@ -1604,7 +1797,7 @@
       },
       "targets": [
         {
-          "expr": "(label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"${model_name:regex}\",service_label_jobname=~\"${jobnames:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"${model_name_32b:regex}\",service_label_jobname=~\"${jobnames_32b:regex}\",service_label_nhi_zjlab_io_business_id=~\"${business_id:regex}\"}[5m]))) >= 20))), \"model\", \"021SFM-32B-Thinking\", \"\", \".*\"))",
+          "expr": "(label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"021SFM-236B-Thinking-1030\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking-1030\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=~\"021SFM-32B-Thinking-1024\",service_label_jobname=~\".*\",service_label_nhi_zjlab_io_business_id=~\"nhi-zero2x\"}[5m]))) >= 20))), \"model\", \"021SFM-32B-Thinking-1024\", \"\", \".*\"))",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{model}}",
@@ -1616,7 +1809,7 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "30s",
+  "refresh": "5m",
   "schemaVersion": 39,
   "tags": [
     "sglang",
@@ -1674,14 +1867,14 @@
           "type": "mysql",
           "uid": "dfc3nh9bezi0wc"
         },
-        "definition": "SELECT DISTINCT model_name AS __text, model_name AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name = '021-reason-a100' ORDER BY model_name",
+        "definition": "SELECT DISTINCT model_name AS __text, model_name AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name = '021SFM-236B-Thinking-1030' ORDER BY model_name",
         "hide": 2,
         "includeAll": true,
         "label": "指标模型",
         "multi": true,
         "name": "model_name",
         "options": [],
-        "query": "SELECT DISTINCT model_name AS __text, model_name AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name = '021-reason-a100' ORDER BY model_name",
+        "query": "SELECT DISTINCT model_name AS __text, model_name AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name = '021SFM-236B-Thinking-1030' ORDER BY model_name",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": true,
@@ -1697,14 +1890,14 @@
           "type": "mysql",
           "uid": "dfc3nh9bezi0wc"
         },
-        "definition": "SELECT DISTINCT jobname AS __text, jobname AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name IN (${model_name:sqlstring}) ORDER BY jobname",
+        "definition": "SELECT DISTINCT jobname AS __text, jobname AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id = 'nhi-zero2x' AND model_name = '021SFM-236B-Thinking-1030' ORDER BY jobname",
         "hide": 2,
         "includeAll": true,
         "label": "服务列表",
         "multi": true,
         "name": "jobnames",
         "options": [],
-        "query": "SELECT DISTINCT jobname AS __text, jobname AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name IN (${model_name:sqlstring}) ORDER BY jobname",
+        "query": "SELECT DISTINCT jobname AS __text, jobname AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id = 'nhi-zero2x' AND model_name = '021SFM-236B-Thinking-1030' ORDER BY jobname",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": true,
@@ -1743,14 +1936,14 @@
           "type": "mysql",
           "uid": "dfc3nh9bezi0wc"
         },
-        "definition": "SELECT DISTINCT model_name AS __text, model_name AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name = '021-toolcall-reason-32b' ORDER BY model_name",
+        "definition": "SELECT DISTINCT model_name AS __text, model_name AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name = '021SFM-32B-Thinking-1024' ORDER BY model_name",
         "hide": 2,
         "includeAll": true,
-        "label": "指标模型 · 021SFM-32B-Thinking",
+        "label": "指标模型 · 021SFM-32B-Thinking-1024",
         "multi": true,
         "name": "model_name_32b",
         "options": [],
-        "query": "SELECT DISTINCT model_name AS __text, model_name AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name = '021-toolcall-reason-32b' ORDER BY model_name",
+        "query": "SELECT DISTINCT model_name AS __text, model_name AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name = '021SFM-32B-Thinking-1024' ORDER BY model_name",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": true,
@@ -1766,14 +1959,14 @@
           "type": "mysql",
           "uid": "dfc3nh9bezi0wc"
         },
-        "definition": "SELECT DISTINCT jobname AS __text, jobname AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name IN (${model_name_32b:sqlstring}) ORDER BY jobname",
+        "definition": "SELECT DISTINCT jobname AS __text, jobname AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id = 'nhi-zero2x' AND model_name = '021SFM-32B-Thinking-1024' ORDER BY jobname",
         "hide": 2,
         "includeAll": true,
-        "label": "服务列表 · 021SFM-32B-Thinking",
+        "label": "服务列表 · 021SFM-32B-Thinking-1024",
         "multi": true,
         "name": "jobnames_32b",
         "options": [],
-        "query": "SELECT DISTINCT jobname AS __text, jobname AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name IN (${model_name_32b:sqlstring}) ORDER BY jobname",
+        "query": "SELECT DISTINCT jobname AS __text, jobname AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id = 'nhi-zero2x' AND model_name = '021SFM-32B-Thinking-1024' ORDER BY jobname",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": true,
@@ -1792,7 +1985,7 @@
         "definition": "SELECT CAST(CASE WHEN COUNT(*) > 0 AND MIN(concurrency_capacity) > 0 THEN SUM(concurrency_capacity) ELSE 0 END AS CHAR) AS __text, CAST(CASE WHEN COUNT(*) > 0 AND MIN(concurrency_capacity) > 0 THEN SUM(concurrency_capacity) ELSE 0 END AS CHAR) AS __value FROM llm_service_business WHERE status = 'active' AND engine_type = 'sglang' AND business_id IN (${business_id:sqlstring}) AND model_name IS NOT NULL AND model_name <> '' AND model_name IN (${model_name_32b:sqlstring}) AND jobname IN (${jobnames_32b:sqlstring})",
         "hide": 2,
         "includeAll": false,
-        "label": "容量上限（MySQL） · 021SFM-32B-Thinking",
+        "label": "容量上限（MySQL） · 021SFM-32B-Thinking-1024",
         "multi": false,
         "name": "capacity_32b",
         "options": [],

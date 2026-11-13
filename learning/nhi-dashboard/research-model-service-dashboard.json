@@ -101,7 +101,7 @@
       "pluginVersion": "11.1.0",
       "targets": [
         {
-          "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * 100 / ${capacity_021sfm_thinking_7e070d3e:raw}) and on() (vector(${capacity_021sfm_thinking_7e070d3e:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * -1)",
+          "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * 100 / ${capacity_021sfm_thinking_7e070d3e:raw}) and on() (vector(${capacity_021sfm_thinking_7e070d3e:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * -1)",
           "format": "time_series",
           "instant": true,
           "legendFormat": "021SFM-236B-Thinking",
@@ -109,7 +109,7 @@
           "refId": "A"
         },
         {
-          "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\"))) * 100 / ${capacity_021sfm_instruct_a895da2e:raw}) and on() (vector(${capacity_021sfm_instruct_a895da2e:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\"))) * -1)",
+          "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\"))) * 100 / ${capacity_021sfm_instruct_a895da2e:raw}) and on() (vector(${capacity_021sfm_instruct_a895da2e:raw}) > 0)) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\"))) * -1)",
           "format": "time_series",
           "instant": true,
           "legendFormat": "021SFM-236B-Instruct",
@@ -393,7 +393,7 @@
             "type": "prometheus",
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
-          "expr": "((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time(vllm:num_requests_running{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m]))) != 2)))), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "expr": "((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time(vllm:num_requests_running{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m]))) != 2)))), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_running_reqs{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -405,7 +405,7 @@
             "type": "prometheus",
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
-          "expr": "((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time(vllm:num_requests_waiting{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m]))) != 2)))), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "expr": "((label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time(vllm:num_requests_waiting{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m]))) != 2)))), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time(sglang:num_queue_reqs{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -418,7 +418,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "expr": "((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -431,7 +431,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "expr": "((label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -444,7 +444,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "expr": "((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -457,7 +457,7 @@
             "uid": "34afaf30-b0a7-4abb-939a-5df0ef66b219"
           },
           "editorMode": "code",
-          "expr": "((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
+          "expr": "((label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))) or (((label_replace((vector(1)), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace((vector(1)), \"model\", \"GLM-5.3\", \"\", \".*\"))) * -1)",
           "format": "table",
           "instant": true,
           "legendFormat": "{{model}}",
@@ -585,7 +585,7 @@
       },
       "id": 12,
       "panels": [],
-      "title": "用户访问统计 · 6个模型 · HTTP 429 请求比例 · 过去24h",
+      "title": "总体请求概览 · 6个模型 · 最近6小时",
       "type": "row"
     },
     {
@@ -593,17 +593,16 @@
         "type": "loki",
         "uid": "fg3rvth6eufi8d"
       },
-      "description": "过去24h的429请求比例：每条匹配访问日志以429=1、其他状态码=0取平均，再乘100；与429数/总请求数等价，每个面板只扫描一次。仅本看板6个模型、i-nhi.zhejianglab.org/maas/v1及其下属接口，排除指定API Key。无请求或无数据时不补0。看板默认每5分钟刷新。",
+      "description": "用户访问统计区域；最近 6 小时窗口。",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
-          "decimals": 2,
-          "max": 100,
+          "decimals": 0,
           "min": 0,
-          "noValue": "暂无请求数据",
-          "unit": "percent"
+          "noValue": "暂无数据",
+          "unit": "short"
         },
         "overrides": []
       },
@@ -613,12 +612,12 @@
         "x": 0,
         "y": 23
       },
-      "hideTimeOverride": false,
       "id": 13,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "center",
+        "orientation": "auto",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -626,11 +625,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
-          "valueSize": 42
+          "valueSize": 36
         },
-        "textMode": "value"
+        "textMode": "value",
+        "wideLayout": true
       },
+      "pluginVersion": "11.1.0",
       "targets": [
         {
           "datasource": {
@@ -638,14 +640,14 @@
             "uid": "fg3rvth6eufi8d"
           },
           "editorMode": "code",
-          "expr": "100 * avg_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" | drop request_key, request_path | label_format route_name=\"{{ if eq .route_name \\\"litellm-service-021sfm-thinking\\\" }}021SFM-236B-Thinking{{ else if eq .route_name \\\"litellm-service-021sfm-instruct\\\" }}021SFM-236B-Instruct{{ else if eq .route_name \\\"litellm-service-deepseek-v4-flash\\\" }}DeepSeek-V4-Flash-0731{{ else if eq .route_name \\\"litellm-service-deepseek-v4-1-flash\\\" }}DeepSeek-V4.1-Flash-1017{{ else if eq .route_name \\\"litellm-service-glm-5-3\\\" }}GLM-5.3{{ else if eq .route_name \\\"litellm-service-kimi-k3\\\" }}Kimi-K3{{ else }}{{ .route_name }}{{ end }}\" | label_format http_429_flag=`{{ if eq .response_code \"429\" }}1{{ else }}0{{ end }}` | unwrap http_429_flag | __error__=\"\" [24h]) by (authority)",
-          "legendFormat": "429 请求比例",
+          "expr": "sum(count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" [6h])) or vector(0)",
+          "legendFormat": "总请求数",
           "queryType": "instant",
           "refId": "A"
         }
       ],
-      "timeFrom": "24h",
-      "title": "过去24h · 总体 HTTP 429 请求比例",
+      "timeFrom": "6h",
+      "title": "总请求数",
       "type": "stat"
     },
     {
@@ -653,45 +655,46 @@
         "type": "loki",
         "uid": "fg3rvth6eufi8d"
       },
-      "description": "过去24h的429请求比例：每条匹配访问日志以429=1、其他状态码=0取平均，再乘100；与429数/总请求数等价，每个面板只扫描一次。仅本看板6个模型、i-nhi.zhejianglab.org/maas/v1及其下属接口，排除指定API Key。无请求或无数据时不补0。看板默认每5分钟刷新。",
+      "description": "总体请求概览；6个模型，最近 6 小时。",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
-          "decimals": 2,
-          "max": 100,
+          "decimals": 0,
           "min": 0,
-          "noValue": "暂无请求数据",
-          "unit": "percent"
+          "noValue": "暂无数据",
+          "unit": "short"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 12,
-        "w": 16,
+        "h": 4,
+        "w": 8,
         "x": 8,
         "y": 23
       },
-      "hideTimeOverride": false,
-      "id": 14,
+      "id": 17,
       "options": {
-        "displayMode": "basic",
-        "maxVizHeight": 50,
-        "minVizHeight": 28,
-        "namePlacement": "left",
-        "orientation": "horizontal",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "/^(?!.*(?:Time|route_name)$).+$/",
-          "values": true
+          "fields": "",
+          "values": false
         },
-        "showUnfilled": false,
-        "sizing": "auto",
-        "valueMode": "color"
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 36
+        },
+        "textMode": "value",
+        "wideLayout": true
       },
+      "pluginVersion": "11.1.0",
       "targets": [
         {
           "datasource": {
@@ -699,24 +702,90 @@
             "uid": "fg3rvth6eufi8d"
           },
           "editorMode": "code",
-          "expr": "100 * avg_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" | drop request_key, request_path | label_format route_name=\"{{ if eq .route_name \\\"litellm-service-021sfm-thinking\\\" }}021SFM-236B-Thinking{{ else if eq .route_name \\\"litellm-service-021sfm-instruct\\\" }}021SFM-236B-Instruct{{ else if eq .route_name \\\"litellm-service-deepseek-v4-flash\\\" }}DeepSeek-V4-Flash-0731{{ else if eq .route_name \\\"litellm-service-deepseek-v4-1-flash\\\" }}DeepSeek-V4.1-Flash-1017{{ else if eq .route_name \\\"litellm-service-glm-5-3\\\" }}GLM-5.3{{ else if eq .route_name \\\"litellm-service-kimi-k3\\\" }}Kimi-K3{{ else }}{{ .route_name }}{{ end }}\" | label_format http_429_flag=`{{ if eq .response_code \"429\" }}1{{ else }}0{{ end }}` | unwrap http_429_flag | __error__=\"\" [24h]) by (route_name)",
-          "legendFormat": "{{route_name}}",
+          "expr": "sum(count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\",response_code=\"429\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" [6h])) or vector(0)",
+          "legendFormat": "HTTP 429 总请求数",
           "queryType": "instant",
           "refId": "A"
         }
       ],
-      "timeFrom": "24h",
-      "title": "过去24h · 各模型 HTTP 429 请求比例",
-      "transformations": [
+      "timeFrom": "6h",
+      "title": "HTTP 429 总请求数",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "总体请求概览；6个模型，最近 6 小时。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 1,
+          "min": 0,
+          "noValue": "暂无数据",
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 23
+      },
+      "id": 18,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 36
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
         {
-          "id": "labelsToFields",
-          "options": {
-            "mode": "columns",
-            "valueLabel": "route_name"
-          }
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "100 * sum(count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\",response_code=\"429\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" [6h])) / sum(count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" [6h]))",
+          "legendFormat": "总 429 请求率",
+          "queryType": "instant",
+          "refId": "A"
         }
       ],
-      "type": "bargauge"
+      "timeFrom": "6h",
+      "title": "总 429 请求率",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "id": 22,
+      "panels": [],
+      "title": "模型维度 429 分析",
+      "type": "row"
     },
     {
       "datasource": {
@@ -730,24 +799,63 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 8,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
             "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
-            "spanNulls": false
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "decimals": 0,
+          "mappings": [],
           "min": 0,
           "noValue": "暂无数据",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
           "unit": "none"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 12,
         "x": 0,
-        "y": 27
+        "y": 28
       },
       "hideTimeOverride": false,
       "id": 15,
@@ -755,8 +863,10 @@
       "maxDataPoints": 96,
       "options": {
         "legend": {
+          "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "multi",
@@ -776,9 +886,465 @@
           "refId": "A"
         }
       ],
-      "timeFrom": "24h",
-      "title": "过去24h · 各模型 HTTP 429 数量趋势（每15分钟）",
+      "timeFrom": "6h",
+      "title": "模型维度 · HTTP 429 请求趋势 · 最近6小时",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "过去24h的429请求比例：每条匹配访问日志以429=1、其他状态码=0取平均，再乘100；与429数/总请求数等价，每个面板只扫描一次。仅本看板6个模型、i-nhi.zhejianglab.org/maas/v1及其下属接口，排除指定API Key。无请求或无数据时不补0。看板默认每5分钟刷新。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "noValue": "暂无请求数据",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "hideTimeOverride": false,
+      "id": 14,
+      "options": {
+        "displayMode": "basic",
+        "maxVizHeight": 50,
+        "minVizHeight": 28,
+        "minVizWidth": 8,
+        "namePlacement": "left",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^(?!.*(?:Time|route_name)$).+$/",
+          "values": true
+        },
+        "showUnfilled": false,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "100 * avg_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" | drop request_key, request_path | label_format route_name=\"{{ if eq .route_name \\\"litellm-service-021sfm-thinking\\\" }}021SFM-236B-Thinking{{ else if eq .route_name \\\"litellm-service-021sfm-instruct\\\" }}021SFM-236B-Instruct{{ else if eq .route_name \\\"litellm-service-deepseek-v4-flash\\\" }}DeepSeek-V4-Flash-0731{{ else if eq .route_name \\\"litellm-service-deepseek-v4-1-flash\\\" }}DeepSeek-V4.1-Flash-1017{{ else if eq .route_name \\\"litellm-service-glm-5-3\\\" }}GLM-5.3{{ else if eq .route_name \\\"litellm-service-kimi-k3\\\" }}Kimi-K3{{ else }}{{ .route_name }}{{ end }}\" | label_format http_429_flag=`{{ if eq .response_code \"429\" }}1{{ else }}0{{ end }}` | unwrap http_429_flag | __error__=\"\" [24h]) by (route_name)",
+          "legendFormat": "{{route_name}}",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "6h",
+      "title": "模型维度 · HTTP 429 请求率 · 最近6小时",
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "route_name"
+          }
+        }
+      ],
+      "type": "bargauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 23,
+      "panels": [],
+      "title": "用户维度 429 分析",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "用户访问统计区域；最近 6 小时窗口。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0,
+          "min": 0,
+          "noValue": "暂无数据",
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 37
+      },
+      "id": 19,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 36
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "count(sum by (request_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" [6h]))) or vector(0)",
+          "legendFormat": "活跃用户数（去重 API Key）",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "6h",
+      "title": "活跃用户数（去重 API Key）",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "用户访问统计区域；最近 6 小时窗口。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0,
+          "min": 0,
+          "noValue": "暂无数据",
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 37
+      },
+      "id": 20,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 36
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "count(sum by (request_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\",response_code=\"429\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" [6h]))) or vector(0)",
+          "legendFormat": "429 用户数（去重 API Key）",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "6h",
+      "title": "429 用户数（去重 API Key）",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "用户访问统计区域；最近 6 小时窗口。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 1,
+          "min": 0,
+          "noValue": "暂无数据",
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 37
+      },
+      "id": 21,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 36
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "100 * count(sum by (request_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\",response_code=\"429\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" [6h]))) / count(sum by (request_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" [6h])))",
+          "legendFormat": "429 用户占比",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "6h",
+      "title": "429 用户占比",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "fg3rvth6eufi8d"
+      },
+      "description": "按模型统计最近 6 小时的去重活跃用户数和发生 HTTP 429 的去重用户数。仅新增此表格，其他面板保持原样。",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0,
+          "min": 0,
+          "noValue": "暂无数据",
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "429 用户占比"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "id": 16,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "活跃用户数"
+          }
+        ]
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "count by (route_name) (sum by (route_name, request_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" | label_format route_name=`{{ if eq .route_name \"litellm-service-021sfm-thinking\" }}021SFM-236B-Thinking{{ else if eq .route_name \"litellm-service-021sfm-instruct\" }}021SFM-236B-Instruct{{ else if eq .route_name \"litellm-service-deepseek-v4-flash\" }}DeepSeek-V4-Flash-0731{{ else if eq .route_name \"litellm-service-deepseek-v4-1-flash\" }}DeepSeek-V4.1-Flash-1017{{ else if eq .route_name \"litellm-service-glm-5-3\" }}GLM-5.3{{ else }}Kimi-K3{{ end }}` [6h])))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{route_name}}",
+          "queryType": "instant",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "count by (route_name) (sum by (route_name, request_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\",response_code=\"429\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" | label_format route_name=`{{ if eq .route_name \"litellm-service-021sfm-thinking\" }}021SFM-236B-Thinking{{ else if eq .route_name \"litellm-service-021sfm-instruct\" }}021SFM-236B-Instruct{{ else if eq .route_name \"litellm-service-deepseek-v4-flash\" }}DeepSeek-V4-Flash-0731{{ else if eq .route_name \"litellm-service-deepseek-v4-1-flash\" }}DeepSeek-V4.1-Flash-1017{{ else if eq .route_name \"litellm-service-glm-5-3\" }}GLM-5.3{{ else }}Kimi-K3{{ end }}` [6h])))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{route_name}}",
+          "queryType": "instant",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "fg3rvth6eufi8d"
+          },
+          "editorMode": "code",
+          "expr": "100 * (count by (route_name) (sum by (route_name, request_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\",response_code=\"429\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" | label_format route_name=`{{ if eq .route_name \"litellm-service-021sfm-thinking\" }}021SFM-236B-Thinking{{ else if eq .route_name \"litellm-service-021sfm-instruct\" }}021SFM-236B-Instruct{{ else if eq .route_name \"litellm-service-deepseek-v4-flash\" }}DeepSeek-V4-Flash-0731{{ else if eq .route_name \"litellm-service-deepseek-v4-1-flash\" }}DeepSeek-V4.1-Flash-1017{{ else if eq .route_name \"litellm-service-glm-5-3\" }}GLM-5.3{{ else }}Kimi-K3{{ end }}` [6h])))) / (count by (route_name) (sum by (route_name, request_key) (count_over_time({filename=\"/var/log/proxy/access.log\",authority=\"i-nhi.zhejianglab.org\",route_name=~\"litellm-service-021sfm-thinking|litellm-service-021sfm-instruct|litellm-service-deepseek-v4-flash|litellm-service-deepseek-v4-1-flash|litellm-service-glm-5-3|litellm-service-kimi-k3\"} |= \"authorization\" | json request_key=\"authorization\", request_path=\"path\" | __error__=\"\" | request_key!=\"Bearer __NHI_FILTER_API_KEY__\" | request_key!=\"__NHI_FILTER_API_KEY__\" | request_path=~\"^/maas/v1(/.*)?$\" | label_format route_name=`{{ if eq .route_name \"litellm-service-021sfm-thinking\" }}021SFM-236B-Thinking{{ else if eq .route_name \"litellm-service-021sfm-instruct\" }}021SFM-236B-Instruct{{ else if eq .route_name \"litellm-service-deepseek-v4-flash\" }}DeepSeek-V4-Flash-0731{{ else if eq .route_name \"litellm-service-deepseek-v4-1-flash\" }}DeepSeek-V4.1-Flash-1017{{ else if eq .route_name \"litellm-service-glm-5-3\" }}GLM-5.3{{ else }}Kimi-K3{{ end }}` [6h]))))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{route_name}}",
+          "queryType": "instant",
+          "refId": "C"
+        }
+      ],
+      "timeFrom": "6h",
+      "title": "用户维度 · 各模型去重用户统计 · 最近6小时",
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "route_name",
+            "mode": "outerTabular"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "route_name": 0,
+              "Value #A": 1,
+              "Value #B": 2,
+              "Value #C": 3
+            },
+            "renameByName": {
+              "route_name": "模型",
+              "Value #A": "活跃用户数",
+              "Value #B": "429 用户数",
+              "Value #C": "429 用户占比"
+            }
+          }
+        },
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "模型": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "活跃用户数": {
+                "aggregations": [
+                  "max"
+                ],
+                "operation": "aggregate"
+              },
+              "429 用户数": {
+                "aggregations": [
+                  "max"
+                ],
+                "operation": "aggregate"
+              },
+              "429 用户占比": {
+                "aggregations": [
+                  "max"
+                ],
+                "operation": "aggregate"
+              }
+            }
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "^(.*) \\(max\\)$",
+            "renamePattern": "$1"
+          }
+        }
+      ],
+      "type": "table"
     },
     {
       "collapsed": true,
@@ -797,7 +1363,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 51
       },
       "id": 8,
       "panels": [
@@ -843,7 +1409,7 @@
           },
           "targets": [
             {
-              "expr": "(label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m]))) != 2)))), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"GLM-5.3\", \"\", \".*\"))",
+              "expr": "(label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\",pod!~\".*-router-.*\"}[2m]))) != 2)))), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[2m]))) != 2)))), \"model\", \"GLM-5.3\", \"\", \".*\"))",
               "format": "time_series",
               "instant": false,
               "legendFormat": "{{model}}",
@@ -943,7 +1509,7 @@
           "targets": [
             {
               "editorMode": "code",
-              "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * 100 / ${capacity_021sfm_thinking_7e070d3e:raw}) and on() (vector(${capacity_021sfm_thinking_7e070d3e:raw}) > 0))",
+              "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (last_over_time({__name__=~\"sglang:num_(running|queue)_reqs\",model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\"))) * 100 / ${capacity_021sfm_thinking_7e070d3e:raw}) and on() (vector(${capacity_021sfm_thinking_7e070d3e:raw}) > 0))",
               "format": "time_series",
               "instant": false,
               "legendFormat": "021SFM-236B-Thinking",
@@ -952,7 +1518,7 @@
             },
             {
               "editorMode": "code",
-              "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\"))) * 100 / ${capacity_021sfm_instruct_a895da2e:raw}) and on() (vector(${capacity_021sfm_instruct_a895da2e:raw}) > 0))",
+              "expr": "((((label_replace((((sum (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m])))) unless (sum ((count by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (max by (__name__,cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (last_over_time({__name__=~\"vllm:num_requests_running|vllm:num_requests_waiting\",model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[2m]))) != 2))))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\"))) * 100 / ${capacity_021sfm_instruct_a895da2e:raw}) and on() (vector(${capacity_021sfm_instruct_a895da2e:raw}) > 0))",
               "format": "time_series",
               "instant": false,
               "legendFormat": "021SFM-236B-Instruct",
@@ -1041,7 +1607,7 @@
           },
           "targets": [
             {
-              "expr": "(label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
+              "expr": "(label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
               "format": "time_series",
               "instant": false,
               "legendFormat": "{{model}}",
@@ -1094,7 +1660,7 @@
           },
           "targets": [
             {
-              "expr": "(label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
+              "expr": "(label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.95, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
               "format": "time_series",
               "instant": false,
               "legendFormat": "{{model}}",
@@ -1147,7 +1713,7 @@
           },
           "targets": [
             {
-              "expr": "(label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
+              "expr": "(label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:time_to_first_token_seconds_bucket{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:time_to_first_token_seconds_count{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 10))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:time_to_first_token_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))))) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:time_to_first_token_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 10)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
               "format": "time_series",
               "instant": false,
               "legendFormat": "{{model}}",
@@ -1200,7 +1766,7 @@
           },
           "targets": [
             {
-              "expr": "(label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021-reason-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021-chat-a100\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
+              "expr": "(label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"021SFM-236B-Thinking-1030\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-164510213126251840|jb\\\\-aionlineinferenceservice\\\\-164509486539110720|jb\\\\-aionlineinferenceservice\\\\-164501445383584064\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Thinking\", \"\", \".*\")) or (label_replace((((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine,le) (rate(vllm:request_time_per_output_token_seconds_bucket{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,engine,virtual_engine) (increase(vllm:request_time_per_output_token_seconds_count{model_name=\"021SFM-236B-Instruct-0212\",service_label_jobname=~\"jb\\\\-aionlineinferenceservice\\\\-161297522195725888|jb\\\\-aionlineinferenceservice\\\\-163346949513697088\"}[5m]))) >= 20))), \"model\", \"021SFM-236B-Instruct\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4-Flash-0731\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"DeepSeek-V4.1-Flash\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"DeepSeek-V4.1-Flash-1017\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"Kimi-K3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"Kimi-K3\", \"\", \".*\")) or (label_replace(((histogram_quantile(0.99, sum by (le) (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming,le) (rate(sglang:inter_token_latency_seconds_bucket{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m])))) * 1000) and (sum (max by (cluster,service_label_jobname,model_name,pod,endpoint,dp_rank,is_streaming) (increase(sglang:inter_token_latency_seconds_count{model_name=\"GLM-5.3\",service_label_nhi_zjlab_io_business_id=\"nhi-public\"}[5m]))) >= 20)), \"model\", \"GLM-5.3\", \"\", \".*\"))",
               "format": "time_series",
               "instant": false,
               "legendFormat": "{{model}}",
@@ -1220,7 +1786,7 @@
         "h": 3,
         "w": 24,
         "x": 0,
-        "y": 36
+        "y": 52
       },
       "id": 7,
       "options": {
@@ -1400,6 +1966,6 @@
   "timezone": "Asia/Shanghai",
   "title": "实验室科研模型服务水位",
   "uid": "sglang-model-service-waterlevel",
-  "version": 48,
+  "version": 51,
   "weekStart": ""
 }
