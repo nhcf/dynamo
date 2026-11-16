@@ -5,7 +5,8 @@ The commit message and maintenance instructions use English; tutorial prose rema
 
 ## Entry points
 
-- [模型服务自动调优平台设计与实施方案 V0.1](model-serving-autotuning-design-v0.1.md)
+- [模型服务持续自我改进平台设计与实施方案 V0.4](model-serving-autotuning-design-v0.1.md)
+- [模型服务智能调优与持续自我改进 Issue 提案稿](model-serving-self-improvement-issue-draft.md)
 - [Complete 00–12 module navigation](index.html)
 - [00 System architecture and runtime shapes](system-map.html)
 - [01 Observability source walkthrough](observability.html)
