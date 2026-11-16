@@ -1,6 +1,5 @@
 # maas-dev otel-collector 的参考配置副本（整理自集群内同名 ConfigMap）。
-# 凭证已脱敏：x-br-acid 的真实值只保存在本地 .vscode/credentials.local.md
-# （该目录已被 .gitignore 忽略，不会入库）。直接 apply 前需先替换回真实值。
+# 2026-11-12：导出仅保留 Kafka，已移除 ONE（otlphttp）和 debug 出口。
 # 2026-11-02：已移除全部 metrics 相关配置（prometheus receiver / resource processor /
 # prometheusremotewrite exporter / metrics pipeline），collector 现在只服务 traces 链路；
 # litellm 指标不再采集。回退材料见 backup/otel-collector-config-before-metrics-removal-*.yaml。
@@ -118,24 +117,12 @@ data:
           num_consumers: 10
           queue_size: 1000
 
-      otlphttp:
-        #endpoint: "https://oneupload.bonree.com/APM/otel"
-        endpoint: "http://10.107.205.20:58897/APM/otel"
-        compression: gzip
-        headers:
-          #x-br-acid: "<REDACTED-ONE-ACID-OLD>"
-          x-br-acid: "<REDACTED-ONE-ACID>"
-          #x-br-envid: "zhejianglab"
-
-      debug:
-        verbosity: detailed   # 确认数据流入后用 basic 即可，避免刷日志
-
     service:
       pipelines:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, k8sattributes, transform, batch]
-          exporters: [kafka,otlphttp,debug]
+          exporters: [kafka]
       telemetry:
         logs:
           level: info
