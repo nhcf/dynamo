@@ -476,7 +476,7 @@ add(
 add(
     "pd-ack",
     "结合现有 ACK 记录：如何确认真的走 PD",
-    '<p>用户保存的<a href="ack-LB97i2CZNR/dynamo-test-deployment.md">部署快照</a>描述 <code>nhss-job/dynamo-qwen38-27b-mixed-demo</code>：Frontend、Prefill、Decode、aggregated 各 1，私有 SGLang runtime 1.4.1，TP=4，Qwen3.8-27B。它是混合拓扑的历史证据，不能只看见两种角色的 Pod 就断言流量均走 PD。</p>'
+    '<p>用户保存的<a href="../ack-LB97i2CZNR/dynamo-test-deployment.md">部署快照</a>描述 <code>nhss-job/dynamo-qwen38-27b-mixed-demo</code>：Frontend、Prefill、Decode、aggregated 各 1，私有 SGLang runtime 1.4.1，TP=4，Qwen3.8-27B。它是混合拓扑的历史证据，不能只看见两种角色的 Pod 就断言流量均走 PD。</p>'
     + table(
         ["已有记录", "在 PD 分析中的作用", "需要补充的运行证据"],
         [
@@ -487,7 +487,7 @@ add(
             ["聚合与 igd-* 可见", "存在其他候选端点", "真实请求 worker 归因，排除聚合路径与健康探测假交接"],
         ],
     )
-    + '<p>上述端口均来自已保存快照，未重新连接集群验证；当前代码的自动激活、条件 PD 和指标细节不能直接承诺在该私有 1.4.1 镜像中完全相同。继续沿用<a href="ack-LB97i2CZNR/request-plane-trace-checklist.html">ACK Request Plane Trace 工作清单</a>，补充真实 PD 请求证据后再作性能结论。</p>',
+    + '<p>上述端口均来自已保存快照，未重新连接集群验证；当前代码的自动激活、条件 PD 和指标细节不能直接承诺在该私有 1.4.1 镜像中完全相同。继续沿用<a href="../ack-LB97i2CZNR/request-plane-trace-checklist.html">ACK Request Plane Trace 工作清单</a>，补充真实 PD 请求证据后再作性能结论。</p>',
 )
 
 add(

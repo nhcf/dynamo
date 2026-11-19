@@ -7,23 +7,24 @@ The commit message and maintenance instructions use English; tutorial prose rema
 
 ### Dynamo 源码教程
 
-- [Complete 00–12 module navigation](index.html)
-- [00 System architecture and runtime shapes](system-map.html)
-- [01 Observability source walkthrough](observability.html)
-- [02 Frontend and protocol pipeline](frontend.html)
-- [03 Runtime and communications](runtime.html)
-- [04 KV-aware routing and scheduling](router.html)
-- [05 Engine adapters and Rust Sidecar](backends.html)
-- [06 Prefill/decode disaggregation](pd-serving.html)
-- [07 KV cache and memory management](kv-cache.html)
-- [08 Planner source walkthrough](planner.html)
-- [Planner deployment and Frontend interaction](planner-deployment.html)
-- [09 Control-plane architecture and observability](control-plane.html)
-- [10 Reliability and streaming lifecycle](reliability.html)
-- [11 Global routing and pool views](global-routing.html)
-- [12 Verification, replay, and performance experiments](validation.html)
-- [PD trace capabilities and boundaries](pd-trace.html)
-- [Storage and events architecture and observability](storage-events.html)
+- `tutorials/` 存放教程页面、构建脚本、Mermaid 图源、源码清单和浏览器校验脚本。原 [HTML 入口](index.html) 会跳转到教程导航。
+- [Complete 00–12 module navigation](tutorials/index.html)
+- [00 System architecture and runtime shapes](tutorials/system-map.html)
+- [01 Observability source walkthrough](tutorials/observability.html)
+- [02 Frontend and protocol pipeline](tutorials/frontend.html)
+- [03 Runtime and communications](tutorials/runtime.html)
+- [04 KV-aware routing and scheduling](tutorials/router.html)
+- [05 Engine adapters and Rust Sidecar](tutorials/backends.html)
+- [06 Prefill/decode disaggregation](tutorials/pd-serving.html)
+- [07 KV cache and memory management](tutorials/kv-cache.html)
+- [08 Planner source walkthrough](tutorials/planner.html)
+- [Planner deployment and Frontend interaction](tutorials/planner-deployment.html)
+- [09 Control-plane architecture and observability](tutorials/control-plane.html)
+- [10 Reliability and streaming lifecycle](tutorials/reliability.html)
+- [11 Global routing and pool views](tutorials/global-routing.html)
+- [12 Verification, replay, and performance experiments](tutorials/validation.html)
+- [PD trace capabilities and boundaries](tutorials/pd-trace.html)
+- [Storage and events architecture and observability](tutorials/storage-events.html)
 
 All roadmap modules now have architecture and selected source analysis.
 This is not an exhaustive file audit or a claim that every feature was runtime-tested.
@@ -44,16 +45,17 @@ identified separately from implemented request paths.
 
 ### 指标与 Grafana
 
-- [Prometheus metrics classification and usage](prometheus-metrics-guide.html)
-- [HiCache and Mooncake metrics and tracing](kvstore-hicache-metrics.html)
+- [Prometheus metrics classification and usage](tutorials/prometheus-metrics-guide.html)
+- [HiCache and Mooncake metrics and tracing](tutorials/kvstore-hicache-metrics.html)
 - [ACK Dynamo Grafana dashboards](ack-LB97i2CZNR/dashboard/README.md)
 - [NHI 模型服务 Grafana 看板](nhi-dashboard/README.md)
 - [Mooncake Master Grafana dashboard](mooncake/dashboard/README.md)
 
 ### 模型服务调优
 
-- [模型服务持续自我改进平台设计与实施方案 V0.4](model-serving-autotuning-design-v0.1.md)
-- [模型服务智能调优与持续自我改进 Issue 提案稿](model-serving-self-improvement-issue-draft.md)
+- `serving-optimization/` 存放持续自我改进平台的详细设计和 Issue 提案。
+- [模型服务持续自我改进平台设计与实施方案 V0.4](serving-optimization/model-serving-autotuning-design-v0.1.md)
+- [模型服务智能调优与持续自我改进 Issue 提案稿](serving-optimization/model-serving-self-improvement-issue-draft.md)
 - [ACK Dynamo Replay 调优闭环实施方案](ack-LB97i2CZNR/dynamo-replay-optimization-plan.md)
 
 ### SLA 日报
@@ -63,8 +65,8 @@ identified separately from implemented request paths.
 
 ### 构建与维护
 
-- 根目录的 `build_*.py`、`validate.mjs` 和 [serve.sh](serve.sh) 分别用于重建教程、校验页面和本地预览。
-- 根目录的 `.mmd` 是图源，`*source-manifest.json` 记录源码出处。maas-dev 审计目录的 JSON 快照提供报告的重建输入。
+- `tutorials/build_*.py` 用于重建教程，`tutorials/validate.mjs` 用于校验页面，[serve.sh](serve.sh) 用于预览整个 `learning/`。
+- `tutorials/` 内的 `.mmd` 是图源，`*source-manifest.json` 记录源码出处。maas-dev 审计目录的 JSON 快照提供报告的重建输入。
 - `maintenance/` 存放本地维护草稿。
 
 ## 历史归档
@@ -104,15 +106,15 @@ Collector addresses must be confirmed and replaced before use.
 Python 3 and the pinned Git objects are required. No cluster access is needed.
 
 ```sh
-python3 learning/build_tutorial.py
-python3 learning/build_planner.py
-python3 learning/build_pd_trace.py
-python3 learning/build_control_plane.py
-python3 learning/build_storage_events.py
-python3 learning/build_reliability.py
-python3 learning/build_pd_serving.py
-python3 learning/build_remaining.py
-python3 learning/build_planner_deployment.py
+python3 learning/tutorials/build_tutorial.py
+python3 learning/tutorials/build_planner.py
+python3 learning/tutorials/build_pd_trace.py
+python3 learning/tutorials/build_control_plane.py
+python3 learning/tutorials/build_storage_events.py
+python3 learning/tutorials/build_reliability.py
+python3 learning/tutorials/build_pd_serving.py
+python3 learning/tutorials/build_remaining.py
+python3 learning/tutorials/build_planner_deployment.py
 python3 learning/maas-dev-deployment/render.py
 ```
 
@@ -133,16 +135,16 @@ Requires Node.js 22+ and Chrome. Set `CHROME_BIN` if Chrome is not installed at
 `/opt/google/chrome/chrome`.
 
 ```sh
-node learning/validate.mjs observability.html
-node learning/validate.mjs planner.html
-node learning/validate.mjs pd-trace.html
-node learning/validate.mjs control-plane.html
-node learning/validate.mjs storage-events.html
-node learning/validate.mjs reliability.html
-node learning/validate.mjs pd-serving.html
-node learning/validate.mjs planner-deployment.html
+node learning/tutorials/validate.mjs observability.html
+node learning/tutorials/validate.mjs planner.html
+node learning/tutorials/validate.mjs pd-trace.html
+node learning/tutorials/validate.mjs control-plane.html
+node learning/tutorials/validate.mjs storage-events.html
+node learning/tutorials/validate.mjs reliability.html
+node learning/tutorials/validate.mjs pd-serving.html
+node learning/tutorials/validate.mjs planner-deployment.html
 for page in system-map frontend runtime router backends kv-cache global-routing validation; do
-  node learning/validate.mjs "$page.html" || exit 1
+  node learning/tutorials/validate.mjs "$page.html" || exit 1
 done
 ```
 

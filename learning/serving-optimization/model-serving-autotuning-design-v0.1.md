@@ -145,7 +145,7 @@ flowchart TB
 
 ### 4.4 OTel 数据到 Replay 的输入契约
 
-普通 OTel Span 与 Dynamo Request Trace 是不同数据。本项目将运行日志和 `dynamo.request.trace.v1` 请求记录直接输出到 stderr，由现有容器日志系统采集，不通过 OTel Collector 采集日志。分布式 Trace 的采集链路独立配置。Dynamo 虽提供将请求记录映射成 OTLP LogRecord 的 otel sink，本项目不启用该 sink。部署前按实际镜像版本核实能力，不能假设历史 1.4.1 镜像具有当前源码全部功能。[Request Trace Reference](../docs/fern/pages/reference/observability/request-traces.mdx)
+普通 OTel Span 与 Dynamo Request Trace 是不同数据。本项目将运行日志和 `dynamo.request.trace.v1` 请求记录直接输出到 stderr，由现有容器日志系统采集，不通过 OTel Collector 采集日志。分布式 Trace 的采集链路独立配置。Dynamo 虽提供将请求记录映射成 OTLP LogRecord 的 otel sink，本项目不启用该 sink。部署前按实际镜像版本核实能力，不能假设历史 1.4.1 镜像具有当前源码全部功能。[Request Trace Reference](../../docs/fern/pages/reference/observability/request-traces.mdx)
 
 | 已有数据 | 回放能力 | 缺口处理 |
 |---|---|---|
@@ -188,7 +188,7 @@ flowchart TD
 
 DynoSim 优先从容器日志中提取已有原生记录，先解开 CRI 等外层封装并处理分段，再按 schema/event_type 筛选，恢复 JSONL/JSONL.GZ。普通运行日志不作为回放记录，截断或无法重组的记录进入隔离及缺失报告。关键字段为 `request_received_ms`、`output_tokens`、`replay.input_length`、`replay.trace_block_size` 和 `replay.input_sequence_hashes`，到达时间不取 `event_time_unix_ms` 的结束事件时间。记录去重后检查分片块大小和 Agent 上下文一致性；当前加载器拒绝混合会话感知与普通请求的集合。哈希可能超过 JavaScript 安全整数范围，必须无损读写，不能经过浮点转换。
 
-只有普通 OTel 数据时，经中间对象导出目标版本支持的 Mooncake 等格式。没有前缀信息的请求只能进入限定能力的回放；不得将 trace_id、session_id 或普通文本哈希伪装成 Dynamo 的 sequence-aware rolling hash。[DynoSim 架构与加载行为](../docs/fern/pages/developer-guide/knowledge-base/concepts/simulation/dynosim-architecture.md)
+只有普通 OTel 数据时，经中间对象导出目标版本支持的 Mooncake 等格式。没有前缀信息的请求只能进入限定能力的回放；不得将 trace_id、session_id 或普通文本哈希伪装成 Dynamo 的 sequence-aware rolling hash。[DynoSim 架构与加载行为](../../docs/fern/pages/developer-guide/knowledge-base/concepts/simulation/dynosim-architecture.md)
 
 SGLang 指定版本的 Autobench 示例为 `{"prompt":[1,2,3],"prompt_len":3,"output_len":1,"timestamp":200}`，timestamp 单位为毫秒。导出器转换时间单位并校验 Prompt 表示与长度。有真实 Token 则保留；有正文则以相同模板和 tokenizer 重建；只有长度时可以生成合成序列，但不声称恢复真实缓存行为。仅有前缀哈希无法恢复原始 Token，可按共享关系生成模拟序列，但须额外验证适用性。[SGLang 输入格式](https://github.com/sgl-project/sglang/blob/3f5b1bec8e00115bc8439b5b9a9da902822d2f82/tools/sglang-simulator/README.md)
 
@@ -266,7 +266,7 @@ SGLang Simulator 不作为全部候选的必经阶段；目标版本的并行、
 
 ### 6.1 两种模拟器的职责与首期协作
 
-DynoSim 的 Mocker 核心自行维护调度、KV 分配、前缀复用及请求推进，其 SGLang 模式不等于调用社区 SGLang Simulator。后者复用对应 SGLang 版本的调度与缓存实现，并以预测执行替代模型计算。[DynoSim Simulation Model](../docs/fern/pages/cli/operations/simulation-with-dynosim/simulation-model.md)
+DynoSim 的 Mocker 核心自行维护调度、KV 分配、前缀复用及请求推进，其 SGLang 模式不等于调用社区 SGLang Simulator。后者复用对应 SGLang 版本的调度与缓存实现，并以预测执行替代模型计算。[DynoSim Simulation Model](../../docs/fern/pages/cli/operations/simulation-with-dynosim/simulation-model.md)
 
 首期采用统一负载、独立仿真、差异分析、真实验证的协作方式：DynoSim 研究实例、路由、PD 与 Planner；SGLang Simulator 在后端匹配时研究批处理和缓存。二者存在能力交集，不能强制串联全部实验，也不能把各自端到端延迟相加。
 

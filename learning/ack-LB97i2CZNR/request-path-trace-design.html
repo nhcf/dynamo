@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ACK Request Plane Trace：主链路 Span 设计</title>
 <style>body{margin:0;background:#f4f7fb;color:#253449;font:16px/1.8 system-ui}main{max-width:1120px;margin:auto;padding:30px 22px}h1,h2{color:#173f6d}section{background:white;border:1px solid #dce4ef;border-radius:12px;padding:24px;margin:22px 0}pre{background:#13243b;color:#e1edfc;padding:18px;overflow:auto;border-radius:8px}code{overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #dce4ef;padding:10px;text-align:left;vertical-align:top}.scroll{overflow:auto}.note{border-left:4px solid #df9e27;background:#fff7e5;padding:14px}.meta{color:#52647d;font-size:14px}a{color:#1261ac}input{margin-right:8px}nav a{margin-right:14px}button{padding:8px 14px}@media print{body{background:white}button{display:none}section{break-inside:avoid}}</style></head><body><main>
-<nav><a href="../index.html">教程首页</a><a href="dynamo-test-deployment.md">用户部署记录</a><a href="request-plane-trace-checklist.html">工作清单</a><a href="request-path-trace-design.html">链路设计</a><a href="request-path-trace-walkthrough.html">链路走查</a><a href="otel-collector-reference.yaml">采集参考</a><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a><a href="../pd-trace.html">源码能力分析</a></nav>
+<nav><a href="../tutorials/index.html">教程首页</a><a href="dynamo-test-deployment.md">用户部署记录</a><a href="request-plane-trace-checklist.html">工作清单</a><a href="request-path-trace-design.html">链路设计</a><a href="request-path-trace-walkthrough.html">链路走查</a><a href="otel-collector-reference.yaml">采集参考</a><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a><a href="../tutorials/pd-trace.html">源码能力分析</a></nav>
 <h1>ACK Request Plane Trace：主链路 Span 设计</h1>
 <p>对象：<code>nhss-job / dynamo-qwen38-27b-mixed-demo</code>，Frontend、prefill、decode、aggregated 各一副本，Worker TP=4，Request Plane=tcp。本文只回答一个问题：<b>一次请求在哪些位置产生 span、这些 span 之间靠什么关联、哪些是线上 1.4.1 可以指望的、哪些只是 1.7.0 的设计目标。</b>落地步骤与验收标准在 <a href="request-plane-trace-checklist.html">工作清单</a>，读图与查询方式在 <a href="request-path-trace-walkthrough.html">链路走查</a>。</p>
 <p class="meta">编制日期：2026-10-29 · 部署快照：2026-10-28 · 本文为设计文档，未连接集群、未修改资源。</p>
@@ -29,7 +29,7 @@
 <tr><td>6</td><td>Worker 入口</td><td><code>handle_payload</code>（server）</td><td><code>lib/runtime/src/pipeline/network/ingress/push_endpoint.rs</code> ≈105</td><td>稳定</td><td>带 <code>otel.kind = "server"</code>，标记服务端语义；与 #4 同名但 kind 不同，图中应区分。</td></tr>
 <tr><td>7</td><td>Worker 处理</td><td><code>handle_payload</code>（handler）<br>+ lifecycle 各阶段</td><td><code>push_handler.rs</code> 1296；阶段见 §3：<code>:755</code> <code>RequestDispatch</code>、<code>:898</code> <code>WorkerAdmission</code>、<code>:758</code> <code>worker.operation</code>、<code>:824</code>/<code>:827</code> response streaming</td><td><code>handle_payload</code> 稳定；阶段 span 仅 1.7.0</td><td>Worker 同时是 lifecycle 的“worker”侧记录者。P/D 拆分时 prefill 与 decode 各自产生一组。</td></tr>
 <tr><td>8</td><td>引擎调用</td><td><code>engine.generate</code></td><td><code>lib/backend-common/src/adapter.rs</code> 244–261；Link 270–285</td><td>稳定</td><td>target <code>request_span</code>。属性含 <code>model</code>、<code>input_tokens</code>、<code>disagg_role</code>、<code>ttft_ms</code>、<code>output_tokens</code>、<code>finish_reason</code>、<code>cancelled</code>、<code>error_kind</code>、<code>avg_itl_ms</code> 及 <code>itl_p50/p99/max_ms</code>。同时建立指向引擎前驱的 OTel <b>Link</b>，见 §4。</td></tr>
-<tr><td>9</td><td>SGLang 引擎内部</td><td>引擎自定义 span</td><td>需要 <code>--enable-trace</code> 与 <code>--otlp-traces-endpoint</code></td><td>需核实</td><td>名称由引擎决定，本仓库不保证。开启后引擎通过 <code>context.trace_headers()</code> 参与传播（<a href="../pd-trace.html">pd-trace</a> 有该属性摘录）。</td></tr>
+<tr><td>9</td><td>SGLang 引擎内部</td><td>引擎自定义 span</td><td>需要 <code>--enable-trace</code> 与 <code>--otlp-traces-endpoint</code></td><td>需核实</td><td>名称由引擎决定，本仓库不保证。开启后引擎通过 <code>context.trace_headers()</code> 参与传播（<a href="../tutorials/pd-trace.html">pd-trace</a> 有该属性摘录）。</td></tr>
 <tr><td>10</td><td>响应流式回传</td><td>Frontend 侧 <code>response.streaming*</code></td><td>同 §3</td><td>仅 1.7.0</td><td>SSE 逐段回传的边界。取消与错误在该阶段结束 span，见走查用例 C。</td></tr></table></div>
 <p>图中应有的父子关系是 <code>generate</code> → <code>handle_payload(client)</code> → <code>handle_payload(server)</code> → <code>engine.generate</code>；lifecycle 各阶段作为旁挂的语义层叠加在上面。抓不到某一段时，先判断是<b>级别过滤</b>还是<b>版本缺失</b>，再判断是<b>传播断链</b>。</p></section>
 
@@ -92,6 +92,6 @@
 <li><a href="request-path-trace-walkthrough.html">链路走查</a>：一次 PD 请求和一次 aggregated 请求的 span 时间线，以及查询方法。</li>
 <li><a href="otel-collector-reference.yaml">采集参考</a>：Collector 与查询后端的参考清单，命名空间与镜像 tag 均为待确认项。</li>
 <li><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a>：DGD 合并参考，非完整清单。</li>
-<li><a href="../pd-trace.html">源码能力分析</a>：更细的源码摘录与 P/D 传播路径。</li></ul>
+<li><a href="../tutorials/pd-trace.html">源码能力分析</a>：更细的源码摘录与 P/D 传播路径。</li></ul>
 <p>以上文档都不替代现场验收。</p></section>
 </main></body></html>

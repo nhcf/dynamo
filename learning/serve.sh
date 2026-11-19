@@ -7,8 +7,8 @@
 #   ./serve.sh 8080 daily-report   # 指定端口 + 子目录
 #   PORT=9000 ./serve.sh      # 用环境变量指定端口
 #
-# 说明: 服务根目录默认是整个 learning/, 因此 index.html、各章节页和
-#       daily-report/<date>/index.html 都能通过相对路径访问。
+# 说明: 服务根目录默认是整个 learning/，首页跳转到 tutorials/index.html，
+#       教程和 daily-report/<date>/index.html 都能通过相对路径访问。
 
 set -euo pipefail
 

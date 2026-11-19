@@ -305,12 +305,12 @@ add(
             ],
         ],
     )
-    + '<p>Planner 自身 9085 metrics 只能证明它发布了哪些决策信号；不证明它成功读到了 Frontend，也不证明 Operator 已把目标副本变成 ready GPU。HPA/KEDA 对 Frontend 的扩缩容可另行配置，避免与 Worker 容量控制混在一起。</p><p>可从已保存的 <a href="ack-LB97i2CZNR/dynamo-test-deployment.md">ACK 部署快照</a>反查是否已有 Planner、Prometheus 和权限，但该快照属于历史私有镜像证据，本次未重新核验集群。</p>',
+    + '<p>Planner 自身 9085 metrics 只能证明它发布了哪些决策信号；不证明它成功读到了 Frontend，也不证明 Operator 已把目标副本变成 ready GPU。HPA/KEDA 对 Frontend 的扩缩容可另行配置，避免与 Worker 容量控制混在一起。</p><p>可从已保存的 <a href="../ack-LB97i2CZNR/dynamo-test-deployment.md">ACK 部署快照</a>反查是否已有 Planner、Prometheus 和权限，但该快照属于历史私有镜像证据，本次未重新核验集群。</p>',
 )
 add(
     "mixed-dgd-audit",
     "现有混合 DGD 清单：没有 Planner，需先确定管理范围",
-    '<p>已核查本地 <a href="ack-LB97i2CZNR/deploy/nhi-trace-demo-mixed-dgd.yaml">nhi-trace-demo-mixed-dgd.yaml</a>：DGD 为 <code>nhi/dynamo-trace-demo-mixed</code>，仅包含下列四个组件。</p>'
+    '<p>已核查本地 <a href="../ack-LB97i2CZNR/deploy/nhi-trace-demo-mixed-dgd.yaml">nhi-trace-demo-mixed-dgd.yaml</a>：DGD 为 <code>nhi/dynamo-trace-demo-mixed</code>，仅包含下列四个组件。</p>'
     + table(
         ["组件", "类型", "副本", "Worker 逻辑 namespace"],
         [

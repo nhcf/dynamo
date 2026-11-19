@@ -711,7 +711,7 @@ add(
 add(
     "se-cluster",
     "21 / 对照 ACK 快照与接入验收",
-    '<p>依据 <a href="ack-LB97i2CZNR/dynamo-test-deployment.md">用户部署记录</a>：SGLang/NIXL PD、TCP Request Plane、ZMQ Event Plane、原生 KV events tcp://*:5557，Worker metrics:9090，Pod 声明 nixl:19090，TP=4。</p>'
+    '<p>依据 <a href="../ack-LB97i2CZNR/dynamo-test-deployment.md">用户部署记录</a>：SGLang/NIXL PD、TCP Request Plane、ZMQ Event Plane、原生 KV events tcp://*:5557，Worker metrics:9090，Pod 声明 nixl:19090，TP=4。</p>'
     + table(
         ["需要核实", "为什么", "完成证据"],
         [
@@ -743,7 +743,7 @@ add(
             ["底层性能", "块命中不保证 TTFT 降低", "匹配、staging、queue、传输、注册与实际请求时延的同口径对照"],
         ],
     )
-    + '<p>继续保留已有的 <a href="ack-LB97i2CZNR/request-plane-trace-checklist.html">Request Plane Trace 清单</a>；Storage/Event 接入是额外验证范围，不要求给当前 ZMQ 部署新增 NATS。</p>',
+    + '<p>继续保留已有的 <a href="../ack-LB97i2CZNR/request-plane-trace-checklist.html">Request Plane Trace 清单</a>；Storage/Event 接入是额外验证范围，不要求给当前 ZMQ 部署新增 NATS。</p>',
 )
 
 add(

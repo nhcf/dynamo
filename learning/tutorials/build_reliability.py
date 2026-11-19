@@ -653,7 +653,7 @@ add(
 add(
     "rl-cluster",
     "对照 ACK：核查项与分阶段验收",
-    '<p>依据 <a href="ack-LB97i2CZNR/dynamo-test-deployment.md">ACK 1.4.1 部署记录</a>，当前是 SGLang 混合 aggregated/PD、TCP/ZMQ、Worker grace 300s、Frontend grace 60s。记录未给出迁移配置和完整取消实现，不把本源码的新行为视为线上已启用。</p>'
+    '<p>依据 <a href="../ack-LB97i2CZNR/dynamo-test-deployment.md">ACK 1.4.1 部署记录</a>，当前是 SGLang 混合 aggregated/PD、TCP/ZMQ、Worker grace 300s、Frontend grace 60s。记录未给出迁移配置和完整取消实现，不把本源码的新行为视为线上已启用。</p>'
     + table(
         ["用例", "执行/观测重点", "完成证据"],
         [

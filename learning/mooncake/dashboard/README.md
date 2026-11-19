@@ -96,4 +96,4 @@ python3 learning/mooncake/dashboard/validate_deploy.py --deploy
 指标口径依据：[官方可观测文档](https://kvcache-ai.github.io/Mooncake/getting_started/observability.html)、
 [Master 指标定义源码](https://github.com/kvcache-ai/Mooncake/blob/main/mooncake-store/src/master_metric_manager.cpp)
 与本次线上入库指标；上游 main 持续变化，面板以实际采集存在的指标为准。
-更多 HiCache 关联解释见 [HiCache / Mooncake 指标解读](../../kvstore-hicache-metrics.html#master-comparison)。
+更多 HiCache 关联解释见 [HiCache / Mooncake 指标解读](../../tutorials/kvstore-hicache-metrics.html#master-comparison)。

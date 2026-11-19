@@ -649,7 +649,7 @@ add(
 add(
     "cp-cluster",
     "18 / 对照你的 ACK 部署：哪些存在，哪些尚未证明",
-    '<p>依据 <a href="ack-LB97i2CZNR/dynamo-test-deployment.md">用户整理的 2026-10-28 快照</a>：Operator 1.4.1，DGD 为 Frontend/prefill/decode/aggregated，TCP 请求面、ZMQ 事件面、SGLang/NIXL。以下只做快照映射，不重新宣称现场验收。</p>'
+    '<p>依据 <a href="../ack-LB97i2CZNR/dynamo-test-deployment.md">用户整理的 2026-10-28 快照</a>：Operator 1.4.1，DGD 为 Frontend/prefill/decode/aggregated，TCP 请求面、ZMQ 事件面、SGLang/NIXL。以下只做快照映射，不重新宣称现场验收。</p>'
     + table(
         ["对象", "快照结论", "后续读取项"],
         [
@@ -681,7 +681,7 @@ add(
             ],
         ],
     )
-    + '<p>Request Plane 接入另见 <a href="ack-LB97i2CZNR/request-plane-trace-checklist.html">实际部署 Trace 工作清单</a>。本章控制面观测不要求把该清单重做成 Operator 请求 trace。</p>',
+    + '<p>Request Plane 接入另见 <a href="../ack-LB97i2CZNR/request-plane-trace-checklist.html">实际部署 Trace 工作清单</a>。本章控制面观测不要求把该清单重做成 Operator 请求 trace。</p>',
 )
 
 add(

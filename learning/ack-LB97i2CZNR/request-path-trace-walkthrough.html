@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ACK Request Plane Trace：链路走查</title>
 <style>body{margin:0;background:#f4f7fb;color:#253449;font:16px/1.8 system-ui}main{max-width:1120px;margin:auto;padding:30px 22px}h1,h2{color:#173f6d}section{background:white;border:1px solid #dce4ef;border-radius:12px;padding:24px;margin:22px 0}pre{background:#13243b;color:#e1edfc;padding:18px;overflow:auto;border-radius:8px}code{overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #dce4ef;padding:10px;text-align:left;vertical-align:top}.scroll{overflow:auto}.note{border-left:4px solid #df9e27;background:#fff7e5;padding:14px}.meta{color:#52647d;font-size:14px}a{color:#1261ac}input{margin-right:8px}nav a{margin-right:14px}button{padding:8px 14px}@media print{body{background:white}button{display:none}section{break-inside:avoid}}</style></head><body><main>
-<nav><a href="../index.html">教程首页</a><a href="dynamo-test-deployment.md">用户部署记录</a><a href="request-plane-trace-checklist.html">工作清单</a><a href="request-path-trace-design.html">链路设计</a><a href="request-path-trace-walkthrough.html">链路走查</a><a href="otel-collector-reference.yaml">采集参考</a><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a><a href="../pd-trace.html">源码能力分析</a></nav>
+<nav><a href="../tutorials/index.html">教程首页</a><a href="dynamo-test-deployment.md">用户部署记录</a><a href="request-plane-trace-checklist.html">工作清单</a><a href="request-path-trace-design.html">链路设计</a><a href="request-path-trace-walkthrough.html">链路走查</a><a href="otel-collector-reference.yaml">采集参考</a><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a><a href="../tutorials/pd-trace.html">源码能力分析</a></nav>
 <h1>ACK Request Plane Trace：链路走查</h1>
 <p>本页回答两件事：<b>一棵请求 trace 应该长什么样</b>，以及<b>在查询界面上怎么找到它、抓不到时怎么判</b>。对象仍是 <code>nhss-job / dynamo-qwen38-27b-mixed-demo</code>（Frontend、prefill、decode、aggregated 各一副本，Worker TP=4，Request Plane=tcp）。span 的来源、源码行号与三级保证程度见 <a href="request-path-trace-design.html">链路设计</a>，执行顺序与验收命令见 <a href="request-plane-trace-checklist.html">工作清单</a>；本页引用的保证程度与该设计文档一致，不另立标准。</p>
 <p class="meta">编制日期：2026-10-29 · 部署快照：2026-10-28 · 本文为走查文档，未连接集群、未修改资源；下文时间戳均为示意值，不是现场采集数据。</p>
@@ -127,6 +127,6 @@ t+2ms    (独立根 span) handle_payload(srv) decode   稳定      没有 tracep
 <li><a href="request-plane-trace-checklist.html">工作清单</a>：T01–T09 执行顺序、环境变量合并方式与验收命令（含 curl 注入 traceparent 的用例）。</li>
 <li><a href="otel-collector-reference.yaml">采集参考</a>：Collector 与查询后端的参考清单，命名空间与镜像 tag 均为待确认项。</li>
 <li><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a>：DGD 合并参考，非完整清单。</li>
-<li><a href="../pd-trace.html">源码能力分析</a>：更细的源码摘录与 P/D 传播路径。</li></ul>
+<li><a href="../tutorials/pd-trace.html">源码能力分析</a>：更细的源码摘录与 P/D 传播路径。</li></ul>
 <p>本页给的是读图与查询方法，不替代现场验收；具体结论以集群上实际查到的 span 为准。</p></section>
 </main></body></html>

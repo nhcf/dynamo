@@ -6,7 +6,7 @@ import subprocess
 from html import escape as E
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(__file__).resolve().parent
 PIN = "2f296b59274867529ea8deef994e6954520024b6"
 manifest = []
@@ -210,7 +210,8 @@ for n, t, d, p, o in mods:
         "07": '<a href="kv-cache.html">进入源码专题 →</a>',
         "11": '<a href="global-routing.html">进入源码专题 →</a>',
         "12": '<a href="validation.html">进入源码专题 →</a>',
-        "01": '<a href="observability.html">进入源码专题 →</a>',
+        "01": '<a href="observability.html">进入源码专题 →</a>'
+        '<p><a href="prometheus-metrics-guide.html">指标分类、作用与使用场景 →</a></p>',
         "06": '<a href="pd-serving.html">进入 PD 分离源码 →</a>',
         "08": '<a href="planner.html">进入 Planner 源码 →</a>',
         "09": '<a href="control-plane.html">进入控制面专题 →</a>',
@@ -245,7 +246,7 @@ index += section(
 index += section(
     "method",
     "证据和维护方式",
-    '<p>结构发现优先使用 codebase-memory-mcp，再核对关键函数原文。图关系只辅助导航；Rust trait、闭包、PyO3、框架回调的真实调用不能完全依靠静态图判断。</p><p>页面无 CDN 依赖。使用 <code>python3 learning/build_tutorial.py</code> 生成；生成器校验提交及引用文件是否匹配，避免旧解释混入新源码。<a href="source-manifest.json">source-manifest.json</a> 记录范围与 SHA256。</p><p><a href="observability.html">开始可观测性源码章节 →</a></p>',
+    '<p>结构发现优先使用 codebase-memory-mcp，再核对关键函数原文。图关系只辅助导航；Rust trait、闭包、PyO3、框架回调的真实调用不能完全依靠静态图判断。</p><p>页面无 CDN 依赖。使用 <code>python3 learning/tutorials/build_tutorial.py</code> 生成；生成器校验提交及引用文件是否匹配，避免旧解释混入新源码。<a href="source-manifest.json">source-manifest.json</a> 记录范围与 SHA256。</p><p><a href="observability.html">开始可观测性源码章节 →</a></p>',
 )
 b = section(
     "overview",
@@ -569,12 +570,12 @@ b += section(
 index += section(
     "deployment",
     "实战案例 / maas-dev 已部署组件",
-    '<p>已读取 maas-dev 的真实 Helm、Pod、CRD 和可观测配置，并验证部分运行端点。平台版本 1.4.1，与本教程源码基线不同；当前没有 Dynamo 推理工作负载。</p><p><a href="maas-dev-deployment/index.html">查看部署实战分析 →</a></p>',
+    '<p>已读取 maas-dev 的真实 Helm、Pod、CRD 和可观测配置，并验证部分运行端点。平台版本 1.4.1，与本教程源码基线不同；当前没有 Dynamo 推理工作负载。</p><p><a href="../maas-dev-deployment/index.html">查看部署实战分析 →</a></p>',
 )
 index += section(
     "target-cluster",
     "完整部署目标 / ack-LB97i2CZNR",
-    '<p>用户已确认完整 Dynamo 部署位于独立 kubeconfig 所指集群；maas-dev 是另一个集群的快照。已根据用户提供的 2026-10-28 部署记录补齐 SGLang 1.4.1 混合拓扑，并整理对应 Trace 工作清单。</p><p><a href="ack-LB97i2CZNR/index.html">查看部署记录与 Trace 接入清单 →</a></p>',
+    '<p>用户已确认完整 Dynamo 部署位于独立 kubeconfig 所指集群；maas-dev 是另一个集群的快照。已根据用户提供的 2026-10-28 部署记录补齐 SGLang 1.4.1 混合拓扑，并整理对应 Trace 工作清单。</p><p><a href="../ack-LB97i2CZNR/index.html">查看部署记录与 Trace 接入清单 →</a></p>',
 )
 index += section(
     "planner-topic",
@@ -627,7 +628,13 @@ index += section(
             ("reliability-topic", "可靠性与流式生命周期"),
         ],
         False,
-    ).replace("首个源码专题 v0.1", "全模块导航 v1.0")
+    )
+    .replace("首个源码专题 v0.1", "全模块导航 v1.0")
+    .replace(
+        '<a href="observability.html">01 · 可观测性源码</a>',
+        '<a href="observability.html">01 · 可观测性源码</a>'
+        '<a href="prometheus-metrics-guide.html">专题 · Prometheus 指标分类与使用</a>',
+    )
 )
 (OUT / "observability.html").write_text(
     page(

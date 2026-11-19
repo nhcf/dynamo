@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ACK 实际部署：Request Plane Trace 工作清单</title>
 <style>body{margin:0;background:#f4f7fb;color:#253449;font:16px/1.8 system-ui}main{max-width:1120px;margin:auto;padding:30px 22px}h1,h2{color:#173f6d}section{background:white;border:1px solid #dce4ef;border-radius:12px;padding:24px;margin:22px 0}pre{background:#13243b;color:#e1edfc;padding:18px;overflow:auto;border-radius:8px}code{overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #dce4ef;padding:10px;text-align:left;vertical-align:top}.scroll{overflow:auto}.note{border-left:4px solid #df9e27;background:#fff7e5;padding:14px}.meta{color:#52647d;font-size:14px}a{color:#1261ac}input{margin-right:8px}nav a{margin-right:14px}button{padding:8px 14px}@media print{body{background:white}button{display:none}section{break-inside:avoid}}</style></head><body><main>
-<nav><a href="../index.html">教程首页</a><a href="dynamo-test-deployment.md">用户部署记录</a><a href="request-plane-trace-checklist.html">工作清单</a><a href="request-path-trace-design.html">链路设计</a><a href="request-path-trace-walkthrough.html">链路走查</a><a href="otel-collector-reference.yaml">采集参考</a><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a><a href="../pd-trace.html">源码能力分析</a></nav>
+<nav><a href="../tutorials/index.html">教程首页</a><a href="dynamo-test-deployment.md">用户部署记录</a><a href="request-plane-trace-checklist.html">工作清单</a><a href="request-path-trace-design.html">链路设计</a><a href="request-path-trace-walkthrough.html">链路走查</a><a href="otel-collector-reference.yaml">采集参考</a><a href="request-plane-trace-env.fragment.yaml">环境变量片段</a><a href="../tutorials/pd-trace.html">源码能力分析</a></nav>
 <h1>ACK 实际部署：Request Plane Trace 工作清单</h1>
 <p>对象：<code>nhss-job / DynamoGraphDeployment / dynamo-qwen38-27b-mixed-demo</code>。按现有 SGLang 混合部署重排工作：确认真实请求路径，配置四个组件、引擎与采集链路，分别验收 PD 和 aggregated。</p>
 <p class="meta">编制日期：2026-10-29 · 部署快照：2026-10-28 · 本次仅生成本地文档和候选片段，未连接集群、未修改资源。执行项均为待办。</p>
@@ -104,6 +104,6 @@ curl -N --max-time 120 http://127.0.0.1:18000/v1/chat/completions \
 <li><b>旧 NodePort、CRD storage 迁移、CPU limit、Operator 租约历史：</b>另排维护，不作为基础 trace 硬前置。</li>
 <li><b>Frontend 无探针：</b>本次纳入发布恢复检查，补探针可单独实施。</li>
 <li><b>NIXL :19090、ZMQ KV events、KV 存储：</b>不作为 trace 开关；本清单不承诺底层传输、事件与存储操作已请求级全覆盖。</li></ul>
-<p>当前源码能力和缺口见 <a href="../pd-trace.html">PD Trace 专题</a>；部署依据和参考文档已分开标明，均不替代现场验收。</p></section>
+<p>当前源码能力和缺口见 <a href="../tutorials/pd-trace.html">PD Trace 专题</a>；部署依据和参考文档已分开标明，均不替代现场验收。</p></section>
 <script>document.querySelectorAll('input').forEach((e,i)=>{const k='ack-LB97-trace-task-'+i;try{e.checked=localStorage.getItem(k)==='1'}catch{}e.onchange=()=>{try{localStorage.setItem(k,e.checked?'1':'0')}catch{}}})</script>
 </main></body></html>
