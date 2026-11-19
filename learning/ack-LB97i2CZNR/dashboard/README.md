@@ -27,11 +27,11 @@ Planner 行同时按 `job="dynamo-planner"` 和顶部 `$dgd` 定位。
 |---|---|
 | `build_acklb_dashboard.py` | 从零生成主看板 JSON（改面板后重跑） |
 | `verify_dashboard_exprs.py` | 将 JSON 内全部表达式代入真实变量逐条走 DS 代理 `query_range` 校验（当前 91 条）；该脚本默认 mixed/1h，仅验证 API 执行成功，不验证数据语义 |
-| `validate_exprs.py` | 建板前的候选表达式摸底（瞬时值 + 稀疏流量下的窗口试探） |
+| [validate_exprs.py](../archive/dashboard/validate_exprs.py) | 建板前的候选表达式摸底（瞬时值 + 稀疏流量下的窗口试探），已归档 |
 | `adapt_dashboard.py` | 官方 disagg dashboard → `dynamo-disagg-nhi` 的 8 处适配（cluster 过滤、`backend`→`decode`、删 NVLink 面板等） |
 | `dynamo-acklb-overview-dashboard.json` | 主看板快照（与线上一致） |
 | `dynamo-disagg-nhi-dashboard.json` | 适配版看板快照 |
-| `dashboard-p0-deployment-2026-11-03.json` | P0 部署版本、备份位置及校验记录 |
+| [dashboard-p0-deployment-2026-11-03.json](../archive/dashboard/dashboard-p0-deployment-2026-11-03.json) | 已归档的 P0 部署版本、备份位置及校验记录 |
 
 ## P0 优化（2026-11-03，线上版本 5）
 

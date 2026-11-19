@@ -1,5 +1,8 @@
 # LiteLLM OTel A/B 测试
 
+完整接入说明见 [maas-prod Higress 与 LiteLLM 接入 OTel Collector](otel-trace-integration.md)，
+包含当前状态、配置位置、跨组件链路关联和验证方法。
+
 `litellm_otel.py` 用于切换 LiteLLM 内置 OTel callback。默认目标是
 `maas-prod` 集群、`litellm-test` Namespace 下的 `litellm-test` Deployment，
 配置来自 `litellm-test-config` ConfigMap。

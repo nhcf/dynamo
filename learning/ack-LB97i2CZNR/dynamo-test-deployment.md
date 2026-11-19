@@ -542,6 +542,6 @@ exit=28
 | [`deploy/nhi-frontend-nodeport.yaml`](deploy/nhi-frontend-nodeport.yaml)、[`deploy/nhi-models-pv-pvc.yaml`](deploy/nhi-models-pv-pvc.yaml) | 请求面新建的 NodePort 与 PV/PVC | 可 apply 清单 |
 | `evidence/01`–`04` | DGD 快照、工作负载宽表、patch 前后对比 | 原始证据 |
 | `evidence/05`–`08` | 实例清单 → 独立栈设计 → 部署验收 → litellm 跨集群接入验收 | 阶段报告 |
-| `backup/otel-collector-config-before-*.yaml` | 两次变更前从集群导出的 ConfigMap | 回滚参照，**凭证已脱敏** |
+| `archive/collector/otel-collector-config-before-*.yaml` | Collector 变更前的历史配置 | 回滚参照 |
 
 `backup/` 下的两份快照里 `x-br-acid` 已替换为占位符（真实值只保存在本地被 gitignore 的 `.vscode/`），因此它们**只能用于结构对照，不能直接 `kubectl apply`**；真要回滚需先从集群直取或把占位符换回真实值。

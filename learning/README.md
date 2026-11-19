@@ -3,15 +3,13 @@
 Offline Chinese tutorials and deployment notes maintained alongside Dynamo.
 The commit message and maintenance instructions use English; tutorial prose remains Chinese.
 
-## Entry points
+## 分类导航
 
-- [模型服务持续自我改进平台设计与实施方案 V0.4](model-serving-autotuning-design-v0.1.md)
-- [模型服务智能调优与持续自我改进 Issue 提案稿](model-serving-self-improvement-issue-draft.md)
+### Dynamo 源码教程
+
 - [Complete 00–12 module navigation](index.html)
 - [00 System architecture and runtime shapes](system-map.html)
 - [01 Observability source walkthrough](observability.html)
-- [Prometheus metrics classification and usage](prometheus-metrics-guide.html)
-- [HiCache and Mooncake metrics and tracing](kvstore-hicache-metrics.html)
 - [02 Frontend and protocol pipeline](frontend.html)
 - [03 Runtime and communications](runtime.html)
 - [04 KV-aware routing and scheduling](router.html)
@@ -26,19 +24,62 @@ The commit message and maintenance instructions use English; tutorial prose rema
 - [12 Verification, replay, and performance experiments](validation.html)
 - [PD trace capabilities and boundaries](pd-trace.html)
 - [Storage and events architecture and observability](storage-events.html)
-- [ACK deployment and trace checklist](ack-LB97i2CZNR/index.html)
-- [ACK request-plane span design](ack-LB97i2CZNR/request-path-trace-design.html)
-- [ACK request-plane trace walkthrough](ack-LB97i2CZNR/request-path-trace-walkthrough.html)
-- [ACK Dynamo Grafana dashboards](ack-LB97i2CZNR/dashboard/README.md)
-- [Mooncake Master Grafana dashboard](mooncake/dashboard/README.md)
-- [maas-dev historical platform audit](maas-dev-deployment/index.html)
-- [maas-dev Higress metrics collection plan](maas-dev-deployment/higress-metrics-collection-plan.md)
-- [maas-dev otel-collector metrics removal backup](maas-dev-deployment/backup/otel-collector-config-before-metrics-removal-20261102-170238.yaml)
 
 All roadmap modules now have architecture and selected source analysis.
 This is not an exhaustive file audit or a claim that every feature was runtime-tested.
 Global Rust placeholders, native Sidecar capabilities, and unwired consumers are
 identified separately from implemented request paths.
+
+### 部署与链路追踪
+
+- [ACK deployment and trace checklist](ack-LB97i2CZNR/index.html)
+- [ACK 部署记录与配套文件清单](ack-LB97i2CZNR/dynamo-test-deployment.md)
+- [ACK request-plane span design](ack-LB97i2CZNR/request-path-trace-design.html)
+- [ACK request-plane trace walkthrough](ack-LB97i2CZNR/request-path-trace-walkthrough.html)
+- [ACK Trace 采集草案与回退记录](ack-LB97i2CZNR/trace-collection-plan.md)
+- [maas-dev historical platform audit](maas-dev-deployment/index.html)
+- [maas-dev Higress metrics collection plan](maas-dev-deployment/higress-metrics-collection-plan.md)
+- [maas-prod Higress 与 LiteLLM OTel Collector 接入说明](maas-prod/otel-trace-integration.md)
+- [maas-prod LiteLLM OTel A/B 测试](maas-prod/README.md)
+
+### 指标与 Grafana
+
+- [Prometheus metrics classification and usage](prometheus-metrics-guide.html)
+- [HiCache and Mooncake metrics and tracing](kvstore-hicache-metrics.html)
+- [ACK Dynamo Grafana dashboards](ack-LB97i2CZNR/dashboard/README.md)
+- [NHI 模型服务 Grafana 看板](nhi-dashboard/README.md)
+- [Mooncake Master Grafana dashboard](mooncake/dashboard/README.md)
+
+### 模型服务调优
+
+- [模型服务持续自我改进平台设计与实施方案 V0.4](model-serving-autotuning-design-v0.1.md)
+- [模型服务智能调优与持续自我改进 Issue 提案稿](model-serving-self-improvement-issue-draft.md)
+- [ACK Dynamo Replay 调优闭环实施方案](ack-LB97i2CZNR/dynamo-replay-optimization-plan.md)
+
+### SLA 日报
+
+- [采集与日报方案](daily-report/report.md)及[生成脚本](daily-report/run_report.py)、[HTML 模板](daily-report/report-template.html)、[上传脚本](daily-report/zjic-report-upload/upload_report.py)
+- 日报生成路径为 `daily-report/YYYY-MM-DD/index.html`。
+
+### 构建与维护
+
+- 根目录的 `build_*.py`、`validate.mjs` 和 [serve.sh](serve.sh) 分别用于重建教程、校验页面和本地预览。
+- 根目录的 `.mmd` 是图源，`*source-manifest.json` 记录源码出处。maas-dev 审计目录的 JSON 快照提供报告的重建输入。
+- `maintenance/` 存放本地维护草稿。
+
+## 历史归档
+
+### ACK
+
+- Collector 配置快照包括[指标变更前](ack-LB97i2CZNR/archive/collector/otel-collector-config-before-metrics.yaml)、[Mixed 指标变更前](ack-LB97i2CZNR/archive/collector/otel-collector-config-before-mixed-metrics-20261102-164419.yaml)、[Trace 统一前](ack-LB97i2CZNR/archive/collector/otel-collector-config-before-trace-unify.yaml)、[11 月 3 日备份](ack-LB97i2CZNR/archive/collector/otel-collector-config-20261103-1731.json)、[端口变更前](ack-LB97i2CZNR/archive/collector/otel-collector-config-before-port-change-20261106-113003.yaml)和[端口适配后](ack-LB97i2CZNR/archive/collector/otel-collector-config-after-port-adaptive-20261106.yaml)。
+- 看板历史材料包括[建板前表达式探查脚本](ack-LB97i2CZNR/archive/dashboard/validate_exprs.py)和 [P0 部署记录](ack-LB97i2CZNR/archive/dashboard/dashboard-p0-deployment-2026-11-03.json)。
+- 采集方案的两份等价 DGD 快照已合并为一份[回退快照](ack-LB97i2CZNR/evidence/03-dgd-before-patch.json)。
+
+### maas-dev
+
+- [指标配置移除前的 Collector 备份](maas-dev-deployment/archive/collector/otel-collector-config-before-metrics-removal-20261102-170238.yaml)和[当时使用的裁剪脚本](maas-dev-deployment/archive/collector/strip-metrics.py)。
+
+模型服务调优主设计的正文版本为 V0.4，文件名仍带 `v0.1`。Issue 提案稿是同一项目的摘要，链接到主设计。
 
 ## Evidence and version boundaries
 

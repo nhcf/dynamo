@@ -2,7 +2,7 @@
 # 2026-11-12：导出仅保留 Kafka，已移除 ONE（otlphttp）和 debug 出口。
 # 2026-11-02：已移除全部 metrics 相关配置（prometheus receiver / resource processor /
 # prometheusremotewrite exporter / metrics pipeline），collector 现在只服务 traces 链路；
-# litellm 指标不再采集。回退材料见 backup/otel-collector-config-before-metrics-removal-*.yaml。
+# litellm 指标不再采集。回退材料见 archive/collector/otel-collector-config-before-metrics-removal-*.yaml。
 apiVersion: v1
 kind: ConfigMap
 metadata:

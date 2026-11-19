@@ -129,7 +129,7 @@ digest：`sha256:bf0ef3042110a7ad1b9a18ab7953a55d2cd78b44969f81116c20c7ef24e6138
 
 → **这是阶段 0 探针存在的理由。在改任何 DGD 之前，必须先证明后段是通的。**
 
---- 
+---
 
 ## 4. 配置设计
 
@@ -358,9 +358,8 @@ curl -s http://127.0.0.1:18888/metrics | grep -E 'otelcol_(receiver_accepted_spa
 
 | 文件 | 内容 |
 |---|---|
-| `evidence/01-dgd-snapshot.yaml` | 改动前 DGD 完整快照 |
 | `evidence/02-workloads-wide.txt` | deploy/pod/svc 全景 |
-| `evidence/03-dgd-before-patch.json` | 回退用的原始对象（含原始 env 数组） |
+| [evidence/03-dgd-before-patch.json](evidence/03-dgd-before-patch.json) | 改动前的 DGD 完整快照，包含回退所需的原始 env 数组 |
 | `evidence/04-frontend-otel-patch.json` | 阶段 1 的 JSON Patch，**尚未应用** |
 
 > 附：撰写本文期间曾误发一条 `kubectl patch`，命令在等待阶段被中断。事后核验
