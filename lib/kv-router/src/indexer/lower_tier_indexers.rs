@@ -251,7 +251,7 @@ mod tests {
             .insert(WorkerWithDpRank::new(99, 0), 3);
         let device_matches = MatchDetails {
             overlap_scores,
-            last_matched_hashes: Default::default(),
+            ..Default::default()
         };
 
         let sequence = vec![LocalBlockHash(1), LocalBlockHash(2)];

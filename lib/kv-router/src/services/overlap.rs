@@ -119,7 +119,7 @@ mod tests {
         let tiered = TieredMatchDetails {
             device: MatchDetails {
                 overlap_scores: device,
-                last_matched_hashes: Default::default(),
+                ..Default::default()
             },
             lower_tier: HashMap::from([(StorageTier::HostPinned, host), (StorageTier::Disk, disk)]),
         };

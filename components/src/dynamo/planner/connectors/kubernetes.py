@@ -81,10 +81,18 @@ class KubernetesConnector(PlannerConnector):
         if parent_dgd_name:
             self.parent_dgd_name = parent_dgd_name
         else:
-            graph_deployment_name = os.getenv("DYN_PARENT_DGD_K8S_NAME")
+            # The operator injects PARENT_IGD_NAME into every component of a
+            # graph; the Dynamo variable is kept as a fallback for graphs that
+            # predate it.
+            graph_deployment_name = os.getenv("PARENT_IGD_NAME") or os.getenv(
+                "DYN_PARENT_DGD_K8S_NAME"
+            )
             if not graph_deployment_name:
                 raise DeploymentValidationError(
-                    ["DYN_PARENT_DGD_K8S_NAME environment variable is not set"]
+                    [
+                        "PARENT_IGD_NAME environment variable is not set; "
+                        "the planner cannot locate its InferGraphDeployment"
+                    ]
                 )
             self.parent_dgd_name = graph_deployment_name
 

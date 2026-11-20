@@ -38,6 +38,7 @@ impl ConcurrentRadixTreeCompressed {
             let MatchDetails {
                 overlap_scores: ref mut scores,
                 ref mut last_matched_hashes,
+                ..
             } = details;
             Self::walk_match_path(
                 next_child,

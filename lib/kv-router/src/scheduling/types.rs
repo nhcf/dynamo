@@ -32,6 +32,9 @@ pub struct TierOverlapBlocks {
     pub host_pinned: FxHashMap<WorkerWithDpRank, usize>,
     #[serde(default)]
     pub disk: FxHashMap<WorkerWithDpRank, usize>,
+    /// Sparse primary anchors for Host/Disk extensions measured before a side-index merge.
+    #[serde(default, skip_serializing_if = "FxHashMap::is_empty")]
+    pub device_before_prediction: FxHashMap<WorkerWithDpRank, u32>,
 }
 
 #[derive(Debug, thiserror::Error)]

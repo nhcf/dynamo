@@ -241,7 +241,10 @@ pub fn cache_hit_estimates_from_tiered_matches(
 pub fn tier_overlap_blocks_from_tiered_matches(
     tiered_matches: &TieredMatchDetails,
 ) -> TierOverlapBlocks {
-    let mut tier_overlap_blocks = TierOverlapBlocks::default();
+    let mut tier_overlap_blocks = TierOverlapBlocks {
+        device_before_prediction: tiered_matches.device.device_before_prediction.clone(),
+        ..Default::default()
+    };
     tier_overlap_blocks.device.extend(
         tiered_matches
             .device
@@ -263,7 +266,8 @@ pub fn tier_overlap_blocks_from_tiered_matches(
     for tier in [StorageTier::Disk, StorageTier::External] {
         if let Some(matches) = tiered_matches.lower_tier.get(&tier) {
             for (worker, hits) in &matches.hits {
-                *tier_overlap_blocks.disk.entry(*worker).or_default() += *hits;
+                let blocks = tier_overlap_blocks.disk.entry(*worker).or_default();
+                *blocks = blocks.saturating_add(*hits);
             }
         }
     }
@@ -317,16 +321,25 @@ pub fn build_overlap_scores_response(
                 .and_then(|matches| matches.hits.get(&worker))
                 .copied()
                 .unwrap_or(0)
-                + external
-                    .and_then(|matches| matches.hits.get(&worker))
-                    .copied()
-                    .unwrap_or(0);
-            let host_pinned_blocks = device_blocks + host_pinned_extension_blocks;
-            let disk_blocks = host_pinned_blocks + disk_extension_blocks;
+                .saturating_add(
+                    external
+                        .and_then(|matches| matches.hits.get(&worker))
+                        .copied()
+                        .unwrap_or(0),
+                );
+            let host_pinned_blocks = device_blocks.saturating_add(host_pinned_extension_blocks);
+            let disk_blocks = host_pinned_blocks.saturating_add(disk_extension_blocks);
             let shared_beyond_device_blocks =
                 shared_cache_hits.map(|hits| hits.hits_beyond(device_blocks as u32));
-            let shared_credit_blocks =
-                shared_beyond_device_blocks.unwrap_or(0) as f64 * shared_cache_multiplier;
+            let shared_credit_blocks = shared_cache_hits.map_or(0.0, |hits| {
+                f64::from(additional_shared_hits(
+                    hits,
+                    device_blocks as u32,
+                    tiered.device.device_before_prediction.get(&worker).copied(),
+                    host_pinned_extension_blocks,
+                    disk_extension_blocks,
+                )) * shared_cache_multiplier
+            });
             let router_credit_blocks = overlap_score_credit * device_blocks as f64
                 + config.host_cache_hit_weight * host_pinned_extension_blocks as f64
                 + config.disk_cache_hit_weight * disk_extension_blocks as f64
@@ -374,6 +387,22 @@ pub fn build_overlap_scores_response(
     }
 }
 
+/// Shared pages outside both the visible GPU prefix and the confirmed local access path.
+/// Host and Disk/External extend the primary prefix even when their credit weight is zero.
+pub(super) fn additional_shared_hits(
+    hits: &SharedCacheHits,
+    device: u32,
+    device_before_prediction: Option<u32>,
+    host_extension: usize,
+    disk_extension: usize,
+) -> u32 {
+    let confirmed_end = device_before_prediction
+        .unwrap_or(device)
+        .saturating_add(saturating_u32(host_extension))
+        .saturating_add(saturating_u32(disk_extension));
+    hits.hits_beyond(device.max(confirmed_end))
+}
+
 fn saturating_u32(value: usize) -> u32 {
     u32::try_from(value).unwrap_or(u32::MAX)
 }
@@ -409,7 +438,7 @@ mod tests {
         let tiered = TieredMatchDetails {
             device: MatchDetails {
                 overlap_scores: device,
-                last_matched_hashes: Default::default(),
+                ..Default::default()
             },
             lower_tier: HashMap::from([
                 (StorageTier::HostPinned, host),
@@ -479,9 +508,81 @@ mod tests {
         assert_eq!(warm_score.host_pinned_blocks, 3);
         assert_eq!(warm_score.disk_blocks, 5);
         assert_eq!(warm_score.shared_beyond_device_blocks, Some(2));
-        assert!((warm_score.router_credit_blocks - 2.45).abs() < f64::EPSILON);
+        assert_eq!(warm_score.router_credit_blocks, 1.45);
         assert!(response.shared_cache.enabled);
         assert_eq!(response.shared_cache.total_hit_blocks, 4);
+    }
+
+    #[test]
+    fn shared_suffix_survives_local_coverage_and_request_overrides() {
+        let worker = WorkerWithDpRank::new(7, 1);
+        let mut tiered = TieredMatchDetails::default();
+        tiered.device.overlap_scores.scores.insert(worker, 4);
+        tiered.device.device_before_prediction.insert(worker, 2);
+        tiered
+            .lower_tier
+            .entry(StorageTier::HostPinned)
+            .or_default()
+            .hits
+            .insert(worker, 3);
+        let shared = SharedCacheHits::from_ranges(vec![0..2, 4..7]);
+        let config = KvRouterConfig {
+            host_cache_hit_weight: 0.0,
+            ..Default::default()
+        };
+        let override_config = RouterConfigOverride {
+            overlap_score_credit: Some(0.25),
+            shared_cache_multiplier: Some(0.75),
+            ..Default::default()
+        };
+        let response = OverlapAnalysis::new(&config, 64, &tiered).scores_response(
+            Some(&override_config),
+            8,
+            [worker],
+            true,
+            Some(&shared),
+            None,
+        );
+        let score = &response.workers[0];
+        assert_eq!(score.shared_beyond_device_blocks, Some(3));
+        assert_eq!(score.router_credit_blocks, 4.0 * 0.25 + 2.0 * 0.75);
+        for (enabled, error) in [(false, None), (true, Some("query failed".to_string()))] {
+            let response = OverlapAnalysis::new(&config, 64, &tiered).scores_response(
+                Some(&override_config),
+                8,
+                [worker],
+                enabled,
+                None,
+                error.clone(),
+            );
+            assert_eq!(response.workers[0].shared_beyond_device_blocks, None);
+            assert_eq!(response.workers[0].router_credit_blocks, 1.0);
+            assert_eq!(response.shared_cache.error, error);
+        }
+    }
+
+    #[test]
+    fn shared_boundary_saturates_and_excludes_longer_gpu_predictions() {
+        let hits = SharedCacheHits::from_ranges(vec![1..3, u32::MAX - 2..u32::MAX]);
+        assert_eq!(additional_shared_hits(&hits, 0, None, usize::MAX, 2), 0);
+        assert_eq!(additional_shared_hits(&hits, 3, Some(0), 1, 0), 2);
+    }
+
+    #[test]
+    fn scheduling_tiers_accept_legacy_payload_and_round_trip_prediction_anchors() {
+        let rank = WorkerWithDpRank::new(10, 2);
+        let mut tiers = TierOverlapBlocks::default();
+        tiers.device.insert(rank, 4);
+        tiers.host_pinned.insert(rank, 3);
+        let old = rmp_serde::to_vec(&(&tiers.device, &tiers.host_pinned, &tiers.disk)).unwrap();
+        let decoded: TierOverlapBlocks = rmp_serde::from_slice(&old).unwrap();
+        assert!(decoded.device_before_prediction.is_empty());
+        assert_eq!(decoded.host_pinned[&rank], 3);
+        tiers.device_before_prediction.insert(rank, 2);
+        let bytes = rmp_serde::to_vec(&tiers).unwrap();
+        let decoded: TierOverlapBlocks = rmp_serde::from_slice(&bytes).unwrap();
+        assert_eq!(decoded.device[&rank], 4);
+        assert_eq!(decoded.device_before_prediction[&rank], 2);
     }
 
     #[test]

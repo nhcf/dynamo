@@ -23,11 +23,6 @@ from dynamo.sglang.init_diffusion import (
 )
 from dynamo.sglang.init_embedding import init_embedding
 from dynamo.sglang.init_llm import init_decode, init_prefill
-from dynamo.sglang.init_multimodal import (
-    init_multimodal_encode_worker,
-    init_multimodal_prefill_worker,
-    init_multimodal_worker,
-)
 from dynamo.sglang.shutdown import install_graceful_shutdown
 from dynamo.sglang.snapshot import prepare_snapshot_engine
 
@@ -92,6 +87,8 @@ async def worker(argv: list[str] | None = None):
             run_deferred_handlers,
         )
     elif config.dynamo_args.multimodal_encode_worker:
+        from dynamo.sglang.init_multimodal import init_multimodal_encode_worker
+
         await init_multimodal_encode_worker(
             runtime,
             config,
@@ -100,6 +97,11 @@ async def worker(argv: list[str] | None = None):
             run_deferred_handlers,
         )
     elif config.dynamo_args.multimodal_worker:
+        from dynamo.sglang.init_multimodal import (
+            init_multimodal_prefill_worker,
+            init_multimodal_worker,
+        )
+
         if config.serving_mode != DisaggregationMode.PREFILL:
             await init_multimodal_worker(
                 runtime,

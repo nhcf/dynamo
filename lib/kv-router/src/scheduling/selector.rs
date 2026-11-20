@@ -146,26 +146,19 @@ impl DefaultWorkerSelector {
     ) -> f64 {
         let block_size_f64 = block_size as f64;
         let effective_overlap_blocks = request.effective_overlap_blocks_for(worker);
-        let has_tier_overlap_blocks = !request.overlap.tier_overlap_blocks.device.is_empty()
-            || !request.overlap.tier_overlap_blocks.host_pinned.is_empty()
-            || !request.overlap.tier_overlap_blocks.disk.is_empty();
-        let device_overlap_blocks = request
-            .overlap
-            .tier_overlap_blocks
-            .device
-            .get(&worker)
-            .copied()
-            .map(|blocks| blocks as f64)
-            .unwrap_or_else(|| {
-                if has_tier_overlap_blocks {
-                    0.0
-                } else {
-                    effective_overlap_blocks
-                }
-            });
-        // `shared_cache_hits::hits_beyond` expects an integer block count, so
-        // use the unweighted device prefix depth for this comparison.
-        let device_overlap_blocks_u32 = device_overlap_blocks.round().max(0.0) as u32;
+        let tiers = &request.overlap.tier_overlap_blocks;
+        let (device_overlap_blocks, device_depth) = if let Some(&depth) = tiers.device.get(&worker)
+        {
+            (depth as f64, u32::try_from(depth).unwrap_or(u32::MAX))
+        } else if tiers.device.is_empty() && tiers.host_pinned.is_empty() && tiers.disk.is_empty() {
+            // Legacy requests have only a weighted estimate; retain their original GPU cutoff.
+            (
+                effective_overlap_blocks,
+                effective_overlap_blocks.round().max(0.0) as u32,
+            )
+        } else {
+            (0.0, 0)
+        };
         let worker_load = request.worker_loads.get(&worker).copied();
         let raw_prefill_tokens = if request.track_prefill_tokens {
             match worker_load {
@@ -185,29 +178,19 @@ impl DefaultWorkerSelector {
             0
         } as f64;
 
-        let host_overlap_blocks = request
-            .overlap
-            .tier_overlap_blocks
-            .host_pinned
-            .get(&worker)
-            .copied()
-            .unwrap_or(0) as f64;
-        let disk_overlap_blocks = request
-            .overlap
-            .tier_overlap_blocks
-            .disk
-            .get(&worker)
-            .copied()
-            .unwrap_or(0) as f64;
-
-        // Credit shared cache hits beyond this worker's device prefix.
-        let (shared_overlap_blocks, shared_beyond) =
-            if let Some(ref shared_hits) = request.shared_cache_hits {
-                let beyond = shared_hits.hits_beyond(device_overlap_blocks_u32);
-                (weights.shared_cache_multiplier * (beyond as f64), beyond)
-            } else {
-                (0.0, 0)
-            };
+        let host_overlap_blocks = tiers.host_pinned.get(&worker).copied().unwrap_or(0);
+        let disk_overlap_blocks = tiers.disk.get(&worker).copied().unwrap_or(0);
+        let shared_beyond_local = request.shared_cache_hits.as_ref().map_or(0, |hits| {
+            super::overlap::additional_shared_hits(
+                hits,
+                device_depth,
+                tiers.device_before_prediction.get(&worker).copied(),
+                host_overlap_blocks,
+                disk_overlap_blocks,
+            )
+        });
+        let shared_overlap_blocks =
+            weights.shared_cache_multiplier * f64::from(shared_beyond_local);
 
         let raw_prefill_blocks = raw_prefill_tokens / block_size_f64;
         // Normalize backlog above the least-loaded eligible worker by this request's
@@ -227,8 +210,8 @@ impl DefaultWorkerSelector {
             };
         let effective_overlap_score_credit = weights.overlap_score_credit * overlap_credit_decay;
         let overlap_credit_blocks = effective_overlap_score_credit * device_overlap_blocks
-            + self.kv_router_config.host_cache_hit_weight * host_overlap_blocks
-            + self.kv_router_config.disk_cache_hit_weight * disk_overlap_blocks
+            + self.kv_router_config.host_cache_hit_weight * host_overlap_blocks as f64
+            + self.kv_router_config.disk_cache_hit_weight * disk_overlap_blocks as f64
             + shared_overlap_blocks;
         let worker_load = worker_load.unwrap_or_default();
         let decode_cost_blocks = worker_load.potential_decode_blocks() as f64;
@@ -274,12 +257,26 @@ impl DefaultWorkerSelector {
         // `request_id` is the same value `[ROUTING] Best` logs, and `worker_type` separates the
         // prefill-pool and decode-pool decisions that interleave into one log. Both are evaluated
         // inside the macro so they cost nothing when DEBUG is disabled.
-        if shared_beyond > 0 {
+        if let Some(shared_hits) = &request.shared_cache_hits {
             tracing::debug!(
                 request_id = request.mode.request_id().unwrap_or("-"),
                 worker_type = self.worker_type,
+                device_depth,
+                confirmed_device = tiers.device_before_prediction.get(&worker).copied().unwrap_or(device_depth),
+                host_overlap_blocks,
+                disk_overlap_blocks,
+                shared_ranges = ?shared_hits.ranges,
+                block_size,
+                isl_tokens = request.isl_tokens,
+                track_prefill = request.track_prefill_tokens,
+                cached_tokens = request.effective_cached_tokens_for(worker),
+                ?worker_load,
+                min_active_prefill_tokens,
+                host_weight = self.kv_router_config.host_cache_hit_weight,
+                disk_weight = self.kv_router_config.disk_cache_hit_weight,
+                device_weight = effective_overlap_score_credit,
                 "{formula_name} for worker_id={} dp_rank={:?} with {effective_overlap_blocks:.2} effective cached blocks, \
-                 {shared_beyond} shared blocks beyond device (multiplier={shared_cache_multiplier:.2}): {logit:.3} \
+                 {shared_beyond_local} shared blocks beyond GPU and confirmed local coverage (multiplier={shared_cache_multiplier:.2}): {logit:.3} \
                  = prefill_load_scale * adjusted_prefill_blocks + decode_blocks + active_request_cost_blocks \
                  = {prefill_load_scale:.3} * {adjusted_prefill_blocks:.3} + {decode_cost_blocks:.3} + {active_request_cost_blocks:.3} \
                  (raw_prefill_blocks: {raw_prefill_blocks:.3}, overlap_credit_blocks: {overlap_credit_blocks:.3}, \
@@ -1486,6 +1483,117 @@ mod tests {
                 .unwrap()
                 .worker,
             warm_worker
+        );
+    }
+
+    #[test]
+    fn worker_logit_counts_only_l3_pages_outside_local_tiers() {
+        let worker = WorkerWithDpRank::new(7, 1);
+        let mut request = base_request(16 * 16);
+        let tiers = &mut request.overlap.tier_overlap_blocks;
+        tiers.device.insert(worker, 2);
+        tiers.host_pinned.insert(worker, 1);
+        tiers.disk.insert(worker, 2);
+        request.shared_cache_hits = Some(SharedCacheHits::from_hits(&[true; 4]));
+        let selector = DefaultWorkerSelector::new(
+            Some(KvRouterConfig {
+                host_cache_hit_weight: 0.25,
+                disk_cache_hit_weight: 0.1,
+                ..Default::default()
+            }),
+            "test",
+        );
+        let weights = LogitWeights {
+            overlap_score_credit: 0.5,
+            overlap_score_credit_decay: 0.0,
+            prefill_load_scale: 1.0,
+            shared_cache_multiplier: 0.5,
+        };
+        assert_eq!(
+            selector.worker_logit(&request, worker, 16, 0, weights, "test"),
+            16.0 - 1.45
+        );
+    }
+
+    #[test]
+    fn overlapping_host_and_l3_do_not_outweigh_two_blocks_of_load() {
+        use crate::test_utils::SimpleWorkerConfig;
+
+        let a = WorkerWithDpRank::new(7, 0);
+        let b = WorkerWithDpRank::new(7, 1);
+        let workers = HashMap::from([(
+            7,
+            SimpleWorkerConfig {
+                data_parallel_size: 2,
+                ..Default::default()
+            },
+        )]);
+        let mut request = base_request(16 * 16);
+        request.overlap.tier_overlap_blocks.host_pinned.insert(a, 4);
+        request.shared_cache_hits = Some(SharedCacheHits::from_hits(&[true; 4]));
+        request.worker_loads =
+            worker_loads_with_active_decode(FxHashMap::from_iter([(a, 2), (b, 0)]));
+        let selector = DefaultWorkerSelector::new(
+            Some(KvRouterConfig {
+                prefill_load_scale: 1.0,
+                router_temperature: 0.0,
+                host_cache_hit_weight: 0.75,
+                shared_cache_multiplier: 0.5,
+                ..Default::default()
+            }),
+            "prefill",
+        );
+        let result = selector
+            .select_worker(&workers, &request, request.eligibility(), 16)
+            .unwrap();
+        assert_eq!(result.worker, b);
+    }
+
+    #[test]
+    fn shared_pages_follow_range_positions_and_confirmed_access_even_at_zero_weight() {
+        let worker = WorkerWithDpRank::new(7, 1);
+        let cold_rank = WorkerWithDpRank::new(7, 0);
+        let mut request = base_request(16 * 16);
+        let tiers = &mut request.overlap.tier_overlap_blocks;
+        tiers.device.insert(worker, 4);
+        tiers.device_before_prediction.insert(worker, 2);
+        tiers.host_pinned.insert(worker, 3);
+        let selector = DefaultWorkerSelector::new(
+            Some(KvRouterConfig {
+                host_cache_hit_weight: 0.0,
+                disk_cache_hit_weight: 0.0,
+                ..Default::default()
+            }),
+            "test",
+        );
+        let mut weights = LogitWeights {
+            overlap_score_credit: 0.5,
+            overlap_score_credit_decay: 0.0,
+            prefill_load_scale: 1.0,
+            shared_cache_multiplier: 0.5,
+        };
+        // Same hit count; page 5 is outside the confirmed [0,5) and predicted [0,4).
+        for (ranges, expected) in [(vec![0..2, 4..5], 0), (vec![2..3, 5..7], 2)] {
+            request.shared_cache_hits = Some(SharedCacheHits::from_ranges(ranges));
+            assert_eq!(
+                selector.worker_logit(&request, worker, 16, 0, weights, "test"),
+                14.0 - 0.5 * f64::from(expected)
+            );
+            assert_eq!(
+                selector.worker_logit(&request, cold_rank, 16, 0, weights, "test"),
+                14.5
+            );
+        }
+        weights.shared_cache_multiplier = 0.0;
+        assert_eq!(
+            selector.worker_logit(&request, worker, 16, 0, weights, "test"),
+            14.0
+        );
+        request.shared_cache_hits = None;
+        weights.shared_cache_multiplier = 0.5;
+        assert_eq!(
+            selector.worker_logit(&request, worker, 16, 0, weights, "test"),
+            14.0
         );
     }
 

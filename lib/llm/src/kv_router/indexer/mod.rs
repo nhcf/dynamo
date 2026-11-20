@@ -1038,6 +1038,63 @@ mod tests {
                 .copied(),
             Some(3)
         );
+
+        // Extend the same rank through page 4 on Host, then predict four GPU pages.
+        indexer
+            .apply_event(store_event(
+                10,
+                0,
+                3,
+                &[11, 12, 13],
+                &[14, 15],
+                StorageTier::HostPinned,
+            ))
+            .await;
+        let query: Vec<_> = (11..=16).map(LocalBlockHash).collect();
+        indexer
+            .record_routing_decision_hashes(
+                primary_worker,
+                RoutingDecisionHashes {
+                    local_hashes: query[..4].to_vec(),
+                    sequence_hashes: compute_seq_hash_for_block(&query[..4]),
+                },
+            )
+            .await
+            .unwrap();
+        flush_indexer(&indexer).await;
+        side_for_flush.flush().await;
+        for hits in [
+            indexer.find_matches_by_tier_ref(&query).await.unwrap(),
+            indexer.find_matches_by_tier(query.clone()).await.unwrap(),
+        ] {
+            assert_eq!(hits.device.overlap_scores.scores[&primary_worker], 4);
+            assert_eq!(hits.device.device_before_prediction[&primary_worker], 2);
+            assert_eq!(
+                hits.lower_tier[&StorageTier::HostPinned].hits[&primary_worker],
+                3
+            );
+            let config = dynamo_kv_router::config::KvRouterConfig {
+                overlap_score_credit: 1.0,
+                host_cache_hit_weight: 0.0,
+                shared_cache_multiplier: 0.5,
+                ..Default::default()
+            };
+            let shared = dynamo_kv_router::protocols::SharedCacheHits::from_hits(&[
+                false, false, false, false, true, true,
+            ]);
+            let scores =
+                dynamo_kv_router::scheduling::overlap::OverlapAnalysis::new(&config, 4, &hits)
+                    .scores_response(None, 6, [primary_worker], true, Some(&shared), None);
+            let row = scores
+                .workers
+                .iter()
+                .find(|r| {
+                    (r.worker_id, r.dp_rank) == (primary_worker.worker_id, primary_worker.dp_rank)
+                })
+                .unwrap();
+            assert_eq!(row.shared_beyond_device_blocks, Some(2));
+            assert_eq!(row.router_credit_blocks, 4.5);
+        }
     }
 
     #[tokio::test]

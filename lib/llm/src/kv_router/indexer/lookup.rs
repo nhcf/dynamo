@@ -320,23 +320,18 @@ impl<'a> PrimaryLookup<'a> {
 /// query against primary-only `MatchDetails` before merging side scores.
 fn merge_overlap_scores(mut primary: MatchDetails, side: OverlapScores) -> MatchDetails {
     for (worker, side_score) in side.scores {
-        primary
-            .overlap_scores
-            .scores
-            .entry(worker)
-            .and_modify(|s| {
-                if side_score > *s {
-                    *s = side_score;
-                }
-            })
-            .or_insert(side_score);
+        let depth = primary.overlap_scores.scores.entry(worker).or_default();
+        if side_score > *depth {
+            primary.device_before_prediction.insert(worker, *depth);
+            *depth = side_score;
+        }
     }
     primary
 }
 
 /// Query the predict-on-route side indexer (if present) and merge its scores
-/// into the primary device match details. Side scores never feed lower-tier
-/// or shared-cache scoring. On query error, log a warning and return `primary`
+/// into the primary device match details. Side scores never seed lower-tier walks. The visible device
+/// depth still excludes shared hits inside the predicted GPU prefix. On query error, log a warning and return `primary`
 /// unchanged so the caller still has a usable scheduling signal. See
 /// [`merge_overlap_scores`] for the lockstep caveat on the returned shape.
 ///
@@ -363,5 +358,39 @@ async fn merge_side_or_warn(
             );
             primary
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dynamo_kv_router::indexer::WireTieredMatchDetails;
+    use dynamo_kv_router::protocols::{StorageTier, WorkerWithDpRank};
+
+    #[test]
+    fn remote_primary_preserves_lower_tier_origin_before_prediction() {
+        let rank = WorkerWithDpRank::new(8, 1);
+        let mut primary = TieredMatchDetails::default();
+        primary.device.overlap_scores.scores.insert(rank, 2);
+        primary
+            .lower_tier
+            .entry(StorageTier::HostPinned)
+            .or_default()
+            .hits
+            .insert(rank, 3);
+        let json = serde_json::to_vec(&WireTieredMatchDetails::from(&primary)).unwrap();
+        let mut received: TieredMatchDetails =
+            serde_json::from_slice::<WireTieredMatchDetails>(&json)
+                .unwrap()
+                .into();
+        let mut predicted = OverlapScores::new();
+        predicted.scores.insert(rank, 4);
+        received.device = merge_overlap_scores(received.device, predicted);
+        let tiers = dynamo_kv_router::scheduling::overlap::tier_overlap_blocks_from_tiered_matches(
+            &received,
+        );
+        assert_eq!(tiers.device[&rank], 4);
+        assert_eq!(tiers.device_before_prediction[&rank], 2);
+        assert_eq!(tiers.host_pinned[&rank], 3);
     }
 }

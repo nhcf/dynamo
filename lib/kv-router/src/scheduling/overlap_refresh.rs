@@ -214,6 +214,7 @@ mod tests {
             Ok(TieredMatchDetails {
                 device: MatchDetails {
                     overlap_scores: scores,
+                    device_before_prediction: [(worker, 1)].into_iter().collect(),
                     ..Default::default()
                 },
                 lower_tier: HashMap::new(),
@@ -293,6 +294,10 @@ mod tests {
         assert_eq!(calls.load(Ordering::Relaxed), 0);
         let refreshed = refresher.refresh(&[LocalBlockHash(1)]).await.unwrap();
         assert_eq!(refreshed.tier_overlap_blocks.device[&worker], 2);
+        assert_eq!(
+            refreshed.tier_overlap_blocks.device_before_prediction[&worker],
+            1
+        );
         assert_eq!(refreshed.effective_cached_tokens[&worker], 32);
 
         let failing = TieredOverlapRefresher::new(

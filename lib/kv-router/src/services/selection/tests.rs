@@ -422,7 +422,7 @@ fn overlap_scores_response_honors_override_and_includes_python_shape_fields() {
     let mut tiered = TieredMatchDetails {
         device: MatchDetails {
             overlap_scores: device_scores,
-            last_matched_hashes: Default::default(),
+            ..Default::default()
         },
         lower_tier: Default::default(),
     };

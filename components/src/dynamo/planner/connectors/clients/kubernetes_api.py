@@ -36,7 +36,76 @@ DYNAMO_API_VERSION = "v1beta1"
 DYNAMO_WORKER_METADATA_API_VERSION = "v1alpha1"
 DGD_PLURAL = "dynamographdeployments"
 DGDSA_PLURAL = "dynamographdeploymentscalingadapters"
+
+# NanHu Infer owns the graph object on this platform. The planner keeps its
+# Dynamo-shaped view of the graph internally (v1beta1 DGD: spec.components as a
+# list, status.components keyed by name) and adapts the InferGraphDeployment
+# into that shape at the API boundary, so nothing above this class changes.
+NANHU_API_GROUP = "nanhu-tech.io"
+NANHU_API_VERSION = "v1alpha1"
+IGD_PLURAL = "infergraphdeployments"
+IGDSA_PLURAL = "infergraphscalingadapters"
+
 JSON_PATCH_CONTENT_TYPE = "application/json-patch+json"
+
+
+def igd_as_dgd(igd: dict) -> dict:
+    """Present an InferGraphDeployment the way the rest of the planner expects.
+
+    spec.replicaSpecs is a map and status.components is a list of one-key maps;
+    the Dynamo v1beta1 view wants a spec.components list and a status.components
+    map. Components keep their original names because the scaling adapter is
+    named after them (<igd>-<component>) and the planner writes into that name.
+
+    The IGD declares a component flatly (image, commands, args, env on the
+    ReplicaSpec) while the runtime reads them from podTemplate.spec.containers;
+    the container is rebuilt here so model discovery and arg parsing keep
+    working without teaching the rest of the planner about a second schema.
+    """
+    spec = dict(igd.get("spec") or {})
+    components = []
+    for name, replica_spec in (spec.get("replicaSpecs") or {}).items():
+        if not replica_spec:
+            continue
+        component = dict(replica_spec)
+        # The runtime calls the role "type"; the IGD calls it "replicaType".
+        component["name"] = name
+        component["type"] = component.pop("replicaType", "worker")
+        component["replicas"] = component.get("replicas") or 1
+        component["podTemplate"] = {
+            "spec": {"containers": [_main_container_from_replica_spec(component)]}
+        }
+        components.append(component)
+
+    status = dict(igd.get("status") or {})
+    flat_status: dict = {}
+    for group in status.get("components") or []:
+        if isinstance(group, dict):
+            flat_status.update(group)
+    status["components"] = flat_status
+
+    return {
+        "metadata": igd.get("metadata") or {},
+        "spec": {**spec, "components": components},
+        "status": status,
+    }
+
+
+def _first(a: list) -> list:
+    return a[0] if a else []
+
+
+def _main_container_from_replica_spec(component: dict) -> dict:
+    """Build the v1beta1 "main" container from a flat IGD ReplicaSpec."""
+    return {
+        "name": "main",
+        "image": component.get("image", ""),
+        "command": _first(component.get("commands") or []),
+        "args": _first(component.get("args") or []),
+        "env": component.get("env") or [],
+        "ports": component.get("ports") or [],
+        "resources": component.get("resources") or {},
+    }
 
 
 def get_current_k8s_namespace() -> str:
@@ -61,24 +130,29 @@ class KubernetesAPI:
         self.current_namespace = k8s_namespace or get_current_k8s_namespace()
 
     def _get_graph_deployment_from_name(self, graph_deployment_name: str) -> dict:
-        """Get the graph deployment from the dynamo graph deployment name"""
-        return self.custom_api.get_namespaced_custom_object(
-            group=NVIDIA_API_GROUP,
-            version=DYNAMO_API_VERSION,
+        """Get the graph deployment from the InferGraphDeployment name.
+
+        The IGD is adapted to the Dynamo v1beta1 shape so every caller above
+        this method keeps working unchanged.
+        """
+        igd = self.custom_api.get_namespaced_custom_object(
+            group=NANHU_API_GROUP,
+            version=NANHU_API_VERSION,
             namespace=self.current_namespace,
-            plural=DGD_PLURAL,
+            plural=IGD_PLURAL,
             name=graph_deployment_name,
         )
+        return igd_as_dgd(igd)
 
     def list_graph_deployments(self) -> list[dict]:
-        """List all DynamoGraphDeployments in the current namespace."""
+        """List all InferGraphDeployments in the current namespace."""
         result = self.custom_api.list_namespaced_custom_object(
-            group=NVIDIA_API_GROUP,
-            version=DYNAMO_API_VERSION,
+            group=NANHU_API_GROUP,
+            version=NANHU_API_VERSION,
             namespace=self.current_namespace,
-            plural=DGD_PLURAL,
+            plural=IGD_PLURAL,
         )
-        return result.get("items", [])
+        return [igd_as_dgd(item) for item in result.get("items", [])]
 
     def get_graph_deployment(self, graph_deployment_name: str) -> dict:
         """
@@ -104,38 +178,64 @@ class KubernetesAPI:
         self, graph_deployment_name: str, service_name: str, replicas: int
     ) -> None:
         """
-        Update replicas for a component using Scale subresource when DGDSA exists.
-        Falls back to a direct DGD patch when the component does not have a DGDSA.
+        Update replicas for a component using the IGDSA Scale subresource when
+        one exists. Falls back to writing replicaSpecs directly on the IGD when
+        the component was not opted into adapter-managed scaling.
 
         Args:
-            graph_deployment_name: Name of the DynamoGraphDeployment
-            service_name: Name of the component in DGD.spec.components
+            graph_deployment_name: Name of the InferGraphDeployment
+            service_name: Name of the component in spec.replicaSpecs
             replicas: Desired number of replicas
         """
-        # DGDSA naming convention: <dgd-name>-<lowercase-service-name>
-        adapter_name = f"{graph_deployment_name}-{service_name.lower()}"
+        # IGDSA naming convention: <igd-name>-<component-name>, built verbatim
+        # by the operator. No case folding: component names are already
+        # lowercase, and lowercasing would miss an adapter rather than find one.
+        adapter_name = f"{graph_deployment_name}-{service_name}"
 
         try:
-            # Try to scale via DGDSA Scale subresource
+            # Try to scale via IGDSA Scale subresource
             self.custom_api.patch_namespaced_custom_object_scale(
-                group=NVIDIA_API_GROUP,
-                version=DYNAMO_API_VERSION,
+                group=NANHU_API_GROUP,
+                version=NANHU_API_VERSION,
                 namespace=self.current_namespace,
-                plural=DGDSA_PLURAL,
+                plural=IGDSA_PLURAL,
                 name=adapter_name,
                 body={"spec": {"replicas": replicas}},
             )
-            logger.info(f"Scaled DGDSA {adapter_name} to {replicas} replicas")
+            logger.info(f"Scaled IGDSA {adapter_name} to {replicas} replicas")
 
         except client.ApiException as e:
             if e.status == 404:
-                # DGDSA doesn't exist - fall back to a direct DGD patch.
+                # No adapter for this component - write the field the operator
+                # would otherwise take from the adapter.
                 logger.info(
-                    f"DGDSA {adapter_name} not found, falling back to DGD update"
+                    f"IGDSA {adapter_name} not found, falling back to IGD update"
                 )
-                self._update_dgd_replicas(graph_deployment_name, service_name, replicas)
+                self._patch_igd_replicas(graph_deployment_name, service_name, replicas)
             else:
                 raise
+
+    def _patch_igd_replicas(
+        self, graph_deployment_name: str, service_name: str, replicas: int
+    ) -> None:
+        """Merge-patch one component's replicas on the IGD itself.
+
+        A merge patch keeps every other field of that component intact, which
+        the RFC 6902 patch used for the Dynamo object could not: the IGD stores
+        components in a map, not in an indexed list.
+        """
+        self.custom_api.patch_namespaced_custom_object(
+            group=NANHU_API_GROUP,
+            version=NANHU_API_VERSION,
+            namespace=self.current_namespace,
+            plural=IGD_PLURAL,
+            name=graph_deployment_name,
+            body={"spec": {"replicaSpecs": {service_name: {"replicas": replicas}}}},
+        )
+        logger.info(
+            f"Updated IGD {graph_deployment_name} component {service_name} "
+            f"to {replicas} replicas"
+        )
 
     def _update_dgd_replicas(
         self, graph_deployment_name: str, service_name: str, replicas: int

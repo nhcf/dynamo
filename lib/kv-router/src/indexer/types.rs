@@ -356,6 +356,9 @@ impl dynamo_runtime::protocols::maybe_error::MaybeError for IndexerRecordRouting
 pub struct MatchDetails {
     /// Existing overlap scores used by scheduling.
     pub overlap_scores: OverlapScores,
+    /// Primary prefix for ranks whose published device depth was raised by prediction.
+    /// Remote indexers return primary scores; the router records this at the local merge.
+    pub device_before_prediction: FxHashMap<WorkerWithDpRank, u32>,
     /// Last matched device sequence hash per worker, used to seed lower-tier queries.
     pub last_matched_hashes: FxHashMap<WorkerWithDpRank, ExternalSequenceBlockHash>,
 }
