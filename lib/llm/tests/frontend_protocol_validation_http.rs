@@ -504,3 +504,58 @@ async fn tool_name_limit_is_shared_across_protocols() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+async fn top_level_enable_thinking_is_accepted_and_forwarded_to_engine() {
+    temp_env::async_with_vars(BASE_ENV, async {
+        let script = load_agent_fixture("text.sse").await.unwrap();
+        let svc = HarnessService::start([script]).await;
+
+        let response = post_json(
+            &svc,
+            "/v1/chat/completions",
+            json!({
+                "model": MODEL,
+                "messages": [{"role": "user", "content": "ping"}],
+                "enable_thinking": false
+            }),
+        )
+        .await;
+        assert_eq!(response.status(), reqwest::StatusCode::OK);
+
+        let requests = svc.engine.take_requests().await;
+        assert_eq!(requests.len(), 1);
+        let args = requests[0]
+            .chat_template_args
+            .as_ref()
+            .expect("chat_template_args should reach the engine");
+        assert_eq!(args.get("enable_thinking"), Some(&json!(false)));
+        assert!(
+            !requests[0]
+                .unsupported_fields
+                .contains_key("enable_thinking")
+        );
+
+        let response = post_json(
+            &svc,
+            "/v1/chat/completions",
+            json!({
+                "model": MODEL,
+                "messages": [{"role": "user", "content": "ping"}],
+                "enable_thinking": "false"
+            }),
+        )
+        .await;
+        assert_openai_error(
+            response,
+            ExpectedError::Validation,
+            "`enable_thinking` must be a boolean",
+        )
+        .await;
+
+        assert!(svc.engine.take_requests().await.is_empty());
+        svc.shutdown().await;
+    })
+    .await;
+}

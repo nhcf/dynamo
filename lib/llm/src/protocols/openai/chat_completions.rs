@@ -130,6 +130,11 @@ pub struct NvCreateChatCompletionRequest {
 impl NvCreateChatCompletionRequest {
     /// Normalize OpenAI-style DS-V4 reasoning controls into the template kwargs
     /// consumed by the SGLang/DeepSeek-V4 prompt formatter.
+    ///
+    /// Also folds the bare top-level reasoning-control parameters that are
+    /// conventional in the vLLM / SGLang ecosystem (currently
+    /// `enable_thinking`) into `chat_template_args`, so future bare parameters
+    /// can be added here with the same precedence rules.
     pub fn normalize_reasoning_template_args(&mut self) -> anyhow::Result<()> {
         let thinking_mode = self
             .thinking
@@ -142,8 +147,29 @@ impl NvCreateChatCompletionRequest {
             .reasoning_effort
             .as_ref()
             .and_then(|effort| serde_json::to_value(effort).ok());
+        // vLLM / SGLang clients send `enable_thinking` at the top level. It is
+        // captured by `unsupported_fields`, so remove it here (before
+        // validation) and fold it into `chat_template_args`; `null` is treated
+        // as "not provided", any non-boolean value is rejected.
+        let top_level_enable_thinking = self
+            .unsupported_fields
+            .remove("enable_thinking")
+            .map(|value| {
+                if value.is_null() {
+                    Ok(None)
+                } else if let Some(enabled) = value.as_bool() {
+                    Ok(Some(enabled))
+                } else {
+                    anyhow::bail!("`enable_thinking` must be a boolean")
+                }
+            })
+            .transpose()?
+            .flatten();
 
-        if thinking_mode.is_none() && reasoning_effort.is_none() {
+        if thinking_mode.is_none()
+            && reasoning_effort.is_none()
+            && top_level_enable_thinking.is_none()
+        {
             return Ok(());
         }
 
@@ -181,6 +207,10 @@ impl NvCreateChatCompletionRequest {
             args.entry("enable_thinking".to_string())
                 .or_insert_with(|| serde_json::Value::Bool(effort.as_str() != Some("none")));
             args.insert("reasoning_effort".to_string(), effort);
+        }
+        if let Some(enabled) = top_level_enable_thinking {
+            args.entry("enable_thinking".to_string())
+                .or_insert_with(|| serde_json::Value::Bool(enabled));
         }
 
         // The raw `thinking` payload has been folded into `chat_template_args`;
@@ -1362,5 +1392,166 @@ mod tests {
                 serde_json::from_value(json_str).expect("Failed to deserialize request");
             assert!(request.normalize_reasoning_template_args().is_err());
         }
+    }
+
+    #[test]
+    fn test_top_level_enable_thinking_normalizes_to_template_args() {
+        let mut request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "deepseek-ai/DeepSeek-V4-Pro",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "enable_thinking": false
+        }))
+        .expect("request should deserialize");
+
+        assert_eq!(
+            request.unsupported_fields.get("enable_thinking"),
+            Some(&json!(false))
+        );
+
+        request
+            .normalize_reasoning_template_args()
+            .expect("top-level enable_thinking should normalize");
+
+        let args = request
+            .chat_template_args
+            .as_ref()
+            .expect("chat_template_args should be populated");
+        assert_eq!(args.get("enable_thinking"), Some(&json!(false)));
+        assert!(!request.unsupported_fields.contains_key("enable_thinking"));
+        ValidateRequest::validate(&request).expect("normalized request must validate");
+    }
+
+    #[test]
+    fn test_top_level_enable_thinking_true() {
+        let mut request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "deepseek-ai/DeepSeek-V4-Pro",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "enable_thinking": true
+        }))
+        .expect("request should deserialize");
+
+        request
+            .normalize_reasoning_template_args()
+            .expect("top-level enable_thinking should normalize");
+
+        let args = request
+            .chat_template_args
+            .as_ref()
+            .expect("chat_template_args should be populated");
+        assert_eq!(args.get("enable_thinking"), Some(&json!(true)));
+    }
+
+    #[test]
+    fn test_top_level_enable_thinking_does_not_override_explicit_template_args() {
+        let mut request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "deepseek-ai/DeepSeek-V4-Pro",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "chat_template_args": {"enable_thinking": true},
+            "enable_thinking": false
+        }))
+        .expect("request should deserialize");
+
+        request
+            .normalize_reasoning_template_args()
+            .expect("top-level enable_thinking should normalize");
+
+        let args = request
+            .chat_template_args
+            .as_ref()
+            .expect("chat_template_args should be populated");
+        assert_eq!(args.get("enable_thinking"), Some(&json!(true)));
+        assert!(!request.unsupported_fields.contains_key("enable_thinking"));
+    }
+
+    #[test]
+    fn test_top_level_enable_thinking_precedence_with_thinking() {
+        let mut request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "deepseek-ai/DeepSeek-V4-Pro",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "thinking": {"type": "disabled"},
+            "enable_thinking": true
+        }))
+        .expect("request should deserialize");
+
+        request
+            .normalize_reasoning_template_args()
+            .expect("request should normalize");
+
+        let args = request
+            .chat_template_args
+            .as_ref()
+            .expect("chat_template_args should be populated");
+        assert_eq!(args.get("enable_thinking"), Some(&json!(false)));
+        assert_eq!(args.get("thinking"), Some(&json!(false)));
+        assert_eq!(args.get("thinking_mode"), Some(&json!("disabled")));
+        assert!(!request.unsupported_fields.contains_key("enable_thinking"));
+    }
+
+    #[test]
+    fn test_top_level_enable_thinking_non_bool_is_rejected() {
+        for invalid_value in [json!("notabool"), json!(1), json!({}), json!([])] {
+            let mut request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+                "model": "deepseek-ai/DeepSeek-V4-Pro",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "enable_thinking": invalid_value
+            }))
+            .expect("request should deserialize");
+
+            let error = request
+                .normalize_reasoning_template_args()
+                .expect_err("non-boolean enable_thinking must be rejected");
+            assert!(
+                error
+                    .to_string()
+                    .contains("`enable_thinking` must be a boolean"),
+                "unexpected error: {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_top_level_enable_thinking_null_is_ignored() {
+        let mut request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "deepseek-ai/DeepSeek-V4-Pro",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "enable_thinking": null
+        }))
+        .expect("request should deserialize");
+
+        request
+            .normalize_reasoning_template_args()
+            .expect("null enable_thinking should be ignored");
+
+        if let Some(args) = request.chat_template_args.as_ref() {
+            assert_eq!(args.get("enable_thinking"), None);
+        }
+        assert!(!request.unsupported_fields.contains_key("enable_thinking"));
+        ValidateRequest::validate(&request).expect("normalized request must validate");
+    }
+
+    #[test]
+    fn test_top_level_enable_thinking_removed_from_unsupported_fields() {
+        let mut request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "deepseek-ai/DeepSeek-V4-Pro",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "enable_thinking": false
+        }))
+        .expect("request should deserialize");
+
+        request
+            .normalize_reasoning_template_args()
+            .expect("top-level enable_thinking should normalize");
+        assert!(request.unsupported_fields.is_empty());
+
+        let args_after_first = request
+            .chat_template_args
+            .clone()
+            .expect("chat_template_args should be populated");
+
+        request
+            .normalize_reasoning_template_args()
+            .expect("normalization must be idempotent");
+        assert_eq!(request.chat_template_args, Some(args_after_first));
+        assert!(request.unsupported_fields.is_empty());
     }
 }

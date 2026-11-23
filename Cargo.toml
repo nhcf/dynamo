@@ -60,7 +60,7 @@ keywords = ["llm", "genai", "inference", "nvidia", "distributed"]
 dynamo-runtime = { path = "lib/runtime", version = "1.4.2" }
 dynamo-llm = { path = "lib/llm", version = "1.4.2" }
 dynamo-rl = { path = "lib/rl", version = "1.4.2" }
-dynamo-tokenizers = { version = "=1.5.4" }
+dynamo-tokenizers = { version = "=3.1.3" }
 dynamo-renderer = { version = "=4.0.0" }
 dynamo-tokens = { path = "lib/tokens", version = "1.4.2" }
 dynamo-truthy = { path = "lib/truthy", version = "1.4.2" }
