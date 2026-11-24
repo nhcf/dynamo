@@ -25,7 +25,7 @@ SHANGHAI = ZoneInfo("Asia/Shanghai")
 NANOSECONDS = 10**9
 HOUR = 3600 * NANOSECONDS
 PAGE_SIZE = 5000
-HTTP_2XX_TARGET = 0.995
+REQUEST_AVAILABILITY_TARGET = 0.995
 LATENCY_TARGET = 0.95
 PASSED = "达标"
 FAILED = "未达标"
@@ -307,7 +307,51 @@ def metric_badge(result):
     return f'<div class="metric-status">{status_badge(result["status"])}{explanation}</div>'
 
 
-def render(data):
+def http_class_count(status_counts, prefix):
+    return sum(
+        count
+        for code, count in status_counts.items()
+        if len(code) == 3 and code.startswith(prefix)
+    )
+
+
+def request_availability(status_counts):
+    failures = http_class_count(status_counts, "5")
+    available = http_class_count(status_counts, "2") + http_class_count(
+        status_counts, "3"
+    )
+    valid_requests = available + failures
+    return {
+        "numerator": available,
+        "denominator": valid_requests,
+        "failures_5xx": failures,
+        "ratio": available / valid_requests if valid_requests else None,
+    }
+
+
+def http_rate_cell(count, entries):
+    if not entries:
+        return "—<small>无记录</small>"
+    return f"<strong>{count / entries:.2%}</strong><small>{count:,} / {entries:,} 条</small>"
+
+
+def rate_limit_rows(rows):
+    affected = [
+        (row["model"], row["http_status"]["429"], row["logs"]["entries"])
+        for row in rows
+        if row["http_status"].get("429")
+    ]
+    affected.sort(key=lambda item: (-item[1], item[0]))
+    if not affected:
+        return '<tr><td colspan="4">本期无匹配的 429 日志</td></tr>'
+    return "".join(
+        f'<tr><th scope="row">{escape(model)}</th><td>{count:,}</td>'
+        f'<td>{entries:,}</td><td class="http-429"><strong>{count / entries:.2%}</strong></td></tr>'
+        for model, count, entries in affected
+    )
+
+
+def render(data, insights=""):
     """Render and verify one standalone HTML report."""
     if data["gateway_key_exclusion_applied"]:
         raise ValueError(
@@ -320,19 +364,22 @@ def render(data):
         model = escape(row["model"])
         logs, http = row["logs"], row["http_status"]
         entries = logs.get("entries", 0)
-        http_ok = sum(
-            value
-            for code, value in http.items()
-            if len(code) == 3 and code.startswith("2")
-        )
+        http_ok = http_class_count(http, "2")
         http_ratio = http_ok / entries if entries else None
-        http_cell = (
-            f"<strong>{http_ratio:.2%}</strong><small>{http_ok:,} / {entries:,} 条</small>"
-            if entries
-            else "—<small>无记录</small>"
+        availability = request_availability(http)
+        availability_cell = http_rate_cell(
+            availability["numerator"], availability["denominator"]
         )
+        if availability["denominator"]:
+            availability_cell += (
+                f'<small>5xx {availability["failures_5xx"]:,} 条</small>'
+            )
         limit = 200 if row["model"] == "Kimi-K3" else 50
-        metrics = {"http_2xx": metric_result(http_ratio, HTTP_2XX_TARGET)}
+        metrics = {
+            "request_availability": metric_result(
+                availability["ratio"], REQUEST_AVAILABILITY_TARGET
+            )
+        }
         latency_proportions = {}
         for metric in ("ttft", "tpot"):
             values = row[f"{metric}_estimate"]
@@ -347,7 +394,7 @@ def render(data):
             latency_proportions[metric] = ratio
         overall = overall_result(metrics)
         row["sla"] = {
-            "http_2xx_target": HTTP_2XX_TARGET,
+            "request_availability_target": REQUEST_AVAILABILITY_TARGET,
             "ttft_target_proportion": LATENCY_TARGET,
             "ttft_threshold_ms": 5000,
             "tpot_target_proportion": LATENCY_TARGET,
@@ -362,10 +409,11 @@ def render(data):
             "denominator": entries,
             "ratio": http_ratio,
         }
+        row["request_availability"] = availability
         rows.append(
             f"""<tr>
     <th scope="row">{model}</th>
-    <td>{http_cell}{metric_badge(metrics["http_2xx"])}</td>
+    <td>{availability_cell}{metric_badge(metrics["request_availability"])}</td>
     <td>{estimate(row["ttft_estimate"])}<small>≤ 5 s</small>{metric_badge(metrics["ttft"])}</td>
     <td>{estimate(row["tpot_estimate"])}<small>≤ {limit} ms/token</small>{metric_badge(metrics["tpot"])}</td>
     <td>{status_badge(overall)}</td></tr>"""
@@ -389,18 +437,19 @@ def render(data):
     template = Template(
         Path(__file__).with_name("report-template.html").read_text(encoding="utf-8")
     )
-    start, end, generated = (
+    start, end = (
         datetime.fromisoformat(data[key]).astimezone(SHANGHAI)
-        for key in ("start", "end", "generated_at")
+        for key in ("start", "end")
     )
     html = template.substitute(
         business_date=data["business_date"],
         window_start=start.strftime("%Y-%m-%d %H:%M"),
         window_end=end.strftime("%Y-%m-%d %H:%M"),
-        generated_at=generated.strftime("%Y-%m-%d %H:%M"),
-        http_2xx_target=f"{HTTP_2XX_TARGET:.1%}",
+        request_availability_target=f"{REQUEST_AVAILABILITY_TARGET:.1%}",
         rows="".join(rows),
+        rate_limits=rate_limit_rows(data["rows"]),
         audit="".join(audit),
+        insights=insights,
         payload=payload,
     )
     parser = InlineReportParser()

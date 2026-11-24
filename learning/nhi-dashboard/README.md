@@ -12,7 +12,7 @@ SPDX-License-Identifier: Apache-2.0
 | 文件 | 线上 UID | 标题 | 快照版本 | 默认刷新 |
 |---|---|---|---|---|
 | [zero2x-dashboard.json](zero2x-dashboard.json) | `fg3uoxfcwc45ce` | 实验室zero2x科研模型面板 | 11 | 30 秒 |
-| [research-model-service-dashboard.json](research-model-service-dashboard.json) | `sglang-model-service-waterlevel` | 实验室科研模型服务水位 | 48 | 5 分钟 |
+| [research-model-service-dashboard.json](research-model-service-dashboard.json) | `sglang-model-service-waterlevel` | 实验室科研模型服务水位 | 51（含水位改动） | 5 分钟 |
 
 访问地址：
 
@@ -27,7 +27,7 @@ URL 的 `refresh=30s` 会覆盖看板默认刷新间隔。科研模型看板应�
 | 数据源 | UID | 用途 |
 |---|---|---|
 | `victoriametrics` | `34afaf30-b0a7-4abb-939a-5df0ef66b219` | 有效并发、水位、延迟直方图 |
-| `mysql-odre` | `dfc3nh9bezi0wc` | zero2x 的服务映射和并发容量 |
+| `mysql-odre` | `dfc3nh9bezi0wc` | 服务映射和并发容量 |
 | `nhi-higress-loki` | `fg3rvth6eufi8d` | 网关访问日志和 HTTP 429 统计 |
 
 zero2x 看板仅展示 `business_id=nhi-zero2x` 的两个模型，服务和容量来自
@@ -40,7 +40,11 @@ zero2x 看板仅展示 `business_id=nhi-zero2x` 的两个模型，服务和容�
 | 021SFM-236B-Thinking | `021-reason-a100` | 80 |
 | 021SFM-32B-Thinking | `021-toolcall-reason-32b` | 40 |
 
-科研模型看板保留六个模型，各自使用顶部容量输入项，不包含 zero2x 专属服务。
+科研模型看板按模型名称和引擎，从 `llm_service_business` 查询
+`business_id=nhi-public`、`status=active` 的服务。有效并发按这些服务的
+`jobname` 取数，容量为对应 `concurrency_capacity` 合计。顶部容量卡片和模型服务概览
+均只读展示该值，当前水位百分比位于容量卡片下方。
+任一服务的容量缺失或非正数时，该模型的水位显示暂无数据。
 以下路由映射用于访问统计；路由标签在查询中转换为展示名称，避免图例显示 `litellm` 名称。
 
 | 展示名称 | Loki `route_name` |

@@ -22,8 +22,8 @@ maas-dev 的 Higress 路由白名单不代表 maas-prod 也已启用。
 业务请求：客户端 → Higress → 正式或测试 LiteLLM → 模型服务
 
 Trace：  Higress ── OTLP/gRPC ──┐
-                              ├→ otel-collector.nhi.svc.cluster.local:4317
-         LiteLLM ─ OTLP/gRPC ──┘  → K8s 信息补充、属性处理、批处理
+                                ├→ otel-collector.nhi.svc.cluster.local:4317
+         LiteLLM ─ OTLP/gRPC  ──┘  → K8s 信息补充、属性处理、批处理
                                   → INFO 数量汇总
 ```
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>科研模型 SLA 日报 · ${business_date}</title>
+<title>实验室科研模型服务</title>
 <style>
 :root {
   color-scheme: light;
@@ -27,7 +27,7 @@ h2 { margin: 0 0 10px; font-size: 1.1rem; }
 .notice { background: #eaf1ff; border-left: 3px solid #4a73b7; margin: 16px 0; padding: 10px 14px; font-size: .88rem; }
 p, li { line-height: 1.6; }
 .table { overflow-x: auto; background: #fff; border: 1px solid #dbe3ef; border-radius: 10px; }
-table { width: 100%; min-width: 700px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+table { width: 100%; min-width: 790px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th, td { text-align: right; vertical-align: middle; padding: 13px 14px; border-bottom: 1px solid #e3e9f2; }
 th:first-child { text-align: left; }
 thead { background: #eaf0f8; color: #243d60; }
@@ -36,6 +36,9 @@ tbody th { white-space: nowrap; font-size: .88rem; font-weight: 650; }
 tbody tr:nth-child(even) { background: #f8fafd; }
 tbody tr:last-child > * { border-bottom: 0; }
 td strong { font-size: 1.05rem; font-weight: 680; }
+.http-429 { background: #fff4dd; color: #705014; }
+.rate-limit-table table { min-width: 430px; }
+.rate-limit-table td[colspan] { text-align: left; }
 small { display: block; margin-top: 3px; color: #4e627c; font-size: .74rem; font-weight: 500; }
 .status { display: inline-block; padding: 3px 9px; border-radius: 99px; white-space: nowrap; font-size: .77rem; }
 .status-pass { background: #e4f5ea; color: #175936; }
@@ -45,6 +48,7 @@ small { display: block; margin-top: 3px; color: #4e627c; font-size: .74rem; font
 .notes { background: #fff; border: 1px solid #dbe3ef; border-radius: 10px; padding: 15px 18px; }
 .notes ul { margin: 0; padding-left: 20px; color: #394e69; font-size: .87rem; }
 .notes li + li { margin-top: 4px; }
+.insight-model-fail { color: #9d2424; }
 details { margin-top: 16px; }
 summary { cursor: pointer; color: #224e87; font-size: .88rem; font-weight: 650; }
 details .table { margin-top: 10px; }
@@ -62,21 +66,29 @@ details table { min-width: 980px; font-size: .8rem; }
 </head>
 <body><main>
   <header class="report-header">
-    <h1>科研模型 SLA 日报</h1>
+    <h1>实验室科研模型服务</h1>
     <dl class="metadata">
       <div><dt>统计区间（北京时间）</dt><dd><time>${window_start}</time> 至 <time>${window_end}</time></dd></div>
-      <div><dt>生成时间（北京时间）</dt><dd><time>${generated_at}</time></dd></div>
     </dl>
   </header>
+  ${insights}
   <section aria-labelledby="model-metrics">
   <h2 id="model-metrics">模型指标</h2>
-  <p class="notice">任一有效指标低于目标，综合判定为未达标。三项均达到目标时判为达标。其余情况暂无法判定。</p>
+  <p class="notice">SLA 按请求可用率、TTFT 和 TPOT 三项判定。任一项未达标则综合未达标，三项均达标则综合达标，其余情况暂无法判定。</p>
   <div class="table"><table>
-    <thead><tr><th scope="col">模型</th><th scope="col">请求达成率<small>≥ ${http_2xx_target}</small></th>
+    <thead><tr><th scope="col">模型</th><th scope="col">请求可用率<small>≥ ${request_availability_target}</small></th>
     <th scope="col">流式请求TTFT达成率<small>≥ 95%</small></th>
     <th scope="col">流式请求TPOT达成率<small>≥ 95%</small></th>
     <th scope="col">SLA</th></tr></thead>
     <tbody>${rows}</tbody>
+  </table></div>
+  </section>
+  <section aria-labelledby="rate-limit-metrics">
+  <h2 id="rate-limit-metrics">429 响应明细</h2>
+  <div class="table rate-limit-table"><table>
+    <thead><tr><th scope="col">模型</th><th scope="col">429 条目数</th><th scope="col">匹配日志总数</th>
+    <th scope="col" class="http-429">429 比率</th></tr></thead>
+    <tbody>${rate_limits}</tbody>
   </table></div>
   </section>
   <section class="notes" aria-labelledby="report-method">
@@ -86,7 +98,7 @@ details table { min-width: 980px; font-size: .8rem; }
     <li>TTFT 有效请求为具有有效首段计时的网关流式请求。TTFT 采用首次流式响应体回调耗时。</li>
     <li>TPOT 有效请求为 HTTP 2xx、无网关异常标记、有有效首段和流关闭计时、且至少输出两个 Token 的流式请求。TPOT 将流关闭耗时减去首段耗时，再除以输出 Token 数减一。总耗时可能包含尾部 usage 和结束帧。</li>
     <li>两项延迟按外部请求 ID 去重。缺少对应指标所需的有效计时或 Token 数据的请求，从该指标的分子和分母中排除。无有效样本时，该指标暂无法判定。</li>
-    <li>请求达成率采用网关 HTTP 2xx 比例，计算方式为同范围内的 2xx 日志条目数除以全部匹配日志条目数。HTTP 200 后断流仍按 2xx 状态计入。</li>
+    <li>请求可用率为 1 减去全天 5xx 条目数除以有效请求条目数。有效请求取 2xx、3xx、5xx，排除 4xx 和状态码 0 等未归类记录。429 比率为 429 条目数除以全部匹配网关日志条目数。</li>
   </ul>
   </section>
   <details><summary>展开取数审计</summary>

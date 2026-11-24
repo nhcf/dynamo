@@ -17,7 +17,6 @@ from pathlib import Path
 
 MAX_BYTES = 20 * 1024 * 1024
 UPLOAD_PATH = "/apis/control-zjic/reportSquare/upload"
-VIEW_PATH = "/control/reportSquare/read"
 
 
 def validate_origin(value):
@@ -52,14 +51,21 @@ class RejectRedirects(urllib.request.HTTPRedirectHandler):
         )
 
 
-def manifest_for(block_id, report_date, file_name, entry_file, content):
-    return {
+def manifest_for(
+    block_id, report_date, file_name, entry_file, content, range_start=None
+):
+    manifest = {
         "blockId": block_id,
-        "reportDate": report_date,
         "fileName": file_name,
         "entryFile": entry_file or "",
         "contentSha256": hashlib.sha256(content).hexdigest(),
     }
+    if range_start is not None:
+        manifest["rangeStart"] = range_start
+        manifest["rangeEnd"] = report_date
+    else:
+        manifest["reportDate"] = report_date
+    return manifest
 
 
 def signature_for(manifest, secret):
@@ -71,16 +77,32 @@ def signature_for(manifest, secret):
     return "Signature-" + hashlib.md5(canonical.encode("utf-8")).hexdigest()
 
 
+def parse_date(value, label):
+    if value is None or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value):
+        raise ValueError(f"{label}须为 YYYY-MM-DD")
+    try:
+        return datetime.date.fromisoformat(value)
+    except ValueError as error:
+        raise ValueError(f"{label}无效") from error
+
+
 def read_input(args):
     origin = validate_origin(args.origin)
     if not re.fullmatch(r"rsb-[A-Za-z0-9]{1,60}", args.block_id):
         raise ValueError("blockId 格式错误，应为已有区块的 rsb- 标识")
-    if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", args.report_date):
-        raise ValueError("业务日期须为 YYYY-MM-DD")
-    try:
-        datetime.date.fromisoformat(args.report_date)
-    except ValueError as error:
-        raise ValueError("业务日期无效") from error
+    if args.range_start is None and args.range_end is None:
+        parse_date(args.report_date, "单日业务日期")
+    else:
+        if (
+            args.report_date is not None
+            or args.range_start is None
+            or args.range_end is None
+        ):
+            raise ValueError("单日请传 --report-date；区间请同时传 --range-start 和 --range-end")
+        if parse_date(args.range_start, "区间开始日期") > parse_date(
+            args.range_end, "区间结束日期"
+        ):
+            raise ValueError("区间开始日期不能晚于结束日期")
     name = args.file.name
     if (
         args.file.suffix.lower() not in {".html", ".htm", ".zip"}
@@ -159,15 +181,23 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--origin", required=True, help="系统 origin，不带路径或尾部斜杠")
     parser.add_argument("--block-id", required=True, help="已有区块 ID")
-    parser.add_argument("--report-date", required=True, help="YYYY-MM-DD 业务日期")
+    parser.add_argument("--report-date", help="单日业务日期 YYYY-MM-DD")
+    parser.add_argument("--range-start", help="区间开始日期 YYYY-MM-DD，与 --range-end 配对")
+    parser.add_argument("--range-end", help="区间结束日期 YYYY-MM-DD，与 --range-start 配对")
     parser.add_argument("--file", type=Path, required=True, help="HTML、HTM 或 ZIP 文件")
     parser.add_argument("--entry-file", default="", help="ZIP 内入口相对路径，不做 URL 编码")
     parser.add_argument("--dry-run", action="store_true", help="仅本地检查，不读取凭据、不联网")
     args = parser.parse_args(argv)
     try:
         origin, content = read_input(args)
+        end_date = args.range_end or args.report_date
         manifest = manifest_for(
-            args.block_id, args.report_date, args.file.name, args.entry_file, content
+            args.block_id,
+            end_date,
+            args.file.name,
+            args.entry_file,
+            content,
+            args.range_start,
         )
         if args.dry_run:
             emit(
@@ -237,9 +267,20 @@ def main(argv=None):
             not isinstance(edition, dict)
             or not edition.get("id")
             or not edition.get("revision")
-            or edition.get("reportDate") != args.report_date
+            or edition.get("reportDate") != end_date
         ):
             raise ValueError("missing report identity")
+        period = edition.get("period")
+        expected_period = {
+            "type": "range" if args.range_start else "day",
+            "start": args.range_start or end_date,
+            "end": end_date,
+        }
+        if args.range_start or period is not None:
+            if not isinstance(period, dict) or any(
+                period.get(k) != v for k, v in expected_period.items()
+            ):
+                raise ValueError("unexpected report period")
     except (ValueError, UnicodeError):
         emit(
             {
@@ -251,19 +292,25 @@ def main(argv=None):
             sensitive,
         )
         return 1
-    query = urllib.parse.urlencode({"report": args.block_id, "date": args.report_date})
+    query = urllib.parse.urlencode(
+        {
+            "report": args.block_id,
+            "date": edition["id"] if args.range_start else end_date,
+        }
+    )
     emit(
         {
             "status": "uploaded",
             "httpStatus": status,
             "origin": origin,
             "blockId": args.block_id,
+            "period": expected_period,
             "reportId": edition["id"],
             "reportDate": edition["reportDate"],
             "revision": edition["revision"],
             "bytes": len(content),
             "sha256": manifest["contentSha256"],
-            "viewUrl": origin + VIEW_PATH + "?" + query,
+            "viewUrl": origin + "/control/dashboard/dataReport/reportSquare?" + query,
         },
         sensitive,
     )
