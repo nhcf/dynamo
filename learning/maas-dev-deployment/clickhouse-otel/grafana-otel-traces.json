@@ -1,0 +1,237 @@
+{
+  "uid": "maas-dev-otel-traces",
+  "title": "maas-dev | OTel Trace Explorer",
+  "description": "从 ClickHouse 按 Trace ID 查看 maas-dev 的调用链。",
+  "tags": [
+    "maas-dev",
+    "otel",
+    "clickhouse"
+  ],
+  "schemaVersion": 39,
+  "version": 4,
+  "timezone": "browser",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "refresh": "",
+  "templating": {
+    "list": [
+      {
+        "name": "clickhouse",
+        "label": "ClickHouse 数据源",
+        "type": "datasource",
+        "query": "grafana-clickhouse-datasource",
+        "refresh": 1,
+        "current": {
+          "text": "ClickHouse-LLM-Traces",
+          "value": "clickhouse-llm-traces"
+        },
+        "options": []
+      },
+      {
+        "name": "trace_id",
+        "label": "Trace ID",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Trace 搜索",
+      "type": "table",
+      "description": "显示选定时间内最近 100 条 Trace。点击 Trace ID 查看详情。耗时窗口按当前时间范围内可见 Span 计算。",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 9
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouse}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouse}"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "rawSql": "SELECT\n    min(start_time) AS time,\n    trace_id,\n    argMin(service_name, tuple(parent_span_id != '', start_time, span_id)) AS entry_service,\n    argMin(name, tuple(parent_span_id != '', start_time, span_id)) AS entry_operation,\n    (max(end_time_unix_nano) - min(start_time_unix_nano)) / 1000000. AS trace_window_ms,\n    uniqExact(span_id) AS spans,\n    uniqExactIf(span_id, status_code = 2) AS error_spans,\n    arrayStringConcat(arraySort(groupUniqArray(service_name)), ', ') AS services\nFROM llm_observability.otel_traces_maas_dev_grafana\nWHERE cluster_id = 'maas-dev' AND is_valid = 1\n  AND $__timeFilter_ms(start_time)\nGROUP BY trace_id\nORDER BY time DESC\nLIMIT 100",
+          "queryType": "sql"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "在本页查看链路",
+                    "url": "?var-clickhouse=${clickhouse}&var-trace_id=${__value.raw}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_window_ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Waterfall",
+      "type": "traces",
+      "description": "按 Trace ID 查找，最多 1000 个 Span。数据读取范围为 ClickHouse 当前保留的数据。",
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 17
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouse}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouse}"
+          },
+          "editorType": "sql",
+          "format": 3,
+          "rawSql": "SELECT\n    trace_id AS traceID,\n    span_id AS spanID,\n    parent_span_id AS parentSpanID,\n    service_name AS serviceName,\n    name AS operationName,\n    toUnixTimestamp64Nano(start_time) / 1000000. AS startTime,\n    ifNull(duration_ms, 0.) AS duration,\n    kind,\n    status_code AS statusCode\nFROM (\n    SELECT trace_id, span_id, parent_span_id, service_name, name, start_time, duration_ms, kind, status_code\n    FROM (\n        SELECT trace_id, span_id, parent_span_id, service_name, name, start_time, duration_ms, kind, status_code\n        FROM llm_observability.otel_traces_maas_dev_grafana\n        WHERE cluster_id = 'maas-dev'\n          AND is_valid = 1\n          AND trace_id = lowerUTF8(${trace_id:sqlstring})\n        ORDER BY span_id, ingested_at DESC\n        LIMIT 1 BY span_id\n    )\n    ORDER BY start_time, span_id\n    LIMIT 1000\n)\nORDER BY startTime, spanID",
+          "queryType": "sql"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "Call Map",
+      "type": "nodeGraph",
+      "description": "父 Span 在左，子 Span 在右。相同调用深度内按开始时间从上往下排列。显示最早的 200 个 Span。",
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 15
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouse}"
+      },
+      "targets": [
+        {
+          "refId": "nodes",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouse}"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "rawSql": "WITH spans AS (\n    SELECT span_id, parent_span_id, service_name, name, start_time, duration_ms, status_code\n    FROM (\n        SELECT span_id, parent_span_id, service_name, name, start_time, duration_ms, status_code\n        FROM llm_observability.otel_traces_maas_dev_grafana\n        WHERE cluster_id = 'maas-dev'\n          AND is_valid = 1\n          AND trace_id = lowerUTF8(${trace_id:sqlstring})\n        ORDER BY span_id, ingested_at DESC\n        LIMIT 1 BY span_id\n    )\n    ORDER BY start_time, span_id\n    LIMIT 200\n), parent_index AS (\n    SELECT mapFromArrays(groupArray(span_id), groupArray(parent_span_id)) AS parents\n    FROM spans\n), positioned_spans AS (\n    SELECT spans.*,\n           arrayFold(\n               (state, step) -> if(\n                   mapContains(parents, parents[state.1]),\n                   (parents[state.1], state.2 + toUInt64(1)),\n                   state\n               ),\n               range(length(mapKeys(parents))),\n               (span_id, toUInt64(0))\n           ).2 AS depth\n    FROM spans CROSS JOIN parent_index\n)\nSELECT\n    span_id AS id,\n    name AS title,\n    service_name AS subtitle,\n    concat(toString(round(ifNull(duration_ms, 0.), 2)), ' ms') AS mainstat,\n    if(status_code = 2, '#E02F44', '#3274D9') AS color,\n    parent_span_id AS detail__parent_span_id,\n    toFloat64(depth) * 195 AS fixedX,\n    (toFloat64(row_number() OVER (PARTITION BY depth ORDER BY start_time, span_id))\n        - (toFloat64(count() OVER (PARTITION BY depth)) + 1) / 2) * 91 AS fixedY\nFROM positioned_spans\n-- Preserve frame fields when ClickHouse returns zero rows.\nUNION ALL\nSELECT '__grafana_schema_only__', '', '', '', '', '', toFloat64(0), toFloat64(0)",
+          "queryType": "sql"
+        },
+        {
+          "refId": "edges",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouse}"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "rawSql": "WITH spans AS (\n    SELECT span_id, parent_span_id, service_name, name, start_time, duration_ms, status_code\n    FROM (\n        SELECT span_id, parent_span_id, service_name, name, start_time, duration_ms, status_code\n        FROM llm_observability.otel_traces_maas_dev_grafana\n        WHERE cluster_id = 'maas-dev'\n          AND is_valid = 1\n          AND trace_id = lowerUTF8(${trace_id:sqlstring})\n        ORDER BY span_id, ingested_at DESC\n        LIMIT 1 BY span_id\n    )\n    ORDER BY start_time, span_id\n    LIMIT 200\n)\nSELECT\n    concat(p.span_id, '/', c.span_id) AS id,\n    p.span_id AS source,\n    c.span_id AS target\nFROM spans AS c\nGLOBAL INNER JOIN spans AS p ON c.parent_span_id = p.span_id\nWHERE c.parent_span_id != '' AND c.span_id != p.span_id\n-- Preserve frame fields when ClickHouse returns zero rows.\nUNION ALL\nSELECT '__grafana_schema_only__', '', ''",
+          "queryType": "sql"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "filter": {
+            "id": "byRefId",
+            "options": "/^nodes$/"
+          },
+          "options": {
+            "type": "include",
+            "match": "all",
+            "filters": [
+              {
+                "fieldName": "id",
+                "config": {
+                  "id": "notEqual",
+                  "options": {
+                    "value": "__grafana_schema_only__"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "filterByValue",
+          "filter": {
+            "id": "byRefId",
+            "options": "/^edges$/"
+          },
+          "options": {
+            "type": "include",
+            "match": "all",
+            "filters": [
+              {
+                "fieldName": "id",
+                "config": {
+                  "id": "notEqual",
+                  "options": {
+                    "value": "__grafana_schema_only__"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

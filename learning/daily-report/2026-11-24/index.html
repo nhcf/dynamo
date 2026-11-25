@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>实验室科研模型服务</title>
+<style>
+:root {
+  color-scheme: light;
+  font-family: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #172b44;
+  background: #f2f5fa;
+  font-synthesis: none;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { width: 100%; min-height: 100vh; padding: clamp(12px, 2vw, 24px); }
+.report-header { background: #163253; color: #fff; border-radius: 12px; padding: clamp(20px, 4vw, 38px); }
+h1 { margin: 0 0 18px; font-size: clamp(25px, 4vw, 36px); font-weight: 700; }
+.metadata { display: flex; flex-wrap: wrap; gap: 12px 28px; margin: 0; }
+.metadata div { display: grid; gap: 4px; }
+dt { color: #c3d6ec; font-size: .8rem; }
+dd { margin: 0; font-size: .91rem; font-variant-numeric: tabular-nums; }
+time { white-space: nowrap; }
+section { margin-top: 20px; }
+h2 { margin: 0 0 10px; font-size: 1.1rem; }
+.notice { background: #eaf1ff; border-left: 3px solid #4a73b7; margin: 16px 0; padding: 10px 14px; font-size: .88rem; }
+p, li { line-height: 1.6; }
+.table { overflow-x: auto; background: #fff; border: 1px solid #dbe3ef; border-radius: 10px; }
+table { width: 100%; min-width: 790px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; vertical-align: middle; padding: 13px 14px; border-bottom: 1px solid #e3e9f2; }
+th:first-child { text-align: left; }
+thead { background: #eaf0f8; color: #243d60; }
+thead th { font-size: .87rem; }
+tbody th { white-space: nowrap; font-size: .88rem; font-weight: 650; }
+tbody tr:nth-child(even) { background: #f8fafd; }
+tbody tr:last-child > * { border-bottom: 0; }
+td strong { font-size: 1.05rem; font-weight: 680; }
+.http-429 { background: #fff4dd; color: #705014; }
+.rate-limit-table table { min-width: 430px; }
+.rate-limit-table td[colspan] { text-align: left; }
+small { display: block; margin-top: 3px; color: #4e627c; font-size: .74rem; font-weight: 500; }
+.status { display: inline-block; padding: 3px 9px; border-radius: 99px; white-space: nowrap; font-size: .77rem; }
+.status-pass { background: #e4f5ea; color: #175936; }
+.status-fail { background: #fce8e8; color: #882429; }
+.status-pending { background: #fff0cf; color: #705014; }
+.metric-status { margin-top: 7px; }
+.notes { background: #fff; border: 1px solid #dbe3ef; border-radius: 10px; padding: 15px 18px; }
+.notes ul { margin: 0; padding-left: 20px; color: #394e69; font-size: .87rem; }
+.notes li + li { margin-top: 4px; }
+.insight-model-fail { color: #9d2424; }
+details { margin-top: 16px; }
+summary { cursor: pointer; color: #224e87; font-size: .88rem; font-weight: 650; }
+details .table { margin-top: 10px; }
+details table { min-width: 980px; font-size: .8rem; }
+@media print {
+  :root { background: #fff; }
+  main { min-height: 0; padding: 0; }
+  .report-header { background: #fff; color: #172b44; border: 1px solid #dbe3ef; }
+  dt { color: #4e627c; }
+  .table { overflow: visible; }
+  table { min-width: 0; }
+  tr { break-inside: avoid; }
+}
+</style>
+</head>
+<body><main>
+  <header class="report-header">
+    <h1>实验室科研模型服务</h1>
+    <dl class="metadata">
+      <div><dt>统计区间（北京时间）</dt><dd><time>2026-11-24 00:00</time> 至 <time>2026-11-25 00:00</time></dd></div>
+    </dl>
+  </header>
+  <section class="notes" aria-labelledby="report-insights">
+  <h2 id="report-insights">数据洞察</h2>
+  <ul>
+    <li><strong>5xx 影响最大</strong>。<strong class="insight-model-fail">DeepSeek-V4.1-Flash-1017</strong> 有 1,024 条 5xx，占全部模型 5xx 70.2%。最常见的 5xx 状态码为 500（784 条）。</li>
+    <li><strong>延迟超阈值贡献最大</strong>。TTFT 为 <strong class="insight-model-fail">DeepSeek-V4-Flash-0731</strong> 4,518 / 6,385 个超阈值，占全部超阈值样本 52.0%。TPOT 为 <strong class="insight-model-fail">DeepSeek-V4-Flash-0731</strong> 878 / 6,374 个超阈值，占全部超阈值样本 51.2%。</li>
+    <li><strong>较前一日变化最大</strong>。<strong class="insight-model-fail">GLM-5.3</strong> 的TTFT 达成率从 2026-11-23 的 69.60% 变为 32.48%（-37.12 个百分点）。分母从 921 个变为 1,995 个。</li>
+  </ul>
+</section>
+  <section aria-labelledby="model-metrics">
+  <h2 id="model-metrics">模型指标</h2>
+  <p class="notice">SLA 按请求可用率、TTFT 和 TPOT 三项判定。任一项未达标则综合未达标，三项均达标则综合达标，其余情况暂无法判定。</p>
+  <div class="table"><table>
+    <thead><tr><th scope="col">模型</th><th scope="col">请求可用率<small>≥ 99.5%</small></th>
+    <th scope="col">流式请求TTFT达成率<small>≥ 95%</small></th>
+    <th scope="col">流式请求TPOT达成率<small>≥ 95%</small></th>
+    <th scope="col">SLA</th></tr></thead>
+    <tbody><tr>
+    <th scope="row">DeepSeek-V4.1-Flash-1017</th>
+    <td><strong>99.80%</strong><small>516,728 / 517,752 条</small><small>5xx 1,024 条</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><strong>92.79%</strong><small>18,287 / 19,707 个请求</small><small>≤ 5 s</small><div class="metric-status"><span class="status status-fail">未达标</span></div></td>
+    <td><strong>99.45%</strong><small>18,733 / 18,836 个请求</small><small>≤ 50 ms/token</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><span class="status status-fail">未达标</span></td></tr><tr>
+    <th scope="row">DeepSeek-V4-Flash-0731</th>
+    <td><strong>99.53%</strong><small>63,317 / 63,613 条</small><small>5xx 296 条</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><strong>29.24%</strong><small>1,867 / 6,385 个请求</small><small>≤ 5 s</small><div class="metric-status"><span class="status status-fail">未达标</span></div></td>
+    <td><strong>86.23%</strong><small>5,496 / 6,374 个请求</small><small>≤ 50 ms/token</small><div class="metric-status"><span class="status status-fail">未达标</span></div></td>
+    <td><span class="status status-fail">未达标</span></td></tr><tr>
+    <th scope="row">021SFM-236B-Instruct</th>
+    <td><strong>99.90%</strong><small>33,906 / 33,939 条</small><small>5xx 33 条</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><strong>93.79%</strong><small>876 / 934 个请求</small><small>≤ 5 s</small><div class="metric-status"><span class="status status-fail">未达标</span></div></td>
+    <td><strong>99.46%</strong><small>924 / 929 个请求</small><small>≤ 50 ms/token</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><span class="status status-fail">未达标</span></td></tr><tr>
+    <th scope="row">021SFM-236B-Thinking</th>
+    <td><strong>99.91%</strong><small>18,897 / 18,914 条</small><small>5xx 17 条</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><strong>96.32%</strong><small>12,333 / 12,804 个请求</small><small>≤ 5 s</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><strong>95.05%</strong><small>12,096 / 12,726 个请求</small><small>≤ 50 ms/token</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><span class="status status-pass">达标</span></td></tr><tr>
+    <th scope="row">Kimi-K3</th>
+    <td><strong>98.55%</strong><small>4,825 / 4,896 条</small><small>5xx 71 条</small><div class="metric-status"><span class="status status-fail">未达标</span></div></td>
+    <td><strong>76.40%</strong><small>2,830 / 3,704 个请求</small><small>≤ 5 s</small><div class="metric-status"><span class="status status-fail">未达标</span></div></td>
+    <td><strong>97.84%</strong><small>3,581 / 3,660 个请求</small><small>≤ 200 ms/token</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><span class="status status-fail">未达标</span></td></tr><tr>
+    <th scope="row">GLM-5.3</th>
+    <td><strong>99.45%</strong><small>2,872 / 2,888 条</small><small>5xx 16 条</small><div class="metric-status"><span class="status status-fail">未达标</span></div></td>
+    <td><strong>32.48%</strong><small>648 / 1,995 个请求</small><small>≤ 5 s</small><div class="metric-status"><span class="status status-fail">未达标</span></div></td>
+    <td><strong>99.03%</strong><small>1,944 / 1,963 个请求</small><small>≤ 50 ms/token</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><span class="status status-fail">未达标</span></td></tr><tr>
+    <th scope="row">021SFM-32B-Thinking</th>
+    <td><strong>99.68%</strong><small>307 / 308 条</small><small>5xx 1 条</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><strong>100.00%</strong><small>304 / 304 个请求</small><small>≤ 5 s</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><strong>100.00%</strong><small>304 / 304 个请求</small><small>≤ 50 ms/token</small><div class="metric-status"><span class="status status-pass">达标</span></div></td>
+    <td><span class="status status-pass">达标</span></td></tr></tbody>
+  </table></div>
+  </section>
+  <section aria-labelledby="rate-limit-metrics">
+  <h2 id="rate-limit-metrics">429 响应明细</h2>
+  <div class="table rate-limit-table"><table>
+    <thead><tr><th scope="col">模型</th><th scope="col">429 条目数</th><th scope="col">匹配日志总数</th>
+    <th scope="col" class="http-429">429 比率</th></tr></thead>
+    <tbody><tr><th scope="row">DeepSeek-V4.1-Flash-1017</th><td>26,401</td><td>565,670</td><td class="http-429"><strong>4.67%</strong></td></tr><tr><th scope="row">Kimi-K3</th><td>732</td><td>5,783</td><td class="http-429"><strong>12.66%</strong></td></tr><tr><th scope="row">021SFM-236B-Instruct</th><td>532</td><td>43,376</td><td class="http-429"><strong>1.23%</strong></td></tr></tbody>
+  </table></div>
+  </section>
+  <section class="notes" aria-labelledby="report-method">
+  <h2 id="report-method">统计口径</h2>
+  <ul>
+    <li>统计七个模型的 Chat Completions 和 Messages POST 请求，匹配模型路由的 zero2x 请求也计入。模型按匹配的网关日志条目数从多到少排列。</li>
+    <li>TTFT 有效请求为具有有效首段计时的网关流式请求。TTFT 采用首次流式响应体回调耗时。</li>
+    <li>TPOT 有效请求为 HTTP 2xx、无网关异常标记、有有效首段和流关闭计时、且至少输出两个 Token 的流式请求。TPOT 将流关闭耗时减去首段耗时，再除以输出 Token 数减一。总耗时可能包含尾部 usage 和结束帧。</li>
+    <li>两项延迟按外部请求 ID 去重。缺少对应指标所需的有效计时或 Token 数据的请求，从该指标的分子和分母中排除。无有效样本时，该指标暂无法判定。</li>
+    <li>请求可用率为 1 减去全天 5xx 条目数除以有效请求条目数。有效请求取 2xx、3xx、5xx，排除 4xx 和状态码 0 等未归类记录。429 比率为 429 条目数除以全部匹配网关日志条目数。</li>
+  </ul>
+  </section>
+  <details><summary>展开取数审计</summary>
+  <div class="table"><table>
+    <thead><tr><th scope="col">模型</th><th scope="col">匹配日志</th><th scope="col">去重可归类请求</th>
+    <th scope="col">流式</th><th scope="col">非流式</th><th scope="col">未识别类型</th><th scope="col">重复 ID 条目</th><th scope="col">缺 ID / 冲突 ID</th>
+    <th scope="col">候选首输出 / 末输出 / 终态字段</th><th scope="col">TTFT / TPOT 缺数</th></tr></thead>
+    <tbody><tr><th scope="row">DeepSeek-V4.1-Flash-1017</th>
+    <td>565,670</td><td>565,670</td>
+    <td>19,707</td><td>545,139</td>
+    <td>824</td>
+    <td>0</td>
+    <td>0 / 0</td>
+    <td>0 / 0 / 0</td>
+    <td>0 / 0</td>
+    </tr><tr><th scope="row">DeepSeek-V4-Flash-0731</th>
+    <td>150,619</td><td>150,619</td>
+    <td>6,385</td><td>143,807</td>
+    <td>427</td>
+    <td>0</td>
+    <td>0 / 0</td>
+    <td>0 / 0 / 0</td>
+    <td>0 / 0</td>
+    </tr><tr><th scope="row">021SFM-236B-Instruct</th>
+    <td>43,376</td><td>43,376</td>
+    <td>934</td><td>41,742</td>
+    <td>700</td>
+    <td>0</td>
+    <td>0 / 0</td>
+    <td>0 / 0 / 0</td>
+    <td>0 / 0</td>
+    </tr><tr><th scope="row">021SFM-236B-Thinking</th>
+    <td>18,943</td><td>18,943</td>
+    <td>12,804</td><td>5,992</td>
+    <td>147</td>
+    <td>0</td>
+    <td>0 / 0</td>
+    <td>0 / 0 / 0</td>
+    <td>0 / 0</td>
+    </tr><tr><th scope="row">Kimi-K3</th>
+    <td>5,783</td><td>5,783</td>
+    <td>3,704</td><td>1,534</td>
+    <td>545</td>
+    <td>0</td>
+    <td>0 / 0</td>
+    <td>0 / 0 / 0</td>
+    <td>0 / 0</td>
+    </tr><tr><th scope="row">GLM-5.3</th>
+    <td>3,301</td><td>3,301</td>
+    <td>1,995</td><td>841</td>
+    <td>465</td>
+    <td>0</td>
+    <td>0 / 0</td>
+    <td>0 / 0 / 0</td>
+    <td>0 / 16</td>
+    </tr><tr><th scope="row">021SFM-32B-Thinking</th>
+    <td>308</td><td>308</td>
+    <td>304</td><td>1</td>
+    <td>3</td>
+    <td>0</td>
+    <td>0 / 0</td>
+    <td>0 / 0 / 0</td>
+    <td>0 / 0</td>
+    </tr></tbody>
+  </table></div></details>
+</main>
+<script id="report-data" type="application/json">
+{
+  "business_date": "2026-11-24",
+  "start": "2026-11-24T00:00:00+08:00",
+  "end": "2026-11-25T00:00:00+08:00",
+  "generated_at": "2026-11-25T08:02:52+08:00",
+  "gateway_key_exclusion_applied": false,
+  "loki_pages": 169,
+  "rows": [
+    {
+      "model": "DeepSeek-V4.1-Flash-1017",
+      "route": "litellm-service-deepseek-v4-1-flash",
+      "logs": {
+        "entries": 565670,
+        "unique_unambiguous_requests": 565670,
+        "non_stream_requests": 545139,
+        "unknown_response_type": 824,
+        "stream_requests": 19707
+      },
+      "http_status": {
+        "200": 516728,
+        "400": 95,
+        "500": 784,
+        "0": 581,
+        "503": 240,
+        "401": 20841,
+        "429": 26401
+      },
+      "ttft_estimate": {
+        "denominator": 19707,
+        "within_threshold": 18287,
+        "ratio": 0.927944385243822
+      },
+      "tpot_estimate": {
+        "denominator": 18836,
+        "within_threshold": 18733,
+        "excluded_under_two_tokens": 871,
+        "ratio": 0.9945317477171374
+      },
+      "strict_timing_fields": {
+        "first_valid": 0,
+        "last_valid": 0,
+        "explicit_terminal_field": 0
+      },
+      "sla": {
+        "request_availability_target": 0.995,
+        "ttft_target_proportion": 0.95,
+        "ttft_threshold_ms": 5000,
+        "tpot_target_proportion": 0.95,
+        "tpot_threshold_ms_per_token": 50,
+        "ttft_proportion": 0.927944385243822,
+        "tpot_proportion": 0.9945317477171374,
+        "metrics": {
+          "request_availability": {
+            "status": "达标",
+            "reason": null
+          },
+          "ttft": {
+            "status": "未达标",
+            "reason": null
+          },
+          "tpot": {
+            "status": "达标",
+            "reason": null
+          }
+        },
+        "status": "未达标"
+      },
+      "http_2xx": {
+        "numerator": 516728,
+        "denominator": 565670,
+        "ratio": 0.9134795905740096
+      },
+      "request_availability": {
+        "numerator": 516728,
+        "denominator": 517752,
+        "failures_5xx": 1024,
+        "ratio": 0.9980222191319397
+      }
+    },
+    {
+      "model": "DeepSeek-V4-Flash-0731",
+      "route": "litellm-service-deepseek-v4-flash",
+      "logs": {
+        "entries": 150619,
+        "unique_unambiguous_requests": 150619,
+        "non_stream_requests": 143807,
+        "stream_requests": 6385,
+        "unknown_response_type": 427
+      },
+      "http_status": {
+        "200": 63317,
+        "401": 86587,
+        "0": 401,
+        "503": 39,
+        "400": 18,
+        "500": 257
+      },
+      "ttft_estimate": {
+        "denominator": 6385,
+        "within_threshold": 1867,
+        "ratio": 0.29240407204385277
+      },
+      "tpot_estimate": {
+        "denominator": 6374,
+        "within_threshold": 5496,
+        "excluded_under_two_tokens": 11,
+        "ratio": 0.8622529024160652
+      },
+      "strict_timing_fields": {
+        "first_valid": 0,
+        "last_valid": 0,
+        "explicit_terminal_field": 0
+      },
+      "sla": {
+        "request_availability_target": 0.995,
+        "ttft_target_proportion": 0.95,
+        "ttft_threshold_ms": 5000,
+        "tpot_target_proportion": 0.95,
+        "tpot_threshold_ms_per_token": 50,
+        "ttft_proportion": 0.29240407204385277,
+        "tpot_proportion": 0.8622529024160652,
+        "metrics": {
+          "request_availability": {
+            "status": "达标",
+            "reason": null
+          },
+          "ttft": {
+            "status": "未达标",
+            "reason": null
+          },
+          "tpot": {
+            "status": "未达标",
+            "reason": null
+          }
+        },
+        "status": "未达标"
+      },
+      "http_2xx": {
+        "numerator": 63317,
+        "denominator": 150619,
+        "ratio": 0.420378571096608
+      },
+      "request_availability": {
+        "numerator": 63317,
+        "denominator": 63613,
+        "failures_5xx": 296,
+        "ratio": 0.9953468630625816
+      }
+    },
+    {
+      "model": "021SFM-236B-Instruct",
+      "route": "litellm-service-021sfm-236b-instruct",
+      "logs": {
+        "entries": 43376,
+        "unique_unambiguous_requests": 43376,
+        "non_stream_requests": 41742,
+        "stream_requests": 934,
+        "unknown_response_type": 700
+      },
+      "http_status": {
+        "200": 33906,
+        "0": 681,
+        "429": 532,
+        "503": 12,
+        "504": 21,
+        "400": 30,
+        "401": 8194
+      },
+      "ttft_estimate": {
+        "denominator": 934,
+        "within_threshold": 876,
+        "ratio": 0.9379014989293362
+      },
+      "tpot_estimate": {
+        "denominator": 929,
+        "within_threshold": 924,
+        "excluded_under_two_tokens": 5,
+        "ratio": 0.9946178686759957
+      },
+      "strict_timing_fields": {
+        "first_valid": 0,
+        "last_valid": 0,
+        "explicit_terminal_field": 0
+      },
+      "sla": {
+        "request_availability_target": 0.995,
+        "ttft_target_proportion": 0.95,
+        "ttft_threshold_ms": 5000,
+        "tpot_target_proportion": 0.95,
+        "tpot_threshold_ms_per_token": 50,
+        "ttft_proportion": 0.9379014989293362,
+        "tpot_proportion": 0.9946178686759957,
+        "metrics": {
+          "request_availability": {
+            "status": "达标",
+            "reason": null
+          },
+          "ttft": {
+            "status": "未达标",
+            "reason": null
+          },
+          "tpot": {
+            "status": "达标",
+            "reason": null
+          }
+        },
+        "status": "未达标"
+      },
+      "http_2xx": {
+        "numerator": 33906,
+        "denominator": 43376,
+        "ratio": 0.7816765031353744
+      },
+      "request_availability": {
+        "numerator": 33906,
+        "denominator": 33939,
+        "failures_5xx": 33,
+        "ratio": 0.9990276672854238
+      }
+    },
+    {
+      "model": "021SFM-236B-Thinking",
+      "route": "litellm-service-021sfm-236b-thinking",
+      "logs": {
+        "entries": 18943,
+        "unique_unambiguous_requests": 18943,
+        "stream_requests": 12804,
+        "non_stream_requests": 5992,
+        "unknown_response_type": 147
+      },
+      "http_status": {
+        "200": 18897,
+        "504": 8,
+        "0": 27,
+        "503": 9,
+        "401": 2
+      },
+      "ttft_estimate": {
+        "denominator": 12804,
+        "within_threshold": 12333,
+        "ratio": 0.9632146204311153
+      },
+      "tpot_estimate": {
+        "denominator": 12726,
+        "within_threshold": 12096,
+        "excluded_under_two_tokens": 78,
+        "ratio": 0.9504950495049505
+      },
+      "strict_timing_fields": {
+        "first_valid": 0,
+        "last_valid": 0,
+        "explicit_terminal_field": 0
+      },
+      "sla": {
+        "request_availability_target": 0.995,
+        "ttft_target_proportion": 0.95,
+        "ttft_threshold_ms": 5000,
+        "tpot_target_proportion": 0.95,
+        "tpot_threshold_ms_per_token": 50,
+        "ttft_proportion": 0.9632146204311153,
+        "tpot_proportion": 0.9504950495049505,
+        "metrics": {
+          "request_availability": {
+            "status": "达标",
+            "reason": null
+          },
+          "ttft": {
+            "status": "达标",
+            "reason": null
+          },
+          "tpot": {
+            "status": "达标",
+            "reason": null
+          }
+        },
+        "status": "达标"
+      },
+      "http_2xx": {
+        "numerator": 18897,
+        "denominator": 18943,
+        "ratio": 0.9975716623554876
+      },
+      "request_availability": {
+        "numerator": 18897,
+        "denominator": 18914,
+        "failures_5xx": 17,
+        "ratio": 0.9991011948820979
+      }
+    },
+    {
+      "model": "Kimi-K3",
+      "route": "litellm-service-kimi-k3",
+      "logs": {
+        "entries": 5783,
+        "unique_unambiguous_requests": 5783,
+        "stream_requests": 3704,
+        "unknown_response_type": 545,
+        "non_stream_requests": 1534
+      },
+      "http_status": {
+        "200": 4825,
+        "500": 69,
+        "401": 40,
+        "0": 114,
+        "400": 1,
+        "503": 2,
+        "429": 732
+      },
+      "ttft_estimate": {
+        "denominator": 3704,
+        "within_threshold": 2830,
+        "ratio": 0.7640388768898488
+      },
+      "tpot_estimate": {
+        "denominator": 3660,
+        "within_threshold": 3581,
+        "excluded_under_two_tokens": 44,
+        "ratio": 0.9784153005464481
+      },
+      "strict_timing_fields": {
+        "first_valid": 0,
+        "last_valid": 0,
+        "explicit_terminal_field": 0
+      },
+      "sla": {
+        "request_availability_target": 0.995,
+        "ttft_target_proportion": 0.95,
+        "ttft_threshold_ms": 5000,
+        "tpot_target_proportion": 0.95,
+        "tpot_threshold_ms_per_token": 200,
+        "ttft_proportion": 0.7640388768898488,
+        "tpot_proportion": 0.9784153005464481,
+        "metrics": {
+          "request_availability": {
+            "status": "未达标",
+            "reason": null
+          },
+          "ttft": {
+            "status": "未达标",
+            "reason": null
+          },
+          "tpot": {
+            "status": "达标",
+            "reason": null
+          }
+        },
+        "status": "未达标"
+      },
+      "http_2xx": {
+        "numerator": 4825,
+        "denominator": 5783,
+        "ratio": 0.8343420370050147
+      },
+      "request_availability": {
+        "numerator": 4825,
+        "denominator": 4896,
+        "failures_5xx": 71,
+        "ratio": 0.985498366013072
+      }
+    },
+    {
+      "model": "GLM-5.3",
+      "route": "litellm-service-glm-5-3",
+      "logs": {
+        "entries": 3301,
+        "unique_unambiguous_requests": 3301,
+        "non_stream_requests": 841,
+        "stream_requests": 1995,
+        "unknown_response_type": 465
+      },
+      "http_status": {
+        "200": 2872,
+        "504": 12,
+        "0": 329,
+        "400": 79,
+        "503": 4,
+        "401": 5
+      },
+      "ttft_estimate": {
+        "denominator": 1995,
+        "within_threshold": 648,
+        "ratio": 0.324812030075188
+      },
+      "tpot_estimate": {
+        "denominator": 1963,
+        "within_threshold": 1944,
+        "unmeasurable": 16,
+        "excluded_under_two_tokens": 16,
+        "ratio": 0.9903209373408048
+      },
+      "strict_timing_fields": {
+        "first_valid": 0,
+        "last_valid": 0,
+        "explicit_terminal_field": 0
+      },
+      "sla": {
+        "request_availability_target": 0.995,
+        "ttft_target_proportion": 0.95,
+        "ttft_threshold_ms": 5000,
+        "tpot_target_proportion": 0.95,
+        "tpot_threshold_ms_per_token": 50,
+        "ttft_proportion": 0.324812030075188,
+        "tpot_proportion": 0.9903209373408048,
+        "metrics": {
+          "request_availability": {
+            "status": "未达标",
+            "reason": null
+          },
+          "ttft": {
+            "status": "未达标",
+            "reason": null
+          },
+          "tpot": {
+            "status": "达标",
+            "reason": null
+          }
+        },
+        "status": "未达标"
+      },
+      "http_2xx": {
+        "numerator": 2872,
+        "denominator": 3301,
+        "ratio": 0.8700393820054529
+      },
+      "request_availability": {
+        "numerator": 2872,
+        "denominator": 2888,
+        "failures_5xx": 16,
+        "ratio": 0.9944598337950139
+      }
+    },
+    {
+      "model": "021SFM-32B-Thinking",
+      "route": "021-guarantee-litellm-service-021sfm-32b-thinking",
+      "logs": {
+        "entries": 308,
+        "unique_unambiguous_requests": 308,
+        "stream_requests": 304,
+        "unknown_response_type": 3,
+        "non_stream_requests": 1
+      },
+      "http_status": {
+        "200": 307,
+        "503": 1
+      },
+      "ttft_estimate": {
+        "denominator": 304,
+        "within_threshold": 304,
+        "ratio": 1.0
+      },
+      "tpot_estimate": {
+        "denominator": 304,
+        "within_threshold": 304,
+        "ratio": 1.0
+      },
+      "strict_timing_fields": {
+        "first_valid": 0,
+        "last_valid": 0,
+        "explicit_terminal_field": 0
+      },
+      "sla": {
+        "request_availability_target": 0.995,
+        "ttft_target_proportion": 0.95,
+        "ttft_threshold_ms": 5000,
+        "tpot_target_proportion": 0.95,
+        "tpot_threshold_ms_per_token": 50,
+        "ttft_proportion": 1.0,
+        "tpot_proportion": 1.0,
+        "metrics": {
+          "request_availability": {
+            "status": "达标",
+            "reason": null
+          },
+          "ttft": {
+            "status": "达标",
+            "reason": null
+          },
+          "tpot": {
+            "status": "达标",
+            "reason": null
+          }
+        },
+        "status": "达标"
+      },
+      "http_2xx": {
+        "numerator": 307,
+        "denominator": 308,
+        "ratio": 0.9967532467532467
+      },
+      "request_availability": {
+        "numerator": 307,
+        "denominator": 308,
+        "failures_5xx": 1,
+        "ratio": 0.9967532467532467
+      }
+    }
+  ]
+}
+</script>
+</body></html>

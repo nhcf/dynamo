@@ -1,5 +1,8 @@
 # LiteLLM OTel A/B 测试
 
+Kafka 入库设计见 [Kafka → ClickHouse 的 OTel Trace 入库设计](kafka-clickhouse-otel-ingestion-design.md)，
+包含 Kafka Engine 直接消费 OTLP、物化视图映射与验收方案。
+
 完整接入说明见 [maas-prod Higress 与 LiteLLM 接入 OTel Collector](otel-trace-integration.md)，
 包含当前状态、配置位置、跨组件链路关联和验证方法。
 

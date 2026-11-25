@@ -40,7 +40,9 @@ identified separately from implemented request paths.
 - [ACK Trace 采集草案与回退记录](ack-LB97i2CZNR/trace-collection-plan.md)
 - [maas-dev historical platform audit](maas-dev-deployment/index.html)
 - [maas-dev Higress metrics collection plan](maas-dev-deployment/higress-metrics-collection-plan.md)
+- [maas-dev Kafka OTLP Trace 直接入库 ClickHouse](maas-dev-deployment/clickhouse-otel/README.md)
 - [maas-prod Higress 与 LiteLLM OTel Collector 接入说明](maas-prod/otel-trace-integration.md)
+- [Kafka → ClickHouse 的 OTel Trace 入库设计](maas-prod/kafka-clickhouse-otel-ingestion-design.md)
 - [maas-prod LiteLLM OTel A/B 测试](maas-prod/README.md)
 
 ### 指标与 Grafana
