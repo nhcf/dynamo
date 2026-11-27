@@ -1,0 +1,199 @@
+# ACK Request Plane Trace 采集参考，不是可直接 apply 的最终清单。
+# 对象：nhss-job / dynamo-qwen38-27b-mixed-demo 的 OTLP 采集与查询后端。
+# 来源：dynamo-test-deployment.md（2026-10-28）记录的组件拓扑；本次未连接集群。
+#
+# 使用前提（逐条核对后再落地）：
+# 1. <collector-namespace> 是占位符。部署记录未给出 Collector 名称与 namespace，
+#    不能把 observability 命名空间视为已存在；实际值需向现有平台确认。
+# 2. 镜像 tag 未核实。私有仓库/离线环境请替换为可拉取的镜像，并确认 collector 版本
+#    支持下面使用的 receiver 与 jaeger 导出器。
+# 3. 这里用 Jaeger all-in-one 作为查询后端，仅用于联调查看链路；内存存储重启即丢，
+#    不构成生产级持久化。生产应替换为平台既有 Tempo/Jaeger，避免重复部署。
+# 4. 若平台已有 Collector/Tempo/Jaeger，请复用并通过 Service 名让 DGD 指向它，
+#    不要照搬本文件新建一套。
+# 5. 所有 Service 名（otel-collector、jaeger）只在本参考内自洽；接入 DGD 时，
+#    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT 必须换成真实 Collector 的 FQDN:4317。
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: <collector-namespace>
+  labels:
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: dynamo-trace-reference
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      memory_limiter:
+        check_interval: 2s
+        limit_mib: 512
+        spike_limit_mib: 128
+      batch:
+        timeout: 5s
+        send_batch_size: 1024
+    exporters:
+      # 联调用：把收到的 span 打到 Collector 日志，便于发现“已发送但未入库”。
+      debug:
+        verbosity: basic
+      otlp:
+        endpoint: jaeger:4317
+        tls:
+          insecure: true
+    extensions:
+      # 提供 :13133 的存活探针端点；下面 Deployment 的 readinessProbe 依赖它。
+      health_check:
+        endpoint: 0.0.0.0:13133
+    service:
+      extensions: [health_check]
+      telemetry:
+        logs:
+          level: info
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [debug, otlp]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: <collector-namespace>
+  labels:
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: dynamo-trace-reference
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otel-collector
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: otel-collector
+        app.kubernetes.io/part-of: dynamo-trace-reference
+    spec:
+      containers:
+        - name: otel-collector
+          # 未核实 tag：替换为平台可拉取的 collector 镜像后再使用。
+          image: otel/opentelemetry-collector-contrib:0.111.0
+          args:
+            - --config=/etc/otelcol/config.yaml
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+            - name: otlp-http
+              containerPort: 4318
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 13133
+          # 上面的探针依赖 ConfigMap 中的 extensions.health_check（0.0.0.0:13133）；
+          # 若删除该扩展，必须同步删除 readinessProbe，否则 Pod 一直不就绪。
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: <collector-namespace>
+  labels:
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: dynamo-trace-reference
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: otel-collector
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+    - name: otlp-http
+      port: 4318
+      targetPort: otlp-http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: <collector-namespace>
+  labels:
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/part-of: dynamo-trace-reference
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jaeger
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/part-of: dynamo-trace-reference
+    spec:
+      containers:
+        - name: jaeger
+          # 未核实 tag：all-in-one 已内置 OTLP 接收器（4317/4318）与查询 UI（16686）。
+          image: jaegertracing/all-in-one:1.60
+          env:
+            - name: COLLECTOR_OTLP_ENABLED
+              value: "true"
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+            - name: otlp-http
+              containerPort: 4318
+            - name: ui
+              containerPort: 16686
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: <collector-namespace>
+  labels:
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/part-of: dynamo-trace-reference
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: jaeger
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+    - name: otlp-http
+      port: 4318
+      targetPort: otlp-http
+    - name: ui
+      port: 16686
+      targetPort: ui

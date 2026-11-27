@@ -1,0 +1,97 @@
+apiVersion: v1
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318          # ← 新增: NCCL Inspector 推 OTLP metrics 用
+
+    processors:
+      k8sattributes:
+        auth_type: serviceAccount
+        passthrough: false
+        pod_association:
+          - sources:
+              - from: connection
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.deployment.name
+          labels:
+            - tag_name: app.name
+              key: app
+              from: pod
+            - tag_name: jobname
+              key: dros.zjlab.io/jobname
+              from: pod
+
+      batch:
+        timeout: 5s
+        send_batch_size: 1024
+
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 512
+        spike_limit_mib: 128
+
+    exporters:
+      # --- 现有 traces 出口 (不动) ---
+      otlp/vector:
+        endpoint: nhi-vector-agg-traces.nhi.svc.cluster.local:4317
+        tls:
+          insecure: true
+
+      kafka:
+        brokers:
+          - "10.107.159.7:9092"
+          - "10.107.159.8:9092"
+          - "10.107.159.9:9092"
+          - "10.107.159.10:9092"
+        protocol_version: "3.0.0"
+        timeout: 5s
+        topic: llm-trace-dev
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
+          max_elapsed_time: 300s
+        sending_queue:
+          enabled: true
+          num_consumers: 10
+          queue_size: 1000
+
+      # --- 新增 metrics 出口: 直推 aggr remote-write 入口 ---
+      prometheusremotewrite/prom:
+        endpoint: http://nhi-vector-agg-metrics.nhi.svc:6004/api/v1/write
+        resource_to_telemetry_conversion:
+          enabled: true                     # 将 OTEL_RESOURCE_ATTRIBUTES → metric label
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, batch]
+          exporters: [otlp/vector, kafka]
+        # --- 新增 metrics 管线: 不启用 k8sattributes (避免额外开销) ---
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [prometheusremotewrite/prom]
+      telemetry:
+        logs:
+          level: info
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"config.yaml":"receivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 0.0.0.0:4317\n      http:\n        endpoint: 0.0.0.0:4318          # ← 新增: NCCL Inspector 推 OTLP metrics 用\n\nprocessors:\n  k8sattributes:\n    auth_type: serviceAccount\n    passthrough: false\n    pod_association:\n      - sources:\n          - from: connection\n    extract:\n      metadata:\n        - k8s.pod.name\n        - k8s.namespace.name\n        - k8s.node.name\n        - k8s.deployment.name\n      labels:\n        - tag_name: app.name\n          key: app\n          from: pod\n        - tag_name: jobname\n          key: dros.zjlab.io/jobname\n          from: pod\n\n  batch:\n    timeout: 5s\n    send_batch_size: 1024\n\n  memory_limiter:\n    check_interval: 1s\n    limit_mib: 512\n    spike_limit_mib: 128\n\nexporters:\n  # --- 现有 traces 出口 (不动) ---\n  otlp/vector:\n    endpoint: nhi-vector-agg-traces.nhi.svc.cluster.local:4317\n    tls:\n      insecure: true\n\n  kafka:\n    brokers:\n      - \"10.107.159.7:9092\"\n      - \"10.107.159.8:9092\"\n      - \"10.107.159.9:9092\"\n      - \"10.107.159.10:9092\"\n    protocol_version: \"3.0.0\"\n    timeout: 5s\n    topic: llm-trace-dev\n    retry_on_failure:\n      enabled: true\n      initial_interval: 5s\n      max_interval: 30s\n      max_elapsed_time: 300s\n    sending_queue:\n      enabled: true\n      num_consumers: 10\n      queue_size: 1000\n\n  # --- 新增 metrics 出口: 直推 aggr remote-write 入口 ---\n  prometheusremotewrite/prom:\n    endpoint: http://nhi-vector-agg-metrics.nhi.svc:6004/api/v1/write\n    resource_to_telemetry_conversion:\n      enabled: true                     # 将 OTEL_RESOURCE_ATTRIBUTES → metric label\n\nservice:\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [memory_limiter, k8sattributes, batch]\n      exporters: [otlp/vector, kafka]\n    # --- 新增 metrics 管线: 不启用 k8sattributes (避免额外开销) ---\n    metrics:\n      receivers: [otlp]\n      processors: [memory_limiter, batch]\n      exporters: [prometheusremotewrite/prom]\n  telemetry:\n    logs:\n      level: info\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"otel-collector-config","namespace":"nhi"}}
+  creationTimestamp: "2026-05-09T09:17:18Z"
+  name: otel-collector-config
+  namespace: nhi
+  resourceVersion: "210476210"
+  uid: 10193038-1f5c-4b9d-be96-d0f00e61912f

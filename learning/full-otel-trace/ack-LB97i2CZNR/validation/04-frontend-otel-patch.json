@@ -1,0 +1,44 @@
+[
+  {
+    "op": "replace",
+    "path": "/spec/components/0/podTemplate/spec/containers/0/env",
+    "value": [
+      {
+        "name": "DYN_ROUTER_MODE",
+        "value": "kv"
+      },
+      {
+        "name": "DYN_REQUEST_PLANE",
+        "value": "tcp"
+      },
+      {
+        "name": "DYN_EVENT_PLANE",
+        "value": "zmq"
+      },
+      {
+        "name": "DYN_HTTP_BODY_LIMIT_MB",
+        "value": "200"
+      },
+      {
+        "name": "OTEL_EXPORT_ENABLED",
+        "value": "true"
+      },
+      {
+        "name": "OTEL_EXPORTER_OTLP_PROTOCOL",
+        "value": "grpc"
+      },
+      {
+        "name": "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+        "value": "http://otel-collector.nhi.svc.cluster.local:4317"
+      },
+      {
+        "name": "OTEL_SERVICE_NAME",
+        "value": "dynamo-qwen38-27b-frontend"
+      },
+      {
+        "name": "OTEL_TRACES_SAMPLE_RATIO",
+        "value": "1.0"
+      }
+    ]
+  }
+]

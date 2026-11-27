@@ -1,0 +1,175 @@
+# 回退备份（提交版）：x-br-acid / remote-write 接入 ID / bearer_token 已按
+# 本仓库惯例替换为 <REDACTED-*> 占位符；真实值仅保留在集群 live ConfigMap 中。
+apiVersion: v1
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'litellm'
+              scrape_interval: 15s
+              static_configs:
+                - targets:
+                    - 'litellm.litellm-system.svc.cluster.local:4000'
+              metrics_path: /metrics/
+              bearer_token: '<REDACTED-LITELLM-BEARER>'
+
+    processors:
+      k8sattributes:
+        auth_type: serviceAccount
+        passthrough: false
+        pod_association:
+          - sources:
+              - from: connection
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.ip
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.deployment.name
+          labels:
+            - tag_name: app.name
+              key: app
+              from: pod
+            - tag_name: jobname
+              key: dros.zjlab.io/jobname
+              from: pod
+
+      # 新增 transform 处理器以满足 ONE 接入规范要求
+      transform:
+        error_mode: ignore
+        trace_statements:
+          - context: resource
+            statements:
+              # 1. 补齐 host.name（优先用 pod 名，次选 node 名）
+              - set(attributes["host.name"], attributes["k8s.pod.name"]) where attributes["host.name"] == nil and attributes["k8s.pod.name"] != nil
+              - set(attributes["host.name"], attributes["k8s.node.name"]) where attributes["host.name"] == nil and attributes["k8s.node.name"] != nil
+              # 2. 补齐 host.ip（来自 pod ip）
+              - set(attributes["host.ip"], attributes["k8s.pod.ip"]) where attributes["host.ip"] == nil and attributes["k8s.pod.ip"] != nil
+
+          - context: span
+            statements:
+              # =================================================================
+              # 1. Higress 网关 Span 治理 (入口 Span 改为 Server，出站 Span 补齐 peer 属性)
+              # =================================================================
+              # A1: 将 Higress 网关入口路由 Span 的 Kind 从 Client 改写为 Server (2)
+              - set(kind, 2) where resource.attributes["service.name"] == "higress-gateway.higress-system" and not IsMatch(name, ".*egress.*")
+              # A2: 为 Higress 入口 Span 提取 http.target (如 /v1/chat/completions)
+              - set(attributes["http.target"], ExtractPatterns(attributes["http.url"], "^https?://[^/]+(?P<target>/.*)$")["target"]) where resource.attributes["service.name"] == "higress-gateway.higress-system" and attributes["http.target"] == nil and attributes["http.url"] != nil and IsMatch(attributes["http.url"], "^https?://[^/]+/.*")
+              # A3: 为 Higress 出站 Egress Span (Client) 从 peer.address 提取对端主机名与端口
+              - set(attributes["net.peer.name"], ExtractPatterns(attributes["peer.address"], "^(?P<host>[^:]+)")["host"]) where attributes["net.peer.name"] == nil and attributes["peer.address"] != nil
+              - set(attributes["net.peer.port"], Int(ExtractPatterns(attributes["peer.address"], ":(?P<port>[0-9]+)$")["port"])) where attributes["net.peer.port"] == nil and attributes["peer.address"] != nil and IsMatch(attributes["peer.address"], ":[0-9]+$")
+              # A4: 为 Higress 出站 Egress Span 补充 HTTP 方法与路径 (默认外呼 POST)
+              - set(attributes["http.method"], "POST") where resource.attributes["service.name"] == "higress-gateway.higress-system" and attributes["http.method"] == nil
+              - set(attributes["http.url"], Concat(["http://", attributes["peer.address"], "/v1/chat/completions"], "")) where resource.attributes["service.name"] == "higress-gateway.higress-system" and attributes["http.url"] == nil and attributes["peer.address"] != nil
+
+              # =================================================================
+              # 2. sglang-router (smg) Span 治理 (改写 http_request 为 Server 并规范化属性)
+              # =================================================================
+              # B1: 将 smg 的 http_request Span 改写为 Kind: Server (2)
+              - set(kind, 2) where (resource.attributes["service.name"] == "smg" or resource.attributes["service.name"] == "sglang-router") and name == "http_request"
+              # B2: 将 smg 的 Rust tracing 非标属性映射为标准 OTel 属性
+              - set(attributes["http.method"], attributes["method"]) where attributes["http.method"] == nil and attributes["method"] != nil
+              - set(attributes["http.target"], attributes["uri"]) where attributes["http.target"] == nil and attributes["uri"] != nil
+              - set(attributes["http.url"], Concat(["http://sglang-router:9990", attributes["uri"]], "")) where attributes["http.url"] == nil and attributes["uri"] != nil
+              - set(attributes["http.status_code"], Int(attributes["status_code"])) where attributes["http.status_code"] == nil and attributes["status_code"] != nil
+              - set(name, Concat([attributes["method"], attributes["uri"]], " ")) where (resource.attributes["service.name"] == "smg" or resource.attributes["service.name"] == "sglang-router") and attributes["method"] != nil and attributes["uri"] != nil
+
+              # =================================================================
+              # 3. 通用 Client Span 属性补齐 (从 http.url 解析对端主机与端口)
+              # =================================================================
+              - set(attributes["net.peer.name"], ExtractPatterns(attributes["http.url"], "^https?://(?P<peer_name>[^:/]+)")["peer_name"]) where attributes["net.peer.name"] == nil and attributes["http.url"] != nil and IsMatch(attributes["http.url"], "^https?://[^:/]+")
+              - set(attributes["net.peer.port"], Int(ExtractPatterns(attributes["http.url"], "^https?://[^:/]+:(?P<peer_port>[0-9]+)")["peer_port"])) where attributes["net.peer.port"] == nil and attributes["http.url"] != nil and IsMatch(attributes["http.url"], "^https?://[^:/]+:[0-9]+")
+              - set(attributes["net.peer.port"], 80) where attributes["net.peer.port"] == nil and attributes["http.url"] != nil and IsMatch(attributes["http.url"], "^http://")
+              - set(attributes["net.peer.port"], 443) where attributes["net.peer.port"] == nil and attributes["http.url"] != nil and IsMatch(attributes["http.url"], "^https://")
+
+      batch:
+        timeout: 5s
+        send_batch_size: 1024
+
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 640
+        spike_limit_mib: 128
+
+      resource:
+        attributes:
+          - key: service.name
+            value: litellm
+            action: upsert
+          - key: cluster
+            value: maas-dev
+            action: upsert
+
+    exporters:
+      kafka:
+        brokers:
+          - "10.107.159.7:9092"
+          - "10.107.159.8:9092"
+          - "10.107.159.9:9092"
+          - "10.107.159.10:9092"
+        protocol_version: "3.0.0"
+        timeout: 5s
+        topic: llm-trace-dev
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
+          max_elapsed_time: 300s
+        sending_queue:
+          enabled: true
+          num_consumers: 10
+          queue_size: 1000
+
+      prometheusremotewrite:
+        endpoint: "http://10.107.205.20:58897/integration/prometheus/metric/<REDACTED-ONE-METRICS-INT-ID>"
+        resource_to_telemetry_conversion:
+          enabled: true
+        remote_write_queue:
+          num_consumers: 5
+          queue_size: 1000
+
+      otlphttp:
+        #endpoint: "https://oneupload.bonree.com/APM/otel"
+        endpoint: "http://10.107.205.20:58897/APM/otel"
+        compression: gzip
+        headers:
+          #x-br-acid: "<REDACTED-ONE-ACID-OLD>"
+          x-br-acid: "<REDACTED-ONE-ACID>"
+          #x-br-envid: "zhejianglab"
+
+      debug:
+        verbosity: detailed   # 确认数据流入后用 basic 即可，避免刷日志
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, transform, batch]
+          exporters: [kafka,otlphttp,debug]
+        metrics:
+          receivers: [prometheus]
+          processors: [memory_limiter, resource, batch]
+          exporters: [prometheusremotewrite]
+      telemetry:
+        logs:
+          level: info
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"config.yaml":"receivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 0.0.0.0:4317\n\n  prometheus:\n    config:\n      scrape_configs:\n        - job_name: 'litellm'\n          scrape_interval: 15s\n          static_configs:\n            - targets:\n                - 'litellm.litellm-system.svc.cluster.local:4000'\n          metrics_path: /metrics/\n          bearer_token: '<REDACTED-LITELLM-BEARER>'\n\nprocessors:\n  k8sattributes:\n    auth_type: serviceAccount\n    passthrough: false\n    pod_association:\n      - sources:\n          - from: connection\n    extract:\n      metadata:\n        - k8s.pod.name\n        - k8s.pod.ip\n        - k8s.namespace.name\n        - k8s.node.name\n        - k8s.deployment.name\n      labels:\n        - tag_name: app.name\n          key: app\n          from: pod\n        - tag_name: jobname\n          key: dros.zjlab.io/jobname\n          from: pod\n\n  # 新增 transform 处理器以满足 ONE 接入规范要求\n  transform:\n    error_mode: ignore\n    trace_statements:\n      - context: resource\n        statements:\n          # 1. 补齐 host.name（优先用 pod 名，次选 node 名）\n          - set(attributes[\"host.name\"], attributes[\"k8s.pod.name\"]) where attributes[\"host.name\"] == nil and attributes[\"k8s.pod.name\"] != nil\n          - set(attributes[\"host.name\"], attributes[\"k8s.node.name\"]) where attributes[\"host.name\"] == nil and attributes[\"k8s.node.name\"] != nil\n          # 2. 补齐 host.ip（来自 pod ip）\n          - set(attributes[\"host.ip\"], attributes[\"k8s.pod.ip\"]) where attributes[\"host.ip\"] == nil and attributes[\"k8s.pod.ip\"] != nil\n\n      - context: span\n        statements:\n          # =================================================================\n          # 1. Higress 网关 Span 治理 (入口 Span 改为 Server，出站 Span 补齐 peer 属性)\n          # =================================================================\n          # A1: 将 Higress 网关入口路由 Span 的 Kind 从 Client 改写为 Server (2)\n          - set(kind, 2) where resource.attributes[\"service.name\"] == \"higress-gateway.higress-system\" and not IsMatch(name, \".*egress.*\")\n          # A2: 为 Higress 入口 Span 提取 http.target (如 /v1/chat/completions)\n          - set(attributes[\"http.target\"], ExtractPatterns(attributes[\"http.url\"], \"^https?://[^/]+(?P\u003ctarget\u003e/.*)$\")[\"target\"]) where resource.attributes[\"service.name\"] == \"higress-gateway.higress-system\" and attributes[\"http.target\"] == nil and attributes[\"http.url\"] != nil and IsMatch(attributes[\"http.url\"], \"^https?://[^/]+/.*\")\n          # A3: 为 Higress 出站 Egress Span (Client) 从 peer.address 提取对端主机名与端口\n          - set(attributes[\"net.peer.name\"], ExtractPatterns(attributes[\"peer.address\"], \"^(?P\u003chost\u003e[^:]+)\")[\"host\"]) where attributes[\"net.peer.name\"] == nil and attributes[\"peer.address\"] != nil\n          - set(attributes[\"net.peer.port\"], Int(ExtractPatterns(attributes[\"peer.address\"], \":(?P\u003cport\u003e[0-9]+)$\")[\"port\"])) where attributes[\"net.peer.port\"] == nil and attributes[\"peer.address\"] != nil and IsMatch(attributes[\"peer.address\"], \":[0-9]+$\")\n          # A4: 为 Higress 出站 Egress Span 补充 HTTP 方法与路径 (默认外呼 POST)\n          - set(attributes[\"http.method\"], \"POST\") where resource.attributes[\"service.name\"] == \"higress-gateway.higress-system\" and attributes[\"http.method\"] == nil\n          - set(attributes[\"http.url\"], Concat([\"http://\", attributes[\"peer.address\"], \"/v1/chat/completions\"], \"\")) where resource.attributes[\"service.name\"] == \"higress-gateway.higress-system\" and attributes[\"http.url\"] == nil and attributes[\"peer.address\"] != nil\n\n          # =================================================================\n          # 2. sglang-router (smg) Span 治理 (改写 http_request 为 Server 并规范化属性)\n          # =================================================================\n          # B1: 将 smg 的 http_request Span 改写为 Kind: Server (2)\n          - set(kind, 2) where (resource.attributes[\"service.name\"] == \"smg\" or resource.attributes[\"service.name\"] == \"sglang-router\") and name == \"http_request\"\n          # B2: 将 smg 的 Rust tracing 非标属性映射为标准 OTel 属性\n          - set(attributes[\"http.method\"], attributes[\"method\"]) where attributes[\"http.method\"] == nil and attributes[\"method\"] != nil\n          - set(attributes[\"http.target\"], attributes[\"uri\"]) where attributes[\"http.target\"] == nil and attributes[\"uri\"] != nil\n          - set(attributes[\"http.url\"], Concat([\"http://sglang-router:9990\", attributes[\"uri\"]], \"\")) where attributes[\"http.url\"] == nil and attributes[\"uri\"] != nil\n          - set(attributes[\"http.status_code\"], Int(attributes[\"status_code\"])) where attributes[\"http.status_code\"] == nil and attributes[\"status_code\"] != nil\n          - set(name, Concat([attributes[\"method\"], attributes[\"uri\"]], \" \")) where (resource.attributes[\"service.name\"] == \"smg\" or resource.attributes[\"service.name\"] == \"sglang-router\") and attributes[\"method\"] != nil and attributes[\"uri\"] != nil\n\n          # =================================================================\n          # 3. 通用 Client Span 属性补齐 (从 http.url 解析对端主机与端口)\n          # =================================================================\n          - set(attributes[\"net.peer.name\"], ExtractPatterns(attributes[\"http.url\"], \"^https?://(?P\u003cpeer_name\u003e[^:/]+)\")[\"peer_name\"]) where attributes[\"net.peer.name\"] == nil and attributes[\"http.url\"] != nil and IsMatch(attributes[\"http.url\"], \"^https?://[^:/]+\")\n          - set(attributes[\"net.peer.port\"], Int(ExtractPatterns(attributes[\"http.url\"], \"^https?://[^:/]+:(?P\u003cpeer_port\u003e[0-9]+)\")[\"peer_port\"])) where attributes[\"net.peer.port\"] == nil and attributes[\"http.url\"] != nil and IsMatch(attributes[\"http.url\"], \"^https?://[^:/]+:[0-9]+\")\n          - set(attributes[\"net.peer.port\"], 80) where attributes[\"net.peer.port\"] == nil and attributes[\"http.url\"] != nil and IsMatch(attributes[\"http.url\"], \"^http://\")\n          - set(attributes[\"net.peer.port\"], 443) where attributes[\"net.peer.port\"] == nil and attributes[\"http.url\"] != nil and IsMatch(attributes[\"http.url\"], \"^https://\")\n\n  batch:\n    timeout: 5s\n    send_batch_size: 1024\n\n  memory_limiter:\n    check_interval: 1s\n    limit_mib: 640\n    spike_limit_mib: 128\n\n  resource:\n    attributes:\n      - key: service.name\n        value: litellm\n        action: upsert\n      - key: cluster\n        value: maas-dev\n        action: upsert\n\nexporters:\n  kafka:\n    brokers:\n      - \"10.107.159.7:9092\"\n      - \"10.107.159.8:9092\"\n      - \"10.107.159.9:9092\"\n      - \"10.107.159.10:9092\"\n    protocol_version: \"3.0.0\"\n    timeout: 5s\n    topic: llm-trace-dev\n    retry_on_failure:\n      enabled: true\n      initial_interval: 5s\n      max_interval: 30s\n      max_elapsed_time: 300s\n    sending_queue:\n      enabled: true\n      num_consumers: 10\n      queue_size: 1000\n\n  prometheusremotewrite:\n    endpoint: \"http://10.107.205.20:58897/integration/prometheus/metric/<REDACTED-ONE-METRICS-INT-ID>\"\n    resource_to_telemetry_conversion:\n      enabled: true\n    remote_write_queue:\n      num_consumers: 5\n      queue_size: 1000\n\n  otlphttp:\n    #endpoint: \"https://oneupload.bonree.com/APM/otel\"\n    endpoint: \"http://10.107.205.20:58897/APM/otel\"\n    compression: gzip\n    headers:\n      #x-br-acid: \"<REDACTED-ONE-ACID-OLD>\"\n      x-br-acid: \"<REDACTED-ONE-ACID>\"\n      #x-br-envid: \"zhejianglab\"\n\n  debug:\n    verbosity: detailed   # 确认数据流入后用 basic 即可，避免刷日志\n\nservice:\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [memory_limiter, k8sattributes, transform, batch]\n      exporters: [kafka,otlphttp,debug]\n    metrics:\n      receivers: [prometheus]\n      processors: [memory_limiter, resource, batch]\n      exporters: [prometheusremotewrite]\n  telemetry:\n    logs:\n      level: info\n"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app":"otel-collector"},"name":"otel-collector-config","namespace":"maas-dev"}}
+  creationTimestamp: "2026-06-10T09:55:26Z"
+  labels:
+    app: otel-collector
+  name: otel-collector-config
+  namespace: maas-dev
+  resourceVersion: "234447708"
+  uid: 736388ff-7721-48fc-b3f6-56ba80db9fdb

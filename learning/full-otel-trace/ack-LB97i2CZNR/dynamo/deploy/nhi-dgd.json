@@ -1,0 +1,367 @@
+{
+ "apiVersion": "nvidia.com/v1beta1",
+ "kind": "DynamoGraphDeployment",
+ "metadata": {
+  "name": "dynamo-trace-demo",
+  "namespace": "nhi",
+  "labels": {
+   "app.kubernetes.io/name": "dynamo-trace-demo",
+   "app.kubernetes.io/part-of": "dynamo-tracing"
+  }
+ },
+ "spec": {
+  "components": [
+   {
+    "name": "Frontend",
+    "podTemplate": {
+     "metadata": {
+      "labels": {
+       "app.kubernetes.io/component": "frontend",
+       "app.kubernetes.io/name": "dynamo-trace-demo"
+      }
+     },
+     "spec": {
+      "affinity": {
+       "nodeAffinity": {
+        "requiredDuringSchedulingIgnoredDuringExecution": {
+         "nodeSelectorTerms": [
+          {
+           "matchExpressions": [
+            {
+             "key": "dros.zjlab.io/clusterEnv",
+             "operator": "In",
+             "values": [
+              "drosInCluster"
+             ]
+            },
+            {
+             "key": "dros.zjlab.io/spec",
+             "operator": "In",
+             "values": [
+              "GPU_Z2280_24GB"
+             ]
+            },
+            {
+             "key": "dros.zjlab.io/resourcepool",
+             "operator": "DoesNotExist"
+            },
+            {
+             "key": "dros.zjlab.io/reserve",
+             "operator": "DoesNotExist"
+            },
+            {
+             "key": "dros.zjlab.io/nodegroup",
+             "operator": "DoesNotExist"
+            }
+           ]
+          }
+         ]
+        }
+       },
+       "podAntiAffinity": {
+        "preferredDuringSchedulingIgnoredDuringExecution": [
+         {
+          "podAffinityTerm": {
+           "labelSelector": {
+            "matchLabels": {
+             "app.kubernetes.io/component": "frontend",
+             "app.kubernetes.io/name": "dynamo-trace-demo"
+            }
+           },
+           "topologyKey": "kubernetes.io/hostname"
+          },
+          "weight": 100
+         }
+        ]
+       }
+      },
+      "containers": [
+       {
+        "env": [
+         {
+          "name": "DYN_ROUTER_MODE",
+          "value": "kv"
+         },
+         {
+          "name": "DYN_REQUEST_PLANE",
+          "value": "tcp"
+         },
+         {
+          "name": "DYN_EVENT_PLANE",
+          "value": "zmq"
+         },
+         {
+          "name": "DYN_HTTP_BODY_LIMIT_MB",
+          "value": "200"
+         },
+         {
+          "name": "OTEL_EXPORT_ENABLED",
+          "value": "true"
+         },
+         {
+          "name": "OTEL_EXPORTER_OTLP_PROTOCOL",
+          "value": "grpc"
+         },
+         {
+          "name": "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+          "value": "http://otel-collector.nhi.svc.cluster.local:4317"
+         },
+         {
+          "name": "OTEL_SERVICE_NAME",
+          "value": "dynamo-trace-demo-frontend"
+         },
+         {
+          "name": "OTEL_TRACES_SAMPLE_RATIO",
+          "value": "1.0"
+         }
+        ],
+        "image": "10.200.88.53/nhss/dynamo-sglang-runtime:1.4.1-amd64",
+        "name": "main",
+        "resources": {
+         "limits": {
+          "memory": "32Gi"
+         },
+         "requests": {
+          "cpu": "4",
+          "memory": "8Gi"
+         }
+        },
+        "volumeMounts": [
+         {
+          "mountPath": "/mnt/nfs-models/default",
+          "name": "model-storage",
+          "readOnly": true,
+          "subPath": "default"
+         }
+        ]
+       }
+      ],
+      "imagePullSecrets": [
+       {
+        "name": "docker-registry-secret"
+       }
+      ],
+      "terminationGracePeriodSeconds": 60,
+      "tolerations": [
+       {
+        "effect": "NoSchedule",
+        "key": "node-role.alibabacloud.com/bmcp",
+        "operator": "Exists"
+       }
+      ],
+      "volumes": [
+       {
+        "name": "model-storage",
+        "persistentVolumeClaim": {
+         "claimName": "nhi-dynamo-trace-models-pvc"
+        }
+       }
+      ]
+     }
+    },
+    "replicas": 1,
+    "type": "frontend"
+   },
+   {
+    "name": "aggregated",
+    "podTemplate": {
+     "metadata": {
+      "labels": {
+       "app.kubernetes.io/component": "worker",
+       "app.kubernetes.io/name": "dynamo-trace-demo"
+      }
+     },
+     "spec": {
+      "affinity": {
+       "nodeAffinity": {
+        "requiredDuringSchedulingIgnoredDuringExecution": {
+         "nodeSelectorTerms": [
+          {
+           "matchExpressions": [
+            {
+             "key": "dros.zjlab.io/clusterEnv",
+             "operator": "In",
+             "values": [
+              "drosInCluster"
+             ]
+            },
+            {
+             "key": "dros.zjlab.io/spec",
+             "operator": "In",
+             "values": [
+              "GPU_Z2280_24GB"
+             ]
+            },
+            {
+             "key": "dros.zjlab.io/resourcepool",
+             "operator": "DoesNotExist"
+            },
+            {
+             "key": "dros.zjlab.io/reserve",
+             "operator": "DoesNotExist"
+            },
+            {
+             "key": "dros.zjlab.io/nodegroup",
+             "operator": "DoesNotExist"
+            }
+           ]
+          }
+         ]
+        }
+       }
+      },
+      "containers": [
+       {
+        "args": [
+         "--model-path",
+         "/mnt/nfs-models/default/Qwen3.8-27B",
+         "--served-model-name",
+         "Qwen3.8-27B",
+         "--enable-multimodal",
+         "--context-length",
+         "262144",
+         "--page-size",
+         "1",
+         "--tp",
+         "4",
+         "--trust-remote-code",
+         "--chunked-prefill-size",
+         "2048",
+         "--mem-fraction-static",
+         "0.90",
+         "--mamba-radix-cache-strategy",
+         "extra_buffer_lazy",
+         "--dyn-tool-call-parser",
+         "qwen3_coder",
+         "--dyn-reasoning-parser",
+         "qwen3",
+         "--host",
+         "0.0.0.0",
+         "--enable-metrics",
+         "--disable-piecewise-cuda-graph",
+         "--kv-events-config",
+         "{\"publisher\":\"zmq\",\"topic\":\"kv-events\",\"endpoint\":\"tcp://*:5557\"}",
+         "--namespace",
+         "nhi-dynamo-trace-demo-agg",
+         "--enable-trace",
+         "--otlp-traces-endpoint",
+         "otel-collector.nhi.svc.cluster.local:4317",
+         "--sglang-trace-level",
+         "2"
+        ],
+        "command": [
+         "python3",
+         "-m",
+         "dynamo.sglang"
+        ],
+        "env": [
+         {
+          "name": "DYN_REQUEST_PLANE",
+          "value": "tcp"
+         },
+         {
+          "name": "DYN_EVENT_PLANE",
+          "value": "zmq"
+         },
+         {
+          "name": "DYN_WORKER_GRACEFUL_SHUTDOWN_TIMEOUT",
+          "value": "300"
+         },
+         {
+          "name": "NCCL_DEBUG",
+          "value": "WARN"
+         },
+         {
+          "name": "OTEL_EXPORT_ENABLED",
+          "value": "true"
+         },
+         {
+          "name": "OTEL_EXPORTER_OTLP_PROTOCOL",
+          "value": "grpc"
+         },
+         {
+          "name": "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+          "value": "http://otel-collector.nhi.svc.cluster.local:4317"
+         },
+         {
+          "name": "OTEL_SERVICE_NAME",
+          "value": "dynamo-trace-demo-aggregated"
+         },
+         {
+          "name": "OTEL_TRACES_SAMPLE_RATIO",
+          "value": "1.0"
+         }
+        ],
+        "image": "10.200.88.53/nhss/dynamo-sglang-runtime:1.4.1-amd64",
+        "name": "main",
+        "resources": {
+         "limits": {
+          "memory": "256Gi",
+          "nvidia.com/gpu": "4"
+         },
+         "requests": {
+          "cpu": "32",
+          "ephemeral-storage": "8Gi",
+          "memory": "128Gi",
+          "nvidia.com/gpu": "4"
+         }
+        },
+        "securityContext": {
+         "capabilities": {
+          "add": [
+           "IPC_LOCK",
+           "SYS_RESOURCE"
+          ]
+         }
+        },
+        "volumeMounts": [
+         {
+          "mountPath": "/mnt/nfs-models/default",
+          "name": "model-storage",
+          "readOnly": true,
+          "subPath": "default"
+         },
+         {
+          "mountPath": "/dev/shm",
+          "name": "dshm"
+         }
+        ],
+        "workingDir": "/workspace/examples/backends/sglang"
+       }
+      ],
+      "imagePullSecrets": [
+       {
+        "name": "docker-registry-secret"
+       }
+      ],
+      "terminationGracePeriodSeconds": 300,
+      "tolerations": [
+       {
+        "effect": "NoSchedule",
+        "key": "node-role.alibabacloud.com/bmcp",
+        "operator": "Exists"
+       }
+      ],
+      "volumes": [
+       {
+        "name": "model-storage",
+        "persistentVolumeClaim": {
+         "claimName": "nhi-dynamo-trace-models-pvc"
+        }
+       },
+       {
+        "emptyDir": {
+         "medium": "Memory",
+         "sizeLimit": "64Gi"
+        },
+        "name": "dshm"
+       }
+      ]
+     }
+    },
+    "replicas": 1,
+    "type": "worker"
+   }
+  ]
+ }
+}

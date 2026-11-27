@@ -1,0 +1,134 @@
+# ack-LB97i2CZNR/nhi 的 otel-collector-config 变更前快照（接入 metrics 出口之前）。
+# 凭证已脱敏：x-br-acid 的真实值只保存在本地 .vscode/credentials.local.md
+# （该目录已被 .gitignore 忽略，不会入库）。本快照仅用于结构对照，
+# 真需要回滚时请从集群直取，或先把占位符换回真实 acid。
+apiVersion: v1
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318          # ← NCCL Inspector 推 OTLP metrics 用
+
+    processors:
+      k8sattributes:
+        auth_type: serviceAccount
+        passthrough: false
+        pod_association:
+          - sources:
+              - from: connection
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.deployment.name
+          labels:
+            - tag_name: app.name
+              key: app
+              from: pod
+            - tag_name: jobname
+              key: dros.zjlab.io/jobname
+              from: pod
+
+      # 对齐 maas-dev：补齐 ONE 接入规范要求的 host.name / host.ip
+      # （ack-LB 无 higress / smg / sglang，maas-dev 里的 span 级治理规则不适用，故只搬资源级规则）
+      # 注意：context: resource 下必须写成 resource.attributes[...]，
+      #       旧式 attributes[...] 在 0.120 会被自动改写并告警，更高版本将报错。
+      transform:
+        error_mode: ignore
+        trace_statements:
+          - context: resource
+            statements:
+              - set(resource.attributes["host.name"], resource.attributes["k8s.pod.name"]) where resource.attributes["host.name"] == nil and resource.attributes["k8s.pod.name"] != nil
+              - set(resource.attributes["host.name"], resource.attributes["k8s.node.name"]) where resource.attributes["host.name"] == nil and resource.attributes["k8s.node.name"] != nil
+              - set(resource.attributes["host.ip"], resource.attributes["k8s.pod.ip"]) where resource.attributes["host.ip"] == nil and resource.attributes["k8s.pod.ip"] != nil
+
+      # 两个集群的 trace 汇入同一目的地后，必须能区分来源
+      # 取值与 nhi-vector-agg-traces 写入 clickhouse 的 cluster_id 列一致
+      resource:
+        attributes:
+          - key: cluster
+            value: ack-LB97i2CZNR
+            action: upsert
+
+      batch:
+        timeout: 5s
+        send_batch_size: 1024
+
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 512
+        spike_limit_mib: 128
+
+    exporters:
+      # --- 本地 traces 出口: nhi 自建 clickhouse 链路（保持不动）---
+      otlp/vector:
+        endpoint: nhi-vector-agg-traces.nhi.svc.cluster.local:4317
+        tls:
+          insecure: true
+
+      # --- 统一出口 1: kafka（brokers / topic 与 maas-dev 完全一致）---
+      kafka:
+        brokers:
+          - "10.107.159.7:9092"
+          - "10.107.159.8:9092"
+          - "10.107.159.9:9092"
+          - "10.107.159.10:9092"
+        protocol_version: "3.0.0"
+        timeout: 5s
+        topic: llm-trace-dev
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
+          max_elapsed_time: 300s
+        sending_queue:
+          enabled: true
+          num_consumers: 10
+          queue_size: 1000
+
+      # --- 统一出口 2: 博睿 ONE APM（endpoint / header 与 maas-dev 完全一致）---
+      # 2026-10-29 实测: 本集群访问 10.107.205.20:58897 为 timed out（ACL 未放通）。
+      # ACL 放通后本出口自动生效，无需再改配置；未放通期间仅本出口失败并丢数据，
+      # 不影响 kafka / otlp/vector 两个出口（OTel exporter 相互独立）。
+      otlphttp:
+        endpoint: "http://10.107.205.20:58897/APM/otel"
+        compression: gzip
+        timeout: 10s
+        headers:
+          x-br-acid: "REDACTED-ONE-ACID"
+
+      # --- metrics 出口: 直推 aggr remote-write 入口 ---
+      prometheusremotewrite/prom:
+        endpoint: http://nhi-vector-agg-metrics.nhi.svc:6004/api/v1/write
+        resource_to_telemetry_conversion:
+          enabled: true                     # 将 OTEL_RESOURCE_ATTRIBUTES → metric label
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, transform, resource, batch]
+          exporters: [otlp/vector, kafka, otlphttp]
+        # --- metrics 管线: 不启用 k8sattributes (避免额外开销) ---
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [prometheusremotewrite/prom]
+      telemetry:
+        logs:
+          level: info
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"config.yaml":"receivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 0.0.0.0:4317\n      http:\n        endpoint: 0.0.0.0:4318          # ← NCCL Inspector 推 OTLP metrics 用\n\nprocessors:\n  k8sattributes:\n    auth_type: serviceAccount\n    passthrough: false\n    pod_association:\n      - sources:\n          - from: connection\n    extract:\n      metadata:\n        - k8s.pod.name\n        - k8s.namespace.name\n        - k8s.node.name\n        - k8s.deployment.name\n      labels:\n        - tag_name: app.name\n          key: app\n          from: pod\n        - tag_name: jobname\n          key: dros.zjlab.io/jobname\n          from: pod\n\n  # 对齐 maas-dev：补齐 ONE 接入规范要求的 host.name / host.ip\n  # （ack-LB 无 higress / smg / sglang，maas-dev 里的 span 级治理规则不适用，故只搬资源级规则）\n  # 注意：context: resource 下必须写成 resource.attributes[...]，\n  #       旧式 attributes[...] 在 0.120 会被自动改写并告警，更高版本将报错。\n  transform:\n    error_mode: ignore\n    trace_statements:\n      - context: resource\n        statements:\n          - set(resource.attributes[\"host.name\"], resource.attributes[\"k8s.pod.name\"]) where resource.attributes[\"host.name\"] == nil and resource.attributes[\"k8s.pod.name\"] != nil\n          - set(resource.attributes[\"host.name\"], resource.attributes[\"k8s.node.name\"]) where resource.attributes[\"host.name\"] == nil and resource.attributes[\"k8s.node.name\"] != nil\n          - set(resource.attributes[\"host.ip\"], resource.attributes[\"k8s.pod.ip\"]) where resource.attributes[\"host.ip\"] == nil and resource.attributes[\"k8s.pod.ip\"] != nil\n\n  # 两个集群的 trace 汇入同一目的地后，必须能区分来源\n  # 取值与 nhi-vector-agg-traces 写入 clickhouse 的 cluster_id 列一致\n  resource:\n    attributes:\n      - key: cluster\n        value: ack-LB97i2CZNR\n        action: upsert\n\n  batch:\n    timeout: 5s\n    send_batch_size: 1024\n\n  memory_limiter:\n    check_interval: 1s\n    limit_mib: 512\n    spike_limit_mib: 128\n\nexporters:\n  # --- 本地 traces 出口: nhi 自建 clickhouse 链路（保持不动）---\n  otlp/vector:\n    endpoint: nhi-vector-agg-traces.nhi.svc.cluster.local:4317\n    tls:\n      insecure: true\n\n  # --- 统一出口 1: kafka（brokers / topic 与 maas-dev 完全一致）---\n  kafka:\n    brokers:\n      - \"10.107.159.7:9092\"\n      - \"10.107.159.8:9092\"\n      - \"10.107.159.9:9092\"\n      - \"10.107.159.10:9092\"\n    protocol_version: \"3.0.0\"\n    timeout: 5s\n    topic: llm-trace-dev\n    retry_on_failure:\n      enabled: true\n      initial_interval: 5s\n      max_interval: 30s\n      max_elapsed_time: 300s\n    sending_queue:\n      enabled: true\n      num_consumers: 10\n      queue_size: 1000\n\n  # --- 统一出口 2: 博睿 ONE APM（endpoint / header 与 maas-dev 完全一致）---\n  # 2026-10-29 实测: 本集群访问 10.107.205.20:58897 为 timed out（ACL 未放通）。\n  # ACL 放通后本出口自动生效，无需再改配置；未放通期间仅本出口失败并丢数据，\n  # 不影响 kafka / otlp/vector 两个出口（OTel exporter 相互独立）。\n  otlphttp:\n    endpoint: \"http://10.107.205.20:58897/APM/otel\"\n    compression: gzip\n    timeout: 10s\n    headers:\n      x-br-acid: \"REDACTED-ONE-ACID\"\n\n  # --- metrics 出口: 直推 aggr remote-write 入口 ---\n  prometheusremotewrite/prom:\n    endpoint: http://nhi-vector-agg-metrics.nhi.svc:6004/api/v1/write\n    resource_to_telemetry_conversion:\n      enabled: true                     # 将 OTEL_RESOURCE_ATTRIBUTES → metric label\n\nservice:\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [memory_limiter, k8sattributes, transform, resource, batch]\n      exporters: [otlp/vector, kafka, otlphttp]\n    # --- metrics 管线: 不启用 k8sattributes (避免额外开销) ---\n    metrics:\n      receivers: [otlp]\n      processors: [memory_limiter, batch]\n      exporters: [prometheusremotewrite/prom]\n  telemetry:\n    logs:\n      level: info\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"otel-collector-config","namespace":"nhi"}}
+  creationTimestamp: "2026-05-09T09:17:18Z"
+  name: otel-collector-config
+  namespace: nhi
+  resourceVersion: "283691663"
+  uid: 10193038-1f5c-4b9d-be96-d0f00e61912f

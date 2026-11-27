@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-kafka-clickhouse
+  namespace: maas-dev
+data:
+  config.yaml: |
+    receivers:
+      kafka:
+        brokers: ["10.107.159.7:9092", "10.107.159.8:9092", "10.107.159.9:9092", "10.107.159.10:9092"]
+        protocol_version: "3.0.0"
+        topic: llm-trace-dev
+        group_id: otel-ch-maas-dev-v1
+        encoding: otlp_proto
+        initial_offset: latest
+        message_marking:
+          after: true
+          on_error: false
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 512
+        spike_limit_mib: 128
+    exporters:
+      clickhouse:
+        endpoint: http://10.200.44.12:31168
+        username: ${env:CLICKHOUSE_USERNAME}
+        password: ${env:CLICKHOUSE_PASSWORD}
+        database: llm_observability
+        traces_table_name: otel_traces_maas_dev
+        create_schema: false
+        async_insert: false
+        connection_params:
+          distributed_foreground_insert: "1"
+        sending_queue:
+          enabled: false
+        retry_on_failure:
+          enabled: true
+          max_elapsed_time: 60s
+        timeout: 10s
+    service:
+      pipelines:
+        traces:
+          receivers: [kafka]
+          processors: [memory_limiter]
+          exporters: [clickhouse]
+      telemetry:
+        logs:
+          level: info
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-kafka-clickhouse
+  namespace: maas-dev
+spec:
+  # Standby while ClickHouse Kafka Engine is serving the development dashboard.
+  replicas: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: otel-kafka-clickhouse
+  template:
+    metadata:
+      labels:
+        app: otel-kafka-clickhouse
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: collector
+          image: harbor.zhejianglab.com/zjnc-tech/opentelemetry-collector-contrib:0.120.0
+          args: ["--config=/conf/config.yaml"]
+          envFrom:
+            - secretRef:
+                name: otel-kafka-clickhouse-auth
+          resources:
+            requests:
+              cpu: 200m
+              memory: 384Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: otel-kafka-clickhouse
